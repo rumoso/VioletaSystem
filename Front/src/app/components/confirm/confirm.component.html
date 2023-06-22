@@ -1,0 +1,13 @@
+<h1>{{ data.header }}</h1>
+<hr>
+<p>
+    {{ data.message }}
+    <br>
+    {{ data.question }}
+</p>
+
+<div>
+    <button mat-button (click)="delete()" color="warn">{{ data.buttonYes }}</button>
+    <button mat-button (click)="close()">{{ data.buttonNo }}</button>
+</div>
+

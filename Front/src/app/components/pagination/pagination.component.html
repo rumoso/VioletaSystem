@@ -1,0 +1,9 @@
+<mat-paginator
+    [length]="pagination.length"
+    [pageSize]="pagination.pageSize"
+    [pageIndex]="pagination.pageIndex"
+    [pageSizeOptions]="pagination.pageSizeOptions"
+    [showFirstLastButtons]="true"
+    (page)="emitPagination( $event )"
+    aria-label="">
+</mat-paginator>

@@ -1,0 +1,55 @@
+<form action=""
+autocomplete="off"
+[formGroup]="myLogin"
+(ngSubmit)="fn_login()">
+
+<div class="row">
+<div class="col-md-12">
+    <mat-form-field fxLayout.xs="column">
+        <mat-label>Usuario:</mat-label>
+        <input matInput
+                type="text"
+                formControlName="username">
+    </mat-form-field>
+</div>
+</div>
+<div class="row">
+<div class="col-md-12">
+    <mat-form-field fxLayout.xs="column">
+        <mat-label>Contraseña:</mat-label>
+        <input matInput
+                type="text"
+                formControlName="pwd">
+    </mat-form-field>
+</div>
+</div>
+<div class="row">
+<div class="col-md-12">
+
+    <button class="btnLogin"
+            type="submit"
+            [disabled]="myLogin.invalid"
+            >
+        Login
+    </button>
+
+</div>
+</div>
+
+<br>
+
+<div class="row">
+<div class="col-md-12">
+    <span class="txt1 p-b-17">
+        ¿No tienes cuenta?
+    </span>
+
+    <a routerLink="/auth/newUser" class="txt2">
+        Crear una aquí
+    </a>
+</div>
+</div>
+
+</form>
+
+<app-spinner *ngIf="bShowSpinner"></app-spinner>
