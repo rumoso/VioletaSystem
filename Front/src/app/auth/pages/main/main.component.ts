@@ -16,6 +16,8 @@ export class MainComponent {
 
   logout() {
     localStorage.setItem('token', '')
+    localStorage.setItem('user', '')
+    localStorage.setItem('idUser', '')
     this.router.navigate( ['./auth'] );
   }
   

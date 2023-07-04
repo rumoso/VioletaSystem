@@ -14,6 +14,7 @@ export class PaginationComponent implements OnInit {
   @Output() OPagination = new EventEmitter<Pagination>();
 
   pagination: Pagination = {
+    search: '',
     length: 0,
     pageSize: 5,
     pageIndex: 0,

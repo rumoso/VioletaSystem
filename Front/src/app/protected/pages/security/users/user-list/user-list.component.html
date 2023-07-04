@@ -1,0 +1,75 @@
+<div class="divMain textAlingCenter" style="width: 100%;">
+    <div class="row">
+        <div class="col-md-1">
+            <div class="divSearch">
+                <span class="material-icons manitaSobre colorGreen"
+                (click)="changeRoute('users')">
+                add_circle_outline
+                </span>
+            </div>
+        </div>
+        <div class="col-md-11">
+            <div class="divTitle-center">
+                {{ title }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <mat-form-field class="with100">
+                <mat-label>Búqueda de usuario por nombre o usuario</mat-label>
+                <input (change)="onChangeEvent($event)" matInput placeholder="Ingrese un nombre">
+              </mat-form-field>
+        </div>
+    </div>
+    
+    <div class="row top20px">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <th class="textAlingCenter padding-th">Acciones</th>
+                            <th class="textAlingCenter padding-th">Nombre</th>
+                            <th class="textAlingCenter padding-th">Roles</th>
+                            <th class="textAlingCenter padding-th">Usuario</th>
+                            <th class="textAlingCenter padding-th">Creado</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of catlist">
+                                <td class="textAlingCenter">
+                                    <div style="width: 100px;">
+                                        <span class="material-icons manitaSobre colorGreen"
+                                        matTooltip="Editar Paciente"
+                                        (click)="edit(item.idUser)">
+                                            edit
+                                        </span>
+
+                                        <span class="material-icons manitaSobre colorRed"
+                                        matTooltip="Eliminar Paciente"
+                                        (click)="fn_deleteUser(item.idUser)"
+                                            >
+                                            delete_outline
+                                        </span>
+
+                                    </div>
+                                </td>
+                                <td class="textAlingLeft">{{ item.name }}</td>
+                                <td class="textAlingCenter">{{ item.userName }}</td>
+                                <td class="textAlingCenter">{{ item.roles }}</td>
+                                <td class="textAlingCenter">{{ item.createDate | date:'dd-MM-yyyy' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <app-pagination *ngIf="catlist" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                </app-pagination>
+                
+            
+        </div>
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

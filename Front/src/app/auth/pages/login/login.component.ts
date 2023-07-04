@@ -14,15 +14,23 @@ export class LoginComponent {
 
   myLogin: FormGroup = this.fb.group({
     username: ['UserAdmin',[ Validators.required ]],
-    pwd: ['1234567890', [ Validators.required ]]
+    pwd: ['123456', [ Validators.required ]]
   });
 
   constructor( private fb: FormBuilder
     , private authServ: AuthService
     , private servicesGServ: ServicesGService
-    ) { 
-      localStorage.setItem('user', '');
-      localStorage.setItem('token', '');
+    ) {
+      var idUserLogOn = localStorage.getItem('idUser');
+
+      if(idUserLogOn?.length! > 0){
+        this.servicesGServ.changeRoute( '/VioletaSistem/dashboard' );
+      }else{
+        localStorage.setItem('user', '');
+        localStorage.setItem('token', '');
+        localStorage.setItem('idUser', '');
+      }
+      
     }
 
     fn_login() {
@@ -37,7 +45,7 @@ export class LoginComponent {
           .subscribe({
             next: (resp) => {
               if( resp.status === 0 ){
-                this.servicesGServ.changeRoute( '/pediatraSys/dashboard' );
+                this.servicesGServ.changeRoute( '/VioletaSistem/dashboard' );
               }
               this.servicesGServ.showSnakbar(resp.message);
               this.bShowSpinner = false;

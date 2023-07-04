@@ -28,6 +28,7 @@ export class AuthService {
           tap( userLogin => {
             if(userLogin.status == 0){
               this._userLogin = userLogin.data!.user;
+              localStorage.setItem('idUser', JSON.stringify( userLogin.data.user.idUser ));
               localStorage.setItem('user', JSON.stringify( userLogin.data.user ));
               localStorage.setItem('token', JSON.stringify( userLogin.data.token ));
             }
@@ -49,6 +50,8 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('user');
+    localStorage.removeItem('idUser');
+    localStorage.removeItem('token');
     this.servicesGServ.changeRoute( '/login' );
   }
 
@@ -58,5 +61,12 @@ export class AuthService {
     }
 
     return of(true);
+  }
+
+  getMenuByPermissions( idUser : number ): Observable<ResponseGet> {
+    const data = {
+      idUser: idUser
+    };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getMenuByPermissions`, data );
   }
 }

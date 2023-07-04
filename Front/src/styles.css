@@ -4,6 +4,7 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 @import "../node_modules/@angular/material/prebuilt-themes/indigo-pink.css";
 
+
 .spacer {
     flex: 1 1 auto;
 }
@@ -231,5 +232,11 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 .padding-th {
     padding: 0 18px 12px 18px
 }
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.marginRight10px {
+    margin-right: 10px;
+}
+
+.with100 {
+    width: 100%;
+}

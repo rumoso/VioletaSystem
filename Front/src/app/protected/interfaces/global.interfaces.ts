@@ -25,3 +25,9 @@ export interface ResponseGet {
     message: string;
     data: any;
 }
+
+export interface ResponseDB_CRUD {
+    status:  number;
+    message: string;
+    insertID: number;
+}
