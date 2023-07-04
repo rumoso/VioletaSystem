@@ -22,6 +22,9 @@ export class UserComponent implements OnInit {
   
   private _appMain: string = environment.appMain;
 
+  hidePwd: boolean = true;
+  hidePwd2: boolean = true;
+
   title: string = 'Usuario';
   bShowSpinner: boolean = false;
   idUser: number = 0;
