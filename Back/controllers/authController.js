@@ -30,7 +30,7 @@ const login = async(req, res = response)=>{
             return res.json({
                 status:1,
                 message:"Usuario / Password no son correctos",
-                pwd: bcryptjs.hashSync( '1234567890', salt),
+                //pwd: bcryptjs.hashSync( '1234567890', salt),
                 data:null
             })
         }
@@ -48,8 +48,6 @@ const login = async(req, res = response)=>{
 
         //Verificar contraseña
         const validPassword = bcryptjs.compareSync(pwd, user.pwd);
-
-        
 
         if(!validPassword){
             return res.json({
@@ -73,6 +71,91 @@ const login = async(req, res = response)=>{
                 token
             }
         });
+    }
+    catch( error ){
+        
+        res.status(500).json({
+            status:2,
+            message:"Sucedió un error inesperado",
+            error: error.message,
+            data: OSQL
+        });
+    }
+}
+
+const getMenuByPermissions = async(req, res = response)=>{
+
+    const {
+        idUser
+    }= req.body;
+
+    var OSQL = null;
+
+    try{
+
+        var OMenuList = [];
+
+        OGetMenuFatherList = await dbConnection.query(`call getMenuFathersByPermission(${ idUser })`);
+
+        //console.log(OGetMenuFatherList);
+
+        if( OGetMenuFatherList.length == 0 ){
+            return res.json({
+                status:1,
+                message:"No tiene permisos",
+                data:null
+            })
+        }else{
+
+            for(var i = 0; i < OGetMenuFatherList.length; i++){
+
+                var oMenuFather = OGetMenuFatherList[i];
+
+                var OMenu = {
+                    'idMenu': oMenuFather.idMenu,
+                    'lugar': oMenuFather.lugar,
+                    'name': oMenuFather.name,
+                    'icon': oMenuFather.icon,
+                    'subMenus': []
+                }
+
+                OGetMenuDetailFatherList = await dbConnection.query(`call getMenuDetailsByPermission( ${ idUser }, ${ oMenuFather.idMenu } )`);
+                
+                var OSubMenus = [];
+                for(var n = 0; n < OGetMenuDetailFatherList.length; n++){
+                    //console.log(OGetMenuDetailFatherList[n])
+
+                    var oGetMenuDetail = OGetMenuDetailFatherList[n];
+
+                    var OMenuDetail = {
+                        'idMenu': oGetMenuDetail.idMenu,
+                        'idMenuPadre': oGetMenuDetail.idMenuPadre,
+                        'lugar': oGetMenuDetail.lugar,
+                        'name': oGetMenuDetail.name,
+                        'description': oGetMenuDetail.description,
+                        'icon': oGetMenuDetail.icon,
+                        'linkCat': oGetMenuDetail.linkCat,
+                        'linkList': oGetMenuDetail.linkList,
+                        'imgDash': oGetMenuDetail.imgDash,
+                        'imgDashSize': oGetMenuDetail.imgDashSize
+                    };
+
+                    OMenu.subMenus.push( OMenuDetail );
+                }
+
+                OMenuList.push(OMenu);
+            }
+
+            console.log( OMenuList )
+
+            res.json({
+                status:0,
+                message:"Conectado correctamente.",
+                data: OMenuList
+            });
+
+        }
+        
     }
     catch( error ){
         
@@ -141,4 +224,5 @@ const login = async(req, res = response)=>{
 
 module.exports={
     login
+    ,getMenuByPermissions
 }

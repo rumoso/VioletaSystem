@@ -3,7 +3,10 @@ const { check } = require('express-validator');
 
 const { validarCampos } = require('../middlewares/validar-campos');
 
-const { login } = require('../controllers/authController');
+const { 
+    login
+    , getMenuByPermissions
+     } = require('../controllers/authController');
 
 const router = Router();
 
@@ -14,9 +17,10 @@ router.post('/login',[
 
 ], login );
 
-// router.post('/google',[
-//     check('id_token', 'El id_token es necesario').not().isEmpty(),
-//     validarCampos
-// ], googleSingIn );
+router.post('/getMenuByPermissions',[
+    check('idUser','Usuario obligatorio').not().isEmpty(),
+    validarCampos
+
+], getMenuByPermissions );
 
 module.exports = router;
