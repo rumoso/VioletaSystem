@@ -10,6 +10,11 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { ComponentsModule } from '../components/components.module';
 import { UserListComponent } from './pages/security/users/user-list/user-list.component';
 import { UserComponent } from "./pages/security/users/user/user.component";
+import { ProductListComponent } from './pages/catssales/product-list/product-list.component';
+import { ProductComponent } from './pages/catssales/product/product.component';
+import { CustomerListComponent } from './pages/catssales/customer-list/customer-list.component';
+import { CustomerComponent } from './pages/catssales/customer/customer.component';
+import { SaleComponent } from './pages/sales/sale/sale.component';
 
 @NgModule({
     declarations: [
@@ -17,6 +22,11 @@ import { UserComponent } from "./pages/security/users/user/user.component";
     DashboardComponent,
     UserListComponent,
     UserComponent,
+    ProductListComponent,
+    ProductComponent,
+    CustomerListComponent,
+    CustomerComponent,
+    SaleComponent,
   ],
     imports: [
         CommonModule,

@@ -5,8 +5,10 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { switchMap } from 'rxjs';
+import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseDB_CRUD, ResponseGet } from 'src/app/protected/interfaces/global.interfaces';
 import { RolesService } from 'src/app/protected/services/roles.service';
+import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
@@ -30,6 +32,7 @@ export class UserComponent implements OnInit {
   idUser: number = 0;
 
   rolesByUserList: any[] = [];
+  sucursalesByUserList: any[] = [];
 
   public showPwd2: boolean = false;
 
@@ -43,6 +46,9 @@ export class UserComponent implements OnInit {
     , @Inject(MAT_DATE_LOCALE) private _locale: string
     , private usersServ: UsersService
     , private rolesServ: RolesService
+    , private sucursalesServ: SucursalesService
+
+    , private authService: AuthService
   ) { }
 
   userForm: FormGroup = this.fb.group({
@@ -60,13 +66,19 @@ export class UserComponent implements OnInit {
   });
 
   addRoleForm: FormGroup = this.fb.group({
-    idUser: [0, [ Validators.required, Validators.pattern(/^[1-9]*$/) ]],
-    idRol: [0, [ Validators.required, Validators.pattern(/^[1-9]*$/) ]],
+    idUser: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
+    idRol: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
     roleDesc: ['']
   });
 
+  addSucursalForm: FormGroup = this.fb.group({
+    idUser: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
+    idSucursal: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
+    sucursalDesc: ['']
+  });
+
   changePwdForm: FormGroup = this.fb.group({
-    idUser: [0, [ Validators.required, Validators.pattern(/^[1-9]*$/) ]],
+    idUser: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
     pwd: ['', Validators.compose([
       Validators.required,
       Validators.minLength(6),
@@ -86,6 +98,8 @@ export class UserComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.authService.checkSession();
+
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
 
@@ -99,7 +113,7 @@ export class UserComponent implements OnInit {
       .pipe(
         switchMap( ({ id }) => this.usersServ.CGetUserByID( id ) )
       )
-      .subscribe( resp => {
+      .subscribe( ( resp: any ) => {
         console.log(resp)
          if(resp.status == 0){
             
@@ -107,6 +121,7 @@ export class UserComponent implements OnInit {
 
             this.userForm.get('idUser')?.setValue( resp.data.idUser )
             this.addRoleForm.get('idUser')?.setValue( resp.data.idUser )
+            this.addSucursalForm.get('idUser')?.setValue( resp.data.idUser )
             this.changePwdForm.get('idUser')?.setValue( resp.data.idUser )
 
            this.userForm.setValue({
@@ -120,6 +135,7 @@ export class UserComponent implements OnInit {
 
            //this.fn_getHitorialClinicoByIdPaciente(this.id);
            this.fn_getRolesByIdUser();
+           this.fn_getSucursalesByIdUser();
          }else{
           this.servicesGServ.showSnakbar(resp.message);
          }
@@ -162,6 +178,7 @@ export class UserComponent implements OnInit {
 
             this.userForm.get('idUser')?.setValue( resp.insertID )
             this.addRoleForm.get('idUser')?.setValue( resp.insertID )
+            this.addSucursalForm.get('idUser')?.setValue( resp.insertID )
             this.changePwdForm.get('idUser')?.setValue( resp.insertID )
 
           }
@@ -201,6 +218,8 @@ export class UserComponent implements OnInit {
 
   }
 
+
+
   fn_insertRolByIdUser() {
 
     this.servicesGServ.showDialog('¿Estás seguro?'
@@ -208,7 +227,7 @@ export class UserComponent implements OnInit {
                                             , '¿Desea continuar?'
                                             , 'Si', 'No')
           .afterClosed().subscribe({
-            next: ( resp ) =>{
+            next: ( resp: any ) =>{
               if(resp){
                 
                 this.bShowSpinner = true;
@@ -245,7 +264,7 @@ export class UserComponent implements OnInit {
                                         , '¿Desea continuar?'
                                         , 'Si', 'No')
       .afterClosed().subscribe({
-        next: ( resp ) =>{
+        next: ( resp: any ) =>{
           if(resp){
 
             this.bShowSpinner = true;
@@ -274,6 +293,101 @@ export class UserComponent implements OnInit {
       });
 
     }
+
+    fn_insertSucursalByIdUser() {
+
+      this.servicesGServ.showDialog('¿Estás seguro?'
+                                              , 'Está a punto de asignar esta sucursal'
+                                              , '¿Desea continuar?'
+                                              , 'Si', 'No')
+            .afterClosed().subscribe({
+              next: ( resp: any ) =>{
+                if(resp){
+                  
+                  this.bShowSpinner = true;
+  
+                  this.sucursalesServ.CInsertSucursalByIdUser( this.addSucursalForm.value )
+                    .subscribe({
+                      next: (resp: ResponseDB_CRUD) => {
+                        
+                        this.servicesGServ.showSnakbar(resp.message);
+                        this.bShowSpinner = false;
+  
+                        this.addSucursalForm.get('idSucursal')?.setValue( 0 );
+                        this.addSucursalForm.get('sucursalDesc')?.setValue( '' );
+  
+                        this.fn_getSucursalesByIdUser();
+  
+                      },
+                      error: (ex) => {
+                        this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+                        this.bShowSpinner = false;
+                      }
+                    })
+  
+                }
+              }
+            });
+  
+      }
+  
+      fn_deleteSucursalByIdUser( idSucursal: number ){
+        
+        this.servicesGServ.showDialog('¿Estás seguro?'
+                                          , 'Está a punto de borrar la asignación de la sucursal'
+                                          , '¿Desea continuar?'
+                                          , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: ( resp: any ) =>{
+            if(resp){
+  
+              this.bShowSpinner = true;
+              this.sucursalesServ.CDeleteSucursalByIdUser( this.idUser, idSucursal)
+              .subscribe({
+                next: (resp: ResponseDB_CRUD) => {
+  
+                  if( resp.status === 0 ){
+                    this.fn_getSucursalesByIdUser();
+                  }
+  
+                  this.servicesGServ.showSnakbar(resp.message);
+                  this.bShowSpinner = false;
+  
+                },
+                error: (ex: HttpErrorResponse) => {
+                  console.log( ex )
+                  this.servicesGServ.showSnakbar( ex.error.data );
+                  this.bShowSpinner = false;
+                }
+          
+              })
+  
+            }
+          }
+        });
+  
+      }
+
+      fn_getSucursalesByIdUser(){
+
+        this.sucursalesServ.CGetSucursalesByIdUser( this.idUser )
+        .subscribe({
+          next: ( resp: ResponseGet ) => {
+            
+            if(resp.status === 0){
+              this.sucursalesByUserList = resp.data;
+            }else{
+              this.sucursalesByUserList = [];
+            }
+    
+          },
+          error: ( ex ) => {
+            this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+          }
+    
+        })
+    
+      }
 
     fn_changePassword(){
       
@@ -345,16 +459,60 @@ export class UserComponent implements OnInit {
       return;
     }
 
-    const rol: any = event.option.value;
+    const ODataCbx: any = event.option.value;
 
-    this.addRoleForm.get('idRol')?.setValue( rol.idRol )
-    this.addRoleForm.get('roleDesc')?.setValue( rol.name )
+    this.addRoleForm.get('idRol')?.setValue( ODataCbx.idRol )
+    this.addRoleForm.get('roleDesc')?.setValue( ODataCbx.name )
 
   }
 
   cbxRolClear(){
     this.addRoleForm.get('idRol')?.setValue( 0 );
     this.addRoleForm.get('roleDesc')?.setValue( '' );
+  }
+  //--------------------------------------------------------------------------
+
+  //--------------------------------------------------------------------------
+  // MÉTODOS PARA COMBO DE ÁREAS
+
+  cbxSucursales: any[] = [];
+
+  cbxSucursales_Search() {
+      this.sucursalesServ.CGetSucursalesForAddUser( this.addSucursalForm.value.sucursalDesc, this.idUser )
+       .subscribe( {
+         next: (resp: ResponseGet) =>{
+           if(resp.status === 0){
+             this.cbxSucursales = resp.data
+           }
+           else{
+            this.cbxSucursales = [];
+           }
+         },
+         error: (ex) => {
+           this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+           this.bShowSpinner = false;
+         }
+       });
+  }
+
+  cbxSucursales_SelectedOption( event: MatAutocompleteSelectedEvent ) {
+
+    if(!event.option.value){
+      return;
+    }
+
+    const ODataCbx: any = event.option.value;
+
+    console.log(ODataCbx)
+
+    this.addSucursalForm.get('idSucursal')?.setValue( ODataCbx.idSucursal )
+    this.addSucursalForm.get('sucursalDesc')?.setValue( ODataCbx.name )
+
+  }
+
+  cbxSucursales_Clear(){
+    this.addSucursalForm.get('idSucursal')?.setValue( 0 );
+    this.addSucursalForm.get('sucursalDesc')?.setValue( '' );
   }
   //--------------------------------------------------------------------------
   

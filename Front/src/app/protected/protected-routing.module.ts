@@ -4,6 +4,11 @@ import { DashboardComponent } from "./pages/dashboard/dashboard.component";
 import { MainComponent } from './pages/main/main.component';
 import { UserComponent } from "./pages/security/users/user/user.component";
 import { UserListComponent } from "./pages/security/users/user-list/user-list.component";
+import { ProductListComponent } from "./pages/catssales/product-list/product-list.component";
+import { ProductComponent } from "./pages/catssales/product/product.component";
+import { CustomerListComponent } from "./pages/catssales/customer-list/customer-list.component";
+import { CustomerComponent } from "./pages/catssales/customer/customer.component";
+import { SaleComponent } from "./pages/sales/sale/sale.component";
 
 const routes: Routes = [
     {
@@ -26,6 +31,34 @@ const routes: Routes = [
           path: 'userList',
           component: UserListComponent
         },
+        {
+          path: 'product',
+          component: ProductComponent
+        },
+        {
+          path: 'editProduct/:id',
+          component: ProductComponent
+        },
+        {
+          path: 'productList',
+          component: ProductListComponent
+        },
+        {
+          path: 'customer',
+          component: CustomerComponent
+        },
+        {
+          path: 'editCustomer/:id',
+          component: CustomerComponent
+        },
+        {
+          path: 'customerList',
+          component: CustomerListComponent
+        },
+        {
+          path: 'sale',
+          component: SaleComponent
+        }
       ]
     }
   ]

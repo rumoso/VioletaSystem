@@ -1,0 +1,422 @@
+<div class="divMain" style="width: 100%; margin-top: -10px !important;">
+
+    <div class="row">
+        <div class="col-md-12">
+    
+                
+                    <div class="row">
+                                    
+                        <div class="col-md-10">
+                            <mat-label>Cliente: </mat-label>
+                            <mat-form-field
+                            style="width: 100%;">
+                                <input #cbxCustomerCBX
+                                type="text"
+                                        id="cbxCustomer"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="salesHeaderForm.customerDesc"
+                                        [matAutocomplete]="cbxCustomer"
+                                        
+                                        (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
+
+                                        (click)="cbxCustomers_Clear()">
+                                        <button *ngIf="salesHeaderForm.customerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                        </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxCustomer="matAutocomplete"
+                                                    (optionSelected)="cbxCustomers_SelectedOption( $event, cbxSaleTypeCBX )">
+                                    <mat-option *ngFor="let item of cbxCustomers" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="salesHeaderForm.customerResp.length > 0">
+                                        {{ salesHeaderForm.customerResp }}
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+                        </div>
+
+                        <div class="col-md-2">
+                            <mat-label>Condición de pago: </mat-label>
+                            <mat-form-field
+                            style="width: 100%;"
+                            (click)="cbxSalesType_Search()">
+                                <input #cbxSaleTypeCBX
+                                        type="text"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="salesHeaderForm.saleTypeDesc"
+                                        [matAutocomplete]="cbxSaleType"
+                                        
+                                        (input)="cbxSalesType_Search()"
+                                        (click)="cbxSalesType_Clear()"
+                                        (focus)="cbxSalesType_Search()">
+                                        <button *ngIf="salesHeaderForm.saleTypeDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSalesType_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                        </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxSaleType="matAutocomplete"
+                                                    (optionSelected)="cbxSalesType_SelectedOption( $event, barCode )">
+                                    <mat-option *ngFor="let item of cbxSalesType" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="cbxSalesType.length == 0 && salesHeaderForm.saleTypeDesc">
+                                        No se encontró nada...
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+                        </div>
+    
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+
+                                <div class="row">
+                                    
+                                    <div class="col-md-4">
+                                        <mat-form-field fxLayout.xs="column" class="with100">
+                                            <mat-label>Código de barras</mat-label>
+                                            <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
+                                            <input #barCode
+                                            matInput
+                                            placeholder="Ingrese un Código de barras"
+                                            [(ngModel)]="salesDetailForm.barCode"
+                                            (keyup.enter)="event_fn_barCode_keyup_enter($event, cantidad)">
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col-md-8">
+                                        <mat-form-field
+                                        style="width: 100%;"
+                                        (click)="cbxProducts_Search()">
+                                            <input #cbxProductss
+                                                    type="text"
+                                                    id="cbxProduct"
+                                                    style="width: 100%;"
+                                                    placeholder="Selecciona un producto..."
+                                                    aria-label="Number"
+                                                    matInput
+                                                    [(ngModel)]="salesDetailForm.productDesc"
+                                                    [matAutocomplete]="cbxProduct"
+                                                    
+                                                    (input)="cbxProducts_Search()"
+                                                    (click)="cbxProducts_Clear()">
+                                                    <button *ngIf="salesDetailForm.productDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxProducts_Clear()">
+                                                        <mat-icon>close</mat-icon>
+                                                    </button>
+                                            <mat-autocomplete autoActiveFirstOption
+                                                                #cbxProduct="matAutocomplete"
+                                                                (optionSelected)="cbxProducts_SelectedOption( $event, cantidad )">
+                                                <mat-option *ngFor="let item of cbxProducts" [value]="item">
+                                                    <mat-icon matPrefix class="my-icon">qr_code</mat-icon>{{ item.nameConcat }}
+                                                </mat-option>
+                                
+                                                <mat-option value="" *ngIf="cbxProducts.length == 0 && salesDetailForm.productDesc">
+                                                    No se encontró nada...
+                                                </mat-option>
+                                
+                                            </mat-autocomplete>
+                                        </mat-form-field>
+                                    </div>
+
+                                </div>
+
+                                <div class="row">
+                                    
+                                    <div class="col-md-4">
+                                        <mat-form-field class="with100">
+                                            <mat-label>Cantidad</mat-label>
+                                            <input #cantidad
+                                            matInput
+                                            placeholder="Ingrese la cantidad"
+                                            type="number"
+                                            class="textAlingRight"
+                                            [(ngModel)]="salesDetailForm.cantidad"
+                                            (keyup.enter)="nextInputEnter($event, descuento)">
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <mat-form-field class="with100">
+                                            <mat-label>Precio unitario</mat-label>
+                                            <input matInput currencyMask placeholder="Ingrese el precio unitario"
+                                            #precioUnitario
+                                            class="textAlingRight"
+                                            [(ngModel)]="salesDetailForm.precioUnitario"
+                                            
+                                            readonly="true">
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <mat-form-field class="with100">
+                                            <mat-label>Descuento</mat-label>
+                                            <input #descuento
+                                            matInput
+                                            placeholder="Ingrese un descuento"
+                                            type="number"
+                                            class="textAlingRight"
+                                            [(ngModel)]="salesDetailForm.descuento"
+                                            (keyup.enter)="addSaleDetail()">
+                                        </mat-form-field>
+                                    </div>
+                                    
+                                </div>
+
+                                <div class="row top10px">
+                                    <div class="col-md-12">
+                                        <div style="float: left;">
+                                            
+                                            <button mat-raised-button
+                                            color="primary"
+                                            type="submit"
+                                            class="marginRight10px"
+                                            (click)="addSaleDetail()"
+                                            [disabled]="!ev_fnShowBtnAddSaleDetail()">
+                                            <mat-icon matPrefix class="my-icon">add</mat-icon>
+                                            Agregar</button>
+                                            
+                                            <button mat-raised-button
+                                            type="button"
+                                            (click)="fnClearSalesDetailForm()">
+                                            <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                                            limpiar</button>                
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row top20px">
+                                    <div class="col-md-12">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <th class="textAlingCenter">Acciones</th>
+                                                    <th class="textAlingCenter">Código</th>
+                                                    <th class="textAlingCenter">Descripción</th>
+                                                    <th class="textAlingCenter">Cantidad</th>
+                                                    <th class="textAlingCenter"
+                                                    *ngIf="interface.showDescuento">Precio Unitario</th>
+                                                    <th class="textAlingCenter"
+                                                    *ngIf="interface.showDescuento">Descuento</th>
+                                                    <th class="textAlingCenter">Precio</th>
+                                                    <th class="textAlingCenter">Importe</th>
+                                                </thead>
+            
+                                                <tbody>
+                                                    <tr *ngFor="let item of salesHeaderForm.saleDetail">
+                                                        <td class="textAlingCenter">
+                                                            <div style="width: 50px;">
+                                                                <span class="material-icons manitaSobre colorGreen"
+                                                                    >
+                                                                    edit
+                                                                </span>
+                                                                <span class="material-icons manitaSobre colorRed"
+                                                                    >
+                                                                    delete_outline
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="textAlingLeft">
+                                                            <div class="row">
+                                                                <div class="col-md-1">
+                                                                    <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">qr_code</mat-icon>
+                                                                </div>
+                                                                <div class="col-md-10">
+                                                                    <label style="margin-left: 10px;">{{ item.barCode }}</label>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                        </td>
+                                                        <td style="text-align:left;">{{ item.productDesc }}</td>
+                                                        <td style="text-align: right;">{{ item.cantidad }}</td>
+                                                        <td style="text-align: right;"
+                                                        *ngIf="interface.showDescuento">{{ item.precioUnitario | currency }}</td>
+                                                        <td style="text-align: right;"
+                                                        *ngIf="interface.showDescuento">{{ item.descuento | currency }}</td>
+                                                        <td style="text-align: right;">{{ item.precio | currency }}</td>
+                                                        <td style="text-align: right;">{{ item.importe | currency }}</td>
+                                                    </tr>
+                                                    
+                                                </tbody>
+                                                
+                                            </table>
+                                        </div>
+                                        
+                                    </div>
+
+                                </div>
+
+                                <div class="row">
+                                    
+                                    <div class="col-md-4">
+                                        
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <mat-form-field *ngIf="interface.showCredito"
+                                                    class="with100 top20px">
+                                                    <mat-label>ANTICIPO</mat-label>
+                                                    <input #tbxAnticipo
+                                                    matInput
+                                                    currencyMask
+                                                    placeholder="ANTICIPO"
+                                                    class="textAlingRight"
+                                                    [(ngModel)]="salesHeaderForm.anticipo"
+                                                    (keyup.enter)="nextInputEnter($event, cbxFormasPagoCBX)">
+                                                </mat-form-field>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <mat-label>Forma de pago: </mat-label>
+                                        <mat-form-field
+                                        style="width: 100%;"
+                                        (click)="cbxFormasPago_Search()">
+                                            <input #cbxFormasPagoCBX
+                                                    type="text"
+                                                    style="width: 100%;"
+                                                    placeholder="Selecciona..."
+                                                    aria-label="Number"
+                                                    matInput
+                                                    [(ngModel)]="salesHeaderForm.formaPagoDesc"
+                                                    [matAutocomplete]="cbxFormaPago"
+                                                    
+                                                    (input)="cbxFormasPago_Search()"
+                                                    (focus)="cbxFormasPago_Search()">
+                                                    <button *ngIf="salesHeaderForm.formaPagoDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFormasPago_Clear()">
+                                                        <mat-icon>close</mat-icon>
+                                                    </button>
+                                            <mat-autocomplete autoActiveFirstOption
+                                                                #cbxFormaPago="matAutocomplete"
+                                                                (optionSelected)="cbxFormasPago_SelectedOption( $event, tbxPagaCon )">
+                                                <mat-option *ngFor="let item of cbxFormasPago" [value]="item">
+                                                    {{ item.name }}
+                                                </mat-option>
+                                
+                                                <mat-option value="" *ngIf="cbxFormasPago.length == 0 && salesHeaderForm.formaPagoDesc">
+                                                    No se encontró nada...
+                                                </mat-option>
+                                
+                                            </mat-autocomplete>
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <mat-form-field class="with100 top20px">
+                                                    <mat-label>TOTAL</mat-label>
+                                                    <input matInput currencyMask placeholder="TOTAL"
+                                                    #total
+                                                    class="textAlingRight"
+                                                    [(ngModel)]="salesHeaderForm.total"
+                                                    
+                                                    readonly="true">
+                                                </mat-form-field>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <mat-form-field class="with100">
+                                                    <mat-label>PAGA CON</mat-label>
+                                                    <input #tbxPagaCon
+                                                    matInput
+                                                    currencyMask
+                                                    placeholder="PAGA CON"
+                                                    class="textAlingRight"
+                                                    [(ngModel)]="salesHeaderForm.pagaCon"
+                                                    (keyup)="event_fn_PagaCon_GetCambio( $event )">
+                                                </mat-form-field>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <mat-form-field class="with100">
+                                                    <mat-label>CAMBIO</mat-label>
+                                                    <input matInput currencyMask placeholder="CAMBIO"
+                                                    #cambio
+                                                    class="textAlingRight"
+                                                    [(ngModel)]="salesHeaderForm.cambio"
+                                                    
+                                                    readonly="true">
+                                                </mat-form-field>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                
+                                </div>
+                        
+                        </div>
+                    </div>
+    
+                    <!-- <div class="row top20px">
+                        <div class="col-md-4">
+                            <mat-form-field fxLayout.xs="column" class="with100">
+                                <mat-label>Código de barras</mat-label>
+                                <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
+                                <input matInput placeholder="Ingrese un Código de barras"
+                                formControlName="barCode">
+                              </mat-form-field>
+                        </div>
+    
+                        <div class="col-md-4">
+                            <mat-form-field class="with100">
+                                <mat-label>Nombre</mat-label>
+                                <input matInput placeholder="Ingrese un nombre"
+                                formControlName="name">
+                              </mat-form-field>
+                        </div>
+    
+                        <div class="col-md-4">
+                            <mat-form-field class="with100">
+                                <mat-label>Descripción</mat-label>
+                                <input matInput placeholder="Ingrese una descripción"
+                                formControlName="description">
+                              </mat-form-field>
+                        </div>
+    
+                        
+                    </div> -->
+    
+                    <!-- <div class="row top10px">
+                        <div class="col-md-12">
+                            <div style="float: left;">
+                                
+                                <button mat-raised-button
+                                color="primary"
+                                type="submit"
+                                class="marginRight10px"
+                                (click)="fn_getProductsListWithPage()">
+                                <mat-icon matPrefix class="my-icon">search</mat-icon>
+                                Buscar</button>
+                                
+                                <button mat-raised-button
+                                type="button"
+                                (click)="parametersForm_Clear()">
+                                <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                                limpiar</button>                
+                                
+                            </div>
+                        </div>
+                    </div> -->
+    
+        </div>
+    
+    </div>
+
+</div>

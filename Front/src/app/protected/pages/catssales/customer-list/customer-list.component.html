@@ -1,0 +1,153 @@
+<mat-accordion>
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         class="divMain">
+      <mat-expansion-panel-header>
+        <mat-panel-title class="text-align: center">
+          Filtros de clientes
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+                <br>
+                
+                <form action=""
+                autocomplete="off"
+                [formGroup]="parametersForm"
+                >
+
+                    <div class="row">
+                        <div class="col-md-12" style="text-align: left;">
+                            <mat-form-field class="with100">
+                                <mat-label>Fecha de creación:</mat-label>
+                                <mat-date-range-input [formGroup]="parametersForm" [rangePicker]="picker" (click)="picker.open()">
+                                  <input matStartDate formControlName="createDateStart" placeholder="Start date">
+                                  <input matEndDate formControlName="createDateEnd" placeholder="End date">
+                                </mat-date-range-input>
+                                <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                                <mat-date-range-picker #picker></mat-date-range-picker>
+                              
+                              </mat-form-field>
+                        </div>
+                    </div>
+
+                    <div class="row top20px">
+                        <div class="col-md-8">
+                            <mat-form-field class="with100">
+                                <mat-label>Apellidos</mat-label>
+                                <input matInput placeholder="Ingrese los apellidos"
+                                formControlName="lastName">
+                              </mat-form-field>
+                        </div>
+
+                        <div class="col-md-4">
+                            <mat-form-field class="with100">
+                                <mat-label>Nombre</mat-label>
+                                <input matInput placeholder="Ingrese un nombre"
+                                formControlName="name">
+                              </mat-form-field>
+                        </div>
+                        
+                    </div>
+
+                    <div class="row top10px">
+                        <div class="col-md-12">
+                            <div style="float: left;">
+                                
+                                <button mat-raised-button
+                                color="primary"
+                                type="submit"
+                                class="marginRight10px"
+                                (click)="fn_getCustomersListWithPage()">
+                                <mat-icon matPrefix class="my-icon">search</mat-icon>
+                                Buscar</button>
+                                
+                                <button mat-raised-button
+                                type="button"
+                                (click)="parametersForm_Clear()">
+                                <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                                limpiar</button>                
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                </form>   
+                
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+<div class="divMain" style="width: 100%; margin-top: 50px !important;">
+    <div class="row">
+        <div class="col-md-1">
+            <div class="divSearch">
+                <span class="material-icons manitaSobre colorGreen"
+                (click)="changeRoute('customer')">
+                add_circle_outline
+                </span>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <th class="textAlingCenter padding-th">Acciones</th>
+                            <th class="textAlingLeft padding-th">Apellidos</th>
+                            <th class="textAlingLeft padding-th">Nombre</th>
+                            
+                            <th class="textAlingCenter padding-th">Teléfono</th>
+                            <th class="textAlingLeft padding-th">Correo electrónico</th>
+                            <th class="textAlingLeft padding-th">Dirección</th>
+                            <th class="textAlingCenter padding-th">Creado</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of catlist">
+                                <td class="textAlingCenter">
+                                    <div style="width: 100px;">
+                                        <span class="material-icons manitaSobre colorGreen"
+                                        matTooltip="Editar Paciente"
+                                        (click)="edit(item.idCustomer)">
+                                            edit
+                                        </span>
+
+                                        <span class="material-icons manitaSobre colorRed"
+                                        matTooltip="Eliminar Paciente"
+                                        (click)="fn_deleteCustomer(item.idCustomer)">
+                                            delete_outline
+                                        </span>
+
+                                    </div>
+                                </td>
+                                
+                                <td class="textAlingLeft">{{ item.lastName }}</td>
+                                <td class="textAlingLeft">{{ item.name }}</td>
+                                <td class="textAlingCenter">{{ item.tel }}</td>
+                                <td class="textAlingLeft">{{ item.eMail }}</td>
+                                <td class="textAlingLeft">{{ item.address }}</td>
+                                <td class="textAlingCenter">{{ item.createDate | date:'dd-MM-yyyy' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <app-pagination *ngIf="catlist" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                </app-pagination>
+            
+            </div>
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

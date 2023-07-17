@@ -1,5 +1,6 @@
 import { Component, ViewChild } from '@angular/core';
 import { MatSidenav } from '@angular/material/sidenav';
+import { AuthService } from 'src/app/auth/services/auth.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 
@@ -14,7 +15,13 @@ export class DashboardComponent {
   
   constructor(
     private servicesGServ: ServicesGService
+    , private authService: AuthService
   ) { }
+
+  async ngOnInit() {
+    this.authService.checkSession();
+  
+  }
 
   changeRoute( route: string ): void {
     this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );

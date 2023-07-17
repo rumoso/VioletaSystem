@@ -31,6 +31,8 @@ export class MainComponent implements OnInit {
 
   async ngOnInit() {
 
+    this.authService.checkSession();
+
     var idUserLogOn = await localStorage.getItem('idUser');
 
       if(!(idUserLogOn?.length! > 0)){
@@ -46,7 +48,7 @@ export class MainComponent implements OnInit {
   }
 
   logout() {
-    this.authService.logout();
+    this.authService.logout(true);
   }
 
   getMenuByPermissions(idUser: any){

@@ -22,6 +22,9 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 
+import { CurrencyMaskModule } from "ng2-currency-mask";
+
+
 
 
 
@@ -50,7 +53,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatSelectModule,
     MatSidenavModule,
     MatSnackBarModule,
-    MatToolbarModule
+    MatToolbarModule,
+
+    CurrencyMaskModule
   ]
 })
 export class MaterialModule { }

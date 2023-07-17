@@ -48,11 +48,13 @@ export class AuthService {
 
     
 
-  logout() {
+  logout( bRedirect: boolean ) {
     localStorage.removeItem('user');
     localStorage.removeItem('idUser');
     localStorage.removeItem('token');
-    this.servicesGServ.changeRoute( '/login' );
+
+    if(bRedirect)
+      this.servicesGServ.changeRoute( '/login' );
   }
 
   validaAuth(): Observable<boolean> {
@@ -68,5 +70,26 @@ export class AuthService {
       idUser: idUser
     };
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getMenuByPermissions`, data );
+  }
+
+  async checkSession() {
+
+    let idUser = this.getIdUserSession();
+
+    console.log(idUser)
+
+    if( idUser == 0 ){
+      this.logout(false);
+      this.servicesGServ.changeRoute( '/' );
+    }
+  }
+
+  getIdUserSession(): number{
+    if( localStorage.getItem('idUser') ) {
+      let idUser: number = + localStorage.getItem('idUser')!.toString();
+      return idUser;
+    }
+
+    return 0;
   }
 }

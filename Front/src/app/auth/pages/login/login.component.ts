@@ -16,21 +16,19 @@ export class LoginComponent {
 
   myLogin: FormGroup = this.fb.group({
     username: ['UserAdmin',[ Validators.required ]],
-    pwd: ['123456', [ Validators.required ]]
+    pwd: ['Souleater-2025', [ Validators.required ]]
   });
 
   constructor( private fb: FormBuilder
     , private authServ: AuthService
     , private servicesGServ: ServicesGService
     ) {
-      var idUserLogOn = localStorage.getItem('idUser');
+      var idUserLogOn = this.authServ.getIdUserSession();
 
-      if(idUserLogOn?.length! > 0){
+      if(idUserLogOn > 0){
         this.servicesGServ.changeRoute( '/VioletaSistem/dashboard' );
       }else{
-        localStorage.setItem('user', '');
-        localStorage.setItem('token', '');
-        localStorage.setItem('idUser', '');
+        this.authServ.logout(false);
       }
       
     }

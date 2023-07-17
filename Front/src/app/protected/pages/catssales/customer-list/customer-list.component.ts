@@ -1,48 +1,56 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatSidenav } from '@angular/material/sidenav';
+import { Component, Inject, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
+import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
-import { UsersService } from 'src/app/protected/services/users.service';
+import { CustomersService } from 'src/app/protected/services/customers.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
-  selector: 'app-user-list',
-  templateUrl: './user-list.component.html',
-  styleUrls: ['./user-list.component.css']
+  selector: 'app-customer-list',
+  templateUrl: './customer-list.component.html',
+  styleUrls: ['./customer-list.component.css']
 })
-export class UserListComponent implements OnInit {
+export class CustomerListComponent implements OnInit {
   
   private _appMain: string = environment.appMain;
 
   constructor(
     private servicesGServ: ServicesGService
-    , private usersServ: UsersService
-    , private authService: AuthService
+    , private fb: FormBuilder
+
+    , private _adapter: DateAdapter<any>
+    , @Inject(MAT_DATE_LOCALE) private _locale: string
+
+    , private authServ: AuthService
+
+    , private customersServ: CustomersService
     ) { }
+    
 
-    ngOnInit(): void {
-      this.authService.checkSession();
-      
-      this.fn_getUsersListWithPage();
-    }
+  ngOnInit(): void {
 
-    edit( id: number ){
-      this.servicesGServ.changeRouteWithParameter(`/${ this._appMain }/editUser`, id)
-    }
+    this.authServ.checkSession();
 
-    ////************************************************ */
+    this._locale = 'mx';
+    this._adapter.setLocale(this._locale);
+
+    this.fn_getCustomersListWithPage();
+  }
+
+  ////************************************************ */
     // MÉTODOS DE PAGINACIÓN
     changePagination(pag: Pagination) {
       this.pagination = pag;
-      this.fn_getUsersListWithPage();
+      this.fn_getCustomersListWithPage();
     }
 
     onChangeEvent(event: any){
       this.pagination.search = event.target.value;
-      this.fn_getUsersListWithPage();
+      this.fn_getCustomersListWithPage();
     }
     ////************************************************ */
 
@@ -50,10 +58,12 @@ export class UserListComponent implements OnInit {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
     }
 
-  title = 'Lista de usuarios';
+  title = 'Lista de Clientes';
   bShowSpinner: boolean = false;
   catlist: any[] = [];
-  
+
+  panelOpenState: boolean = false;
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -66,10 +76,17 @@ export class UserListComponent implements OnInit {
   }
   //-------------------------------
 
-  fn_getUsersListWithPage() {
+  parametersForm: FormGroup = this.fb.group({
+    createDateStart: '',
+    createDateEnd: '',
+    name: '',
+    lastName: ''
+  });
+
+  fn_getCustomersListWithPage() {
 
     this.bShowSpinner = true;
-    this.usersServ.CGetUsersListWithPage( this.pagination )
+    this.customersServ.CGetCustomersListWithPage( this.pagination, this.parametersForm.value )
     .subscribe({
       next: (resp: ResponseGet) => {
         console.log(resp)
@@ -78,28 +95,29 @@ export class UserListComponent implements OnInit {
         this.bShowSpinner = false;
       },
       error: (ex: HttpErrorResponse) => {
-        console.log( ex.error.errors[0].msg )
-        this.servicesGServ.showSnakbar( ex.error.errors[0].msg );
+        console.log( ex )
+        this.servicesGServ.showSnakbar( ex.error.data );
         this.bShowSpinner = false;
       }
     })
   }
 
-  fn_deleteUser( idUser: number ){
+  fn_deleteCustomer( idCustomer: number ){
 
     this.servicesGServ.showDialog('¿Estás seguro?'
-                                      , 'Está a punto de borrar al usuario'
+                                      , 'Está a punto de borrar el cliente'
                                       , '¿Desea continuar?'
                                       , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
         if(resp){
           this.bShowSpinner = true;
-          this.usersServ.CDeleteUser( idUser )
+          
+          this.customersServ.CDeleteCustomer( idCustomer )
           .subscribe({
             next: (resp: ResponseDB_CRUD) => {
               if( resp.status === 0 ){
-                this.fn_getUsersListWithPage();
+                this.fn_getCustomersListWithPage();
               }
               this.servicesGServ.showSnakbar(resp.message);
               this.bShowSpinner = false;
@@ -111,9 +129,23 @@ export class UserListComponent implements OnInit {
             }
       
           })
+
         }
       }
     });
   }
-  
+
+  parametersForm_Clear(){
+    this.parametersForm.get('createDateStart')?.setValue( '' );
+    this.parametersForm.get('createDateEnd')?.setValue( '' );
+    this.parametersForm.get('name')?.setValue( '' );
+    this.parametersForm.get('lastName')?.setValue( '' );
+
+    this.fn_getCustomersListWithPage();
+  }
+
+  edit( id: number ){
+    this.servicesGServ.changeRouteWithParameter(`/${ this._appMain }/editCustomer`, id)
+  }
+
 }
