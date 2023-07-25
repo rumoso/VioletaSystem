@@ -57,7 +57,7 @@ export class ProductComponent implements OnInit {
       createDate: '',
       barCode: ['',[ Validators.required ]],
       name: ['',[ Validators.required ]],
-      description: '',
+      gramos: 0,
       cost: [0, [ Validators.required, Validators.pattern(/^[0-9]+(.[0-9]{0,2})?$/)  ]],
       price: [0, [ Validators.required, Validators.pattern(/^[0-9]+(.[0-9]{0,2})?$/) ]],
       idFamily: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
@@ -103,7 +103,7 @@ export class ProductComponent implements OnInit {
               createDate: resp.data.createDate,
               barCode: resp.data.barCode,
               name: resp.data.name,
-              description: resp.data.description,
+              gramos: resp.data.gramos,
               cost: resp.data.cost,
               price: resp.data.price,
               idFamily: resp.data.idFamily,
@@ -144,8 +144,13 @@ export class ProductComponent implements OnInit {
         this.productsServ.CUpdateProduct( this.productForm.value )
           .subscribe({
             next: (resp: ResponseDB_CRUD) => {
-              
-              this.servicesGServ.showSnakbar(resp.message);
+
+              if( resp.status === 0 ){
+                this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
+              }
+              else{
+                this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
+              }
               this.bShowSpinner = false;
   
             },
@@ -165,10 +170,14 @@ export class ProductComponent implements OnInit {
               this.idProduct = resp.insertID;
   
               this.productForm.get('idProduct')?.setValue( resp.insertID );
+
+              this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
   
             }
+            else{
+              this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
+            }
   
-            this.servicesGServ.showSnakbar(resp.message);
             this.bShowSpinner = false;
   
           },

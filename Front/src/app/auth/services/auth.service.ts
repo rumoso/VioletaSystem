@@ -76,8 +76,6 @@ export class AuthService {
 
     let idUser = this.getIdUserSession();
 
-    console.log(idUser)
-
     if( idUser == 0 ){
       this.logout(false);
       this.servicesGServ.changeRoute( '/' );

@@ -90,7 +90,7 @@
         <div class="col-md-1">
             <div class="divSearch">
                 <span class="material-icons manitaSobre colorGreen"
-                (click)="changeRoute('customer')">
+                (click)="showCustomerCat( 0 )">
                 add_circle_outline
                 </span>
                 
@@ -118,7 +118,7 @@
                                     <div style="width: 100px;">
                                         <span class="material-icons manitaSobre colorGreen"
                                         matTooltip="Editar Paciente"
-                                        (click)="edit(item.idCustomer)">
+                                        (click)="showCustomerCat( item.idCustomer )">
                                             edit
                                         </span>
 

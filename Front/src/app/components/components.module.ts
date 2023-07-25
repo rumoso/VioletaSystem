@@ -5,6 +5,7 @@ import { PaginationComponent } from './pagination/pagination.component';
 import { SpinnerComponent } from './spinner/spinner.component';
 import { FormsModule } from '@angular/forms';
 import { MaterialModule } from '../material/material.module';
+import { AlertComponent } from './alert/alert.component';
 
 
 
@@ -12,7 +13,8 @@ import { MaterialModule } from '../material/material.module';
   declarations: [
     ConfirmComponent,
     PaginationComponent,
-    SpinnerComponent
+    SpinnerComponent,
+    AlertComponent
   ],
   exports:[
     SpinnerComponent,

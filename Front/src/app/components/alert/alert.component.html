@@ -1,0 +1,39 @@
+<div style="padding: 20px;">
+
+    <div class="row">
+
+        <div class="col-md-2">
+
+            <img *ngIf="data.type == 'W'" width="60"
+            class="manitaSobre"
+            src="assets/img/icons/warning.gif"
+            alt=""> 
+
+            <img *ngIf="data.type == 'S'" width="60"
+            class="manitaSobre"
+            src="assets/img/icons/aceptado.gif"
+            alt="">
+
+        </div>
+
+        <div class="col-md-10">
+            <h1 style="margin: 10px; margin-left: 40px;">{{ data.header }}</h1>
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-12">
+
+            <h2>{{ data.message }}</h2>
+
+        </div>
+
+    </div>
+    
+    <div>
+        <button mat-button (click)="close()">Cerrar</button>
+    </div>
+    
+</div>

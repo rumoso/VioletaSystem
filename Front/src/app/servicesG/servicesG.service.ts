@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { DDialog } from '../interfaces/general.interfaces';
 import { ConfirmComponent } from '../components/confirm/confirm.component';
+import { AlertComponent } from '../components/alert/alert.component';
 
 @Injectable({
     providedIn: 'root'
@@ -53,6 +54,15 @@ import { ConfirmComponent } from '../components/confirm/confirm.component';
   
       return dialog;
     }
+
+    showModalWithParams( component: any, params: any, width: string ){
+      const dialog = this.dialog.open( component,{
+        width: width,
+        data: params
+      } )
+  
+      return dialog;
+    }
   
     showMDL( header: string, message: string, question: string, buttonYes: string, buttonNo: string ){
      
@@ -66,6 +76,26 @@ import { ConfirmComponent } from '../components/confirm/confirm.component';
         width: '250px',
         data: this._dDialog
       } )
+  
+      return dialog;
+    }
+
+    showAlert( type: string, header: string, message: string, showNavBar: boolean = false ){
+     
+      let paramsAlert: any = {
+        type: type,
+        header: header,
+        message: message
+      }
+
+      const dialog = this.dialog.open( AlertComponent,{
+        width: 'auto',
+        data: paramsAlert
+      } )
+
+      if(showNavBar){
+        this.showSnakbar( message )
+      }
   
       return dialog;
     }

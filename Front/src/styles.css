@@ -21,18 +21,18 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 
 .textAlingLeft {
-    text-align: left;
-    text-align: -webkit-left;
+    text-align: left !important;
+    text-align: -webkit-left !important;
 }
 
 .textAlingCenter {
-    text-align: center;
-    text-align: -webkit-center;
+    text-align: center !important;
+    text-align: -webkit-center !important;
 }
 
 .textAlingRight {
-    text-align: right;
-    text-align: -webkit-right;
+    text-align: right !important;
+    text-align: -webkit-right !important;
 }
 
 .divMain {
@@ -240,3 +240,20 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 .with100 {
     width: 100%;
 }
+
+.colorGreen{
+    color: green !important;
+}
+
+.colorRed {
+    color: red !important;
+}
+
+.fontSize{
+    font-size: 25px !important;
+}
+
+.mat-mdc-option-active{
+    background-color: #b2b2b8 !important;
+}
+

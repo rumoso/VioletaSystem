@@ -97,7 +97,6 @@ export class ProductListComponent implements OnInit {
     createDateEnd: '',
     barCode: '',
     name: '',
-    description: '',
     idFamily: 0,
     familyDesc: [''],
     idGroup: 0,

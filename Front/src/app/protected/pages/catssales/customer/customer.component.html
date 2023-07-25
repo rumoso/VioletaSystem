@@ -1,7 +1,7 @@
-<div class="divMain textAlingCenter" style="padding: 30px;">
+<div class="textAlingCenter" style="padding: 30px;padding-top: 60px;">
     <div class="divTitle-center">
         {{
-            ( idCustomer )
+            ( id )
                 ? 'Editar'
                 : 'Nuevo'
         }}
@@ -87,7 +87,7 @@
                                 
                                 <button mat-raised-button
                                 type="button"
-                                (click)="changeRoute('customerList')">Cancelar</button>                
+                                (click)="close()">Cancelar</button>                
                                 
                             </div>
                         </div>

@@ -9,6 +9,9 @@ import { ProductComponent } from "./pages/catssales/product/product.component";
 import { CustomerListComponent } from "./pages/catssales/customer-list/customer-list.component";
 import { CustomerComponent } from "./pages/catssales/customer/customer.component";
 import { SaleComponent } from "./pages/sales/sale/sale.component";
+import { AbonosComponent } from "./pages/sales/abonos/abonos.component";
+import { FxrateComponent } from "./pages/settings/fxrate/fxrate.component";
+import { SaleListComponent } from "./pages/sales/sale-list/sale-list.component";
 
 const routes: Routes = [
     {
@@ -44,20 +47,24 @@ const routes: Routes = [
           component: ProductListComponent
         },
         {
-          path: 'customer',
-          component: CustomerComponent
-        },
-        {
-          path: 'editCustomer/:id',
-          component: CustomerComponent
-        },
-        {
           path: 'customerList',
           component: CustomerListComponent
         },
         {
           path: 'sale',
           component: SaleComponent
+        },
+        {
+          path: 'saleList',
+          component: SaleListComponent
+        },
+        {
+          path: 'abonos',
+          component: AbonosComponent
+        },
+        {
+          path: 'tiposDeCambio',
+          component: FxrateComponent
         }
       ]
     }

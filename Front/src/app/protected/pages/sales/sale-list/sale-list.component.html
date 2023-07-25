@@ -1,0 +1,214 @@
+<mat-accordion >
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         class="divMain">
+      <mat-expansion-panel-header>
+        <mat-panel-title class="text-align: center">
+          Filtros de productos
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+                
+
+            <div class="row">
+                <div class="col-md-12" style="text-align: left;">
+                    <mat-form-field class="with100">
+                        <mat-label>Fecha de creación:</mat-label>
+                        <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                            <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date">
+                            <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date">
+                        </mat-date-range-input>
+                        <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-date-range-picker #picker></mat-date-range-picker>
+                        
+                        </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                            
+                <div class="col-md-12">
+                    <mat-label>Cliente: </mat-label>
+                    <mat-form-field
+                    style="width: 100%;">
+                        <input #cbxCustomerCBX
+                        type="text"
+                                id="cbxCustomer"
+                                style="width: 100%;"
+                                placeholder="Selecciona..."
+                                aria-label="Number"
+                                matInput
+                                [(ngModel)]="parametersForm.customerDesc"
+                                [matAutocomplete]="cbxCustomer"
+                                
+                                (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
+
+                                (click)="cbxCustomers_Clear()">
+                                <button *ngIf="parametersForm.customerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                        <mat-autocomplete autoActiveFirstOption
+                                            #cbxCustomer="matAutocomplete"
+                                            (optionSelected)="cbxCustomers_SelectedOption( $event )">
+                            <mat-option *ngFor="let item of cbxCustomers" [value]="item">
+                                {{ item.name }}
+                            </mat-option>
+            
+                            <mat-option value="" *ngIf="parametersForm.customerResp.length > 0">
+                                {{ parametersForm.customerResp }}
+                            </mat-option>
+            
+                        </mat-autocomplete>
+                    </mat-form-field>
+                </div>
+                
+            </div>
+                
+            <div class="row top10px">
+                <div class="col-md-12">
+                    <div style="float: left;">
+                        
+                        <button mat-raised-button
+                        color="primary"
+                        type="submit"
+                        class="marginRight10px"
+                        (click)="fn_getVentasListWithPage()">
+                        <mat-icon matPrefix class="my-icon">search</mat-icon>
+                        Buscar</button>
+                        
+                        <button mat-raised-button
+                        type="button"
+                        >
+                        <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                        limpiar</button>                
+                        
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+</mat-accordion>
+
+<div class="divMain" style="width: 100%; margin-top: 20px !important;">
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_getVentasListWithPage()">
+                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+                Nueva venta</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+    
+                
+            
+
+            <div class="row top20px">
+                <div class="col-md-12">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <th class="textAlingCenter padding-th">Acciones</th>
+                                <th class="textAlingCenter padding-th">Condición de pago</th>
+                                <th class="textAlingCenter padding-th">Total</th>
+                                <th class="textAlingCenter padding-th">Pagado</th>
+                                <th class="textAlingCenter padding-th">Pendiente</th>
+                                <th class="textAlingCenter padding-th">Fecha</th>
+                                <th class="textAlingLeft padding-th">Descripción</th>
+                                <th class="textAlingCenter padding-th">Cliente</th>
+                                <th class="textAlingCenter padding-th">Vendedor</th>
+                            </thead>
+
+                            <tbody>
+                                <tr *ngFor="let item of saleslist; let i = index">
+                                    <td class="textAlingCenter">
+                                        <div style="width: 50px;">
+                                            <span *ngIf="item.pendingAmount > 1" class="material-icons manitaSobre colorGreen" title="Abonar"
+                                                >
+                                                attach_money
+                                            </span>
+
+                                            <span *ngIf="item.pendingAmount < 1" class="material-icons manitaSobre colorGreen" title="Pagado"
+                                            >
+                                                check_circle
+                                            </span>
+                                        </div>
+                                    </td>
+                                    
+                                    <td style="text-align:left;">{{ item.saleTypeDesc }}</td>
+                                    
+                                    <td style="text-align: right;">{{ item.total | currency }}</td>
+                                    <td style="text-align: right;">{{ item.abonado | currency }}</td>
+                                    <td style="text-align: right;">{{ ( item.pendingAmount ) | currency }}</td>
+
+                                    <td class="textAlingCenter">
+
+                                        <div style="width: 100px;">
+
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                                    <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy' }}</label>
+                                                </div>
+                                            </div>
+    
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <label style="margin-left: 10px;">{{ item.createDate | date:'h:mm:ss a' }}</label>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                        
+                                    </td>
+
+                                    <td style="text-align:left;">
+                                        <div style="width: 150px;">
+                                            {{ item.ventaDesc }}
+                                        </div>
+                                    </td>
+
+                                    <td style="text-align:left;">{{ item.customerName }}</td>
+                                    <td style="text-align:left;">{{ item.sellerName }}</td>
+
+                                </tr>
+                                
+                            </tbody>
+                            
+                        </table>
+                    </div>
+
+                    <app-pagination *ngIf="saleslist" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                    </app-pagination>
+                    
+                </div>
+
+            </div>
+    
+        </div>
+    
+    </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

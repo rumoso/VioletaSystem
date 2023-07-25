@@ -1,0 +1,110 @@
+<div class="divMain" style="padding: 30px;padding-top: 60px;">
+    <div class="divTitle-center">
+        {{title}}
+    </div>
+
+    <div class="row top20px">
+
+        <div class="col-md-12">
+
+            <h1>Siempre se tomará el último Tipo de Cambio cargado</h1>
+
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-6">
+            
+            <mat-label>Referencia: </mat-label>
+            <mat-form-field class="with100">
+            <mat-label>Selecciona una opción</mat-label>
+            <mat-select [(ngModel)]="fxRateForm.referencia">
+                <mat-option value="Dólares">Dólares</mat-option>
+                <mat-option value="Gramo">Gramo</mat-option>
+                <mat-option value="Plata">Plata</mat-option>
+            </mat-select>
+            </mat-form-field>
+            
+        </div>
+
+        <div class="col-md-6">
+            
+            <mat-form-field class="with100 top20px">
+                <mat-label>Tipo de cambio</mat-label>
+                <input #tbxPaga
+                class="textAlingRight colorGreen fontSize"
+                
+                matInput
+                currencyMask
+                placeholder="Tipo de cambio"
+                [(ngModel)]="fxRateForm.fxRate"
+                >
+            </mat-form-field>
+            
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_insertFxRate()">Guardar</button>
+                
+                <button mat-raised-button
+                type="button"
+                (click)="event_clear()">Limpiar</button>                
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingLeft">Referencia</th>
+                        <th class="textAlingRight">Tipo De Cambio</th>
+                        <th class="textAlingCenter">Fecha</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of fxRatelist; let i = index">
+                            
+                            <td class="textAlingLeft">{{ item.referencia }}</td>
+                            <td class="textAlingRight">{{ item.fxRate | currency }}</td>
+                            <td class="textAlingCenter">
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                        <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy h:mm:ss a' }}</label>
+                                    </div>
+                                </div>
+                                
+                            </td>
+
+                        </tr>
+                        
+                    </tbody>
+                    
+                </table>
+            </div>
+
+            <app-pagination *ngIf="fxRatelist" [IPagination]="pagination"
+                        (OPagination)="changePagination($event)">
+            </app-pagination>
+            
+        </div>
+
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

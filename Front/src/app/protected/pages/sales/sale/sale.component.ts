@@ -11,6 +11,9 @@ import { ProductsService } from 'src/app/protected/services/products.service';
 import { SalestypeService } from 'src/app/protected/services/salestype.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
+import { SalesService } from 'src/app/protected/services/sales.service';
+import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
+import { ClosesaleComponent } from '../mdl/closesale/closesale.component';
 
 @Component({
   selector: 'app-sale',
@@ -26,8 +29,8 @@ export class SaleComponent implements OnInit {
 
   @ViewChild('barCode') barCode!: ElementRef;
   @ViewChild('cbxCustomerCBX') cbxCustomerCBX!: ElementRef;
-  @ViewChild('tbxAnticipo') tbxAnticipo!: ElementRef;
-  @ViewChild('cbxFormasPagoCBX') cbxFormasPagoCBX!: ElementRef;
+  @ViewChild('total') total!: ElementRef;
+  
 
   private timeCBXskeyup: Subject<any> = new Subject<any>();
 
@@ -44,19 +47,17 @@ export class SaleComponent implements OnInit {
     customerDesc: '',
     customerResp: '',
 
-    idSalesType: 0,
-    salesTypeDesc: '',
-
-    idFormaPago: 0,
-    formaPagoDesc: '',
+    idSaleType: 0,
+    saleTypeDesc: '',
 
     total: 0,
-    pagaCon: 0,
-    cambio: 0,
 
+    bCredito: false,
     anticipo: 0,
 
-    saleDetail: []
+    saleDetail: [],
+
+    salesPayment: []
 
   };
 
@@ -64,6 +65,7 @@ export class SaleComponent implements OnInit {
     barCode: '',
     idProduct: 0,
     productDesc: '',
+    catInventary: 0,
 
     cantidad: 1,
     precioUnitario: 0,
@@ -73,8 +75,7 @@ export class SaleComponent implements OnInit {
 }
 
   interface: any = {
-    showDescuento: false,
-    showCredito: false
+    showDescuento: false
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,6 +95,7 @@ export class SaleComponent implements OnInit {
     , private customersServ: CustomersService
     , private salesTypeServ: SalestypeService
     , private formaPagoServ: FormapagoService
+    , private saleServ: SalesService
     ) { }
 
     async ngOnInit() {
@@ -163,7 +165,7 @@ export class SaleComponent implements OnInit {
       }
 
     }
-
+    
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE CONEXIONES AL BACK
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -189,43 +191,52 @@ export class SaleComponent implements OnInit {
 
       if(this.ev_fnShowBtnAddSaleDetail()){
 
-        //SACO EL PREIMPORTE
-        var preImporte = this.salesDetailForm.precioUnitario * this.salesDetailForm.cantidad;
-              
-        //SACO EL DESCUENTO
-        // CONVIERTO EN DECIMAL LE PORCENTAJE
-        var porcentajeDescuento = this.salesDetailForm.descuento / 100;
-        var precioDescuento = porcentajeDescuento * this.salesDetailForm.precioUnitario;
-
-        var precio = this.salesDetailForm.precioUnitario - precioDescuento;
-
-        var importe = precio * this.salesDetailForm.cantidad;
-
-        var saleDetail:any = {
-          barCode: this.salesDetailForm.barCode,
-          idProduct: this.salesDetailForm.idProduct,
-          productDesc: this.salesDetailForm.productDesc,
-          cantidad: this.salesDetailForm.cantidad,
-          precioUnitario: this.salesDetailForm.precioUnitario,
-          descuento: precioDescuento,
-          precio: precio,
-          importe: importe
-        };
-
-        this.salesHeaderForm.saleDetail.push(saleDetail);
-
-        console.log(saleDetail);
-
-        if(precioDescuento > 0)
-        {
-          this.interface.showDescuento = true;
+        if( this.salesHeaderForm.saleDetail.filter(( x: any ) => x.idProduct == this.salesDetailForm.idProduct).length == 0 ){
+          if(this.salesDetailForm.catInventary >= this.salesDetailForm.cantidad){
+            //SACO EL PREIMPORTE
+            var preImporte = this.salesDetailForm.precioUnitario * this.salesDetailForm.cantidad;
+                          
+            //SACO EL DESCUENTO
+            // CONVIERTO EN DECIMAL LE PORCENTAJE
+            var porcentajeDescuento = this.salesDetailForm.descuento / 100;
+            var precioDescuento = porcentajeDescuento * this.salesDetailForm.precioUnitario;
+  
+            var precio = this.salesDetailForm.precioUnitario - precioDescuento;
+  
+            var importe = precio * this.salesDetailForm.cantidad;
+  
+            var saleDetail:any = {
+              barCode: this.salesDetailForm.barCode,
+              idProduct: this.salesDetailForm.idProduct,
+              productDesc: this.salesDetailForm.productDesc,
+              cantidad: this.salesDetailForm.cantidad,
+              precioUnitario: this.salesDetailForm.precioUnitario,
+              descuento: precioDescuento,
+              precio: precio,
+              importe: importe
+            };
+  
+            this.salesHeaderForm.saleDetail.push(saleDetail);
+  
+            console.log(saleDetail);
+  
+            if(precioDescuento > 0)
+            {
+              this.interface.showDescuento = true;
+            }
+  
+            //VOY SUMANDO LOS IMPORTES
+            this.salesHeaderForm.total = this.salesHeaderForm.saleDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
+  
+            this.fnClearSalesDetailForm();
+          }else{
+             this.servicesGServ.showSnakbar( "Solo hay " + this.salesDetailForm.catInventary + " en existencia." );
+          }
+        }else{
+          this.servicesGServ.showSnakbar( "Este producto ya está en la lista." );
         }
 
-        //VOY SUMANDO LOS IMPORTES
-        this.salesHeaderForm.total = this.salesHeaderForm.saleDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
-
-        this.fnClearSalesDetailForm();
-
+        
       }
 
     }
@@ -242,6 +253,50 @@ export class SaleComponent implements OnInit {
 
       this.barCode.nativeElement.focus();
     }
+
+  fn_ShowPayments(){
+    if(this.event_fnAllOKSaleHeader()){
+
+      this.salesHeaderForm.idSeller_idUser = this.idUserLogON;
+
+        this.servicesGServ.showModalWithParams( ClosesaleComponent, this.salesHeaderForm, '1500px')
+        .afterClosed().subscribe({
+          next: ( resp ) =>{
+            
+            if( resp.idSale > 0 ){
+            
+              this.salesHeaderForm.idSeller_idUser = 0;
+              this.salesHeaderForm.idCustomer = 0;
+              this.salesHeaderForm.customerDesc = '';
+              this.salesHeaderForm.customerResp = '';
+              this.salesHeaderForm.idSaleType = 0;
+              this.salesHeaderForm.saleTypeDesc = '';
+              this.salesHeaderForm.total = 0;
+              this.salesHeaderForm.bCredito = false;
+              this.salesHeaderForm.saleDetail = [];
+              this.salesHeaderForm.salesPayment = [];
+
+
+              this.salesDetailForm.barCode = '';
+              this.salesDetailForm.idProduct = 0;
+              this.salesDetailForm.productDesc = '';
+              this.salesDetailForm.cantidad = 1,
+              this.salesDetailForm.precioUnitario = 0;
+              this.salesDetailForm.descuento = 0;
+              this.salesDetailForm.precio = 0;
+              this.salesDetailForm.importe = 0;
+
+              setTimeout (() => {
+                this.cbxCustomerCBX.nativeElement.focus();
+              }, 1000);
+          
+            }
+          }
+      });
+
+    }
+  }
+    
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE MÉTODOS CON EL FRONT
@@ -270,29 +325,53 @@ event_fn_barCode_keyup_enter(event: any, idInput: any){
     
     if( this.salesDetailForm.barCode.length > 0){
       this.fn_getProductByBarCode( event, idInput );
-    }else if(this.interface.showCredito && this.salesHeaderForm.saleDetail.length > 0){
-      this.tbxAnticipo.nativeElement.focus();
     }else if(this.salesHeaderForm.saleDetail.length > 0){
-      this.cbxFormasPagoCBX.nativeElement.focus();
+      this.fn_ShowPayments();
     }
+
   }
 }
 
-event_fn_PagaCon_GetCambio( event: any ){
+event_fn_ShowPayments( event: any ){
 
   if(event.keyCode == 13) { // PRESS ENTER
 
-    if(this.salesHeaderForm.pagaCon > 0){
-      let importe = 0;
-      if(this.interface.showCredito){
-        importe = this.salesHeaderForm.anticipo;
-      }else{
-        importe = this.salesHeaderForm.total;
-      }
+    if(this.event_fnAllOKSaleHeader()){
 
-      this.salesHeaderForm.cambio = this.salesHeaderForm.pagaCon - importe;
+      this.salesHeaderForm.idSeller_idUser = this.idUserLogON;
+    
+      this.servicesGServ.showModalWithParams( ClosesaleComponent, this.salesHeaderForm, '1500px')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+          
+          this.fn_ShowPayments();
+
+        }
+      });
+
     }
+
   }
+}
+
+event_fnAllOKSaleHeader(): boolean {
+  let bOK = false;
+
+  if( this.salesHeaderForm.idCustomer > 0 // QUE TENGA CLIENTE
+    && this.salesHeaderForm.idSaleType > 0 // QUE TENGA CONDICION DE PAGO
+    && this.salesHeaderForm.saleDetail.length > 0 // QUE SE HAYA AGREGADO UN PRODUCTO
+    && this.salesHeaderForm.total > 0 // QUE EL TOTAL SEA MAYOR
+    )
+    {
+      bOK = true;
+    }
+
+  return bOK;
+}
+
+event_fnClick_DeleteProductFromList( index: number ){
+  this.salesHeaderForm.saleDetail.splice( index, 1);
+  this.salesHeaderForm.total = this.salesHeaderForm.saleDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -402,9 +481,10 @@ event_fn_PagaCon_GetCambio( event: any ){
     this.salesDetailForm.idProduct = ODataCbx.idProduct;
     this.salesDetailForm.productDesc = ODataCbx.name;
     this.salesDetailForm.barCode = ODataCbx.barCode;
-    this.salesDetailForm.precioUnitario = ODataCbx.price;
-
     
+    this.salesDetailForm.precioUnitario = ODataCbx.price;
+    this.salesDetailForm.catInventary = ODataCbx.catInventary;
+
 
     setTimeout (() => {
       this.inputFocus(idInput);
@@ -417,6 +497,7 @@ event_fn_PagaCon_GetCambio( event: any ){
     this.salesDetailForm.productDesc = '';
     this.salesDetailForm.barCode = '';
     this.salesDetailForm.precioUnitario = 0;
+    this.salesDetailForm.catInventary = 0;
   }
   //--------------------------------------------------------------------------
 
@@ -461,7 +542,7 @@ event_fn_PagaCon_GetCambio( event: any ){
     }, 500);
 
     if(this.salesHeaderForm.idSaleType == 1){
-      this.interface.showCredito = true;
+      this.salesHeaderForm.bCredito = true;
     }
 
   }
@@ -470,57 +551,11 @@ event_fn_PagaCon_GetCambio( event: any ){
     this.salesHeaderForm.idSaleType = 0;
     this.salesHeaderForm.saleTypeDesc = '';
     
-    this.interface.showCredito = false;
+    this.salesHeaderForm.bCredito = false;
   }
   //--------------------------------------------------------------------------
 
-  //--------------------------------------------------------------------------
-  // MÉTODOS PARA COMBO DE ÁREAS
-
-  cbxFormasPago: any[] = [];
-
-  cbxFormasPago_Search() {
-      this.formaPagoServ.CCbxGetFormaPagoCombo( this.salesHeaderForm.formaPagoDesc )
-       .subscribe( {
-         next: (resp: ResponseGet) =>{
-           if(resp.status === 0){
-             this.cbxFormasPago = resp.data
-           }
-           else{
-            this.cbxFormasPago = [];
-           }
-         },
-         error: (ex) => {
-           this.servicesGServ.showSnakbar( "Problemas con el servicio" );
-           this.bShowSpinner = false;
-         }
-       });
-  }
-
-  cbxFormasPago_SelectedOption( event: MatAutocompleteSelectedEvent, idInput: any ) {
-
-    if(!event.option.value){
-      return;
-    }
-
-    const ODataCbx: any = event.option.value;
-
-    console.log(ODataCbx)
-
-    this.salesHeaderForm.idFormaPago = ODataCbx.id;
-    this.salesHeaderForm.formaPagoDesc = ODataCbx.name;
-
-    setTimeout (() => {
-      this.inputFocus(idInput);
-    }, 500);
-
-  }
-
-  cbxFormasPago_Clear(){
-    this.salesHeaderForm.idFormaPago = 0;
-    this.salesHeaderForm.formaPagoDesc = '';
-  }
-  //--------------------------------------------------------------------------
+  
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE COMBOS

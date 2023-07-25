@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
@@ -20,12 +21,18 @@ export class CustomerComponent implements OnInit {
 
   title: string = 'Cliente';
   bShowSpinner: boolean = false;
-  idCustomer: number = 0;
+  id: number = 0;
+  name: string = '';
 
   idUserLogON: number = 0;
 
+  isMDL: boolean = false;
+
   constructor(
-    private servicesGServ: ServicesGService
+    private dialogRef: MatDialogRef<CustomerComponent>
+    ,@Inject(MAT_DIALOG_DATA) public OParamsData: any
+
+    , private servicesGServ: ServicesGService
     , private customerServ: CustomersService
     , private fb: FormBuilder
     , private router: Router
@@ -55,45 +62,73 @@ export class CustomerComponent implements OnInit {
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
+
+      if( this.OParamsData.id > 0 ){
+
+        this.bShowSpinner = true;
   
-      if( !this.router.url.includes('editCustomer') ){
-        return;
+        this.customerServ.CGetCustomerByID( this.OParamsData.id )
+          .subscribe( ( resp: any ) => {
+
+             if(resp.status == 0){
+                
+                this.id = resp.data.idCustomer;
+    
+               this.customerForm.setValue({
+                idCustomer: resp.data.idCustomer,
+                createDate: resp.data.createDate,
+                name: resp.data.name,
+                lastName: resp.data.lastName,
+                address: resp.data.address,
+                tel: resp.data.tel,
+                eMail: resp.data.eMail,
+                active: resp.data.active,
+                idUser: this.idUserLogON
+               });
+
+               this.name = this.event_getDescCustomer();
+    
+    
+             }else{
+              this.servicesGServ.showSnakbar(resp.message);
+             }
+             this.bShowSpinner = false;
+          } );
+
       }
   
-      this.bShowSpinner = true;
-  
-      this.activatedRoute.params
-        .pipe(
-          switchMap( ({ id }) => this.customerServ.CGetCustomerByID( id ) )
-        )
-        .subscribe( ( resp: any ) => {
-          console.log(resp)
-           if(resp.status == 0){
-              
-              this.idCustomer = resp.data.idCustomer;
-  
-             this.customerForm.setValue({
-              idCustomer: resp.data.idCustomer,
-              createDate: resp.data.createDate,
-              name: resp.data.name,
-              lastName: resp.data.lastName,
-              address: resp.data.address,
-              tel: resp.data.tel,
-              eMail: resp.data.eMail,
-              active: resp.data.active,
-              idUser: this.idUserLogON
-             });
-  
-  
-             //this.fn_getHitorialClinicoByIdPaciente(this.id);
-             //this.fn_getRolesByIdUser();
-           }else{
-            this.servicesGServ.showSnakbar(resp.message);
-           }
-           this.bShowSpinner = false;
-        } )
-  
     }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// SECCIÓN DE MÉTODOS CON EL FRONT
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+close(){
+
+  var bOK = this.id > 0;
+
+  var OParamsOut: any = {
+    bOK: bOK,
+    id: this.id,
+    name: this.name
+  }
+
+  this.dialogRef.close( OParamsOut );
+}
+
+public inputFocus(idInput: any) {
+  if(idInput != null) { // PRESS ENTER
+    idInput.focus();
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// FIN SECCIÓN DE MÉTODOS CON EL FRONT
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// SECCIÓN DE CONEXIONES AL BACK
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
     changeRoute( route: string ): void {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
@@ -105,12 +140,19 @@ export class CustomerComponent implements OnInit {
 
       this.bShowSpinner = true;
   
-      if(this.idCustomer > 0){
+      if( this.id > 0 ){
         this.customerServ.CUpdateCustomer( this.customerForm.value )
           .subscribe({
             next: (resp: ResponseDB_CRUD) => {
+
+              if( resp.status === 0 ){
+                this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
+                this.name = this.event_getDescCustomer();
+              }
+              else{
+                this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
+              }
               
-              this.servicesGServ.showSnakbar(resp.message);
               this.bShowSpinner = false;
   
             },
@@ -127,9 +169,12 @@ export class CustomerComponent implements OnInit {
           next: (resp: ResponseDB_CRUD) => {
   
             if( resp.status === 0 ){
-              this.idCustomer = resp.insertID;
+              this.id = resp.insertID;
+              this.name = this.event_getDescCustomer();
   
               this.customerForm.get('idCustomer')?.setValue( resp.insertID );
+
+              this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
   
             }
   
@@ -146,5 +191,26 @@ export class CustomerComponent implements OnInit {
         })
       }
     }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// FIN SECCIÓN DE CONEXIONES AL BACK
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// SECCIÓN DE EVENTOS
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+event_getDescCustomer(): string{
+
+  return this.customerForm.value.lastName
+  + this.customerForm.value.name
+  + ' - ' + this.customerForm.value.tel
+  + ' - ' + this.customerForm.value.address
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// SECCIÓN DE EVENTOS
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
 }

@@ -8,6 +8,7 @@ import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces'
 import { CustomersService } from 'src/app/protected/services/customers.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
+import { CustomerComponent } from '../customer/customer.component';
 
 @Component({
   selector: 'app-customer-list',
@@ -82,6 +83,24 @@ export class CustomerListComponent implements OnInit {
     name: '',
     lastName: ''
   });
+
+  showCustomerCat( id: number ){
+
+    var OParamsIN: any = {
+      id: id
+    }
+
+    this.servicesGServ.showModalWithParams( CustomerComponent, OParamsIN, '1500px')
+    .afterClosed().subscribe({
+      next: ( resp: any ) =>{
+
+        if( resp.bOK ){
+          this.fn_getCustomersListWithPage();
+        }
+        
+      }
+    });
+  }
 
   fn_getCustomersListWithPage() {
 

@@ -81,22 +81,13 @@
                               </mat-form-field>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-8">
                             <mat-form-field class="with100">
                                 <mat-label>Nombre</mat-label>
                                 <input matInput placeholder="Ingrese un nombre"
                                 formControlName="name">
                               </mat-form-field>
                         </div>
-
-                        <div class="col-md-4">
-                            <mat-form-field class="with100">
-                                <mat-label>Descripción</mat-label>
-                                <input matInput placeholder="Ingrese una descripción"
-                                formControlName="description">
-                              </mat-form-field>
-                        </div>
-
                         
                     </div>
 
@@ -294,10 +285,10 @@
                             <th class="textAlingCenter padding-th">Acciones</th>
                             <th class="textAlingLeft padding-th">Código de barras</th>
                             <th class="textAlingLeft padding-th">Nombre</th>
-                            <th class="textAlingLeft padding-th">Descripción</th>
                             <th class="textAlingRight padding-th">Costo</th>
                             <th class="textAlingRight padding-th">Precio</th>
                             <th class="textAlingRight padding-th">Inventario</th>
+                            <th class="textAlingLeft padding-th">Gramos</th>
                             <th class="textAlingCenter padding-th">Creado</th>
                         </thead>
                         <tbody>
@@ -331,10 +322,11 @@
                                     
                                 </td>
                                 <td class="textAlingLeft">{{ item.name }}</td>
-                                <td class="textAlingLeft">{{ item.description }}</td>
+                                
                                 <td class="textAlingRight">{{ item.cost | currency }}</td>
                                 <td class="textAlingRight">{{ item.price | currency }}</td>
                                 <td class="textAlingRight">{{ item.catInventary }} piezas</td>
+                                <td class="textAlingLeft">{{ item.gramos }}</td>
                                 <td class="textAlingCenter">{{ item.createDate | date:'dd-MM-yyyy' }}</td>
                             </tr>
                         </tbody>

@@ -15,8 +15,8 @@ export class LoginComponent {
   bShowSpinner: boolean = false;
 
   myLogin: FormGroup = this.fb.group({
-    username: ['UserAdmin',[ Validators.required ]],
-    pwd: ['Souleater-2025', [ Validators.required ]]
+    username: ['',[ Validators.required ]],
+    pwd: ['', [ Validators.required ]]
   });
 
   constructor( private fb: FormBuilder
