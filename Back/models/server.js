@@ -12,6 +12,15 @@ class Server{
             auth:'/api/auth',
             users:'/api/users',
             roles:'/api/roles',
+            products:'/api/products',
+            families:'/api/families',
+            groups:'/api/groups',
+            origin:'/api/origin',
+            quality:'/api/quality',
+            customers:'/api/customers',
+            sucursales:'/api/sucursales',
+            salesType:'/api/salesType',
+            formaPago:'/api/formaPago',
         }
 
         //Conectar a base de datos
@@ -41,7 +50,7 @@ class Server{
     middlewares(){
 
         //CORS
-        this.app.use( cors());
+        this.app.use( cors() );
 
         //Lectura y parse del body
         this.app.use( express.json() );
@@ -74,6 +83,15 @@ class Server{
         this.app.use(this.paths.auth, require('../routes/authRoute'));
         this.app.use(this.paths.users, require('../routes/usersRoute'));
         this.app.use(this.paths.roles, require('../routes/rolesRoute'));
+        this.app.use(this.paths.products, require('../routes/productsRoute'));
+        this.app.use(this.paths.families, require('../routes/familiesRoute'));
+        this.app.use(this.paths.groups, require('../routes/groupsRoute'));
+        this.app.use(this.paths.origin, require('../routes/originRoute'));
+        this.app.use(this.paths.quality, require('../routes/qualityRoute'));
+        this.app.use(this.paths.customers, require('../routes/customersRoute'));
+        this.app.use(this.paths.sucursales, require('../routes/sucursalesRoute'));
+        this.app.use(this.paths.salesType, require('../routes/salesTypeRoute'));
+        this.app.use(this.paths.formaPago, require('../routes/formaPagoRoute'));
     }
 
     listen(){
