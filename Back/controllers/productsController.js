@@ -1,7 +1,7 @@
 const { response } = require('express');
 const bcryptjs = require('bcryptjs');
 
-const { dbConnection } = require('../database/config');
+const { createConexion, dbConnection } = require('../database/config');
 
 const getProductsListWithPage = async(req, res = response) => {
 
@@ -12,7 +12,6 @@ const getProductsListWithPage = async(req, res = response) => {
         , createDateEnd = ''
         , barCode = ''
         , name = ''
-        , description = ''
         , idFamily = 0
         , idGroup = 0
         , idQuality = 0
@@ -36,7 +35,6 @@ const getProductsListWithPage = async(req, res = response) => {
             ,'${ createDateEnd }'
             ,'${ barCode }'
             ,'${ name }'
-            ,'${ description }'
             ,${ idFamily }
             ,${ idGroup }
             ,${ idQuality }
@@ -126,7 +124,7 @@ const insertProduct = async(req, res) => {
 
     barCode,
     name,
-    description,
+    gramos,
     cost = 0,
     price = 0,
     active,
@@ -147,7 +145,7 @@ const insertProduct = async(req, res) => {
           , ${idOrigin}
           ,'${barCode}'
           ,'${name}'
-          ,'${description}'
+          ,'${gramos}'
           ,'${cost}'
           ,'${price}'
           , ${active}
@@ -219,7 +217,7 @@ const updateProduct = async(req, res) => {
 
     barCode,
     name,
-    description,
+    gramos,
     cost = 0,
     price = 0,
     active,
@@ -241,7 +239,7 @@ const updateProduct = async(req, res) => {
             , ${idOrigin}
             ,'${barCode}'
             ,'${name}'
-            ,'${description}'
+            ,'${gramos}'
             ,'${cost}'
             ,'${price}'
             , ${active}
@@ -271,6 +269,8 @@ const cbxGetProductsCombo = async(req, res = response) => {
     } = req.body;
   
     console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
     
     try{
 
@@ -303,6 +303,8 @@ const cbxGetProductsCombo = async(req, res = response) => {
             data: error.message
         });
     }
+
+    //await dbConnectionNEW.close();
   
   };
 

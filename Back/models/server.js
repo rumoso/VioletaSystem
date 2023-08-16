@@ -21,6 +21,8 @@ class Server{
             sucursales:'/api/sucursales',
             salesType:'/api/salesType',
             formaPago:'/api/formaPago',
+            sales:'/api/sales',
+            fxRate:'/api/fxRate',
         }
 
         //Conectar a base de datos
@@ -92,6 +94,8 @@ class Server{
         this.app.use(this.paths.sucursales, require('../routes/sucursalesRoute'));
         this.app.use(this.paths.salesType, require('../routes/salesTypeRoute'));
         this.app.use(this.paths.formaPago, require('../routes/formaPagoRoute'));
+        this.app.use(this.paths.sales, require('../routes/salesRoute'));
+        this.app.use(this.paths.fxRate, require('../routes/fxRateRoute'));
     }
 
     listen(){
