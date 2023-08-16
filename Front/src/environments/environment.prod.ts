@@ -4,5 +4,7 @@ export const environment = {
     //baseUrl: 'http://192.168.0.6:8082',
     //baseUrl: 'https://agraficas-api.hugozavala.com',
     baseUrl: 'https://violeta.api.ruitza.com/',
-    appMain: 'VioletaSistem'
+    appMain: 'VioletaSistem',
+    bSend: 0,
+    idSucursal: 1
   };

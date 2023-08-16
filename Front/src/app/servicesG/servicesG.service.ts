@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { DDialog } from '../interfaces/general.interfaces';
 import { ConfirmComponent } from '../components/confirm/confirm.component';
 import { AlertComponent } from '../components/alert/alert.component';
+import { Overlay } from '@angular/cdk/overlay';
 
 @Injectable({
     providedIn: 'root'
@@ -15,6 +16,7 @@ import { AlertComponent } from '../components/alert/alert.component';
       private _snackBar: MatSnackBar
       , private router: Router
       , public dialog: MatDialog
+      , private overlay: Overlay
     ) { }
   
     _dDialog: DDialog = {
@@ -56,9 +58,12 @@ import { AlertComponent } from '../components/alert/alert.component';
     }
 
     showModalWithParams( component: any, params: any, width: string ){
+      const scrollStrategy = this.overlay.scrollStrategies.reposition();
       const dialog = this.dialog.open( component,{
         width: width,
-        data: params
+        data: params,
+        autoFocus: false,
+        maxHeight: '100vh' //you can adjust the value as per your view
       } )
   
       return dialog;
@@ -99,5 +104,195 @@ import { AlertComponent } from '../components/alert/alert.component';
   
       return dialog;
     }
+
+    showAlertIA( resp: any ){
+
+      var type = resp.status == 0 ? 'S' : 'W';
+      var header = resp.status == 0 ? 'OK!' : 'Alerta!';
+      var message = resp.message;
+     
+      let paramsAlert: any = {
+        type: type,
+        header: header,
+        message: message
+      }
+
+      const dialog = this.dialog.open( AlertComponent,{
+        width: 'auto',
+        data: paramsAlert
+      } )
+
+      this.showSnakbar( message );
+  
+      return dialog;
+    }
+
+    Unidades( num: number){
+
+      switch(num)
+      {
+          case 1: return "UN";
+          case 2: return "DOS";
+          case 3: return "TRES";
+          case 4: return "CUATRO";
+          case 5: return "CINCO";
+          case 6: return "SEIS";
+          case 7: return "SIETE";
+          case 8: return "OCHO";
+          case 9: return "NUEVE";
+      }
+  
+      return "";
+  }//Unidades()
+  
+  Decenas( num: any ){
+  
+      var decena = Math.floor(num/10);
+      var unidad = num - (decena * 10);
+  
+      switch(decena)
+      {
+          case 1:
+              switch(unidad)
+              {
+                  case 0: return "DIEZ";
+                  case 1: return "ONCE";
+                  case 2: return "DOCE";
+                  case 3: return "TRECE";
+                  case 4: return "CATORCE";
+                  case 5: return "QUINCE";
+                  default: return "DIECI" + this.Unidades(unidad);
+              }
+          case 2:
+              switch(unidad)
+              {
+                  case 0: return "VEINTE";
+                  default: return "VEINTI" + this.Unidades(unidad);
+              }
+          case 3: return this.DecenasY("TREINTA", unidad);
+          case 4: return this.DecenasY("CUARENTA", unidad);
+          case 5: return this.DecenasY("CINCUENTA", unidad);
+          case 6: return this.DecenasY("SESENTA", unidad);
+          case 7: return this.DecenasY("SETENTA", unidad);
+          case 8: return this.DecenasY("OCHENTA", unidad);
+          case 9: return this.DecenasY("NOVENTA", unidad);
+          case 0: return this.Unidades(unidad);
+          default: return ""
+      }
+  }//Unidades()
+  
+  DecenasY(strSin: string, numUnidades: number) {
+      if (numUnidades > 0)
+      return strSin + " Y " + this.Unidades(numUnidades)
+  
+      return strSin;
+  }//DecenasY()
+  
+  Centenas( num:number ) {
+      var centenas = Math.floor(num / 100);
+      var decenas = num - (centenas * 100);
+  
+      switch(centenas)
+      {
+          case 1:
+              if (decenas > 0)
+                  return "CIENTO " + this.Decenas(decenas);
+              return "CIEN";
+          case 2: return "DOSCIENTOS " + this.Decenas(decenas);
+          case 3: return "TRESCIENTOS " + this.Decenas(decenas);
+          case 4: return "CUATROCIENTOS " + this.Decenas(decenas);
+          case 5: return "QUINIENTOS " + this.Decenas(decenas);
+          case 6: return "SEISCIENTOS " + this.Decenas(decenas);
+          case 7: return "SETECIENTOS " + this.Decenas(decenas);
+          case 8: return "OCHOCIENTOS " + this.Decenas(decenas);
+          case 9: return "NOVECIENTOS " + this.Decenas(decenas);
+      }
+  
+      return this.Decenas(decenas);
+  }//Centenas()
+  
+  Seccion(num: number, divisor: number, strSingular: string, strPlural: string) {
+      var cientos = Math.floor(num / divisor)
+      var resto = num - (cientos * divisor)
+  
+      var letras = "";
+  
+      if (cientos > 0)
+          if (cientos > 1)
+              letras = this.Centenas(cientos) + " " + strPlural;
+          else
+              letras = strSingular;
+  
+      if (resto > 0)
+          letras += "";
+  
+      return letras;
+  }//Seccion()
+  
+  Miles( num: number ) {
+      var divisor = 1000;
+      var cientos = Math.floor(num / divisor)
+      var resto = num - (cientos * divisor)
+  
+      var strMiles = this.Seccion(num, divisor, "UN MIL", "MIL");
+      var strCentenas = this.Centenas(resto);
+  
+      if(strMiles == "")
+          return strCentenas;
+  
+      return strMiles + " " + strCentenas;
+  }//Miles()
+  
+  Millones( num: number ) {
+      var divisor = 1000000;
+      var cientos = Math.floor(num / divisor)
+      var resto = num - (cientos * divisor)
+  
+      let strMillones = this.Seccion(num, divisor, this.millon(num, true), this.millon(num, false));
+      var strMiles = this.Miles(resto);
+  
+      if(strMillones == "")
+          return strMiles;
+  
+      return strMillones + " " + strMiles;
+  }//Millones()
+
+  millon( num: number, singular: boolean) {
+    var letraMillon = '';
+    if (singular == true)
+        letraMillon = 'UN MILLON';
+    else
+        letraMillon = 'MILLONES'
+    if (num % 1000000 == 0)
+        letraMillon = letraMillon + ' DE'
+    return letraMillon;
+}
+  
+  NumeroALetras( num: number ) {
+      var data = {
+          numero: num,
+          enteros: Math.floor(num),
+          centavos: (((Math.round(num * 100)) - (Math.floor(num) * 100))),
+          letrasCentavos: "",
+          letrasMonedaPlural: 'PESOS',//"PESOS", 'Dólares', 'Bolívares', 'etcs'
+          letrasMonedaSingular: 'PESO', //"PESO", 'Dólar', 'Bolivar', 'etc'
+  
+          letrasMonedaCentavoPlural: "CENTAVOS",
+          letrasMonedaCentavoSingular: "CENTAVO"
+      };
+  
+      if (data.centavos > 0) {
+          data.letrasCentavos = "CON " + 
+          (data.centavos == 1) ? this.Millones(data.centavos) + " " + data.letrasMonedaCentavoSingular
+          : this.Millones(data.centavos) + " " + data.letrasMonedaCentavoPlural;
+      };
+  
+      if(data.enteros == 0)
+          return "CERO " + data.letrasMonedaPlural + " " + data.letrasCentavos + " 00/100 M.N";
+      if (data.enteros == 1)
+          return this.Millones(data.enteros) + " " + data.letrasMonedaSingular + " " + data.letrasCentavos + " 00/100 M.N";
+      else
+          return this.Millones(data.enteros) + " " + data.letrasMonedaPlural + " " + data.letrasCentavos + " 00/100 M.N";
+  }//NumeroALetras()
   }
   

@@ -17,10 +17,19 @@ export class FormapagoService {
     private http: HttpClient
   ) { }
 
-  CCbxGetFormaPagoCombo( search: string ): Observable<ResponseGet> {
+  CCbxGetFormaPagoCombo( search: string, idCustomer: number ): Observable<ResponseGet> {
     var data = {
+      idCustomer: idCustomer,
       search: search
     }
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetFormaPagoCombo`, data);
   }
+
+  CCbxGetFormaPagoCorteCombo( search: string ): Observable<ResponseGet> {
+    var data = {
+      search: search
+    }
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetFormaPagoCorteCombo`, data);
+  }
+
 }

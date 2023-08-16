@@ -1,0 +1,98 @@
+<div style="padding: 10px;">
+
+    <div class="row">
+                                    
+        <div class="col-md-12">
+            
+            <!-- <h1>Venta de {{ ODataP.saleTypeDesc }} por {{ ODataP.total | currency }}, Saldo a cubrir </h1> -->
+
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                [disabled]="!event_checkCorte()"
+                (click)="fn_InsertCorteCaja()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Guardar Corte de Caja</button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL(0)">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingLeft padding-th">Forma de pago</th>
+                        
+                        <th class="textAlingCenter padding-th">Número de pagos</th>
+                        <th class="textAlingRight padding-th">Saldo</th>
+                        <th class="textAlingRight padding-th">Egresos</th>
+                        <th class="textAlingRight padding-th">Saldo Pendiente</th>
+                        <th class="textAlingRight padding-th">Saldo en Caja</th>
+                        <th class="textAlingRight padding-th">Saldo en MXN</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of paymentList">
+                            <td style="text-align:left;">
+                                <span *ngIf="( item.saldo - item.egresos ) == item.saldoCaja" class="material-icons manitaSobre colorGreen" title="Pagado">
+                                    check_circle
+                                </span>
+                                {{ item.formaPagoDesc }}</td>
+                            <td style="text-align:center;">{{ item.numPagos }}</td>
+                            <td style="text-align: right;">{{ item.saldo | currency }}</td>
+                            <td style="text-align: right;">{{ item.egresos | currency }}</td>
+
+                            <td style="text-align: right;">{{ ( item.saldo - item.egresos ) | currency }}</td>
+
+                            <td style="text-align: right;">
+
+                                    <input
+                                    class="textAlingRight colorGreen"
+                                    matInput
+                                    currencyMask
+                                    placeholder="PAGA"
+                                    [(ngModel)]="item.saldoCaja">
+
+                            </td>
+
+                            <td style="text-align: right;">{{ item.valorMXN | currency }}</td>
+                        </tr>
+                        
+                    </tbody>
+                    
+                </table>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+
+            
+        </div>
+
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

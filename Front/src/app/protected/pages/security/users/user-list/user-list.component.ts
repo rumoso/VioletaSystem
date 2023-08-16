@@ -72,7 +72,6 @@ export class UserListComponent implements OnInit {
     this.usersServ.CGetUsersListWithPage( this.pagination )
     .subscribe({
       next: (resp: ResponseGet) => {
-        console.log(resp)
         this.catlist = resp.data.rows;
         this.pagination.length = resp.data.count;
         this.bShowSpinner = false;
@@ -88,20 +87,18 @@ export class UserListComponent implements OnInit {
   fn_deleteUser( idUser: number ){
 
     this.servicesGServ.showDialog('¿Estás seguro?'
-                                      , 'Está a punto de borrar al usuario'
+                                      , 'Está a punto de deshabilitar al usuario'
                                       , '¿Desea continuar?'
                                       , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
         if(resp){
           this.bShowSpinner = true;
-          this.usersServ.CDeleteUser( idUser )
+          this.usersServ.CDisabledUser( idUser )
           .subscribe({
             next: (resp: ResponseDB_CRUD) => {
-              if( resp.status === 0 ){
-                this.fn_getUsersListWithPage();
-              }
-              this.servicesGServ.showSnakbar(resp.message);
+              this.fn_getUsersListWithPage();
+              this.servicesGServ.showAlertIA( resp );
               this.bShowSpinner = false;
             },
             error: (ex: HttpErrorResponse) => {

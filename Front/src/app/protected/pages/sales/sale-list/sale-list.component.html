@@ -5,7 +5,7 @@
                          class="divMain">
       <mat-expansion-panel-header>
         <mat-panel-title class="text-align: center">
-          Filtros de productos
+          Filtros de Ventas
         </mat-panel-title>
       </mat-expansion-panel-header>
       
@@ -98,9 +98,54 @@
     </mat-expansion-panel>
 </mat-accordion>
 
-<div class="divMain" style="width: 100%; margin-top: 20px !important;">
+<div class="divMain" style="width: 100%;">
 
-    <div class="row top10px">
+    <div class="row" *ngIf="selectCajas.idCaja > 0">
+
+        <div class="col-md-5">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_ShowSale( 0 )">
+                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+                Nueva venta</button>
+
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_ShowCorteCajaSale()">
+                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+                Corte de Caja</button>
+
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_ShowEgresos()">
+                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+                Egresos</button>
+                
+            </div>
+        </div>
+
+        <div class="col-md-7" style="position: relative;">
+            <img style="display: inline-block;" width="50" src="assets/img/icons/cajaRegistradora.gif" class="marginRight10px" alt="">
+            <div style="display: inline-block;" class="badge bg-primary text-wrap" style="font-size: 15px;">
+                {{ selectCajas.cajaDesc }}
+            </div>
+            <img style="display: inline-block;" width="50" src="assets/img/icons/printIco.gif" class="marginRight10px" alt="">
+            <div style="display: inline-block;" class="badge bg-primary text-wrap" style="font-size: 15px;">
+                {{ selectCajas.impresoraName }}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row top10px" *ngIf="selectCajas.idCaja == 0">
         <div class="col-md-12">
             <div style="float: left;">
                 
@@ -108,9 +153,9 @@
                 color="primary"
                 type="submit"
                 class="marginRight10px"
-                (click)="fn_getVentasListWithPage()">
+                (click)="fn_ShowSelectCaja()">
                 <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                Nueva venta</button>
+                Seleccionar caja</button>
                 
             </div>
         </div>
@@ -142,9 +187,11 @@
                                 <tr *ngFor="let item of saleslist; let i = index">
                                     <td class="textAlingCenter">
                                         <div style="width: 50px;">
-                                            <span *ngIf="item.pendingAmount > 1" class="material-icons manitaSobre colorGreen" title="Abonar"
-                                                >
-                                                attach_money
+
+                                            <span class="material-icons manitaSobre colorGreen" title="Pagado"
+                                            (click)="fn_ShowSale( item.idSale )"
+                                            *ngIf="selectCajas.idCaja > 0">
+                                            remove_red_eye
                                             </span>
 
                                             <span *ngIf="item.pendingAmount < 1" class="material-icons manitaSobre colorGreen" title="Pagado"

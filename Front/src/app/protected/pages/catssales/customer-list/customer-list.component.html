@@ -104,6 +104,7 @@
                     <table class="table table-hover">
                         <thead>
                             <th class="textAlingCenter padding-th">Acciones</th>
+                            <th class="textAlingLeft padding-th">Dinero Electrónico</th>
                             <th class="textAlingLeft padding-th">Apellidos</th>
                             <th class="textAlingLeft padding-th">Nombre</th>
                             
@@ -122,6 +123,11 @@
                                             edit
                                         </span>
 
+                                        <span class="material-icons manitaSobre colorGreen" title="Abonar"
+                                            (click)="fn_ShowAddElectronicMoney( item.idCustomer )">
+                                            attach_money
+                                        </span>
+
                                         <span class="material-icons manitaSobre colorRed"
                                         matTooltip="Eliminar Paciente"
                                         (click)="fn_deleteCustomer(item.idCustomer)">
@@ -131,6 +137,8 @@
                                     </div>
                                 </td>
                                 
+                                <td class="textAlingRight">{{ item.electronicMoneySum | currency }}</td>
+
                                 <td class="textAlingLeft">{{ item.lastName }}</td>
                                 <td class="textAlingLeft">{{ item.name }}</td>
                                 <td class="textAlingCenter">{{ item.tel }}</td>

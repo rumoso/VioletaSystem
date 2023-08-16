@@ -14,12 +14,15 @@ import { ProductListComponent } from './pages/catssales/product-list/product-lis
 import { ProductComponent } from './pages/catssales/product/product.component';
 import { CustomerListComponent } from './pages/catssales/customer-list/customer-list.component';
 import { CustomerComponent } from './pages/catssales/customer/customer.component';
-import { SaleComponent } from './pages/sales/sale/sale.component';
-import { ClosesaleComponent } from './pages/sales/mdl/closesale/closesale.component';
-import { AbonosComponent } from './pages/sales/abonos/abonos.component';
-import { AbonoComponent } from './pages/sales/mdl/abono/abono.component';
 import { FxrateComponent } from './pages/settings/fxrate/fxrate.component';
 import { SaleListComponent } from './pages/sales/sale-list/sale-list.component';
+import { NsaleComponent } from './pages/sales/mdl/nsale/nsale.component';
+import { PaymentsComponent } from './pages/sales/mdl/payments/payments.component';
+import { ElectronicMoneyMDLComponent } from './pages/catssales/mdl/electronic-money-mdl/electronic-money-mdl.component';
+import { InventaryComponent } from './pages/reports/inventary/inventary.component';
+import { SelectCajaComponent } from './pages/sales/mdl/select-caja/select-caja.component';
+import { CorteCajaComponent } from './pages/sales/mdl/corte-caja/corte-caja.component';
+import { EgresosComponent } from './pages/sales/mdl/egresos/egresos.component';
 
 @NgModule({
     declarations: [
@@ -31,12 +34,15 @@ import { SaleListComponent } from './pages/sales/sale-list/sale-list.component';
     ProductComponent,
     CustomerListComponent,
     CustomerComponent,
-    SaleComponent,
-    ClosesaleComponent,
-    AbonosComponent,
-    AbonoComponent,
     FxrateComponent,
     SaleListComponent,
+    NsaleComponent,
+    PaymentsComponent,
+    ElectronicMoneyMDLComponent,
+    InventaryComponent,
+    SelectCajaComponent,
+    CorteCajaComponent,
+    EgresosComponent,
   ],
     imports: [
         CommonModule,

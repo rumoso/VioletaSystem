@@ -9,6 +9,12 @@ import { CustomersService } from 'src/app/protected/services/customers.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
+import { NsaleComponent } from '../mdl/nsale/nsale.component';
+import { CajasService } from 'src/app/protected/services/cajas.service';
+import { SelectCajaComponent } from '../mdl/select-caja/select-caja.component';
+import { CorteCajaComponent } from '../mdl/corte-caja/corte-caja.component';
+import { EgresosComponent } from '../mdl/egresos/egresos.component';
+import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 
 @Component({
   selector: 'app-sale-list',
@@ -60,6 +66,13 @@ private _appMain: string = environment.appMain;
 
   };
 
+  selectCajas: any = {
+    idSucursal: 0,
+    idCaja: 0,
+    cajaDesc: '',
+    impresoraName: ''
+  }
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,6 +88,7 @@ constructor(
   , private authServ: AuthService
   , private customersServ: CustomersService
   , private salesServ: SalesService
+  , private cajasServ: CajasService
 
   ) { }
 
@@ -102,6 +116,8 @@ constructor(
     // }, 1000);
 
     this.fn_getVentasListWithPage();
+
+    this.fn_getSelectCajaByIdUser( this.idUserLogON );
 
   }
 
@@ -152,6 +168,62 @@ fn_getVentasListWithPage() {
   
 }
 
+fn_getSelectCajaByIdUser( idUser: number ) {
+
+  this.cajasServ.CGetSelectCajaByIdUser( idUser )
+  .subscribe({
+    
+    next: ( resp: ResponseGet ) => {
+
+      if( resp.status == 0 ){
+        this.selectCajas.idSucursal = resp.data.idSucursal;
+        this.selectCajas.idCaja = resp.data.idCaja;
+        this.selectCajas.cajaDesc = resp.data.name;
+        this.selectCajas.impresoraName = resp.data.impresoraName;
+      }
+      else{
+        this.selectCajas.idSucursal = 0;
+        this.selectCajas.idCaja = 0;
+        this.selectCajas.cajaDesc = '';
+        this.selectCajas.impresoraName = '';
+      }
+
+      console.log( resp );
+    },
+    error: (ex: HttpErrorResponse) => {
+      this.servicesGServ.showSnakbar( ex.error.data );
+    }
+
+  })
+  
+}
+
+fn_cerrarCaja(){
+
+  this.selectCajas.idUser = this.idUserLogON;
+
+  this.cajasServ.CDeleteSelectCaja( this.selectCajas )
+  .subscribe({
+    next: async (resp: ResponseDB_CRUD) => {
+
+      if( resp.status === 0 ){
+        this.fn_getSelectCajaByIdUser( this.idUserLogON );
+      }
+
+      this.servicesGServ.showSnakbar( resp.message );
+      this.bShowSpinner = false;
+
+    },
+    error: (ex) => {
+
+      this.servicesGServ.showSnakbar( ex.error.message );
+      this.bShowSpinner = false;
+
+    }
+  });
+
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE CONEXIONES AL BACK
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,27 +232,75 @@ fn_getVentasListWithPage() {
 // SECCIÓN DE MÉTODOS CON EL FRONT
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-// fn_ShowAddSale(){
+fn_ShowSale( idSale: number ){
 
-//   var paramsMDL: any = {
-//     idSale: item.idSale
-//     , pendingAmount: ( item.total - item.abonado )
-//     , idUserLogON: this.idUserLogON
-//     , idCustomer: item.idCustomer
-//     , idAbono: 0
-//   }
+  var paramsMDL: any = {
+    idSale: idSale,
+    selectCajas: this.selectCajas
+  }
 
-//   this.servicesGServ.showModalWithParams( AbonoComponent, paramsMDL, '1500px')
-//   .afterClosed().subscribe({
-//     next: ( resp ) =>{
+  this.servicesGServ.showModalWithParams( NsaleComponent, paramsMDL, '2000px')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
 
-//       if( resp?.idAbono > 0 ){
-//         this.fn_getVentasACreditoListWithPage();
-//       }
-//     }
-//   });
+      this.fn_getVentasListWithPage();
+    }
+  });
 
-// }
+}
+
+fn_ShowSelectCaja(){
+
+  var paramsMDL: any = {
+    idUser: this.idUserLogON
+  }
+
+  this.servicesGServ.showModalWithParams( SelectCajaComponent, paramsMDL, '2000px')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
+
+      this.fn_getSelectCajaByIdUser( this.idUserLogON );
+      
+    }
+  });
+
+}
+
+fn_ShowCorteCajaSale(){
+
+  var paramsMDL: any = {
+    idCaja: this.selectCajas.idCaja
+  }
+
+  this.servicesGServ.showModalWithParams( CorteCajaComponent, paramsMDL, '2000px')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
+
+      if(resp > 0){
+        this.fn_cerrarCaja();
+      }
+
+      this.fn_getVentasListWithPage();
+    }
+  });
+
+}
+
+fn_ShowEgresos(){
+
+  var paramsMDL: any = {
+    idCaja: this.selectCajas.idCaja
+  }
+
+  this.servicesGServ.showModalWithParams( EgresosComponent, paramsMDL, '2000px')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
+
+      this.fn_getVentasListWithPage();
+    }
+  });
+
+}
 
 
 

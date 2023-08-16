@@ -157,7 +157,7 @@ export class UserComponent implements OnInit {
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
             
-            this.servicesGServ.showSnakbar(resp.message);
+            this.servicesGServ.showAlertIA( resp );
             this.bShowSpinner = false;
 
           },
@@ -174,6 +174,7 @@ export class UserComponent implements OnInit {
         next: (resp: ResponseDB_CRUD) => {
 
           if( resp.status === 0 ){
+            
             this.idUser = resp.insertID;
 
             this.userForm.get('idUser')?.setValue( resp.insertID )
@@ -183,7 +184,8 @@ export class UserComponent implements OnInit {
 
           }
 
-          this.servicesGServ.showSnakbar(resp.message);
+          this.servicesGServ.showAlertIA( resp );
+
           this.bShowSpinner = false;
 
         },
@@ -236,7 +238,7 @@ export class UserComponent implements OnInit {
                   .subscribe({
                     next: (resp: ResponseDB_CRUD) => {
                       
-                      this.servicesGServ.showSnakbar(resp.message);
+                      this.servicesGServ.showAlertIA( resp );
                       this.bShowSpinner = false;
 
                       this.addRoleForm.get('idRol')?.setValue( 0 );
@@ -272,11 +274,9 @@ export class UserComponent implements OnInit {
             .subscribe({
               next: (resp: ResponseDB_CRUD) => {
 
-                if( resp.status === 0 ){
-                  this.fn_getRolesByIdUser();
-                }
+                this.fn_getRolesByIdUser();
 
-                this.servicesGServ.showSnakbar(resp.message);
+                this.servicesGServ.showAlertIA( resp );
                 this.bShowSpinner = false;
 
               },
@@ -310,13 +310,14 @@ export class UserComponent implements OnInit {
                     .subscribe({
                       next: (resp: ResponseDB_CRUD) => {
                         
-                        this.servicesGServ.showSnakbar(resp.message);
                         this.bShowSpinner = false;
   
                         this.addSucursalForm.get('idSucursal')?.setValue( 0 );
                         this.addSucursalForm.get('sucursalDesc')?.setValue( '' );
   
                         this.fn_getSucursalesByIdUser();
+
+                        this.servicesGServ.showAlertIA( resp );
   
                       },
                       error: (ex) => {
@@ -350,7 +351,7 @@ export class UserComponent implements OnInit {
                     this.fn_getSucursalesByIdUser();
                   }
   
-                  this.servicesGServ.showSnakbar(resp.message);
+                  this.servicesGServ.showAlertIA( resp );
                   this.bShowSpinner = false;
   
                 },
