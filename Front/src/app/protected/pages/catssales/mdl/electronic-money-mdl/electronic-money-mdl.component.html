@@ -1,0 +1,130 @@
+<div style="padding: 10px;">
+
+    <div class="row top20px">
+
+        <div class="col-md-12">
+
+            <h1>EL dinero electrónico se puede utilizar en las compras</h1>
+
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-6">
+            
+            <mat-form-field class="example-full-width with100">
+                <mat-label>Descripción</mat-label>
+                <textarea #tbxDescription
+                matInput
+                cdkTextareaAutosize
+                placeholder="Ingrese el motivo"
+                [(ngModel)]="electronicMoneyForm.description"
+                (keyup)="ev_fn_description_keyup_enter( $event )"></textarea>
+            </mat-form-field>
+            
+        </div>
+
+        <div class="col-md-6">
+            
+            <mat-form-field class="with100">
+                <mat-label>Monto</mat-label>
+                <input #tbxMonto
+                class="textAlingRight colorGreen fontSize"
+                
+                matInput
+                currencyMask
+                placeholder="Monto"
+                [(ngModel)]="electronicMoneyForm.amount"
+                (keyup)="ev_fn_amount_keyup_enter( $event )">
+            </mat-form-field>
+            
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_insertElectronicMoney()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Guardar</button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="event_clear()">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Limpiar</button>
+
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL()">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter padding-th">Acciones</th>
+                        <th class="textAlingLeft">Descripción</th>
+                        <th class="textAlingRight">Monto</th>
+                        <th class="textAlingCenter">Fecha</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of electronicMoneyList; let i = index">
+                            
+                            <td class="textAlingCenter">
+                                <div style="width: 80px;">
+                                    <span class="material-icons manitaSobre colorRed"
+                                        (click)="fn_deleteElectronicMoney( item.idElectronicMoney )"
+                                        *ngIf="item.idRelation == 0">
+                                        delete_outline
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="textAlingLeft">{{ item.description }}</td>
+                            <td class="textAlingRight">{{ item.amount | currency }}</td>
+                            <td class="textAlingCenter">
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                        <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy h:mm:ss a' }}</label>
+                                    </div>
+                                </div>
+                                
+                            </td>
+
+                        </tr>
+                        
+                    </tbody>
+                    
+                </table>
+            </div>
+
+            <app-pagination *ngIf="electronicMoneyList" [IPagination]="pagination"
+                        (OPagination)="changePagination($event)">
+            </app-pagination>
+            
+        </div>
+
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

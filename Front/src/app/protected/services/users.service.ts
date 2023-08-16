@@ -51,10 +51,19 @@ export class UsersService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/changePassword`, data );
   }
 
-  CDeleteUser( idUser : any ): Observable<ResponseDB_CRUD> {
+  CDisabledUser( idUser : any ): Observable<ResponseDB_CRUD> {
     var data = {
       idUser: idUser
     }
-    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteUser`, data );
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disabledUser`, data );
   }
+
+  CCbxGetSellersCombo( search: string, idUser: number ): Observable<ResponseGet> {
+    var data = {
+      idUser: idUser,
+      search: search
+    }
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetSellersCombo`, data);
+  }
+
 }

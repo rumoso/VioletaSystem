@@ -1,0 +1,70 @@
+<div style="padding: 10px;">
+
+    <div class="row">
+                                    
+        <div class="col-md-12">
+            
+            <mat-label>Seleccione una caja:</mat-label>
+            <mat-form-field
+            style="width: 100%;"
+            (click)="cbxCajas_Search()">
+                <input #cbxCajasCBX
+                        class="colorGreen fontSize"
+                        type="text"
+                        style="width: 100%;"
+                        placeholder="Selecciona..."
+                        aria-label="Number"
+                        matInput
+                        [(ngModel)]="selectCajaForm.cajaDesc"
+                        [matAutocomplete]="cbxCaja"
+                        
+                        (input)="cbxCajas_Search()"
+                        (focus)="cbxCajas_Search()">
+                        <button *ngIf="selectCajaForm.cajaDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCajas_Clear()">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                <mat-autocomplete autoActiveFirstOption
+                                    #cbxCaja="matAutocomplete"
+                                    (optionSelected)="cbxCajas_SelectedOption( $event )">
+                    <mat-option *ngFor="let item of cbxCajas" [value]="item">
+                        {{ item.name }}
+                    </mat-option>
+    
+                    <mat-option value="" *ngIf="cbxCajas.length == 0 && selectCajaForm.cajaDesc">
+                        No se encontró nada...
+                    </mat-option>
+    
+                </mat-autocomplete>
+            </mat-form-field>
+            
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                *ngIf="selectCajaForm.idCaja > 0"
+                (click)="fn_insertSelectCaja()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Seleccionar caja </button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL( 0 )">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

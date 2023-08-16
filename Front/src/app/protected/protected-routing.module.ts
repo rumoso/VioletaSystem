@@ -8,10 +8,9 @@ import { ProductListComponent } from "./pages/catssales/product-list/product-lis
 import { ProductComponent } from "./pages/catssales/product/product.component";
 import { CustomerListComponent } from "./pages/catssales/customer-list/customer-list.component";
 import { CustomerComponent } from "./pages/catssales/customer/customer.component";
-import { SaleComponent } from "./pages/sales/sale/sale.component";
-import { AbonosComponent } from "./pages/sales/abonos/abonos.component";
 import { FxrateComponent } from "./pages/settings/fxrate/fxrate.component";
 import { SaleListComponent } from "./pages/sales/sale-list/sale-list.component";
+import { InventaryComponent } from "./pages/reports/inventary/inventary.component";
 
 const routes: Routes = [
     {
@@ -51,20 +50,16 @@ const routes: Routes = [
           component: CustomerListComponent
         },
         {
-          path: 'sale',
-          component: SaleComponent
-        },
-        {
           path: 'saleList',
           component: SaleListComponent
         },
         {
-          path: 'abonos',
-          component: AbonosComponent
-        },
-        {
           path: 'tiposDeCambio',
           component: FxrateComponent
+        },
+        {
+          path: 'repinventario',
+          component: InventaryComponent
         }
       ]
     }

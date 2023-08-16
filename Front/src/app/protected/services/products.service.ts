@@ -76,4 +76,49 @@ export class ProductsService
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getProductByBarCode`, data);
   }
 
+  CGetInventaryListWithPage( pagination: Pagination, parametersForm: any ): Observable<ResponseGet> {
+    
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    const data = {
+      idUser: parametersForm.idUser
+      , idSucursal: parametersForm.idSucursal
+      , barCode: parametersForm.barCode
+      , name: parametersForm.name
+      , description: parametersForm.description
+      , idFamily: parametersForm.idFamily
+      , idGroup: parametersForm.idGroup
+      , idQuality: parametersForm.idQuality
+      , idOrigin: parametersForm.idOrigin
+
+      ,search: pagination.search
+      ,start: start
+      ,limiter: limiter
+    };
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getInventaryListWithPage`, data);
+
+  }
+
+  CGetInventaryBySucursal( parametersForm: any ): Observable<ResponseGet> {
+    
+    const data = {
+      idUser: parametersForm.idUser
+      , idSucursal: parametersForm.idSucursal
+      , barCode: parametersForm.barCode
+      , name: parametersForm.name
+      , description: parametersForm.description
+      , idFamily: parametersForm.idFamily
+      , idGroup: parametersForm.idGroup
+      , idQuality: parametersForm.idQuality
+      , idOrigin: parametersForm.idOrigin
+
+    };
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getInventaryBySucursal`, data);
+
+  }
+
+
 }

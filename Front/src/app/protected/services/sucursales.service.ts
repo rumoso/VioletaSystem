@@ -53,4 +53,27 @@ export class SucursalesService {
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteSucursalByIdUser`, data );
   }
+
+  async CGetPrintTicketSuc( idSucursal: number, type: string ): Promise<any> {
+    var data = {
+      idSucursal: idSucursal,
+      type: type
+    }
+
+    return new Promise((resolve, reject) => {
+
+      this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getPrintTicketSuc`, data)
+      .subscribe({
+        next: ( resp: ResponseGet ) => {
+          resolve( resp.data );
+        }
+        , error: ( err: any ) => {
+          reject( err );
+        }
+      });
+
+    });
+
+  }
+
 }

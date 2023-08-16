@@ -1,0 +1,135 @@
+<div style="padding: 10px;">
+
+    <div class="row">
+                                    
+        <div class="col-md-3">
+            
+            <mat-label>Forma de pago:</mat-label>
+            <mat-form-field
+            style="width: 100%;"
+            (click)="cbxFormasPago_Search()">
+                <input #cbxFormasPagoC
+                        class="colorGreen"
+                        type="text"
+                        style="width: 100%;"
+                        placeholder="Selecciona..."
+                        aria-label="Number"
+                        matInput
+                        [(ngModel)]="egresoForm.formaPagoDesc"
+                        [matAutocomplete]="cbxFormaPago"
+                        
+                        (input)="cbxFormasPago_Search()"
+                        (focus)="cbxFormasPago_Search()">
+                        <button *ngIf="egresoForm.formaPagoDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFormasPago_Clear()">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                <mat-autocomplete autoActiveFirstOption
+                                    #cbxFormaPago="matAutocomplete"
+                                    (optionSelected)="cbxFormasPago_SelectedOption( $event )">
+                    <mat-option *ngFor="let item of cbxFormasPago" [value]="item">
+                        {{ item.name }}
+                    </mat-option>
+    
+                    <mat-option value="" *ngIf="cbxFormasPago.length == 0 && egresoForm.formaPagoDesc">
+                        No se encontró nada...
+                    </mat-option>
+    
+                </mat-autocomplete>
+            </mat-form-field>
+            
+        </div>
+
+        <div class="col-md-4">
+            <mat-form-field class="example-full-width with100 top20px">
+                <mat-label>Descripción</mat-label>
+                <textarea #tbxDesc
+                matInput
+                cdkTextareaAutosize
+                placeholder="Ingrese una descripción"
+                [(ngModel)]="egresoForm.description"
+                (keyup)="ev_fn_description_keyup_enter( $event )"></textarea>
+            </mat-form-field>
+        </div>
+
+
+        <div class="col-md-3">
+        
+            <mat-form-field class="with100 top20px">
+                <mat-label>Monto</mat-label>
+                <input #tbxMonto
+                class="textAlingRight colorGreen"
+                
+                matInput
+                currencyMask
+                placeholder="PAGA"
+                [(ngModel)]="egresoForm.amount"
+                (keyup)="event_fn_Amount( $event )">
+            </mat-form-field>
+            
+        </div>
+
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                [disabled]="!ev_fn_enableBtnSave()"
+                (click)="fn_InsertEgreso()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Guardar e imprimir ticket</button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL()">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter padding-th">Acciones</th>
+                        <th class="textAlingLeft padding-th">Forma de pago</th>
+                        <th class="textAlingLeft padding-th">Descripción</th>
+                        <th class="textAlingCenter padding-th">Monto</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of egresosList">
+                            <td class="textAlingCenter">
+                                <div style="width: 50px;">
+                                    <span class="material-icons manitaSobre colorRed"
+                                    (click)="fn_disabledEgresos( item.idEgreso )">
+                                        delete_outline
+                                    </span>
+                                </div>
+                            </td>
+                            
+                            <td style="text-align:left;">{{ item.formaPagoDesc }}</td>
+                            <td style="text-align: left;">{{ item.description }}</td>
+                            <td style="text-align: right;">{{ item.amount | currency }}</td>
+                        </tr>
+                        
+                    </tbody>
+                    
+                </table>
+            </div>
+            
+        </div>
+
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>
