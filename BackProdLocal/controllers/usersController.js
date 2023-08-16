@@ -99,8 +99,9 @@ const getUserByID = async(req, res = response) => {
 
 const insertUser = async(req, res) => {
     
+    const bSend = req.header('bSend');
     const idUserLogON = req.header('idUserLogON');
-    const idSucursalLogON = req.header('idSucursal');
+    const idSucursal = req.header('idSucursal');
 
     const {
         name,

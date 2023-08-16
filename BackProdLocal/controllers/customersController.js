@@ -108,10 +108,6 @@ const insertCustomer = async(req, res) => {
     , tel = ''
     , eMail = ''
     , active
-
-    , idUserLogON
-    , idSucursalLogON
-
   } = req.body;
 
   console.log(req.body)
@@ -119,14 +115,12 @@ const insertCustomer = async(req, res) => {
   try{
 
       var OSQL = await dbConnection.query(`call insertCustomer(
-          '${ name }'
-          ,'${ lastName }'
-          ,'${ address }'
-          ,'${ tel }'
-          ,'${ eMail }'
-          , ${ active }
-
-          , ${ idUserLogON }
+          '${name}'
+          ,'${lastName}'
+          ,'${address}'
+          ,'${tel}'
+          ,'${eMail}'
+          , ${active}
           )`)
 
         if(OSQL.length == 0){
@@ -149,6 +143,8 @@ const insertCustomer = async(req, res) => {
       
   }catch(error){
 
+    await tran.rollback();
+      
       res.status(500).json({
           status:2,
           message:"Sucedió un error inesperado",
@@ -185,8 +181,6 @@ const updateCustomer = async(req, res) => {
             ,'${eMail}'
             , ${active}
             )`);
-
-        var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Customers', ${ idCustomer } )`);
 
       res.json({
           status:0,

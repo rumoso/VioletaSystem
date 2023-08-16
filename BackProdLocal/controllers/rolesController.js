@@ -4,7 +4,7 @@ const bcryptjs = require('bcryptjs');
 const { dbConnection } = require('../database/config');
 
 
-const getSucursalesForAddUser = async(req, res = response) => {
+const getRolesForAddUser = async(req, res = response) => {
 
   const {
     search = ''
@@ -12,7 +12,7 @@ const getSucursalesForAddUser = async(req, res = response) => {
   } = req.body;
 
   console.log(req.body)
-  var OSQL = await dbConnection.query(`call getSucursalesForAddUser( '${search}' , ${ idUser })`)
+  var OSQL = await dbConnection.query(`call getRolesForAddUser( '${search}' , ${ idUser })`)
 
   if(OSQL.length == 0){
 
@@ -35,14 +35,14 @@ const getSucursalesForAddUser = async(req, res = response) => {
 
 };
 
-const getSucursalesByIdUser = async(req, res = response) => {
+const getRolesByIdUser = async(req, res = response) => {
 
     const {
       idUser
     } = req.body;
   
     console.log(req.body)
-    var OSQL = await dbConnection.query(`call getSucursalesByIdUser( ${ idUser } )`)
+    var OSQL = await dbConnection.query(`call getRolesByIdUser( ${ idUser } )`)
   
     if(OSQL.length == 0){
   
@@ -65,17 +65,17 @@ const getSucursalesByIdUser = async(req, res = response) => {
   
   };
 
-  const insertSucursalByIdUser = async(req, res = response) => {
+  const insertRolByIdUser = async(req, res = response) => {
 
     const {
       idUser
-      , idSucursal
+      , idRol
     } = req.body;
 
     try{
 
         console.log(req.body)
-        var OSQL = await dbConnection.query(`call insertSucursalByIdUser( ${ idUser }, ${ idSucursal } )`)
+        var OSQL = await dbConnection.query(`call insertRolByIdUser( ${ idUser }, ${ idRol } )`)
       
         if(OSQL.length == 0){
       
@@ -107,15 +107,15 @@ const getSucursalesByIdUser = async(req, res = response) => {
   
   };
 
-  const deleteSucursalByIdUser = async(req, res = response) => {
+  const deleteRolByIdUser = async(req, res = response) => {
 
     const {
       idUser
-      , idSucursal
+      , idRol
     } = req.body;
   
     console.log(req.body)
-    var OSQL = await dbConnection.query(`call deleteSucursalByIdUser( ${ idUser }, ${ idSucursal } )`)
+    var OSQL = await dbConnection.query(`call deleteRolByIdUser( ${ idUser }, ${ idRol } )`)
   
     if(OSQL.length == 0){
   
@@ -138,73 +138,12 @@ const getSucursalesByIdUser = async(req, res = response) => {
   
   };
 
-  const cbxGetSucursalesCombo = async(req, res = response) => {
+  
 
-    const {
-        idUser,
-        search = ''
-    } = req.body;
-  
-    console.log(req.body)
-    var OSQL = await dbConnection.query(`call cbxGetSucursalesCombo( '${search}', ${idUser} )`)
-  
-    if(OSQL.length == 0){
-  
-          res.json({
-              status:3,
-              message:"No se encontró información.",
-              data: null
-          });
-  
-      }
-      else{
-  
-          res.json({
-              status:0,
-              message:"Ejecutado correctamente.",
-              data: OSQL
-          });
-  
-      }
-  
-  };
-
-  const getPrintTicketSuc = async(req, res = response) => {
-
-    const {
-        idSucursal,
-        type = ''
-    } = req.body;
-  
-    console.log(req.body)
-    var OSQL = await dbConnection.query(`call getPrintTicketSuc( ${idSucursal}, '${type}' )`)
-  
-    if(OSQL.length == 0){
-  
-          res.json({
-              status:3,
-              message:"No se encontró información.",
-              data: null
-          });
-  
-      }
-      else{
-  
-          res.json({
-              status:0,
-              message:"Ejecutado correctamente.",
-              data: OSQL
-          });
-  
-      }
-  
-  };
 
 module.exports = {
-    getSucursalesForAddUser
-    ,getSucursalesByIdUser
-    ,cbxGetSucursalesCombo
-    ,insertSucursalByIdUser
-    ,deleteSucursalByIdUser
-    ,getPrintTicketSuc
+    getRolesForAddUser
+    , getRolesByIdUser
+    , insertRolByIdUser
+    , deleteRolByIdUser
   }

@@ -13,11 +13,6 @@ const {
    , regresarProductoDeConsignacion
 
    , getPreCorteCaja
-   , getPreEgresosCorteCaja
-   , insertCorteCaja
-   , insertEgresos
-
-   , disabledEgresos
 
 
    } = require('../controllers/salesController');
@@ -27,9 +22,6 @@ const router = Router();
 
 router.post('/insertSale', [
 
-  check('idCaja','Caja obligatoria').not().isEmpty(),
-  check('idCaja','La Caja debe ser numérico').isNumeric(),
-
   check('idSeller_idUser','Vendedor obligatorio').not().isEmpty(),
   check('idSeller_idUser','El Vendedor debe ser numérico').isNumeric(),
 
@@ -38,6 +30,9 @@ router.post('/insertSale', [
 
   check('idSaleType','Condición de pago obligatoria').not().isEmpty(),
   check('idSaleType','La Condición de pago debe ser numérica').isNumeric(),
+
+  check('total','Total obligatorio').not().isEmpty(),
+  check('total','El Total debe ser numérico').isNumeric(),
 
   check('saleDetail','Debe seleccionar productos').not().isEmpty(),
 
@@ -55,9 +50,6 @@ router.post('/getSaleByID', [
 ], getSaleByID);
 
 router.post('/insertPayments', [
-
-  check('idCaja','Caja obligatoria').not().isEmpty(),
-  check('idCaja','La Caja debe ser numérico').isNumeric(),
 
   check('idCustomer','Cliente obligatorio').not().isEmpty(),
   check('idCustomer','El Cliente debe ser numérico').isNumeric(),
@@ -111,42 +103,6 @@ router.post('/getPreCorteCaja', [
 
   validarCampos
 ], getPreCorteCaja);
-
-router.post('/getPreEgresosCorteCaja', [
-
-  check('idCaja','id caja obligatorio').not().isEmpty(),
-  check('idCaja','El id caja debe ser numérico').isNumeric(),
-
-  validarCampos
-], getPreEgresosCorteCaja);
-
-router.post('/insertCorteCaja', [
-
-  check('idCaja','id caja obligatorio').not().isEmpty(),
-  check('idCaja','El id caja debe ser numérico').isNumeric(),
-
-  validarCampos
-], insertCorteCaja);
-
-router.post('/insertEgresos', [
-
-  check('idCaja','Caja obligatoria').not().isEmpty(),
-  check('idCaja','La Caja debe ser numérico').isNumeric(),
-
-  check('idFormaPago','Forma de pago obligatorio').not().isEmpty(),
-  check('idFormaPago','Forma de pago debe ser numérico').isNumeric(),
-
-  check('amount','Monto es obligatorio').not().isEmpty(),
-  check('amount','Monto debe ser numérico').isNumeric(),
-
-  validarCampos
-], insertEgresos);
-
-router.post('/disabledEgresos', [
-  check('idEgreso','Id obligatorio').not().isEmpty(),
-  check('idEgreso','Id debe ser numérico').isNumeric(),
-  validarCampos
-], disabledEgresos);
 
 
 module.exports = router;

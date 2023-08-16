@@ -4,44 +4,40 @@ const bcryptjs = require('bcryptjs');
 const { createConexion, dbConnection } = require('../database/config');
 
 const insertSale = async(req, res) => {
+   
+  const {
+    idSeller_idUser,
+    idCustomer,
+    idSaleType,
+    total,
 
-    const {
-        idCaja,
-        idSeller_idUser,
-        idCustomer,
-        idSaleType,
+    saleDetail
+  } = req.body;
 
-        saleDetail,
+  console.log(req.body)
 
-        idUserLogON,
-        idSucursalLogON
+  const tran = await dbConnection.transaction();
 
-    } = req.body;
+  var bOK = false;
+  var idSale = 0;
 
-    console.log(req.body)
+  try{
 
-    const tran = await dbConnection.transaction();
-
-    var bOK = false;
-    var idSale = 0;
-
-    try{
-
-        var OSQL = await dbConnection.query(`call insertSale(
-        ${ idCaja }
-        , ${ idSeller_idUser }
-        , ${ idCustomer }
-        , ${ idSaleType }
-        , ${ idUserLogON }
-        )`,{ transaction: tran })
+      var OSQL = await dbConnection.query(`call insertSale(
+          ${idSeller_idUser}
+          , ${idCustomer}
+          , ${idSaleType}
+          ,'${total}'
+          , 1
+          )`,{ transaction: tran })
 
         if(OSQL.length == 0){
   
             res.json({
                 status: 1,
-                message: "No se registró la venta."
+                message:"No se registró la venta."
             });
-
+    
         }
         else{
 
@@ -50,7 +46,6 @@ const insertSale = async(req, res) => {
             if( idSale > 0 ){
 
                 for(var i = 0; i < saleDetail.length; i++){
-                    
                     var saleD = saleDetail[i];
 
                     var OSQL2 = await dbConnection.query(`call insertSaleDetail(
@@ -61,8 +56,7 @@ const insertSale = async(req, res) => {
                         , '${ saleD.descuento }'
                         , '${ saleD.precio }'
                         , '${ saleD.importe }'
-                        , ${ idUserLogON }
-                    )`,{ transaction: tran })
+                        )`,{ transaction: tran })
 
                     if(OSQL2[0].out_id > 0){
                         bOK = true;
@@ -72,25 +66,23 @@ const insertSale = async(req, res) => {
                     }
 
                     var OSQL4 = await dbConnection.query(`call insertInventaryLog(
-                        ${ saleD.idProduct }
-                        , '-${ saleD.cantidad }'
+                        ${idSeller_idUser}
+                        , ${saleD.idProduct}
+                        , '-${saleD.cantidad}'
                         , 'Salida por Venta'
-
-                        , ${ idUserLogON }
-                    )`,{ transaction: tran })
-
-                    if(OSQL4[0].out_id > 0){
-                        bOK = true;
-                    }else{
-                        bOK = false;
-                        break;
-                    }
+                        )`,{ transaction: tran })
+    
+                        if(OSQL4[0].out_id > 0){
+                            bOK = true;
+                        }else{
+                            bOK = false;
+                            break;
+                        }
                 }
 
             }
 
             if(bOK){
-                
                 await tran.commit();
 
                 res.json({
@@ -98,9 +90,7 @@ const insertSale = async(req, res) => {
                     message:"Venta guardada con éxito.",
                     insertID: idSale
                 });
-
             }else{
-                
                 await tran.rollback();
 
                 res.json({
@@ -111,17 +101,17 @@ const insertSale = async(req, res) => {
     
         }
       
-    }catch(error){
+  }catch(error){
 
-        await tran.rollback();
-            
-        res.json({
-            status: 2,
-            message: "Sucedió un error inesperado",
-            data: error.message
-        });
+    await tran.rollback();
+      
+    res.status(500).json({
+        status:2,
+        message:"Sucedió un error inesperado",
+        data: error.message
+    });
 
-    }
+  }
 }
 
 const getVentasListWithPage = async(req, res = response) => {
@@ -254,16 +244,12 @@ const getSaleByID = async(req, res = response) => {
 
 
 const insertPayments = async(req, res) => {
-
+   
     const {
 
-        idCaja,
         idCustomer,
 
-        paymentList,
-
-        idUserLogON,
-        idSucursalLogON
+        paymentList
       
     } = req.body;
   
@@ -281,8 +267,7 @@ const insertPayments = async(req, res) => {
             var OPayment = paymentList[i];
 
             var OSQL = await dbConnection.query(`call insertPayments(
-                ${ idCaja }
-                , ${ OPayment.idRelation }
+                ${ OPayment.idRelation }
                 , '${ OPayment.relationType }'
                 , ${ OPayment.idSeller_idUser }
                 , ${ OPayment.idFormaPago }
@@ -292,8 +277,6 @@ const insertPayments = async(req, res) => {
                 , '${ OPayment.idFxRate }'
                 , '${ OPayment.fxRate }'
                 , '${ OPayment.pagaF }'
-
-                , ${ idUserLogON }
                 )`,{ transaction: tran })
         
                 if(OSQL[0].out_id > 0){
@@ -311,8 +294,6 @@ const insertPayments = async(req, res) => {
                         ,'Se utiliza en venta'
                         ,${ OPayment.idRelation }
                         ,'${ OPayment.relationType }'
-
-                        , ${ idUserLogON }
                         )`)
     
                     if(OSQL2[0].out_id > 0){
@@ -617,9 +598,6 @@ const getPreCorteCaja = async(req, res = response) => {
 
     const {
         idCaja
-
-        ,idUserLogON
-        ,idSucursalLogON
     } = req.body;
 
     console.log(req.body)
@@ -633,7 +611,7 @@ const getPreCorteCaja = async(req, res = response) => {
         if(OSQL.length == 0){
 
             res.json({
-                status: 1,
+                status:0,
                 message:"Ejecutado correctamente.",
             });
 
@@ -662,269 +640,7 @@ const getPreCorteCaja = async(req, res = response) => {
 
 };
 
-const getPreEgresosCorteCaja = async(req, res = response) => {
 
-    const {
-        idCaja
-
-        ,idUserLogON
-        ,idSucursalLogON
-    } = req.body;
-
-    console.log(req.body)
-
-    try{
-
-        var OSQL = await dbConnection.query(`call getPreEgresosCorteCaja(
-            ${ idCaja }
-            )`)
-
-        if(OSQL.length == 0){
-
-            res.json({
-                status: 1,
-                message:"Ejecutado correctamente.",
-            });
-
-        }
-        else{
-
-            res.json({
-                status:0,
-                message:"Ejecutado correctamente.",
-                data:{
-                    rows: OSQL
-                }
-            });
-            
-        }
-        
-    }catch(error){
-      
-        res.json({
-            status: 2,
-            message: "Sucedió un error inesperado",
-            data: error.message
-        });
-
-    }
-
-};
-
-const insertCorteCaja = async(req, res) => {
-   
-    const {
-        idCaja
-
-        ,idUserLogON
-        ,idSucursalLogON
-    } = req.body;
-  
-    console.log(req.body)
-  
-    const tran = await dbConnection.transaction();
-  
-    var bOK = false;
-    var idCorteCaja = 0;
-  
-    try{
-  
-        var OSQL = await dbConnection.query(`call insertCorteCaja(
-            ${ idCaja }
-            , ${ idUserLogON }
-            )`,{ transaction: tran })
-  
-          if(OSQL.length == 0){
-    
-              res.json({
-                  status: 1,
-                  message:"No se registró el corte de caja."
-              });
-      
-          }
-          else{
-  
-            idCorteCaja = OSQL[0].idNew;
-
-            if( idCorteCaja > 0 ){
-
-                var OSQL2 = await dbConnection.query(`call getPaymentsToCorteCaja(
-                    ${ idCaja }
-                )`);
-
-                for(var i = 0; i < OSQL2.length; i++){
-                    var payment = OSQL2[i];
-
-                    console.log( payment )
-
-                    var OSQL3 = await dbConnection.query(`call insertCorteCajaIngresos(
-                        ${ idCorteCaja }
-                        , ${ idCaja }
-                        , ${ idUserLogON }
-                        , ${ payment.idPayment }
-                    )`,{ transaction: tran })
-
-                    if(OSQL3[0].idNew > 0){
-                        bOK = true;
-                    }else{
-                        bOK = false;
-                        break;
-                    }
-
-                }
-
-                var OSQL4 = await dbConnection.query(`call getEgresosToCorteCaja(
-                    ${ idCaja }
-                )`);
-
-                for(var i = 0; i < OSQL4.length; i++){
-                    var egreso = OSQL4[i];
-
-                    console.log( payment )
-
-                    var OSQL5 = await dbConnection.query(`call insertCorteCajaEgresos(
-                        ${ idCorteCaja }
-                        , ${ idCaja }
-                        , ${ idUserLogON }
-                        , ${ egreso.idEgreso }
-                    )`,{ transaction: tran })
-
-                    if(OSQL5[0].idNew > 0){
-                        bOK = true;
-                    }else{
-                        bOK = false;
-                        break;
-                    }
-
-                }
-
-            }
-
-            if(bOK){
-
-                await tran.commit();
-
-                res.json({
-                    status: 0,
-                    message: "Corte de caja guardada con éxito.",
-                    insertID: idCorteCaja
-                });
-
-            }else{
-
-                await tran.rollback();
-
-                res.json({
-                    status: 1,
-                    message: "No se guardó el Corte de caja."
-                });
-
-            }
-      
-          }
-        
-    }catch(error){
-  
-        await tran.rollback();
-        
-        res.json({
-            status: 2,
-            message: "Sucedió un error inesperado",
-            data: error.message
-        });
-  
-    }
-}
-
-const insertEgresos = async(req, res) => {
-
-    const {
-
-        idCaja,
-        idFormaPago,
-        description = '',
-
-        amount,
-
-        idUserLogON,
-        idSucursalLogON
-      
-    } = req.body;
-  
-    console.log(req.body)
-
-    try{
-
-        var OSQL = await dbConnection.query(`call insertEgresos(
-        ${ idCaja }
-        , ${ idFormaPago }
-        , '${ description }'
-        , '${ amount }'
-
-        , ${ idUserLogON }
-        )`);
-
-        if(OSQL.length == 0){
-
-            res.json({
-                status: 1,
-                message: "No se registró el producto."
-            });
-
-        }
-        else{
-
-            res.json({
-                status: 0,
-                message: "Egreso guardado con éxito.",
-                insertID: OSQL[0].idNew
-            });
-
-        }
-        
-    }catch(error){
-  
-        res.json({
-            status: 2,
-            message: "Sucedió un error inesperado",
-            data: error.message
-        });
-
-    }
-}
-
-const disabledEgresos = async(req, res) => {
-   
-    const {
-        idEgreso
-    } = req.body;
-
-    console.log(req.body)
-
-    try{
-
-        var OSQL = await dbConnection.query(`call disabledEgresos(
-        ${ idEgreso }
-        )`)
-
-        var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Egresos', ${ idEgreso } )`);
-
-        res.json({
-            status: 0,
-            message: "Egreso deshabilitado con éxito.",
-            insertID: OSQL[0].idRelation
-        });
-
-    }catch(error){
-
-        res.json({
-            status: 2,
-            message: "Sucedió un error inesperado",
-            data: error.message
-        });
-
-    }
-}
 
   
 
@@ -938,10 +654,152 @@ module.exports = {
     , regresarProductoDeConsignacion
 
     , getPreCorteCaja
-    , getPreEgresosCorteCaja
-    , insertCorteCaja
-    , insertEgresos
 
-    , disabledEgresos
+  }
 
-}
+
+
+//   const insertSale = async(req, res) => {
+   
+//     const {
+//       idSeller_idUser,
+//       idCustomer,
+//       idSaleType,
+//       bCredito,
+//       total,
+  
+//       saleDetail,
+//       salesPayment
+//     } = req.body;
+  
+//     console.log(req.body)
+  
+//     const tran = await dbConnection.transaction();
+  
+//     var bOK = false;
+//     var idSale = 0;
+  
+//     try{
+  
+//         var OSQL = await dbConnection.query(`call insertSale(
+//             ${idSeller_idUser}
+//             , ${idCustomer}
+//             , ${idSaleType}
+//             ,'${total}'
+//             , 1
+//             )`,{ transaction: tran })
+  
+//           if(OSQL.length == 0){
+    
+//               res.json({
+//                   status: 1,
+//                   message:"No se registró la venta."
+//               });
+      
+//           }
+//           else{
+  
+//               idSale = OSQL[0].out_id;
+  
+//               if( idSale > 0 ){
+  
+//                   for(var i = 0; i < saleDetail.length; i++){
+//                       var saleD = saleDetail[i];
+  
+//                       var OSQL2 = await dbConnection.query(`call insertSaleDetail(
+//                           ${ idSale }
+//                           , ${ saleD.idProduct }
+//                           , '${ saleD.cantidad }'
+//                           , '${ saleD.precioUnitario }'
+//                           , '${ saleD.descuento }'
+//                           , '${ saleD.precio }'
+//                           , '${ saleD.importe }'
+//                           )`,{ transaction: tran })
+  
+//                       if(OSQL2[0].out_id > 0){
+//                           bOK = true;
+//                       }else{
+//                           bOK = false;
+//                           break;
+//                       }
+  
+//                       var OSQL4 = await dbConnection.query(`call insertInventaryLog(
+//                           ${idSeller_idUser}
+//                           , ${saleD.idProduct}
+//                           , '-${saleD.cantidad}'
+//                           , 'Salida por Venta'
+//                           )`,{ transaction: tran })
+      
+//                           if(OSQL4[0].out_id > 0){
+//                               bOK = true;
+//                           }else{
+//                               bOK = false;
+//                               break;
+//                           }
+//                   }
+  
+//                   var anticipo = 0;
+  
+//                   if(bOK){
+  
+//                       for(var i = 0; i < salesPayment.length; i++){
+//                           var saleP = salesPayment[i];
+      
+//                           anticipo = saleP.anticipo;
+      
+//                           var OSQL3 = await dbConnection.query(`call insertPayments(
+//                               ${ idSale }
+//                               , 'V'
+//                               , ${idSeller_idUser}
+//                               , ${ saleP.idFormaPago }
+//                               , '${ saleP.paga }'
+//                               , '${ saleP.referencia }'
+//                               , '${ ( anticipo > 0 ? 'Anticipo' : 'Venta' ) }'
+//                               , '${saleP.idFxRate}'
+//                               , '${saleP.fxRate}'
+//                               )`,{ transaction: tran })
+      
+//                           if(OSQL3[0].out_id > 0){
+//                               bOK = true;
+//                           }else{
+//                               bOK = false;
+//                               break;
+//                           }
+      
+//                       }
+  
+//                   }
+  
+//               }
+  
+//               if(bOK){
+//                   await tran.commit();
+  
+//                   res.json({
+//                       status:0,
+//                       message:"Venta guardada con éxito.",
+//                       insertID: idSale
+//                   });
+//               }else{
+//                   await tran.rollback();
+  
+//                   res.json({
+//                       status: 1,
+//                       message:"No se guardó la Venta."
+//                   });
+//               }
+      
+//           }
+        
+//     }catch(error){
+  
+//       await tran.rollback();
+        
+//       res.status(500).json({
+//           status:2,
+//           message:"Sucedió un error inesperado",
+//           data: error.message
+//       });
+  
+//     }
+//   }
