@@ -3,21 +3,18 @@ const bcryptjs = require('bcryptjs');
 
 const { dbConnection } = require('../database/config');
 
-const getCajasBySec = async(req, res = response) => {
+const getPrintersBySec = async(req, res = response) => {
 
     const {
         idUser
         , search = ''
-
-        , idUserLogON
-        , idSucursalLogON
     } = req.body;
 
     console.log(req.body)
 
     try{
 
-        var OSQL = await dbConnection.query(`call getCajasBySec( ${ idUser }, '${ search }', ${ idSucursalLogON } )`)
+        var OSQL = await dbConnection.query(`call getPrintersBySec( ${ idUser }, '${ search }' )`)
 
         if(OSQL.length == 0){
 
@@ -48,7 +45,7 @@ const getCajasBySec = async(req, res = response) => {
 
 };
 
-const getSelectCajaByIdUser = async(req, res = response) => {
+const getSelectPrinterByIdUser = async(req, res = response) => {
 
     const {
         idUser
@@ -59,14 +56,14 @@ const getSelectCajaByIdUser = async(req, res = response) => {
     try
     {
 
-        var OSQL = await dbConnection.query(`call getSelectCajaByIdUser( ${ idUser } )`)
+        var OSQL = await dbConnection.query(`call getSelectPrinterByIdUser( ${ idUser } )`)
 
         if(OSQL.length == 0)
         {
 
             res.json({
             status: 1,
-            message:"No tiene caja seleccionada.",
+            message: "No tiene caja seleccionada.",
             data: null
             });
 
@@ -88,18 +85,18 @@ const getSelectCajaByIdUser = async(req, res = response) => {
         
         res.json({
             status: 2,
-            message:"Sucedió un error inesperado",
+            message: "Sucedió un error inesperado",
             data: error.message
         });
     }
 
 };
 
-const insertSelectCaja = async(req, res) => {
+const insertSelectPrinter = async(req, res) => {
 
     const {
       idUser
-      , idCaja
+      , idPrinter
 
       , idUserLogON
       , idSucursalLogON
@@ -109,23 +106,22 @@ const insertSelectCaja = async(req, res) => {
   
     try{
   
-        var OSQL = await dbConnection.query(`call insertSelectCaja(
+        var OSQL = await dbConnection.query(`call insertSelectPrinter(
             ${ idUser }
-            ,${ idCaja }
+            , ${ idPrinter }
+            , 1
             , ${ idUserLogON }
             )`)
   
           if(OSQL.length == 0){
     
               res.json({
-                  status: 1,
-                  message:"No se registró la entrada a la caja."
+                  status:1,
+                  message:"No se registró."
               });
       
           }
           else{
-
-            console.log( OSQL )
   
               res.json({
                   status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -145,20 +141,21 @@ const insertSelectCaja = async(req, res) => {
     }
   }
   
-const deleteSelectCaja = async(req, res) => {
+const deleteSelectPrinter = async(req, res) => {
     
     const {
         idUser
-        , idCaja
+        , idPrinter
     } = req.body;
 
     console.log(req.body)
 
     try{
 
-        var OSQL = await dbConnection.query(`call deleteSelectCaja(
+        var OSQL = await dbConnection.query(`call deleteSelectPrinter(
             ${ idUser }
-            ,${ idCaja }
+            , ${ idPrinter }
+            , 1
             )`)
 
         res.json({
@@ -169,7 +166,7 @@ const deleteSelectCaja = async(req, res) => {
         
     }catch( error ){
         
-        res.status(500).json({
+        res.json({
             status: 2,
             message: "Sucedió un error inesperado",
             data: error.message
@@ -178,17 +175,17 @@ const deleteSelectCaja = async(req, res) => {
     }
 }
 
-const getCajaByID = async(req, res = response) => {
+const getPrinterByID = async(req, res = response) => {
 
     const {
-        idCaja
+        idPrinter
     } = req.body;
 
     console.log(req.body)
 
     try{
 
-        var OSQL = await dbConnection.query(`call getCajaByID( ${ idCaja } )`)
+        var OSQL = await dbConnection.query(`call getPrinterByID( ${ idPrinter } )`)
 
         if(OSQL.length == 0){
 
@@ -223,9 +220,9 @@ const getCajaByID = async(req, res = response) => {
 
 
 module.exports = {
-    getCajasBySec
-    , getSelectCajaByIdUser
-    , insertSelectCaja
-    , deleteSelectCaja
-    , getCajaByID
+    getPrintersBySec
+    , getSelectPrinterByIdUser
+    , insertSelectPrinter
+    , deleteSelectPrinter
+    , getPrinterByID
   }

@@ -25,11 +25,11 @@ const getFxRateListWithPage = async(req, res = response) => {
         if(OSQL.length == 0){
 
             res.json({
-                status:0,
-                message:"Ejecutado correctamente.",
+                status: 0,
+                message: "Ejecutado correctamente.",
                 data:{
-                count: 0,
-                rows: null
+                    count: 0,
+                    rows: null
                 }
             });
 
@@ -39,8 +39,8 @@ const getFxRateListWithPage = async(req, res = response) => {
             const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
             
             res.json({
-                status:0,
-                message:"Ejecutado correctamente.",
+                status: 0,
+                message: "Ejecutado correctamente.",
                 data:{
                 count: iRows,
                 rows: OSQL
@@ -51,10 +51,10 @@ const getFxRateListWithPage = async(req, res = response) => {
         
     }catch(error){
       
-        res.status(500).json({
-            status:2,
-            message:"Sucedió un error inesperado",
-            data:error
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
         });
     }
 };
@@ -64,6 +64,10 @@ const insertFxRate = async(req, res) => {
   const {
     referencia,
     fxRate
+
+    , idUserLogON
+    , idSucursalLogON
+
   } = req.body;
 
   console.log(req.body)
@@ -73,21 +77,23 @@ const insertFxRate = async(req, res) => {
       var OSQL = await dbConnection.query(`call insertFxRate(
           '${referencia}'
           ,'${fxRate}'
+
+          , ${ idUserLogON }
           )`)
 
         if(OSQL.length == 0){
   
             res.json({
                 status: 1,
-                message:"No se registró el tipo de cambio."
+                message: "No se registró el tipo de cambio."
             });
     
         }
         else{
 
             res.json({
-                status:0,
-                message:"Tipo de Cambio guardado con éxito.",
+                status: 0,
+                message: "Tipo de Cambio guardado con éxito.",
                 insertID: OSQL[0].out_id
             });
     
@@ -95,11 +101,9 @@ const insertFxRate = async(req, res) => {
 
   }catch(error){
 
-    await tran.rollback();
-      
-      res.status(500).json({
-          status:2,
-          message:"Sucedió un error inesperado",
+      res.json({
+          status: 2,
+          message: "Sucedió un error inesperado",
           data: error.message
       });
   }

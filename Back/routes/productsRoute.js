@@ -12,6 +12,9 @@ const {
    , getProductByBarCode
    , getInventaryListWithPage
    , getInventaryBySucursal
+   , disableProduct
+   , getInventarylogByIdProductWithPage
+   , insertInventaryLog
    } = require('../controllers/productsController');
 
    
@@ -107,5 +110,31 @@ router.post('/getProductByBarCode', [
 router.post('/getInventaryListWithPage', getInventaryListWithPage);
 
 router.post('/getInventaryBySucursal', getInventaryBySucursal);
+
+router.post('/disableProduct', [
+  check('idProduct','Id del usuario obligatorio').not().isEmpty(),
+  check('idProduct','Id del usuario debe ser numérico').isNumeric(),
+
+  validarCampos
+], disableProduct);
+
+router.post('/getInventarylogByIdProductWithPage', [
+  check('idProduct','Id obligatorio').not().isEmpty(),
+  check('idProduct','Id debe ser numérico').isNumeric(),
+  validarCampos
+], getInventarylogByIdProductWithPage);
+
+router.post('/insertInventaryLog', [
+
+  check('idProduct','Cliente obligatorío').not().isEmpty(),
+  check('idProduct','El cliente debe ser numérico').isNumeric(),
+
+  check('cantidad','Monto obligatorío').not().isEmpty(),
+  check('cantidad','El monto debe ser numérico').isNumeric(),
+
+  check('description','Description obligatoría').not().isEmpty(),
+
+  validarCampos
+], insertInventaryLog);
 
 module.exports = router;

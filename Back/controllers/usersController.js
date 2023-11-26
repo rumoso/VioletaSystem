@@ -5,7 +5,6 @@ const { dbConnection } = require('../database/config');
 
 const getUsersListWithPage = async(req, res = response) => {
 
-    const bSend = req.header('bSend')
     const idUserLogON = req.header('idUserLogON')
 
     const {
@@ -99,17 +98,17 @@ const getUserByID = async(req, res = response) => {
 
 const insertUser = async(req, res) => {
     
-    const idUserLogON = req.header('idUserLogON');
-    const idSucursalLogON = req.header('idSucursal');
-
     const {
         name,
         userName,
         pwd = '',
-        active
-    } = req.body;
+        authorizationCode = '',
+        active,
 
-    console.log(bSend)
+        idUserLogON,
+        idSucursalLogON
+        
+    } = req.body;
 
     console.log(req.body)
 
@@ -123,14 +122,15 @@ const insertUser = async(req, res) => {
         '${ name }'
         ,'${ userName }'
         ,'${ pwdEncrypt }'
+        , '${ authorizationCode }'
         , ${ active }
 
         , ${ idUserLogON }
         )`)
 
         res.json({
-            status: 0,
-            message: "Usuario guardado con éxito.",
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message,
             insertID: OSQL[0].out_id
         });
 
@@ -152,6 +152,7 @@ const updateUser = async(req, res) => {
         name,
         userName,
         pwd = '',
+        authorizationCode = '',
         active
     } = req.body;
 
@@ -160,18 +161,18 @@ const updateUser = async(req, res) => {
     try{
 
         var OSQL = await dbConnection.query(`call updateUser(
-        ${idUser}
-        ,'${name}'
-        ,'${userName}'
-        , ${active}
+        ${ idUser }
+        ,'${ name }'
+        ,'${ userName }'
+        ,'${ authorizationCode }'
+        , ${ active }
         )`)
 
-        var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Users', ${ idUser } )`);
+        //var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Users', ${ idUser } )`);
 
         res.json({
-            status: 0,
-            message: "Usuario actualizado con éxito.",
-            insertID: OSQL[0].out_id
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
         });
 
     }catch(error){

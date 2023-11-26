@@ -26,6 +26,9 @@ class Server{
             electronicMoney:'/api/electronicMoney',
             cajas:'/api/cajas',
             synchronization:'/api/synchronization',
+            printers:'/api/printers',
+            actions:'/api/actions',
+            authorizationActions:'/api/authorizationActions',
         }
 
         //Conectar a base de datos
@@ -102,6 +105,9 @@ class Server{
         this.app.use(this.paths.electronicMoney, require('../routes/electronicMoneyRoute'));
         this.app.use(this.paths.cajas, require('../routes/cajasRoute'));
         this.app.use(this.paths.synchronization, require('../routes/synchronizationRoute'));
+        this.app.use(this.paths.printers, require('../routes/printersRoute'));
+        this.app.use(this.paths.actions, require('../routes/actionsRoute'));
+        this.app.use(this.paths.authorizationActions, require('../routes/authorizationActionsRoute'));
     }
 
     listen(){

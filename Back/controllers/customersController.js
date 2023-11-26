@@ -34,8 +34,8 @@ const getCustomersListWithPage = async(req, res = response) => {
         if(OSQL.length == 0){
 
             res.json({
-                status:0,
-                message:"No se encontró información.",
+                status: 0,
+                message: "No se encontró información.",
                 data:{
                     count: 0,
                     rows: null
@@ -48,8 +48,8 @@ const getCustomersListWithPage = async(req, res = response) => {
             const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
             
             res.json({
-                status:0,
-                message:"Ejecutado correctamente.",
+                status: 0,
+                message: "Ejecutado correctamente.",
                 data:{
                     count: iRows,
                     rows: OSQL
@@ -60,10 +60,10 @@ const getCustomersListWithPage = async(req, res = response) => {
         
     }catch(error){
       
-        res.status(500).json({
-            status:2,
-            message:"Sucedió un error inesperado",
-            data:error
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
         });
     }
 };
@@ -80,8 +80,8 @@ const getCustomerByID = async(req, res = response) => {
     if(OSQL.length == 0){
   
         res.json({
-            status:0,
-            message:"No se encontró información.",
+            status: 0,
+            message: "No se encontró información.",
             data: null
         });
 
@@ -89,8 +89,8 @@ const getCustomerByID = async(req, res = response) => {
     else{
 
         res.json({
-            status:0,
-            message:"Ejecutado correctamente.",
+            status: 0,
+            message: "Ejecutado correctamente.",
             data: OSQL[0]
         });
 
@@ -132,16 +132,16 @@ const insertCustomer = async(req, res) => {
         if(OSQL.length == 0){
   
             res.json({
-                status:1,
-                message:"No se registró el cliente."
+                status: 1,
+                message: "No se registró el cliente."
             });
     
         }
         else{
 
             res.json({
-                status:0,
-                message:"Cliente guardado con éxito.",
+                status: 0,
+                message: "Cliente guardado con éxito.",
                 insertID: OSQL[0].out_id
             });
     
@@ -149,9 +149,9 @@ const insertCustomer = async(req, res) => {
       
   }catch(error){
 
-      res.status(500).json({
-          status:2,
-          message:"Sucedió un error inesperado",
+      res.json({
+          status: 2,
+          message: "Sucedió un error inesperado",
           data: error.message
       });
   }
@@ -189,17 +189,17 @@ const updateCustomer = async(req, res) => {
         var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Customers', ${ idCustomer } )`);
 
       res.json({
-          status:0,
-          message:"Cliente actualizado con éxito.",
+          status: 0,
+          message: "Cliente actualizado con éxito.",
           insertID: OSQL[0].out_id
       });
       
   }catch(error){
       
-      res.status(500).json({
-          status:2,
-          message:"Sucedió un error inesperado",
-          data:error
+      res.json({
+          status: 2,
+          message: "Sucedió un error inesperado",
+          data: error.message
       });
   }
 }
@@ -218,15 +218,17 @@ const deleteCustomer = async(req, res) => {
           ${ idCustomer }
           )`)
 
+        var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Customers', ${ idCustomer } )`);
+
       res.json({
           status:0,
-          message:"Cliente eliminado con éxito.",
+          message:"Cliente deshabilitado con éxito.",
           insertID: OSQL[0].out_id
       });
       
   }catch(error){
       
-      res.status(500).json({
+      res.json({
           status:2,
           message:"Sucedió un error inesperado",
           data: error.message
@@ -250,8 +252,8 @@ const cbxGetCustomersCombo = async(req, res = response) => {
         if(OSQL.length == 0){
         
                 res.json({
-                    status:2,
-                    message:"No se encontró información.",
+                    status: 2,
+                    message: "No se encontró información.",
                     data: null
                 });
         
@@ -259,8 +261,8 @@ const cbxGetCustomersCombo = async(req, res = response) => {
             else{
         
                 res.json({
-                    status:0,
-                    message:"Ejecutado correctamente.",
+                    status: 0,
+                    message: "Ejecutado correctamente.",
                     data: OSQL
                 });
         
@@ -268,9 +270,9 @@ const cbxGetCustomersCombo = async(req, res = response) => {
 
     }catch(error){
         
-        res.status(500).json({
-            status:3,
-            message:"Sucedió un error inesperado",
+        res.json({
+            status: 3,
+            message: "Sucedió un error inesperado",
             data: error.message
         });
     }

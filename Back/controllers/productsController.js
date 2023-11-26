@@ -526,6 +526,151 @@ const getInventaryBySucursal = async(req, res = response) => {
     }
 };
 
+const disableProduct = async(req, res) => {
+   
+    const {
+        idProduct
+    } = req.body;
+  
+    console.log(req.body)
+  
+    try{
+  
+        var OSQL = await dbConnection.query(`call disableProduct(
+            ${ idProduct }
+            )`)
+  
+          var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Products', ${ idProduct } )`);
+  
+        res.json({
+            status: 0,
+            message: "Product deshabilitado con éxito.",
+            insertID: OSQL[0].out_id
+        });
+        
+    }catch(error){
+        
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+}
+
+const getInventarylogByIdProductWithPage = async(req, res = response) => {
+
+    const {
+        idProduct
+        
+        , search = ''
+        , limiter = 10
+        , start = 0
+       
+    } = req.body;
+
+    console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getInventarylogByIdProductWithPage(
+            ${ idProduct }
+
+            ,'${ search }'
+            ,${ start }
+            ,${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            });
+            
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const insertInventaryLog = async(req, res) => {
+   
+    const {
+        idProduct
+        , cantidad
+        , description
+
+        , idUserLogON
+        , idSucursalLogON
+    } = req.body;
+  
+    console.log(req.body)
+  
+    try{
+
+        var OSQL = await dbConnection.query(`call insertInventaryLog(
+            ${ idProduct }
+            , '${ cantidad }'
+            , '${ description.trim() }'
+
+            , ${ idUserLogON }
+            )`)
+  
+          if(OSQL.length == 0){
+    
+              res.json({
+                  status: 1,
+                  message:"No se registró el Inventario."
+              });
+      
+          }
+          else{
+  
+              res.json({
+                  status: 0,
+                  message: "Inventario guardado con éxito.",
+                  insertID: OSQL[0].out_id
+              });
+      
+          }
+  
+    }catch(error){
+  
+      await tran.rollback();
+        
+        res.status(500).json({
+            status:2,
+            message:"Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  }
+
 module.exports = {
     getProductsListWithPage
     , getProductByID
@@ -535,4 +680,7 @@ module.exports = {
     , getProductByBarCode
     , getInventaryListWithPage
     , getInventaryBySucursal
+    , disableProduct
+    , getInventarylogByIdProductWithPage
+    , insertInventaryLog
   }

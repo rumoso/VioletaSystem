@@ -28,10 +28,10 @@ const getElectronicMoneyListWithPage = async(req, res = response) => {
 
             res.json({
                 status: 0,
-                message:"Ejecutado correctamente.",
+                message: "Ejecutado correctamente.",
                 data:{
-                count: 0,
-                rows: null
+                    count: 0,
+                    rows: null
                 }
             });
 
@@ -42,7 +42,7 @@ const getElectronicMoneyListWithPage = async(req, res = response) => {
             
             res.json({
                 status: 0,
-                message:"Ejecutado correctamente.",
+                message: "Ejecutado correctamente.",
                 data:{
                 count: iRows,
                 rows: OSQL
@@ -53,10 +53,10 @@ const getElectronicMoneyListWithPage = async(req, res = response) => {
         
     }catch(error){
       
-        res.status(500).json({
-            status:2,
-            message:"Sucedió un error inesperado",
-            data:error
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
         });
     }
 };
@@ -67,6 +67,9 @@ const insertElectronicMoney = async(req, res) => {
     idCustomer,
     amount,
     description
+
+    , idUserLogON
+    , idSucursalLogON
   } = req.body;
 
   console.log(req.body)
@@ -79,6 +82,8 @@ const insertElectronicMoney = async(req, res) => {
           ,'${description}'
           ,0
           ,''
+          
+          , ${ idUserLogON }
           )`)
 
         if(OSQL.length == 0){
@@ -124,6 +129,8 @@ const deleteElectronicMoney = async(req, res) => {
         var OSQL = await dbConnection.query(`call deleteElectronicMoney(
             ${ idElectronicMoney }
             )`)
+
+        var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'ElectronicMoney', ${ idElectronicMoney } )`);
   
         res.json({
             status:0,
@@ -132,7 +139,7 @@ const deleteElectronicMoney = async(req, res) => {
         
     }catch(error){
         
-        res.status(500).json({
+        res.json({
             status:2,
             message:"Sucedió un error inesperado",
             data: error.message
