@@ -1,0 +1,70 @@
+<div style="padding: 10px;">
+
+    <div class="row">
+                                    
+        <div class="col-md-12">
+            
+            <mat-label>Seleccione una impresora:</mat-label>
+            <mat-form-field
+            style="width: 100%;"
+            (click)="cbxPrinters_Search()">
+                <input #cbxPrintersCBX
+                        class="colorGreen fontSize"
+                        type="text"
+                        style="width: 100%;"
+                        placeholder="Selecciona..."
+                        aria-label="Number"
+                        matInput
+                        [(ngModel)]="selectPrinterForm.printerName"
+                        [matAutocomplete]="cbxCaja"
+                        
+                        (input)="cbxPrinters_Search()"
+                        (focus)="cbxPrinters_Search()">
+                        <button *ngIf="selectPrinterForm.printerName" matSuffix mat-icon-button aria-label="Clear" (click)="cbxPrinters_Clear()">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                <mat-autocomplete autoActiveFirstOption
+                                    #cbxCaja="matAutocomplete"
+                                    (optionSelected)="cbxPrinters_SelectedOption( $event )">
+                    <mat-option *ngFor="let item of cbxPrinters" [value]="item">
+                        {{ item.printerName }}
+                    </mat-option>
+    
+                    <mat-option value="" *ngIf="cbxPrinters.length == 0 && selectPrinterForm.printerName">
+                        No se encontró nada...
+                    </mat-option>
+    
+                </mat-autocomplete>
+            </mat-form-field>
+            
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                *ngIf="selectPrinterForm.idPrinter > 0"
+                (click)="fn_insertSelectPrint()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Seleccionar impresora</button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL( 0 )">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

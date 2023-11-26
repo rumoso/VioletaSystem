@@ -1,0 +1,115 @@
+<div style="padding: 30px;">
+
+    <div class="row">
+
+        <div class="col-md-5">
+            <mat-form-field class="with100">
+                <mat-label>Nombre: </mat-label>
+                <input #tbxName
+                matInput
+                placeholder="Ingrese el nombre"
+                type="text"
+                [(ngModel)]="actionForm.name"
+                (keyup)="ev_fn_name_keyup_enter( $event )">
+            </mat-form-field>
+        </div>
+
+        <div class="col-md-7">
+            <mat-form-field class="example-full-width with100">
+                <mat-label>Descripción</mat-label>
+                <textarea #tbxDesc
+                matInput
+                cdkTextareaAutosize
+                placeholder="Ingrese una descripción"
+                [(ngModel)]="actionForm.description"
+                ></textarea>
+            </mat-form-field>
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_insertAction()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Guardar</button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="event_clear()">Limpiar</button>
+
+                <button mat-raised-button
+                type="button"
+                (click)="fn_CerrarMDL()">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter">Acciones</th>
+                        <th class="textAlingLeft">Nombre</th>
+                        <th class="textAlingLeft">Descripción</th>
+                        <th class="textAlingCenter">Creado</th>
+                        <th class="textAlingCenter">Active</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of actionList; let i = index">
+                            
+                            <td class="textAlingCenter">
+                                <div style="width: 80px;">
+                                    <span *ngIf="item.active" class="material-icons manitaSobre colorRed"
+                                        (click)="fn_disabledAction( item.idAction )">
+                                        delete_outline
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="textAlingLeft">{{ item.name }}</td>
+                            <td class="textAlingLeft">{{ item.description }}</td>
+                            <td class="textAlingCenter">
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                        <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy h:mm:ss a' }}</label>
+                                    </div>
+                                </div>
+                                
+                            </td>
+
+                            <td class="textAlingCenter">
+                                <mat-checkbox class="example-margin" [(ngModel)]="item.active"></mat-checkbox>
+                            </td>
+
+                        </tr>
+                        
+                    </tbody>
+                    
+                </table>
+            </div>
+
+            <app-pagination *ngIf="actionList" [IPagination]="pagination"
+                        (OPagination)="changePagination($event)">
+            </app-pagination>
+            
+        </div>
+
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -1,0 +1,77 @@
+<div style="padding: 10px;">
+
+    <div class="row top20px">
+
+        <div class="col-md-12">
+
+            <h1>Puedes agregar o quitar inventario</h1>
+
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-6">
+            
+            <mat-form-field class="example-full-width with100">
+                <mat-label>Descripción</mat-label>
+                <textarea #tbxDescription
+                matInput
+                cdkTextareaAutosize
+                placeholder="Ingrese el motivo"
+                [(ngModel)]="inventaryLogForm.description"
+                (keyup)="ev_fn_description_keyup_enter( $event )"></textarea>
+            </mat-form-field>
+            
+        </div>
+
+        <div class="col-md-6">
+            
+            <mat-form-field class="with100">
+                <mat-label>Cantidad</mat-label>
+                <input #tbxCantidad
+                class="textAlingRight colorGreen fontSize"
+                type="number"
+                matInput
+                placeholder="Cantidad"
+                [(ngModel)]="inventaryLogForm.cantidad"
+                (keyup)="ev_fn_amount_keyup_enter( $event )">
+            </mat-form-field>
+            
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_insertInventaryLog()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Guardar</button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="event_clear()">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Limpiar</button>
+
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL()">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>
