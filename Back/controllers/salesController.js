@@ -1,5 +1,6 @@
 const { response } = require('express');
 const bcryptjs = require('bcryptjs');
+const moment = require('moment');
 
 const { createConexion, dbConnection } = require('../database/config');
 
@@ -24,12 +25,15 @@ const insertSale = async(req, res) => {
     var bOK = false;
     var idSale = '';
 
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
     try{
 
         if( idSucursalLogON > 0 ){
             
             var OSQL = await dbConnection.query(`call insertSale(
-            ${ idSucursalLogON }
+            '${oGetDateNow}'
+            , ${ idSucursalLogON }
             , ${ idSeller_idUser }
             , ${ idCustomer }
             , ${ idSaleType }
@@ -53,9 +57,12 @@ const insertSale = async(req, res) => {
                     for(var i = 0; i < saleDetail.length; i++){
                         
                         var saleD = saleDetail[i];
+
+                        var descriptionTaller = ( idSaleType == "5" ? saleD.productDesc : '' )
     
                         var OSQL2 = await dbConnection.query(`call insertSaleDetail(
-                            '${ idSale }'
+                            '${oGetDateNow}'
+                            ,'${ idSale }'
                             , ${ saleD.idProduct }
                             , '${ saleD.cantidad }'
                             , '${ saleD.cost }'
@@ -63,6 +70,8 @@ const insertSale = async(req, res) => {
                             , '${ saleD.descuento }'
                             , '${ saleD.precio }'
                             , '${ saleD.importe }'
+                            , '${ descriptionTaller }'
+                            
                             , ${ idUserLogON }
                         )`,{ transaction: tran })
     
@@ -72,21 +81,27 @@ const insertSale = async(req, res) => {
                             bOK = false;
                             break;
                         }
-    
-                        var OSQL4 = await dbConnection.query(`call insertInventaryLog(
-                            ${ saleD.idProduct }
-                            , '-${ saleD.cantidad }'
-                            , 'Salida por Venta #${ idSale }'
-    
-                            , ${ idUserLogON }
-                        )`,{ transaction: tran })
-    
-                        if(OSQL4[0].out_id > 0){
-                            bOK = true;
-                        }else{
-                            bOK = false;
-                            break;
+
+                        //  QUE NO SEA SOBRE DE TALLER
+                        if( idSaleType != "5" )
+                        {
+                            var OSQL4 = await dbConnection.query(`call insertInventaryLog(
+                                '${oGetDateNow}'
+                                , ${ saleD.idProduct }
+                                , '-${ saleD.cantidad }'
+                                , 'Salida por Venta #${ idSale }'
+        
+                                , ${ idUserLogON }
+                            )`,{ transaction: tran })
+        
+                            if(OSQL4[0].out_id > 0){
+                                bOK = true;
+                            }else{
+                                bOK = false;
+                                break;
+                            }
                         }
+
                     }
     
                 }
@@ -139,11 +154,16 @@ const insertSale = async(req, res) => {
 
 const getVentasListWithPage = async(req, res = response) => {
 
-    const {
+    var {
         idUser
-        ,createDateStart = ''
-        ,createDateEnd = ''
-        ,idCustomer = 0
+        , createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSaleType = 0
+
+        , bCancel = false
+        , bPending = false
+        , bPagada = false
 
         , search = ''
         , limiter = 10
@@ -156,17 +176,29 @@ const getVentasListWithPage = async(req, res = response) => {
 
     console.log(req.body)
 
-    console.log( new Date() )
-
     const dbConnectionNEW = await createConexion();
 
     try{
 
+        if (bPending && bPagada)
+        {
+            bPending = false;
+            bPagada = false;
+        }
+
+        console.log( bPending )
+        console.log( bPagada )
+
         var OSQL = await dbConnectionNEW.query(`call getVentasListWithPage(
             ${idUser}
-            , '${createDateStart}'
-            , '${createDateEnd}'
+            , '${createDateStart.substring(0, 10)}'
+            , '${createDateEnd.substring(0, 10)}'
             , ${idCustomer}
+            , ${idSaleType}
+
+            , ${bCancel}
+            , ${bPending}
+            , ${bPagada}
 
             , '${ search }'
             , ${ start }
@@ -291,6 +323,8 @@ const insertPayments = async(req, res) => {
     const tran = await dbConnection.transaction();
 
     var bOK = false;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
   
     try{
 
@@ -298,52 +332,70 @@ const insertPayments = async(req, res) => {
 
             var OPayment = paymentList[i];
 
-            var OSQL = await dbConnection.query(`call insertPayments(
-                ${ idCaja }
-                , '${ OPayment.idRelation }'
-                , '${ OPayment.relationType }'
-                , ${ OPayment.idSeller_idUser }
-                , ${ OPayment.idFormaPago }
-                , '${ OPayment.paga }'
-                , '${ OPayment.referencia }'
-                , '${ OPayment.description }'
-                , '${ OPayment.idFxRate }'
-                , '${ OPayment.fxRate }'
-                , '${ OPayment.pagaF }'
+            var OSQL_getSaleByID = await dbConnection.query(`call getSaleByID( '${ OPayment.idRelation }' )`)
+            OSQL_getSaleByID = OSQL_getSaleByID[0]
 
-                , ${ idUserLogON }
-                , ${ idSucursalLogON }
-                )`,{ transaction: tran })
+            //console.log( OSQL_getSaleByID )
+            
+            if(OSQL_getSaleByID){
 
-                var idPayment = OSQL[0].out_id;
+                if(OSQL_getSaleByID.pendingAmount >= OPayment.paga){
+
+                    var OSQL = await dbConnection.query(`call insertPayments(
+                        '${oGetDateNow}'
+                        ,  ${ idCaja }
+                        , '${ OPayment.idRelation }'
+                        , '${ OPayment.relationType }'
+                        ,  ${ OPayment.idSeller_idUser }
+                        ,  ${ OPayment.idFormaPago }
+                        , '${ OPayment.paga }'
+                        , '${ OPayment.referencia }'
+                        , '${ OPayment.description }'
+                        , '${ OPayment.idFxRate }'
+                        , '${ OPayment.fxRate }'
+                        , '${ OPayment.pagaF }'
         
-                if(idPayment.length > 0){
-                    bOK = true;
-                }else{
-                    bOK = false;
-                    break;
-                }
-
-                if(OPayment.idFormaPago == 5 && idPayment.length > 0){
-                    
-                    var OSQL2 = await dbConnection.query(`call insertElectronicMoney(
-                        ${ idCustomer }
-                        ,'-${ OPayment.paga }'
-                        ,'Se utiliza en el pago #${ idPayment }'
-                        ,'${ OPayment.idRelation }'
-                        ,'${ OPayment.relationType }'
-
                         , ${ idUserLogON }
+                        , ${ idSucursalLogON }
                         )`,{ transaction: tran })
-    
-                    if(OSQL2[0].out_id > 0){
-                        bOK = true;
-                    }else{
-                        bOK = false;
-                        break;
-                    }
-                    
+        
+                        var idPayment = OSQL[0].out_id;
+                
+                        if(idPayment.length > 0){
+                            bOK = true;
+                        }else{
+                            bOK = false;
+                            break;
+                        }
+        
+                        if(OPayment.idFormaPago == 5 && idPayment.length > 0){
+                            
+                            var OSQL2 = await dbConnection.query(`call insertElectronicMoney(
+                                '${oGetDateNow}'
+                                ,  ${ idCustomer }
+                                , '-${ OPayment.paga }'
+                                , 'Se utiliza en el pago #${ idPayment }'
+                                , '${ OPayment.idRelation }'
+                                , '${ OPayment.relationType }'
+        
+                                , ${ idUserLogON }
+                                )`,{ transaction: tran })
+            
+                            if(OSQL2[0].out_id > 0){
+                                bOK = true;
+                            }else{
+                                bOK = false;
+                                break;
+                            }
+                            
+                        }
+
                 }
+
+            }
+            
+
+            
         }
 
         if(bOK){
@@ -462,11 +514,14 @@ const insertSaleByConsignation = async(req, res) => {
     var bOK = false;
     var idSale = '';
     var bBorro = 0;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
   
     try{
 
         var OSQL = await dbConnection.query(`call insertSale(
-            ${ idSucursalLogON }
+            '${oGetDateNow}'
+            , ${ idSucursalLogON }
             , ${ idSeller_idUser }
             , ${ idCustomer }
             , ${ idSaleType }
@@ -503,14 +558,16 @@ const insertSaleByConsignation = async(req, res) => {
                       }
 
                       var OSQL2 = await dbConnection.query(`call insertSaleDetail(
-                          '${ idSale }'
-                          , ${ saleD.idProduct }
+                        '${oGetDateNow}'
+                          , '${ idSale }'
+                          ,  ${ saleD.idProduct }
                           , '${ saleD.consCantidad }'
                           , '${ saleD.cost }'
                           , '${ saleD.precioUnitario }'
                           , '${ saleD.descuento }'
                           , '${ saleD.precio }'
                           , '${ saleD.consCantidad * saleD.precio }'
+                          , ''
                           , ${ idUserLogON }
                           )`,{ transaction: tran })
   
@@ -534,11 +591,12 @@ const insertSaleByConsignation = async(req, res) => {
                         }
 
                         var OSQL4 = await dbConnection.query(`call insertConsHistory(
-                            '${ idSaleOld }'
-                            , ${ saleD.idSaleDetail }
+                            '${oGetDateNow}'
+                            , '${ idSaleOld }'
+                            ,  ${ saleD.idSaleDetail }
                             , 'Se pasó a ${ ( idSaleType == 1 ? 'una venta de crédito' : idSaleType == 2 ? 'una venta de contado' : idSaleType == 3 ? 'un apartado' : '' ) + ': #' + idSale }'
                             , '${ saleD.consCantidad }'
-                            , ${ idUserLogON }
+                            ,  ${ idUserLogON }
                             )`,{ transaction: tran })
 
                         if(OSQL4[0].idNew > 0){
@@ -549,10 +607,11 @@ const insertSaleByConsignation = async(req, res) => {
                         }
 
                         var OSQL5 = await dbConnection.query(`call changeInventaryLogCons(
-                            ${ saleD.idProduct }
-                            ,'${ saleD.consCantidad }'
-                            ,'${ idSaleOld }'
-                            ,'${ idSale }'
+                            '${oGetDateNow}'
+                            ,  ${ saleD.idProduct }
+                            , '${ saleD.consCantidad }'
+                            , '${ idSaleOld }'
+                            , '${ idSale }'
                             
                             , ${ idUserLogON }
                             )`,{ transaction: tran })
@@ -621,6 +680,8 @@ const regresarProductoDeConsignacion = async(req, res) => {
     var bOK = false;
     var bBorro = 0;
 
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
     try{
 
         for(var i = 0; i < saleDetail.length; i++){
@@ -639,7 +700,8 @@ const regresarProductoDeConsignacion = async(req, res) => {
                 }
 
             var OSQL1 = await dbConnection.query(`call insertInventaryLog(
-                ${saleD.idProduct}
+                '${oGetDateNow}'
+                , ${saleD.idProduct}
                 , '${saleD.consCantidad}'
                 , 'Regreso de consignación #${ saleD.idSale }'
 
@@ -654,7 +716,8 @@ const regresarProductoDeConsignacion = async(req, res) => {
                 }
 
             var OSQL2 = await dbConnection.query(`call insertConsHistory(
-                '${ saleD.idSale }'
+                '${oGetDateNow}'
+                , '${ saleD.idSale }'
                 , ${ saleD.idSaleDetail }
                 , 'Se regresó a tienda de la consignación #${ saleD.idSale }'
                 , '${ saleD.consCantidad }'
@@ -704,6 +767,7 @@ const getPreCorteCaja = async(req, res = response) => {
 
     const {
         idCaja
+        ,selectedDate = ''
 
         ,idUserLogON
         ,idSucursalLogON
@@ -715,6 +779,7 @@ const getPreCorteCaja = async(req, res = response) => {
 
         var OSQL = await dbConnection.query(`call getPreCorteCajaByCaja(
             ${ idCaja }
+            , '${ selectedDate.substring(0, 10) }'
             )`)
 
         if(OSQL.length == 0){
@@ -753,6 +818,7 @@ const getPreEgresosCorteCaja = async(req, res = response) => {
 
     const {
         idCaja
+        ,selectedDate = ''
 
         ,idUserLogON
         ,idSucursalLogON
@@ -802,7 +868,8 @@ const insertCorteCaja = async(req, res) => {
    
     const {
         idCaja
-        , conclusionData
+        , selectedDate = ''
+        , preCorteCaja
 
         , idUserLogON
         , idSucursalLogON
@@ -814,13 +881,17 @@ const insertCorteCaja = async(req, res) => {
   
     var bOK = false;
     var idCorteCaja = '';
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
   
     try{
   
         var OSQL = await dbConnection.query(`call insertCorteCaja(
-            ${ idCaja }
-            , ${ idUserLogON }
-            , ${ idSucursalLogON }
+            '${oGetDateNow}'
+            ,  ${ idCaja }
+            , '${ selectedDate.substring(0, 10) }'
+            ,  ${ idUserLogON }
+            ,  ${ idSucursalLogON }
             )`,{ transaction: tran })
 
             console.log( OSQL )
@@ -841,6 +912,7 @@ const insertCorteCaja = async(req, res) => {
 
                 var OSQL2 = await dbConnection.query(`call getPaymentsToCorteCaja(
                     ${ idCaja }
+                    , '${ selectedDate.substring(0, 10) }'
                 )`);
 
                 for(var i = 0; i < OSQL2.length; i++){
@@ -889,18 +961,33 @@ const insertCorteCaja = async(req, res) => {
 
                 }
 
-                if( conclusionData ){
+                if( preCorteCaja ){
 
-                    var bCuadro = conclusionData.bCuadro;
-                    var falto = conclusionData.falto;
-                    var sobro = conclusionData.sobro;
-                    var observaciones = conclusionData.observaciones;
+                    const {
+                        pesosCaja = 0
+                        ,dolaresF = 0
+                        ,fxRate = 0
+                        ,dolaresMNX = 0
+                        ,vouchersCaja = 0
+                        ,transferenciasCaja = 0
+                        ,totalCaja = 0
+                        ,diferencia = 0
+                        ,observaciones = ''
+                    } = preCorteCaja;
+
+                    var bCuadro = diferencia == 0 ? 1 : 2;
 
                     var OSQL6 = await dbConnection.query(`call insertCorteCajaDetail(
                         '${ idCorteCaja }'
-                        , ${ bCuadro }
-                        , '${ falto }'
-                        , '${ sobro }'
+                        , '${ pesosCaja }'
+                        , '${ dolaresF }'
+                        , '${ fxRate }'
+                        , '${ dolaresMNX }'
+                        , '${ vouchersCaja }'
+                        , '${ transferenciasCaja }'
+                        , '${ totalCaja }'
+                        ,  ${ bCuadro }
+                        , '${ diferencia }'
                         , '${ observaciones }'
         
                         , ${ idUserLogON }
@@ -969,11 +1056,14 @@ const insertEgresos = async(req, res) => {
   
     console.log(req.body)
 
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
     try{
 
         var OSQL = await dbConnection.query(`call insertEgresos(
-        ${ idCaja }
-        , ${ idFormaPago }
+        '  ${oGetDateNow}'
+        ,  ${ idCaja }
+        ,  ${ idFormaPago }
         , '${ description }'
         , '${ amount }'
 
@@ -1026,7 +1116,7 @@ const disabledEgresos = async(req, res) => {
 
         res.json({
             status: 0,
-            message: "Egreso deshabilitado con éxito.",
+            message: "Egreso cancelado con éxito.",
             insertID: OSQL[0].idRelation
         });
 
@@ -1038,86 +1128,6 @@ const disabledEgresos = async(req, res) => {
             data: error.message
         });
 
-    }
-}
-
-const insertCorteCajaDetail = async(req, res) => {
-   
-    const {
-        idCorteCaja
-        , paymentList
-
-        , idUserLogON
-        , idSucursalLogON
-    } = req.body;
-  
-    console.log(req.body)
-  
-    const tran = await dbConnection.transaction();
-  
-    var bOK = false;
-    try{
-
-        for( var i = 0; i < paymentList.length; i++ ){
-            
-            var payment = paymentList[i];
-
-            console.log( payment )
-
-            var OSQL = await dbConnection.query(`call insertCorteCajaDetail(
-                '${ idCorteCaja }'
-                , ${ payment.idFormaPago }
-                , ${ payment.numPagos }
-                , ${ payment.saldo }
-                , ${ payment.egresos }
-                , ${ payment.saldo - payment.egresos }
-                , ${ payment.saldoCaja }
-                , ${ payment.restoCaja }
-                , ${ payment.valorMXN }
-
-                , ${ idUserLogON }
-            )`,{ transaction: tran })
-
-            if(OSQL[0].idNew > 0){
-                bOK = true;
-            }else{
-                bOK = false;
-                break;
-            }
-
-        }
-
-        if(bOK){
-
-            await tran.commit();
-
-            res.json({
-                status: 0,
-                message: "Detalle de Corte de caja guardado con éxito.",
-                insertID: idCorteCaja
-            });
-
-        }else{
-
-            await tran.rollback();
-
-            res.json({
-                status: 1,
-                message: "No se guardó el Detalle de Corte de caja."
-            });
-
-        }
-      
-    }catch(error){
-  
-        await tran.rollback();
-        
-        res.json({
-            status: 2,
-            message: "Sucedió un error inesperado",
-            data: error.message
-        });
-  
     }
 }
 
@@ -1306,6 +1316,8 @@ const disabledSale = async(req, res) => {
 
     var bOK = false;
 
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
     try{
 
         var saleDetail = await dbConnection.query(`call getSalesDetail( '${ idSale }' )`)
@@ -1315,7 +1327,8 @@ const disabledSale = async(req, res) => {
             var saleD = saleDetail[i];
 
             var OSQL = await dbConnection.query(`call insertInventaryLog(
-                ${ saleD.idProduct }
+                '${oGetDateNow}'
+                ,  ${ saleD.idProduct }
                 , '${ saleD.cantidad }'
                 , 'Se regresa por cancelación de venta #${ idSale }'
 
@@ -1346,7 +1359,7 @@ const disabledSale = async(req, res) => {
 
             res.json({
                 status: 0,
-                message: "Venta eliminada con éxito.",
+                message: "Venta cancelada con éxito.",
                 insertID: idSale
             });
 
@@ -1356,7 +1369,7 @@ const disabledSale = async(req, res) => {
 
             res.json({
                 status: 1,
-                message: "No se eliminó la Venta."
+                message: "No se pudo cancelar la Venta."
             });
         }
         
@@ -1467,6 +1480,115 @@ const getEgresoByID = async(req, res = response) => {
 
 };
 
+const disabledPayment = async(req, res) => {
+   
+    const {
+        idSale
+        , idPayment
+
+        , idUserLogON
+    } = req.body;
+
+    console.log(req.body)
+
+    const tran = await dbConnection.transaction();
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    var bOK = false;
+
+    try{
+
+        var OSQL_SalesDetail = await dbConnection.query(`call getPaymentsByIdSaleListWithPage(
+            '${ idSale }'
+
+            ,''
+            ,0
+            ,100000
+            )`)
+
+        var oPayment = OSQL_SalesDetail.filter( item => item.idPayment === idPayment);
+
+        //console.log(oPayment)
+
+        if(oPayment.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se puede cancelar el pago."
+            });
+
+        }
+        else{
+
+            if(oPayment[0].active == 1){
+
+                var OSQL_insertPaymentsCanceled = await dbConnection.query(`call insertPaymentsCanceled(
+                    '${oGetDateNow}'
+                    , '${ idPayment }'
+                    , ${ oPayment[0].iPagoCortado }
+
+                    , ${ idUserLogON }
+                    )`,{ transaction: tran })
+    
+                    if(OSQL_insertPaymentsCanceled[0].out_id > 0){
+                        bOK = true;
+                    }else{
+                        bOK = false;
+                    }
+
+                    if( bOK ){
+
+                        var OSQL_disabledPayment = await dbConnection.query(`call disabledPayment(
+                            '${ idPayment }'
+                            )`,{ transaction: tran })
+
+                        if(OSQL_disabledPayment[0].idRelation.length > 0){
+                            bOK = true;
+                        }else{
+                            bOK = false;
+                        }
+                    }
+
+                    if(bOK){
+
+                        await tran.commit();
+            
+                        res.json({
+                            status: 0,
+                            message: "Pago cancelado con éxito.",
+                        });
+            
+                    }else{
+            
+                        await tran.rollback();
+            
+                        res.json({
+                            status: 1,
+                            message: "No se puede cancelar el pago.",
+                        });
+            
+                    }
+            
+            }else{
+
+                res.json({
+                    status: 1,
+                    message: "No se puede cancelar el pago."
+                });
+
+            }
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
 module.exports = {
     insertSale
     , getVentasListWithPage
@@ -1483,8 +1605,6 @@ module.exports = {
 
     , disabledEgresos
 
-    , insertCorteCajaDetail
-
     , getCorteCajaByID
 
     , getEgresosByIDCorteCaja
@@ -1496,5 +1616,6 @@ module.exports = {
     , getConsHistory
 
     , getEgresoByID
+    , disabledPayment
 
 }

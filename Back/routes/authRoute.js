@@ -6,6 +6,8 @@ const { validarCampos } = require('../middlewares/validar-campos');
 const { 
     login
     , getMenuByPermissions
+
+    , getActionsPermissionByUser
      } = require('../controllers/authController');
 
 const router = Router();
@@ -22,5 +24,11 @@ router.post('/getMenuByPermissions',[
     validarCampos
 
 ], getMenuByPermissions );
+
+router.post('/getActionsPermissionByUser',[
+    check('idUser','Usuario obligatorio').not().isEmpty(),
+    validarCampos
+
+], getActionsPermissionByUser );
 
 module.exports = router;

@@ -7,7 +7,7 @@ class Server{
     constructor(){
         this.app = express();        
         this.port = process.env.PORT;
-        
+
         this.paths = {
             auth:'/api/auth',
             users:'/api/users',
@@ -29,6 +29,10 @@ class Server{
             printers:'/api/printers',
             actions:'/api/actions',
             authorizationActions:'/api/authorizationActions',
+            rep_utilidades:'/api/rep_utilidades',
+            suppliers:'/api/suppliers',
+            comisiones:'/api/comisiones',
+
         }
 
         //Conectar a base de datos
@@ -85,6 +89,7 @@ class Server{
         //     // Pass to next layer of middleware
         //     next();
         // });
+
     }
 
     routes(){               
@@ -108,6 +113,9 @@ class Server{
         this.app.use(this.paths.printers, require('../routes/printersRoute'));
         this.app.use(this.paths.actions, require('../routes/actionsRoute'));
         this.app.use(this.paths.authorizationActions, require('../routes/authorizationActionsRoute'));
+        this.app.use(this.paths.rep_utilidades, require('../routes/rep_utilidadesRoute'));
+        this.app.use(this.paths.suppliers, require('../routes/suppliersRoute'));
+        this.app.use(this.paths.comisiones, require('../routes/comisionesRoute'));
     }
 
     listen(){

@@ -15,6 +15,15 @@ const {
    , disableProduct
    , getInventarylogByIdProductWithPage
    , insertInventaryLog
+
+   , startPhysicInventory
+   , getPhysicalInventoryListWithPage
+   , getPhysicalInventoryDetailListWithPage
+   , verifyPhysicalInventoryDetail
+   , changeStatusPhysicalInventory
+   , getPhysicalInventoryHeader
+   , updateMostradorPhysicalInventoryDetail
+   , getPhysicalInventoryHeaderBySucursal
    } = require('../controllers/productsController');
 
    
@@ -136,5 +145,54 @@ router.post('/insertInventaryLog', [
 
   validarCampos
 ], insertInventaryLog);
+
+router.post('/startPhysicInventory', startPhysicInventory);
+
+router.post('/getPhysicalInventoryListWithPage', getPhysicalInventoryListWithPage);
+
+router.post('/getPhysicalInventoryDetailListWithPage', [
+
+  check('idPhysicalInventory','id obligatorío').not().isEmpty(),
+
+  validarCampos
+], getPhysicalInventoryDetailListWithPage);
+
+router.post('/verifyPhysicalInventoryDetail', [
+
+  check('idPhysicalInventory','id obligatorío').not().isEmpty(),
+  
+  check('barCode','id obligatorío').not().isEmpty(),
+
+  validarCampos
+], verifyPhysicalInventoryDetail);
+
+router.post('/changeStatusPhysicalInventory', [
+
+  check('idPhysicalInventory','id obligatorío').not().isEmpty(),
+  
+  check('idStatus','Estatus obligatorío').not().isEmpty(),
+  check('idStatus','El estatus debe ser numérico').isNumeric(),
+
+  validarCampos
+], changeStatusPhysicalInventory);
+
+router.post('/getPhysicalInventoryHeader', [
+
+  check('idPhysicalInventory','id obligatorío').not().isEmpty(),
+
+  validarCampos
+], getPhysicalInventoryHeader);
+
+router.post('/updateMostradorPhysicalInventoryDetail', [
+
+  check('idPhysicalInventory','id obligatorío').not().isEmpty(),
+  
+  check('idPhysicalInventoryDetail','id D obligatorío').not().isEmpty(),
+  check('idPhysicalInventoryDetail','id debe ser numérico').isNumeric(),
+
+  validarCampos
+], updateMostradorPhysicalInventoryDetail);
+
+router.post('/getPhysicalInventoryHeaderBySucursal', getPhysicalInventoryHeaderBySucursal);
 
 module.exports = router;

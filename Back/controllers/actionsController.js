@@ -139,150 +139,174 @@ const disabledActions = async(req, res) => {
     }
 }
 
-const getActionsForAddUser = async(req, res = response) => {
+const getAllActionsByPermission = async(req, res = response)=>{
 
     const {
-      search = ''
-      , idUser
-    } = req.body;
-  
-    console.log(req.body)
-    var OSQL = await dbConnection.query(`call getActionsForAddUser( '${search}' , ${ idUser })`)
-  
-    if(OSQL.length == 0){
-  
-        res.json({
-            status: 2,
-            message: "No se encontró información.",
-            data: null
-        });
-  
-      }
-      else{
-  
-          res.json({
-              status: 0,
-              message: "Ejecutado correctamente.",
-              data: OSQL
-          });
-  
-      }
-  
-  };
+        relationType
+        , idRelation
+    }= req.body;
 
-const getActionByUserListWithPage = async(req, res = response) => {
-
-    const {
-        idUser
-        , search = ''
-        , limiter = 10
-        , start = 0
-       
-    } = req.body;
-
-    console.log(req.body)
+    var OSQL = null;
 
     try{
 
-        var OSQL = await dbConnection.query(`call getActionByUserListWithPage(
-            ${ idUser }
-            ,'${ search }'
-            ,${ start }
-            ,${ limiter }
-            )`)
+       // var OMenuList = [];
 
-        if(OSQL.length == 0){
+        OActionSectionList = await dbConnection.query(`call getActionSection()`);
+
+        if( OActionSectionList.length == 0 ){
+            return res.json({
+                status:1,
+                message:"No tiene secciones",
+                data:null
+            })
+        }else{
+
+            var oActionSections = [];
+
+            for(var i = 0; i < OActionSectionList.length; i++){
+
+                var oActionSection = {
+                    'sectionName': OActionSectionList[i].sectionName,
+                    'actions': []
+                }
+
+                oActionsBySectionList = await dbConnection.query(`call getActionsBySectionAndPermission( '${ OActionSectionList[i].idActionSection }', '${ relationType }', ${ idRelation } )`);
+                //console.log( oActionsBySectionList )
+                
+                for(var n = 0; n < oActionsBySectionList.length; n++){
+
+                    var oObj = {
+                        'idAction': oActionsBySectionList[n].idAction,
+                        'actionName': oActionsBySectionList[n].name,
+                        'nameHtml': oActionsBySectionList[n].nameHtml,
+                        'description': oActionsBySectionList[n].description,
+                        'bPermissionAction': oActionsBySectionList[n].bPermissionAction == 1 ? true : false
+                    };
+
+                    //console.log( oObj )
+
+                    oActionSection.actions.push( oObj );
+                    //console.log( oActionSection )
+                }
+
+                oActionSections.push( oActionSection );
+            }
+
+            //console.log( oActionSections )
 
             res.json({
-                status: 0,
-                message: "Ejecutado correctamente.",
-                data:{
-                    count: 0,
-                    rows: []
-                }
+                status:0,
+                message:"Conectado correctamente.",
+                data: oActionSections
             });
 
-        }
-        else{
-
-            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
-            
-            res.json({
-                status: 0,
-                message: "Ejecutado correctamente.",
-                data:{
-                    count: iRows,
-                    rows: OSQL
-                }
-            });
-            
         }
         
-    }catch(error){
-      
-        res.json({
-            status: 2,
-            message: "Sucedió un error inesperado",
-            data: error.message
+    }
+    catch( error ){
+        
+        res.status(500).json({
+            status:2,
+            message:"Sucedió un error inesperado",
+            error: error.message,
+            data: OSQL
         });
     }
-};
+}
 
-const insertActionByIdUser = async(req, res) => {
+const insertActionsPermisionsByIdRelation = async(req, res) => {
    
     const {
-        idUser,
-        idAction
-  
-      , idUserLogON
-      , idSucursalLogON
-  
+        relationType
+        , idRelation
+        , seccionesYPermisos
+
+        , idUserLogON
+        , idSucursalLogON
+
     } = req.body;
-  
+
     console.log(req.body)
-  
+
+    const tran = await dbConnection.transaction();
+    var bOK = true;
+
     try{
-  
-        var OSQL = await dbConnection.query(`call insertActionByIdUser(
-            ${ idUser }
-            , ${ idAction }
-  
-            , ${ idUserLogON }
-            )`)
-  
-          if(OSQL.length == 0){
+
+        var oClear = await dbConnection.query(`call clearActionsConfByIdRelation( '${ relationType }', ${ idRelation } )`,{ transaction: tran });
+
+        console.log( oClear )
+
+        if(oClear[0].bOK > 0){
+
+            bOK = true;
+
+            for(var i = 0; i < seccionesYPermisos.length; i++){
+                for(var n = 0; n < seccionesYPermisos[i].actions.length; n++){
+                    console.log( seccionesYPermisos[i].actions[n] )
     
-              res.json({
-                  status: 1,
-                  message: "No se registró."
-              });
-      
-          }
-          else{
-  
-              res.json({
-                  status: 0,
-                  message: "Acción asignada con éxito.",
-                  insertID: OSQL[0].out_id
-              });
-      
-          }
-  
+                    if( seccionesYPermisos[i].actions[n].bPermissionAction ){
+
+                        var OSQLInsert = await dbConnection.query(`call insertActionByIdRelation(
+                            '${ relationType }'
+                            , ${ idRelation }
+                            , ${ seccionesYPermisos[i].actions[n].idAction }
+    
+                            , ${ idUserLogON }
+                        )`,{ transaction: tran })
+        
+                        if(OSQLInsert[0].out_id > 0){
+                            bOK = true;
+                        }else{
+                            bOK = false;
+                            break;
+                        }
+
+                    }
+    
+                }
+            }
+
+        }else{
+            bOK = false;
+        }
+
+        if(bOK){
+                    
+            await tran.commit();
+
+            res.json({
+                status: 0,
+                message: "Permisos guardados con éxito.",
+            });
+
+        }else{
+            
+            await tran.rollback();
+
+            res.json({
+                status: 1,
+                message: "No se guardaron los permisos."
+            });
+        }
+
     }catch(error){
-  
+
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
             data: error.message
         });
     }
-  }
+}
+
 
 module.exports = {
     getActionListWithPage
     , insertAction
     , disabledActions
-    , getActionsForAddUser
-    , getActionByUserListWithPage
-    , insertActionByIdUser
+
+    , getAllActionsByPermission
+    , insertActionsPermisionsByIdRelation
   }

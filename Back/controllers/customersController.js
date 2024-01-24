@@ -46,13 +46,21 @@ const getCustomersListWithPage = async(req, res = response) => {
         else{
 
             const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+
+            var OSQL_getSUMDineroElectHeader = await dbConnection.query(`call getSUMDineroElectHeader(
+                '${ createDateStart }'
+                ,'${ createDateEnd }'
+                ,'${ name }'
+                ,'${ lastName }'
+                )`)
             
             res.json({
                 status: 0,
                 message: "Ejecutado correctamente.",
                 data:{
                     count: iRows,
-                    rows: OSQL
+                    rows: OSQL,
+                    header: OSQL_getSUMDineroElectHeader[0]
                 }
             });
             

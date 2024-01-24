@@ -7,10 +7,10 @@ const {
   getActionListWithPage
     , insertAction
     , disabledActions
-    , getActionsForAddUser
-    , getActionByUserListWithPage
-    , insertActionByIdUser
-   } = require('../controllers/actionsController');
+
+    , getAllActionsByPermission
+    , insertActionsPermisionsByIdRelation
+  } = require('../controllers/actionsController');
 
    
 const router = Router();
@@ -34,28 +34,22 @@ router.post('/disabledActions', [
   validarCampos
 ], disabledActions);
 
-router.post('/getActionsForAddUser', [
-  check('idUser','Id obligatorio').not().isEmpty(),
-  check('idUser','Id debe ser numérico').isNumeric(),
+router.post('/getAllActionsByPermission', [
   
-  validarCampos
-], getActionsForAddUser);
+  check('relationType','Id tipo de relación obligatorio').not().isEmpty(),
+  check('idRelation','Id usuario obligatorio').not().isEmpty(),
+  check('idRelation','Id usuario debe ser numérico').isNumeric(),
 
-router.post('/getActionByUserListWithPage', [
-  check('idUser','Id obligatorio').not().isEmpty(),
-  check('idUser','Id debe ser numérico').isNumeric(),
+  validarCampos
+], getAllActionsByPermission);
+
+router.post('/insertActionsPermisionsByIdRelation', [
   
-  validarCampos
-], getActionByUserListWithPage);
+  check('relationType','Id tipo de relación obligatorio').not().isEmpty(),
+  check('idRelation','Id usuario obligatorio').not().isEmpty(),
+  check('idRelation','Id usuario debe ser numérico').isNumeric(),
 
-router.post('/insertActionByIdUser', [
-  check('idUser','Id usuario obligatorio').not().isEmpty(),
-  check('idUser','Id usuario debe ser numérico').isNumeric(),
-
-  check('idAction','Id acción obligatorio').not().isEmpty(),
-  check('idAction','Id acción debe ser numérico').isNumeric(),
-  
   validarCampos
-], insertActionByIdUser);
+], insertActionsPermisionsByIdRelation);
 
 module.exports = router;

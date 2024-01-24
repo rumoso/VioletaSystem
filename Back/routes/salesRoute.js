@@ -19,8 +19,6 @@ const {
 
   , disabledEgresos
 
-  , insertCorteCajaDetail
-
   , getCorteCajaByID
   , getEgresosByIDCorteCaja
   , getCorteCajaListWithPage
@@ -30,6 +28,7 @@ const {
   , getConsHistory
 
   , getEgresoByID
+  , disabledPayment
 
 
 } = require('../controllers/salesController');
@@ -155,15 +154,6 @@ router.post('/disabledEgresos', [
   validarCampos
 ], disabledEgresos);
 
-router.post('/insertCorteCajaDetail', [
-
-  check('idCorteCaja','Corte de Caja obligatorio').not().isEmpty(),
-
-  check('paymentList','Debe seleccionar pagos').not().isEmpty(),
-
-  validarCampos
-], insertCorteCajaDetail);
-
 router.post('/getCorteCajaByID', [
 
   check('idCorteCaja','Corte de Caja obligatorio').not().isEmpty(),
@@ -200,5 +190,11 @@ router.post('/getEgresoByID', [
 
   validarCampos
 ], getEgresoByID);
+
+router.post('/disabledPayment', [
+  check('idPayment','Id obligatorio').not().isEmpty(),
+  check('idSale','Id obligatorio').not().isEmpty(),
+  validarCampos
+], disabledPayment);
 
 module.exports = router;

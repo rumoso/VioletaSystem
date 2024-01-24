@@ -4,8 +4,7 @@ const { json } = require('express/lib/response');
 const { generarJWT } = require('../helpers/generar-jwt');
 const { googleVerify } = require('../helpers/google-verify');
 
-const { dbConnection } = require('../database/config');
-
+const { createConexion, dbConnection } = require('../database/config');
 
 const login = async(req, res = response)=>{
 
@@ -168,6 +167,58 @@ const getMenuByPermissions = async(req, res = response)=>{
     }
 }
 
+const getActionsPermissionByUser = async(req, res = response) => {
+
+    const {
+        idUser
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    console.log(req.body)
+
+    const dbConnectionNEW = await createConexion();
+
+    try{
+
+        var OSQL = await dbConnectionNEW.query(`call getActionsPermissionByUser(${ idUser })`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se encontraron registros.",
+                data: null
+            });
+
+        }
+        else{
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: OSQL
+            });
+            
+        }
+
+        await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
 // const googleSingIn = async( req, res = response) =>{
 
 //     const { id_token } = req.body;
@@ -224,5 +275,7 @@ const getMenuByPermissions = async(req, res = response)=>{
 
 module.exports={
     login
-    ,getMenuByPermissions
+    , getMenuByPermissions
+
+    , getActionsPermissionByUser
 }

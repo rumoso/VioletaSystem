@@ -8,6 +8,12 @@ const {
   , getRolesByIdUser
   , insertRolByIdUser
   , deleteRolByIdUser
+
+  , getRolesListWithPage
+  , insertRol
+  , updateRol
+  , getRolByID
+
    } = require('../controllers/rolesController');
 
    
@@ -46,6 +52,28 @@ router.post('/deleteRolByIdUser', [
 
   validarCampos
 ], deleteRolByIdUser);
+
+router.post('/getRolesListWithPage', getRolesListWithPage);
+
+router.post('/insertRol', [
+  check('name','Nombre obligatorio').not().isEmpty(),
+
+  validarCampos
+], insertRol);
+
+router.post('/updateRol', [
+
+  check('idRol','Id del rol obligatorio').not().isEmpty(),
+  check('name','Nombre obligatorio').not().isEmpty(),
+
+  validarCampos
+], updateRol);
+
+router.post('/getRolByID', [
+  check('idRol','Id obligatorio').not().isEmpty(),
+  check('idRol','Id debe ser numérico').isNumeric(),
+  validarCampos
+], getRolByID);
 
 
 

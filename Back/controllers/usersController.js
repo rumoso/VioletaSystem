@@ -103,6 +103,7 @@ const insertUser = async(req, res) => {
         userName,
         pwd = '',
         authorizationCode = '',
+        comision = 0,
         active,
 
         idUserLogON,
@@ -123,6 +124,7 @@ const insertUser = async(req, res) => {
         ,'${ userName }'
         ,'${ pwdEncrypt }'
         , '${ authorizationCode }'
+        , '${ comision }'
         , ${ active }
 
         , ${ idUserLogON }
@@ -153,6 +155,7 @@ const updateUser = async(req, res) => {
         userName,
         pwd = '',
         authorizationCode = '',
+        comision = 0,
         active
     } = req.body;
 
@@ -165,6 +168,7 @@ const updateUser = async(req, res) => {
         ,'${ name }'
         ,'${ userName }'
         ,'${ authorizationCode }'
+        ,'${ comision }'
         , ${ active }
         )`)
 
