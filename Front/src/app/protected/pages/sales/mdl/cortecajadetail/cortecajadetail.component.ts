@@ -1,4 +1,5 @@
 import { Component, Inject } from '@angular/core';
+import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
@@ -18,20 +19,27 @@ export class CortecajadetailComponent {
   bShowSpinner: boolean = false;
   idCorteCaja: any = 0;
 
+  selectedDate: any = '';
+
   preCorteCaja: any = {
+
     sales: 0,
     egresos: 0,
     ingresoTotal: 0,
     pesos: 0,
+    pesosCaja: 0,
     dolares: 0,
+    dolaresF: 0,
+    dolaresCaja: 0,
     fxRate: 0,
     dolaresMNX: 0,
     vouchers: 0,
+    vouchersCaja: 0,
     transferencias: 0,
+    transferenciasCaja: 0,
     dineroElectronico: 0,
-    bCuadro: 0,
-    falto: '',
-    sobro: '',
+    totalCaja: 0,
+    diferencia: 0,
     observaciones: ''
   }
 
@@ -43,6 +51,9 @@ export class CortecajadetailComponent {
   private dialogRef: MatDialogRef<CortecajadetailComponent>
   ,@Inject(MAT_DIALOG_DATA) public ODataP: any
 
+  , private _adapter: DateAdapter<any>
+  , @Inject(MAT_DATE_LOCALE) private _locale: string
+
   , private servicesGServ: ServicesGService
   , private authServ: AuthService
 
@@ -52,6 +63,9 @@ export class CortecajadetailComponent {
   ) { }
 
   ngOnInit(): void {
+
+    this._locale = 'mx';
+    this._adapter.setLocale(this._locale);
 
     console.log( this.ODataP )
 
@@ -79,6 +93,8 @@ export class CortecajadetailComponent {
       if(resp.status == 0){
 
         this.preCorteCaja = resp.data;
+
+        this.selectedDate = resp.data.createDate;
 
       }
 

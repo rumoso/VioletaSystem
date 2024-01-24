@@ -1,0 +1,228 @@
+<mat-accordion>
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         [expanded]="true"
+                         class="divMain"
+                         style="margin-top: 10px !important;">
+      <mat-expansion-panel-header class="autoHeight">
+        <mat-panel-title class="text-align: center">
+          Filtros
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+                <br>
+                
+                <div class="row">
+
+                    <div class="col-md-4" style="text-align: left; margin-top: 20px;">
+                        <mat-form-field class="with100">
+                            <mat-label>Fecha:</mat-label>
+                            <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                                <input matStartDate [(ngModel)]="parametersForm.startDate" placeholder="Fecha inicio">
+                                <input matEndDate [(ngModel)]="parametersForm.endDate" placeholder="Fecha fin">
+                            </mat-date-range-input>
+                            <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-date-range-picker #picker></mat-date-range-picker>
+                            
+                            </mat-form-field>
+                    </div>
+
+                    <div class="col-md-8">
+                        <mat-label>Vendedor: </mat-label>
+                        <mat-form-field
+                        style="width: 100%;">
+                            <input #cbxSellerCBX
+                            type="text"
+                                    id="cbxSeller"
+                                    style="width: 100%;"
+                                    placeholder="Selecciona..."
+                                    aria-label="Number"
+                                    matInput
+                                    [(ngModel)]="parametersForm.sellerDesc"
+                                    [matAutocomplete]="cbxSeller"
+                                    
+                                    (keyup)="CBXskeyup( 1, cbxSellerCBX.value )"
+
+                                    (click)="cbxSellers_Clear()">
+                                    <button *ngIf="parametersForm.sellerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSellers_Clear()">
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                            <mat-autocomplete autoActiveFirstOption
+                                                #cbxSeller="matAutocomplete"
+                                                (optionSelected)="cbxSellers_SelectedOption( $event )">
+                                <mat-option *ngFor="let item of cbxSellers" [value]="item">
+                                    {{ item.name }}
+                                </mat-option>
+                
+                                <mat-option value="" *ngIf="parametersForm?.sellerDesc?.length > 0 && parametersForm?.sellerResp?.length > 0">
+                                    {{ parametersForm.sellerResp }}
+                                </mat-option>
+                
+                            </mat-autocomplete>
+                        </mat-form-field>
+                    </div>
+
+                </div>
+    
+                <div class="row">
+                                
+                    
+
+                    
+                </div>
+
+                <div class="row top10px">
+                    <div class="col-md-12">
+                        <div style="float: left;">
+                            
+                            <button mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            (click)="fn_getComisionesListWithPage()">
+                            <mat-icon matPrefix class="my-icon">search</mat-icon>
+                            Buscar</button>
+                            
+                            <button mat-raised-button
+                            type="button"
+                            class="marginRight10px"
+                            (click)="fn_ClearParameters()">
+                            <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                            limpiar</button>
+
+                            <button mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            (click)="fn_GenerarComision()"
+                            [disabled]="parametersForm?.startDate?.length == 0 || parametersForm?.endDate?.length == 0 || parametersForm?.idSeller_idUser == 0">
+                            <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
+                            GENERAR COMISIÓN</button>
+                            
+                        </div>
+                    </div>
+                </div>
+
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+<div class="divSection" *ngIf="sumComisiones > 0">
+    
+
+    <div class="row" style="margin-top: -35px;">
+        <div class="col-md-12">
+            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                Suma de comisiones
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">{{ sumComisiones | currency }}</h2>
+        </div>
+    </div>
+</div>
+ 
+<div class="divMain" style="width: 100%; margin-top: 10px !important;" *ngIf="oData.length > 0">
+
+    <div class="row">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            
+                            <th class="textAlingCenter padding-th">Acciones</th>
+                            <th class="textAlingLeft padding-th"># Comisión</th>
+                            <th class="textAlingLeft padding-th">Empleado</th>
+                            <th class="textAlingRight padding-th">Comisión</th>
+                            <th class="textAlingCenter padding-th">Fecha de creación</th>
+                            <th class="textAlingLeft padding-th">Creador</th>
+
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of oData">
+
+                                <td class="textAlingCenter">
+                                    <div style="width: 100px;">
+                                        <span class="material-icons manitaSobre colorGreen"
+                                        matTooltip="Editar comisión"
+                                        (click)="fn_ShowComision(item)">
+                                            edit
+                                        </span>
+
+                                        <span class="material-icons manitaSobre colorRed"
+                                        matTooltip="Eliminar Comisión"
+                                        (click)="fn_startPhysicInventory( item.idComision)"
+                                            
+                                            *ngIf="item.active">
+                                            delete_outline
+                                        </span>
+
+                                    </div>
+                                </td>
+
+                                <td class="textAlingLeft">
+                                    <div style="width: 130px; padding: 2px;">
+                                        {{ item.idComision }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingLeft">
+                                    <div style="width: 200px; padding: 2px;">
+                                        {{ item.userName }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingRight">
+                                    <div style="width: 100px; padding: 2px;">
+                                        {{ item.comision | currency }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingCenter">
+
+                                    <div style="width: 120px;">
+    
+                                        <div class="row">
+                                            <div class="col-md-1">
+                                                <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                                
+                                            </div>
+                                            <div class="col-md-10">
+                                                <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
+                                                <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
+                                            </div>
+                                        </div>
+    
+                                    </div>
+                                    
+                                </td>
+                                
+                                <td class="textAlingLeft">{{ item.createUserName }}</td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <app-pagination *ngIf="oData" [IPagination]="pagination"
+                            (OPagination)="changePagination($event)">
+                </app-pagination>
+            
+            </div>
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

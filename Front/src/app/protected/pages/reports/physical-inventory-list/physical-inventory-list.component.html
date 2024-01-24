@@ -1,0 +1,327 @@
+
+
+<mat-accordion >
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         [expanded]="true"
+                         class="divMain"
+                         style="margin-top: 10px !important;">
+      <mat-expansion-panel-header>
+        <mat-panel-title class="text-align: center">
+            Filtros de inventarios físicos
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="row">
+        <div class="col-md-12" style="text-align: left;">
+            <mat-form-field class="with100">
+                <mat-label>Fecha de creación:</mat-label>
+                <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                    <input matStartDate [(ngModel)]="parametersForm.startDate" placeholder="Start date">
+                    <input matEndDate [(ngModel)]="parametersForm.endDate" placeholder="End date">
+                </mat-date-range-input>
+                <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-date-range-picker #picker></mat-date-range-picker>
+                
+                </mat-form-field>
+        </div>
+    </div>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+                <br>
+                
+                <div class="row">
+                                
+                    <div class="col-md-6">
+                        <mat-label>Sucursal: </mat-label>
+                        <mat-form-field
+                        style="width: 100%;"
+                        (click)="cbxSucursales_Search()">
+                            <input type="text"
+                                    id="cbxSucursal"
+                                    style="width: 100%;"
+                                    placeholder="Selecciona..."
+                                    aria-label="Number"
+                                    matInput
+                                    [(ngModel)]="parametersForm.sucursalDesc"
+                                    [matAutocomplete]="cbxSucursal"
+                                    (input)="cbxSucursales_Search()">
+                                    <button *ngIf="parametersForm.sucursalDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSucursales_Clear()">
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                            <mat-autocomplete autoActiveFirstOption
+                                                #cbxSucursal="matAutocomplete"
+                                                (optionSelected)="cbxSucursales_SelectedOption( $event )">
+                                <mat-option *ngFor="let role of cbxSucursales" [value]="role">
+                                    {{ role.name }}
+                                </mat-option>
+                
+                                <mat-option value="" *ngIf="cbxSucursales.length == 0 && parametersForm.sucursalDesc">
+                                    No se encontró nada...
+                                </mat-option>
+                
+                            </mat-autocomplete>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="col-md-3">
+                        
+                        <mat-label>Grupo: </mat-label>
+                            <mat-form-field
+                            style="width: 100%;"
+                            (click)="cbxGroups_Search()">
+                                <input type="text"
+                                        id="cbxGroups"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="parametersForm.groupDesc"
+                                        [matAutocomplete]="cbxGroups"
+                                        (input)="cbxGroups_Search()">
+                                        <button *ngIf="parametersForm.groupDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxGroups_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                            </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxGroups="matAutocomplete"
+                                                    (optionSelected)="cbxGroups_SelectedOption( $event )">
+                                    <mat-option *ngFor="let item of cbxGroupsList" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="cbxGroupsList.length == 0 && parametersForm.groupDesc">
+                                        No se encontró nada...
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+
+                    </div>
+                    
+                    <div class="col-md-3">
+                        
+                        <mat-label>Familia: </mat-label>
+                            <mat-form-field
+                            style="width: 100%;"
+                            (click)="cbxFamilies_Search()">
+                                <input type="text"
+                                        id="cbxFamilies"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="parametersForm.familyDesc"
+                                        [matAutocomplete]="cbxFamilies"
+                                        (input)="cbxFamilies_Search()">
+                                        <button *ngIf="parametersForm.familyDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFamilies_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                            </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxFamilies="matAutocomplete"
+                                                    (optionSelected)="cbxFamilies_SelectedOption( $event )">
+                                    <mat-option *ngFor="let item of cbxFamiliesList" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="cbxFamiliesList.length == 0 && parametersForm.familyDesc">
+                                        No se encontró nada...
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+
+                    </div>
+
+                </div>
+
+                <div class="row top10px">
+                    <div class="col-md-12">
+                        <div style="float: left;">
+                            
+                            <button mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            (click)="fn_getPhysicalInventoryListWithPage()">
+                            <mat-icon matPrefix class="my-icon">search</mat-icon>
+                            Buscar</button>
+                            
+                            <button mat-raised-button
+                            type="button"
+                            class="marginRight10px"
+                            (click)="parametersForm_Clear()">
+                            <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                            limpiar</button>
+
+                            <button mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            (click)="fn_startPhysicInventory()"
+                            [disabled]="parametersForm.idSucursal == 0">
+                            <mat-icon matPrefix class="my-icon">inbox</mat-icon>
+                            GENERAR INVENTARIO FÍSICO CON ESTOS FILTROS</button>
+                            
+                        </div>
+                    </div>
+                </div>
+
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+  <div *ngFor="let item of physicalInventoryHeaderBySucursal" class="divSection">
+    
+
+    <div class="row" style="margin-top: -35px;">
+        <div class="col-md-12">
+            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                {{ item.sucursalDesc }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 inlineDIV">
+            <mat-icon style="margin-right: 5px;" matPrefix class="material-icons manitaSobre colorRed inlineObj">error</mat-icon>
+            <h1 class="inlineObj">Faltantes: {{ item.faltantePz }} PZ</h1>
+        </div>
+        <div class="col-md-4" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Costo Total: {{ item.faltanteCostMXN | currency }}</h2>
+        </div>
+        <div class="col-md-4" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Importe Total: {{ item.faltantePriceMXN | currency }}</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 inlineDIV">
+            <mat-icon style="margin-right: 5px;" matPrefix class="material-icons manitaSobre colorBlue inlineObj">error</mat-icon>
+            <h1 class="inlineObj">Sobrantes: {{ item.sobrantePz }} PZ</h1>
+        </div>
+        <div class="col-md-4" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Costo Total: {{ item.sobranteCostMXN | currency }}</h2>
+        </div>
+        <div class="col-md-4" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Importe Total: {{ item.sobrantePriceMXN | currency }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="divMain" style="width: 100%; margin-top: 10px !important;">
+
+    <div class="row top20px">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            
+                            <th class="textAlingCenter padding-th">Acciones</th>
+                            <th class="textAlingCenter padding-th">Folio</th>
+                            <th class="textAlingLeft padding-th">Estatus</th>
+                            <th class="textAlingCenter padding-th">Fecha</th>
+                            <th class="textAlingLeft padding-th">Sucursal</th>
+                            <th class="textAlingLeft padding-th">Usuario</th>
+                            <th class="textAlingLeft padding-th">Activo</th>
+
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of catlist">
+                                
+                                <td class="textAlingCenter">
+                                    <div style="width: 100px;">
+                                        <span class="material-icons manitaSobre colorGreen"
+                                        matTooltip="Editar inventario físico"
+                                        (click)="fn_ShowPhysicalInventory( item.idPhysicalInventory )">
+                                            edit
+                                        </span>
+
+                                        <span class="material-icons manitaSobre colorRed"
+                                        matTooltip="Eliminar inventario físico"
+                                        
+                                            
+                                            *ngIf="item.active">
+                                            delete_outline
+                                        </span>
+
+                                    </div>
+                                </td>
+
+                                <td class="textAlingLeft">
+                                    <div class="row">
+                                        <div class="col-md-1">
+                                            <mat-icon *ngIf="item.idStatus == 1" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorBlue">autorenew</mat-icon>
+                                            <mat-icon *ngIf="item.bOK == 1 && item.idStatus != 1" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorGreen">check_circle</mat-icon>
+                                            <mat-icon *ngIf="item.bOK == 0 && item.idStatus != 1" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorBlue">error</mat-icon>
+                                        </div>
+                                        <div class="col-md-10">
+                                            <label style="margin-left: 10px;">{{ item.idPhysicalInventory }}</label>
+                                        </div>
+                                    </div>
+                                    
+                                </td>
+
+                                <td class="textAlingLeft">
+                                    <div class="row">
+                                        <div class="col-md-1">
+                                            <span *ngIf="item.idStatus == 1" class="material-icons manitaSobre colorBlue">autorenew</span>
+                                            <span *ngIf="item.idStatus == 2" class="material-icons manitaSobre colorGreen">done</span>
+                                            <span *ngIf="item.idStatus == 3" class="material-icons manitaSobre colorBlue">verified_user</span>
+                                            <span *ngIf="item.idStatus == 4" class="material-icons manitaSobre colorGreen">done_all</span>
+                                        </div>
+                                        <div class="col-md-10">
+                                            <label style="margin-left: 10px;">{{ item.statusName }}</label>
+                                        </div>
+                                    </div>
+                                    
+                                </td>
+                                
+                                <td class="textAlingCenter">
+
+                                    <div style="width: 120px;">
+    
+                                        <div class="row">
+                                            <div class="col-md-1">
+                                                <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                                
+                                            </div>
+                                            <div class="col-md-10">
+                                                <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
+                                                <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
+                                            </div>
+                                        </div>
+    
+                                    </div>
+                                    
+                                </td>
+                                <td class="textAlingLeft">{{ item.sucursalName }}</td>
+                                <td class="textAlingLeft">{{ item.userName }}</td>
+                                <td class="textAlingCenter">
+                                    <mat-checkbox class="example-margin" [(ngModel)]="item.active" disabled></mat-checkbox>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+                <app-pagination *ngIf="catlist" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                </app-pagination>
+            
+            </div>
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

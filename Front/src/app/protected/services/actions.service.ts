@@ -87,6 +87,29 @@ export class ActionsService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertActionByIdUser`, data );
   }
 
-  
+  CDisabledActionByRelation( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disabledActionByRelation`, data );
+  }
+
+  CGetAllActionsByPermission( data : any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getAllActionsByPermission`, data);
+
+  }
+
+  CInsertActionsPermisionsByIdRelation( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertActionsPermisionsByIdRelation`, data );
+  }
   
 }

@@ -1,0 +1,89 @@
+
+<div class="" style="padding: 30px;">
+
+    <div class="row">
+                                    
+        <div class="col-md-12">
+            
+            <h1>{{ ODataP.description }}</h1>
+
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_insertActionsPermisionsByIdRelation()">
+                <mat-icon matPrefix class="my-icon">save</mat-icon>
+                Guardar</button>
+
+                <button mat-raised-button
+                type="button"
+                (click)="fn_CerrarMDL()">
+                <mat-icon matPrefix class="my-icon">close</mat-icon>
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+
+            <br>
+
+            <!-- <div class="row" *ngFor="let seccionYPermisos of seccionesYPermisos; let i = index">
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="badge bg-primary text-wrap" style="font-size: 15px;">{{ seccionYPermisos.sectionName }}</div>
+                        </div>
+                    </div>
+                    <div class="row" *ngFor="let permiso of seccionYPermisos.actions">
+                        <div class="col-md-12">
+                            <mat-checkbox class="example-margin">{{ permiso.nameHtml }}</mat-checkbox>
+                        </div>
+                    </div>
+                </div>
+                
+                 <div class="clearfix" *ngIf="i % 2 === 1"></div> 
+            </div> -->
+
+            <div class="row">
+                <ng-container *ngFor="let seccionYPermisos of seccionesYPermisos; let i = index">
+                  <div class="col-md-6">
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="badge bg-primary text-wrap" style="font-size: 15px;">{{ seccionYPermisos.sectionName }}</div>
+                      </div>
+                    </div>
+                    <div class="row" *ngFor="let permiso of seccionYPermisos.actions">
+                      <div class="col-md-12">
+                        <mat-checkbox class="example-margin"
+                        [value]="permiso.idAction"
+                        [(ngModel)]="permiso.bPermissionAction"
+                        [matTooltip]="permiso.description"
+                        matTooltipPosition="above">{{ permiso.nameHtml }}</mat-checkbox>
+                      </div>
+                    </div>
+                  </div>
+              
+                  <!-- Añade un salto de línea después de cada segunda columna -->
+                  <div class="clearfix" *ngIf="i % 2 === 1"></div>
+                </ng-container>
+              </div>
+
+            
+
+            
+
+        </div>
+    </div>    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

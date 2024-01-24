@@ -1,0 +1,240 @@
+<div style="padding: 10px;">
+
+    <button mat-icon-button
+            style="position: absolute; top: 10px; right: 10px;"
+            (click)="fn_CerrarMDL(0)">
+        <mat-icon>close</mat-icon>
+    </button>
+    
+    <div class="row">
+                                
+        <div class="col-md-12">
+            
+            <h1>Inventario físico #{{ ODataP.idPhysicalInventory }}</h1>
+
+        </div>
+            
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_changeStatusPhysicalInventory(2)"
+                *ngIf="oPhysicalInventoryHeader.idStatus == 1">
+                <mat-icon matPrefix class="my-icon">done</mat-icon>
+                Completar</button>
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_changeStatusPhysicalInventory(3)"
+                *ngIf="( oPhysicalInventoryHeader.idStatus == 1 || oPhysicalInventoryHeader.idStatus == 2 )">
+                <mat-icon matPrefix class="my-icon">verified_user</mat-icon>
+                Verificar</button>
+
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_changeStatusPhysicalInventory(4)"
+                *ngIf="( oPhysicalInventoryHeader.idStatus == 1 || oPhysicalInventoryHeader.idStatus == 2 || oPhysicalInventoryHeader.idStatus == 3 )">
+                <mat-icon matPrefix class="my-icon">done_all</mat-icon>
+                Terminar</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="oPhysicalInventoryHeader.idStatus != 1 && oPhysicalInventoryHeader.bOK" class="divSection">
+
+        <div class="row">
+
+            <div class="col-md-12 inlineDIV">
+                <span class="material-icons manitaSobre colorGreen inlineObj">check_circle</span>
+                <h1 class="inlineObj">INVENTARIO FÍSICO PERFECTO</h1>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div *ngIf="oPhysicalInventoryHeader.idStatus != 1 && oPhysicalInventoryHeader.faltantePz != 0" class="divSection">
+    
+
+        <div class="row" style="margin-top: -35px;">
+            <div class="col-md-12">
+                <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                    Faltantes
+                </div>
+            </div>
+        </div>
+    
+        <div class="row">
+            <div class="col-md-2">
+                <h1>{{ oPhysicalInventoryHeader.faltantePz }} PZ</h1>
+            </div>
+            <div class="col-md-5" style="position: relative;">
+                <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+                <h2 style="display: inline-block;">Costo Total: {{ oPhysicalInventoryHeader.faltanteCostMXN | currency }}</h2>
+            </div>
+            <div class="col-md-5" style="position: relative;">
+                <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+                <h2 style="display: inline-block;">Importe Total: {{ oPhysicalInventoryHeader.faltantePriceMXN | currency }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="oPhysicalInventoryHeader.idStatus != 1 && oPhysicalInventoryHeader.sobrantePz != 0" class="divSection">
+    
+
+        <div class="row" style="margin-top: -35px;">
+            <div class="col-md-12">
+                <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                    Sobrantes
+                </div>
+            </div>
+        </div>
+    
+        <div class="row">
+            <div class="col-md-2">
+                <h1>{{ oPhysicalInventoryHeader.sobrantePz }} PZ</h1>
+            </div>
+            <div class="col-md-5" style="position: relative;">
+                <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+                <h2 style="display: inline-block;">Costo Total: {{ oPhysicalInventoryHeader.sobranteCostMXN | currency }}</h2>
+            </div>
+            <div class="col-md-5" style="position: relative;">
+                <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+                <h2 style="display: inline-block;">Importe Total: {{ oPhysicalInventoryHeader.sobrantePriceMXN | currency }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- <div class="row">
+        <div class="col-md-3" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">{{ sumUtilidad | currency }}</h2>
+        </div>
+        <div class="col-md-5" style="position: relative;" *ngIf="parametersForm.idSeller_idUser > 0">
+            <h2 style="display: inline-block;">{{  parametersForm.comision  }}% de comisión</h2>
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">{{ sumUtilidad * ( parametersForm.comision / 100 ) | currency }}</h2>
+        </div>
+    </div> -->
+
+    <div *ngIf="oPhysicalInventoryHeader.idStatus == 1" class="row top20px">
+        <div class="col-md-4">
+            <mat-form-field fxLayout.xs="column" class="with100">
+                <mat-label>Código de barras</mat-label>
+                <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
+                <input #barCode matInput placeholder="Ingrese un Código de barras"
+                [(ngModel)]="productData.barCode"
+                (keyup.enter)="ev_fn_barCode_keyup_enter($event)">
+                </mat-form-field>
+        </div>
+
+        <div class="col-md-8">
+            <mat-form-field class="with100">
+                <mat-label>Descripción</mat-label>
+                <input matInput placeholder=""
+                [(ngModel)]="productData.description"
+                readonly>
+                </mat-form-field>
+        </div>
+        
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingLeft padding-th">Código de barras</th>
+                        <th class="textAlingLeft padding-th">Nombre</th>
+                        <th class="textAlingRight padding-th">Inventario</th>
+                        <th class="textAlingCenter padding-th">Mostrador</th>
+                        <th class="textAlingRight padding-th">Diferencia</th>
+                        <th class="textAlingLeft padding-th">Comentarios</th>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of catlist">
+                            
+                            <td class="textAlingLeft">
+                                <div class="row">
+                                    <div class="col-md-1">
+                                        <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">qr_code</mat-icon>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <label style="margin-left: 10px;">{{ item.barCode }}</label>
+                                    </div>
+                                </div>
+                                
+                            </td>
+                            <td class="textAlingLeft">
+                                <div class="row">
+                                    <div class="col-md-1">
+                                        <span *ngIf="item.cDiff == 0" class="material-icons manitaSobre colorGreen">check_circle</span>
+                                        <span *ngIf="item.cDiff < 0" class="material-icons manitaSobre colorBlue">error</span>
+                                        <span *ngIf="item.cDiff > 0 && oPhysicalInventoryHeader.idStatus != 1" class="material-icons manitaSobre colorRed">error</span>
+                                        <span *ngIf="item.cDiff > 0 && oPhysicalInventoryHeader.idStatus == 1" class="material-icons manitaSobre colorBlue">autorenew</span>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <label style="margin-left: 10px;">{{ item.name }}</label>
+                                    </div>
+                                </div>
+                                
+                            </td>
+                            
+                            <td class="textAlingRight">{{ item.cCantidad }}</td>
+                            <td *ngIf="oPhysicalInventoryHeader.idStatus == 2 || oPhysicalInventoryHeader.idStatus == 4" class="textAlingRight">{{ item.cMostrador }}</td>
+                            <td *ngIf="oPhysicalInventoryHeader.idStatus == 1 || oPhysicalInventoryHeader.idStatus == 3" class="textAlingCenter padding-th">
+
+                                <div style="width: 180px;" class="inlineDIV">
+                                    <span class="material-icons manitaSobre colorGreen inlineObj"
+                                    (click)="ev_onMostradorChange(item, -1)">remove</span>
+                                    
+                                    <input
+                                        class="textAlingCenter colorGreen inlineObj"
+                                        style="width: 55px;"
+                                        matInput
+                                        type="number"
+                                        [(ngModel)]="item.cMostrador"
+                                         readonly>
+                                    
+                                    <span class="material-icons manitaSobre colorGreen inlineObj"
+                                    (click)="ev_onMostradorChange(item, 1)">add</span>
+
+                                </div>
+                            </td>
+                            <td class="textAlingRight">{{ item.cDiff }}</td>
+
+                            
+                            <td *ngIf="oPhysicalInventoryHeader.idStatus == 2 || oPhysicalInventoryHeader.idStatus == 4" class="textAlingLeft">{{ item.comments }}</td>
+                            <td *ngIf="oPhysicalInventoryHeader.idStatus == 1 || oPhysicalInventoryHeader.idStatus == 3" class="textAlingCenter padding-th">
+
+                                <div style="width: 180px;" class="inlineDIV">
+                                    <textarea matInput [(ngModel)]="item.comments"></textarea>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <app-pagination *ngIf="catlist" [IPagination]="pagination"
+                            (OPagination)="changePagination($event)">
+            </app-pagination>
+        
+        </div>
+        
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

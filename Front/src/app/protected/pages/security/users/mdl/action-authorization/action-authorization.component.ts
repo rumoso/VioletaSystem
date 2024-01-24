@@ -77,7 +77,7 @@ constructor(
   bShow: boolean = false;
   fn_authorizationAction() {
 
-    if( this.actionForm.authorizationCode.length > 0 && !this.bShow){
+    if( this.actionForm?.authorizationCode?.trim()?.length > 0 && !this.bShow){
       this.bShow = true;
 
       this.servicesGServ.showDialog('¿Estás seguro?'
@@ -95,10 +95,14 @@ constructor(
               .subscribe({
               next: (resp: ResponseDB_CRUD) => {
 
-                this.servicesGServ.showAlertIA( resp );
+                if( this.ODataP.bShowAlert )
+                  this.servicesGServ.showAlertIA( resp );
 
                 if( resp.status == 0 && resp.insertID > 0 ){
                   this.fn_CerrarMDL( true );
+                }else{
+                  this.servicesGServ.showAlertIA( resp );
+                  this.actionForm.authorizationCode = '';
                 }
 
                 this.bShowSpinner = false;
