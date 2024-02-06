@@ -3,6 +3,7 @@ const bcryptjs = require('bcryptjs');
 const moment = require('moment');
 
 const { createConexion, dbConnection } = require('../database/config');
+const { logRequestResponse } = require('../logs/logsController');
 
 const getProductsListWithPage = async(req, res = response) => {
 
@@ -23,6 +24,12 @@ const getProductsListWithPage = async(req, res = response) => {
         , start = 0
 
     } = req.body;
+
+    let responseData = {
+        status: -1,
+        message: '',
+        data: null
+    };
 
     console.log(req.body)
 
@@ -47,28 +54,29 @@ const getProductsListWithPage = async(req, res = response) => {
 
         if(OSQL.length == 0){
 
-            res.json({
-                status:0,
-                message:"Ejecutado correctamente.",
-                data:{
+            responseData = {
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:
+                {
                     count: 0,
                     rows: null
                 }
-            });
+            };
 
         }
         else{
 
             const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
 
-            res.json({
+            responseData = {
                 status: 0,
                 message: "Ejecutado correctamente.",
                 data:{
                     count: iRows,
                     rows: OSQL
                 }
-            });
+            };
 
         }
 
@@ -81,6 +89,10 @@ const getProductsListWithPage = async(req, res = response) => {
         });
 
     }
+
+    //await logRequestResponse( req.body, responseData, idUser )
+
+    res.json(responseData);
 
 };
 
@@ -153,8 +165,9 @@ const insertProduct = async(req, res) => {
     console.log(req.body)
 
     const tran = await dbConnection.transaction();
-
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
 
     try{
 
@@ -185,6 +198,8 @@ const insertProduct = async(req, res) => {
         }
         else{
 
+            bOK = true;
+
             var idProduct = OSQL[0].out_id;
 
             if( idProduct > 0 && addInv > 0){
@@ -199,14 +214,18 @@ const insertProduct = async(req, res) => {
                 )`,{ transaction: tran })
 
                 if(OSQL2[0].out_id > 0){
-                    await tran.commit();
+                    bOK = true;
                 }else{
-                    await tran.rollback();
+                    bOK = false;
                 }
 
-            }else{
-                await tran.commit();
             }
+
+        }
+
+        if(bOK){
+                    
+            await tran.commit();
 
             res.json({
                 status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -214,6 +233,14 @@ const insertProduct = async(req, res) => {
                 insertID: OSQL[0].out_id
             });
 
+        }else{
+            
+            await tran.rollback();
+
+            res.json({
+                status: 1,
+                message: "No se registró el producto."
+            });
         }
 
     }catch(error){
@@ -232,30 +259,29 @@ const insertProduct = async(req, res) => {
 
 const updateProduct = async(req, res) => {
 
-  const {
-    idProduct,
-    idSucursal,
+    const {
+        idProduct,
+        idSucursal,
 
-    idFamily,
-    idGroup,
-    idQuality,
-    idOrigin,
-    idSupplier = 0,
+        idFamily,
+        idGroup,
+        idQuality,
+        idOrigin,
+        idSupplier = 0,
 
-    barCode,
-    name,
-    gramos,
-    cost = 0,
-    price = 0,
-    active,
-    addInv = 0,
+        barCode,
+        name,
+        gramos,
+        cost = 0,
+        price = 0,
+        active,
 
-    idUser
-  } = req.body;
+        idUser
+    } = req.body;
 
-  console.log(req.body)
+    console.log(req.body)
 
-  try{
+    try{
 
         var OSQL = await dbConnection.query(`call updateProduct(
             ${idProduct}
@@ -271,22 +297,23 @@ const updateProduct = async(req, res) => {
             ,'${cost}'
             ,'${price}'
             , ${active}
-            )`);
+        )`);
 
-      res.json({
-        status: OSQL[0].out_id > 0 ? 0 : 1,
-        message: OSQL[0].message,
-        insertID: OSQL[0].out_id
-    });
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message,
+            insertID: OSQL[0].out_id
+        });
 
-  }catch(error){
+    }catch(error){
 
-      res.status(500).json({
-          status:2,
-          message:"Sucedió un error inesperado",
-          data:error
-      });
-  }
+        res.status(500).json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error
+        });
+
+    }
 }
 
 const cbxGetProductsCombo = async(req, res = response) => {
@@ -297,8 +324,6 @@ const cbxGetProductsCombo = async(req, res = response) => {
     } = req.body;
 
     console.log(req.body)
-
-    //const dbConnectionNEW = await createConexion();
 
     try{
 
@@ -332,11 +357,9 @@ const cbxGetProductsCombo = async(req, res = response) => {
         });
     }
 
-    //await dbConnectionNEW.close();
+};
 
-  };
-
-  const getProductByBarCode = async(req, res = response) => {
+const getProductByBarCode = async(req, res = response) => {
 
     const {
         idUser,
@@ -377,9 +400,9 @@ const cbxGetProductsCombo = async(req, res = response) => {
         });
     }
 
-  };
+};
 
-  const getInventaryListWithPage = async(req, res = response) => {
+const getInventaryListWithPage = async(req, res = response) => {
 
     const {
         idUser
@@ -453,8 +476,8 @@ const cbxGetProductsCombo = async(req, res = response) => {
         await dbConnectionNEW.close();
 
         res.status(500).json({
-            status:2,
-            message:"Sucedió un error inesperado",
+            status: 2,
+            message: "Sucedió un error inesperado",
             data: error.message
         });
     }
@@ -655,7 +678,7 @@ const insertInventaryLog = async(req, res) => {
 
               res.json({
                   status: 1,
-                  message:"No se registró el Inventario."
+                  message: "No se registró el Inventario."
               });
 
           }
@@ -672,12 +695,13 @@ const insertInventaryLog = async(req, res) => {
     }catch(error){
 
         res.status(500).json({
-            status:2,
-            message:"Sucedió un error inesperado",
+            status: 2,
+            message: "Sucedió un error inesperado",
             data: error.message
         });
+        
     }
-  }
+}
 
 const startPhysicInventory = async(req, res) => {
 
@@ -709,7 +733,7 @@ const startPhysicInventory = async(req, res) => {
             , ${ idUserLogON }
         )`)
 
-        console.log( OSQL_GetProducts )
+        //console.log( OSQL_GetProducts )
 
         if(OSQL_GetProducts.length == 0){
 
@@ -728,7 +752,7 @@ const startPhysicInventory = async(req, res) => {
                 , ${ idUserLogON }
                 )`,{ transaction: tran })
 
-                console.log( OSQL_InsertPhysicInventory )
+                //console.log( OSQL_InsertPhysicInventory )
 
             idPhysicalInventory = OSQL_InsertPhysicInventory[0].out_id;
 
@@ -778,51 +802,18 @@ const startPhysicInventory = async(req, res) => {
                 
             }
 
-
-
-            // res.json({
-            //     status: 0,
-            //     message: "Inventario guardado con éxito.",
-            //     insertID: OSQL[0].out_id
-            // });
-
         }
 
-
-        // var OSQL = await dbConnection.query(`call getProductsByStartPhysicInventory(
-        //     '${oGetDateNow}'
-        //     , ${ idProduct }
-        //     , '${ cantidad }'
-        //     , '${ description.trim() }'
-
-        //     , ${ idUserLogON }
-        // )`)
-
-        // if(OSQL.length == 0){
-
-        //     res.json({
-        //         status: 1,
-        //         message:"No se registró el Inventario."
-        //     });
-
-        // }
-        // else{
-
-        //     res.json({
-        //         status: 0,
-        //         message: "Inventario guardado con éxito.",
-        //         insertID: OSQL[0].out_id
-        //     });
-
-        // }
-
-    }catch(error){
+    }
+    catch(error)
+    {
 
         res.status(500).json({
-            status:2,
-            message:"Sucedió un error inesperado",
+            status: 2,
+            message: "Sucedió un error inesperado",
             data: error.message
         });
+
     }
 }
 
@@ -1203,6 +1194,133 @@ const getPhysicalInventoryHeaderBySucursal = async(req, res = response) => {
     }
 };
 
+const getCatListWithPage = async(req, res = response) => {
+
+    const {
+        sOption = ''
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    console.log(req.body)
+
+    const dbConnectionNEW = await createConexion();
+
+    try{
+
+        var OSQL = await dbConnectionNEW.query(`call getCatListWithPage(
+            '${ sOption }'
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se encontraron datos."
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            });
+            
+        }
+
+        await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const insertUpdateCat = async(req, res) => {
+
+    const {
+        sOption,
+        idRelation = 0,
+        name = '',
+        description = '',
+        valor = 0,
+        active,
+
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        var iActive = active ? 1 : 0;
+
+        var OSQL = await dbConnection.query(`call insertUpdateCat(
+        '${ sOption }'
+        , '${ oGetDateNow }'
+        , ${ idRelation }
+        , '${ name }'
+        , '${ description }'
+        , '${ valor }'
+        , ${ iActive }
+        )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se guardó."
+            });
+
+        }
+        else{
+
+            res.json({
+                status: OSQL[0].out_id > 0 ? 0 : 1,
+                message: OSQL[0].message
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+}
+
 module.exports = {
     getProductsListWithPage
     , getProductByID
@@ -1224,4 +1342,6 @@ module.exports = {
     , getPhysicalInventoryHeader
     , updateMostradorPhysicalInventoryDetail
     , getPhysicalInventoryHeaderBySucursal
+    , getCatListWithPage
+    , insertUpdateCat
   }

@@ -127,11 +127,11 @@ const insertCustomer = async(req, res) => {
   try{
 
       var OSQL = await dbConnection.query(`call insertCustomer(
-          '${ name }'
-          ,'${ lastName }'
-          ,'${ address }'
-          ,'${ tel }'
-          ,'${ eMail }'
+          '${ name.trim() }'
+          ,'${ lastName.trim() }'
+          ,'${ address.trim() }'
+          ,'${ tel.trim() }'
+          ,'${ eMail.trim() }'
           , ${ active }
 
           , ${ idUserLogON }
@@ -185,13 +185,13 @@ const updateCustomer = async(req, res) => {
   try{
 
         var OSQL = await dbConnection.query(`call updateCustomer(
-            ${idCustomer}  
-            ,'${name}'
-            ,'${lastName}'
-            ,'${address}'
-            ,'${tel}'
-            ,'${eMail}'
-            , ${active}
+            ${ idCustomer }  
+            ,'${ name.trim() }'
+            ,'${ lastName.trim() }'
+            ,'${ address.trim() }'
+            ,'${ tel.trim() }'
+            ,'${ eMail.trim() }'
+            , ${ active }
             )`);
 
         var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Customers', ${ idCustomer } )`);

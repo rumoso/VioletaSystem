@@ -1,6 +1,8 @@
 const { response } = require('express');
 const bcryptjs = require('bcryptjs');
 
+const moment = require('moment');
+
 const { createConexion, dbConnection } = require('../database/config');
 
 const getElectronicMoneyListWithPage = async(req, res = response) => {
@@ -14,6 +16,8 @@ const getElectronicMoneyListWithPage = async(req, res = response) => {
     } = req.body;
 
     console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     try{
 
@@ -74,17 +78,20 @@ const insertElectronicMoney = async(req, res) => {
 
   console.log(req.body)
 
+  const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
   try{
 
       var OSQL = await dbConnection.query(`call insertElectronicMoney(
-          ${idCustomer}
-          ,'${amount}'
-          ,'${description}'
-          ,0
-          ,''
-          
-          , ${ idUserLogON }
-          )`)
+            '${oGetDateNow}'
+            , ${idCustomer}
+            , '${amount}'
+            , '${description}'
+            , 0
+            , ''
+
+            , ${ idUserLogON }
+            )`)
 
         if(OSQL.length == 0){
   
@@ -106,8 +113,6 @@ const insertElectronicMoney = async(req, res) => {
 
   }catch(error){
 
-    await tran.rollback();
-      
       res.status(500).json({
           status:2,
           message:"Sucedió un error inesperado",

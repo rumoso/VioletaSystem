@@ -6,6 +6,7 @@ const { validarCampos } = require('../middlewares/validar-campos')
 const {
 
   generarComision
+  , generarAllComisiones
   , getComisionesListWithPage
   , getComisionDetail
   , getComisionesPagosDetailListWithPage
@@ -27,6 +28,18 @@ router.post('/generarComision', [
 
   validarCampos
 ], generarComision);
+
+router.post('/generarAllComisiones', [
+
+  check('startDate','Fecha inicio obligatoria').not().isEmpty(),
+  check('endDate','Fecha Fin obligatoria').not().isEmpty(),
+
+  check('idSeller_idUser','Vendedor obligatorio').not().isEmpty(),
+  check('idSeller_idUser','El numero del Vendedor debe ser numérico').isNumeric(),
+
+  validarCampos
+], generarAllComisiones);
+
 
 router.post('/getComisionesListWithPage', getComisionesListWithPage);
 

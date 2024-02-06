@@ -29,6 +29,9 @@ const {
 
   , getEgresoByID
   , disabledPayment
+  , getEgresosListWithPage
+
+  , disableSaleDetail
 
 
 } = require('../controllers/salesController');
@@ -196,5 +199,15 @@ router.post('/disabledPayment', [
   check('idSale','Id obligatorio').not().isEmpty(),
   validarCampos
 ], disabledPayment);
+
+router.post('/getEgresosListWithPage', getEgresosListWithPage);
+
+router.post('/disableSaleDetail', [
+
+  check('idSaleDetail','El ID es obligatorio').not().isEmpty(),
+  check('idSaleDetail','El ID debe ser numérico').isNumeric(),
+
+  validarCampos
+], disableSaleDetail);
 
 module.exports = router;

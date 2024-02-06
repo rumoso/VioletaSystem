@@ -1322,6 +1322,14 @@ const disabledSale = async(req, res) => {
 
         var saleDetail = await dbConnection.query(`call getSalesDetail( '${ idSale }' )`)
 
+        var OSQL_oPayments = await dbConnection.query(`call getPaymentsByIdSaleListWithPage(
+            '${ idSale }'
+
+            ,''
+            ,0
+            ,100000
+            )`)
+
         for(var i = 0; i < saleDetail.length; i++){
                         
             var saleD = saleDetail[i];
@@ -1351,6 +1359,68 @@ const disabledSale = async(req, res) => {
             bOK = true;
         }else{
             bOK = false;
+        }
+
+        
+
+        if(OSQL_oPayments.length > 0){
+
+            for(var i = 0; i < OSQL_oPayments.length; i++){
+                        
+                var oPayments = OSQL_oPayments[i];
+
+                if( oPayments.idFormaPago == 5 ){
+
+                    var OSQL_Sale = await dbConnection.query(`call getSaleByID( '${ idSale }' )`)
+
+                    var OSQL2 = await dbConnection.query(`call insertElectronicMoney(
+                        '${ oGetDateNow }'
+                        ,  ${ OSQL_Sale[0].idCustomer }
+                        , '${ oPayments.pago }'
+                        , 'Se regresa por cancelación de pago #${ oPayments.idPayment }'
+                        , '${ oPayments.idSale }'
+                        , 'P'
+
+                        , ${ idUserLogON }
+                        )`,{ transaction: tran })
+    
+                    if(bOK && OSQL2[0].out_id > 0){
+                        bOK = true;
+                    }else{
+                        bOK = false;
+                    }
+
+                }
+
+                var OSQL_insertPaymentsCanceled = await dbConnection.query(`call insertPaymentsCanceled(
+                    '${oGetDateNow}'
+                    , '${ oPayments.idPayment }'
+                    , ${ oPayments.iPagoCortado }
+
+                    , ${ idUserLogON }
+                    )`,{ transaction: tran })
+    
+                if(OSQL_insertPaymentsCanceled[0].out_id > 0){
+                    bOK = true;
+                }else{
+                    bOK = false;
+                }
+
+                if( bOK ){
+
+                    var OSQL_disabledPayment = await dbConnection.query(`call disabledPayment(
+                        '${ oPayments.idPayment }'
+                        )`,{ transaction: tran })
+
+                    if(OSQL_disabledPayment[0].idRelation.length > 0){
+                        bOK = true;
+                    }else{
+                        bOK = false;
+                    }
+                }
+
+            }
+
         }
     
         if(bOK){
@@ -1485,8 +1555,10 @@ const disabledPayment = async(req, res) => {
     const {
         idSale
         , idPayment
+        , sOption
 
         , idUserLogON
+        , idSucursalLogON
     } = req.body;
 
     console.log(req.body)
@@ -1519,7 +1591,71 @@ const disabledPayment = async(req, res) => {
         }
         else{
 
+            bOK = true;
+
             if(oPayment[0].active == 1){
+
+                var OSQL_Sale = await dbConnection.query(`call getSaleByID( '${ idSale }' )`)
+
+                if( oPayment[0].idFormaPago == 5 ){
+
+                    var OSQL2 = await dbConnection.query(`call insertElectronicMoney(
+                        '${ oGetDateNow }'
+                        ,  ${ OSQL_Sale[0].idCustomer }
+                        , '${ oPayment[0].pago }'
+                        , 'Se regresa por cancelación de pago #${ idPayment }'
+                        , '${ oPayment[0].idRelation }'
+                        , '${ oPayment[0].relationType }'
+
+                        , ${ idUserLogON }
+                        )`,{ transaction: tran })
+    
+                    if(bOK && OSQL2[0].out_id > 0){
+                        bOK = true;
+                    }else{
+                        bOK = false;
+                    }
+
+                }
+
+                if( bOK && sOption == 'E' )
+                {
+                    var OSQL_insertEgresos = await dbConnection.query(`call insertEgresos(
+                        '${oGetDateNow}'
+                        ,  ${ oPayment[0].idCaja }
+                        ,  1
+                        , 'Devolución del pago #${ oPayment[0].idPayment }'
+                        , '${ oPayment[0].pago }'
+                
+                        , ${ idUserLogON }
+                        , ${ idSucursalLogON }
+                        )`,{ transaction: tran });
+
+                    if(bOK && OSQL_insertEgresos[0].idNew.length > 0){
+                        bOK = true;
+                    }else{
+                        bOK = false;
+                    }
+                }
+                else if( bOK && sOption == 'EM' && oPayment[0].idFormaPago != 5 )
+                {
+                    var OSQL_insertElectronicMoney = await dbConnection.query(`call insertElectronicMoney(
+                        '${ oGetDateNow }'
+                        ,  ${ OSQL_Sale[0].idCustomer }
+                        , '${ oPayment[0].pago }'
+                        , 'Se agrega por devolución de pago #${ idPayment }'
+                        , '${ idPayment }'
+                        , 'P'
+
+                        , ${ idUserLogON }
+                        )`,{ transaction: tran })
+    
+                    if(bOK && OSQL_insertElectronicMoney[0].out_id > 0){
+                        bOK = true;
+                    }else{
+                        bOK = false;
+                    }
+                }
 
                 var OSQL_insertPaymentsCanceled = await dbConnection.query(`call insertPaymentsCanceled(
                     '${oGetDateNow}'
@@ -1529,44 +1665,41 @@ const disabledPayment = async(req, res) => {
                     , ${ idUserLogON }
                     )`,{ transaction: tran })
     
-                    if(OSQL_insertPaymentsCanceled[0].out_id > 0){
-                        bOK = true;
-                    }else{
-                        bOK = false;
-                    }
+                if(bOK && OSQL_insertPaymentsCanceled[0].out_id > 0){
+                    bOK = true;
+                }else{
+                    bOK = false;
+                }
 
-                    if( bOK ){
+                var OSQL_disabledPayment = await dbConnection.query(`call disabledPayment(
+                    '${ idPayment }'
+                    )`,{ transaction: tran })
 
-                        var OSQL_disabledPayment = await dbConnection.query(`call disabledPayment(
-                            '${ idPayment }'
-                            )`,{ transaction: tran })
+                if(bOK && OSQL_disabledPayment[0].idRelation.length > 0){
+                    bOK = true;
+                }else{
+                    bOK = false;
+                }
 
-                        if(OSQL_disabledPayment[0].idRelation.length > 0){
-                            bOK = true;
-                        }else{
-                            bOK = false;
-                        }
-                    }
+                if(bOK){
 
-                    if(bOK){
-
-                        await tran.commit();
-            
-                        res.json({
-                            status: 0,
-                            message: "Pago cancelado con éxito.",
-                        });
-            
-                    }else{
-            
-                        await tran.rollback();
-            
-                        res.json({
-                            status: 1,
-                            message: "No se puede cancelar el pago.",
-                        });
-            
-                    }
+                    await tran.commit();
+        
+                    res.json({
+                        status: 0,
+                        message: "Pago cancelado con éxito.",
+                    });
+        
+                }else{
+        
+                    await tran.rollback();
+        
+                    res.json({
+                        status: 1,
+                        message: "No se puede cancelar el pago.",
+                    });
+        
+                }
             
             }else{
 
@@ -1580,6 +1713,8 @@ const disabledPayment = async(req, res) => {
 
     }catch(error){
 
+        await tran.rollback();
+
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
@@ -1587,6 +1722,171 @@ const disabledPayment = async(req, res) => {
         });
 
     }
+}
+
+const getEgresosListWithPage = async(req, res = response) => {
+
+    var {
+        date = ''
+        , description = ''
+        , amount = 0
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    console.log(req.body)
+
+    const dbConnectionNEW = await createConexion();
+
+    try{
+
+        var OSQL = await dbConnectionNEW.query(`call getEgresosListWithPage(
+            '${ date.substring(0, 10) }'
+            , '${ description }'
+            , '${ amount }'
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                count: iRows,
+                rows: OSQL
+                }
+            });
+            
+        }
+
+        await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const disableSaleDetail = async(req, res) => {
+
+    const {
+        idSaleDetail,
+
+        idUserLogON,
+        idSucursalLogON
+
+    } = req.body;
+
+    console.log(req.body)
+
+    const tran = await dbConnection.transaction();
+
+    var bOK = false;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var oResponse = {
+        status: 0,
+        message: ""
+    };
+
+    try{
+
+        var oSaleDetail = await dbConnection.query(`call getSalesDetailByID( ${ idSaleDetail } )`)
+
+        if(oSaleDetail.length == 0){
+            oResponse.status = 1
+            oResponse.message = "No se encontraron datos"
+        }
+
+        if(oSaleDetail[0].active == 0){
+            oResponse.status = 1
+            oResponse.message = "No se realizó la acción"
+        }
+
+        var OSQL_disabledSaleDetail = await dbConnection.query(`call disabledSaleDetail(
+            ${ idSaleDetail }
+        )`,{ transaction: tran })
+
+        if(OSQL_disabledSaleDetail[0].out_id > 0){
+            bOK = true;
+        }else{
+            bOK = false;
+        }
+
+        var OSQL_insertInventaryLog = await dbConnection.query(`call insertInventaryLog(
+            '${oGetDateNow}'
+            ,  ${ oSaleDetail[0].idProduct }
+            , '${ oSaleDetail[0].cantidad }'
+            , 'Se regresa por cancelación de venta #${ oSaleDetail[0].idSale }'
+
+            , ${ idUserLogON }
+        )`,{ transaction: tran })
+
+        if(OSQL_insertInventaryLog[0].out_id > 0){
+            bOK = true;
+        }else{
+            bOK = false;
+        }
+    
+        if(bOK){
+            
+            await tran.commit();
+
+            oResponse.status = 0;
+            oResponse.message = "Producto eliminado de la venta";
+
+        }else{
+            
+            await tran.rollback();
+
+            oResponse.status = 1;
+            oResponse.message = "No se pudo eliminar el producto de la venta";
+
+        }
+      
+    }catch(error){
+
+        await tran.rollback();
+
+        oResponse.status = 2
+        oResponse.message = "Sucedió un error inesperado"
+        oResponse.data = error.message
+
+    }
+
+    res.json( oResponse );
 }
 
 module.exports = {
@@ -1617,5 +1917,8 @@ module.exports = {
 
     , getEgresoByID
     , disabledPayment
+    , getEgresosListWithPage
+
+    , disableSaleDetail
 
 }

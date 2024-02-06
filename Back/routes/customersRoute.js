@@ -28,9 +28,7 @@ router.post('/insertCustomer', [
   check('idUser','idUser obligatorio').not().isEmpty(),
   check('idUser','idUser debe ser numérico').isNumeric(),
 
-  check('name','Código de barra obligatorio').not().isEmpty(),
-
-  check('lastName','Nombre obligatorio').not().isEmpty(),
+  check('name','Nombre obligatorio').not().isEmpty(),
 
   validarCampos
 ], insertCustomer);

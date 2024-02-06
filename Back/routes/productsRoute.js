@@ -24,6 +24,10 @@ const {
    , getPhysicalInventoryHeader
    , updateMostradorPhysicalInventoryDetail
    , getPhysicalInventoryHeaderBySucursal
+
+   , getCatListWithPage
+   , insertUpdateCat
+
    } = require('../controllers/productsController');
 
    
@@ -194,5 +198,19 @@ router.post('/updateMostradorPhysicalInventoryDetail', [
 ], updateMostradorPhysicalInventoryDetail);
 
 router.post('/getPhysicalInventoryHeaderBySucursal', getPhysicalInventoryHeaderBySucursal);
+
+router.post('/getCatListWithPage', [
+
+  check('sOption','Opción obligatoría').not().isEmpty(),
+
+  validarCampos
+], getCatListWithPage);
+
+router.post('/insertUpdateCat', [
+
+  check('name','id obligatorío').not().isEmpty(),
+  
+  validarCampos
+], insertUpdateCat);
 
 module.exports = router;
