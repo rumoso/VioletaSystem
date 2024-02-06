@@ -1,0 +1,153 @@
+<mat-accordion >
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         [expanded]="true"
+                         class="divMain"
+                         style="margin-top: 10px !important;">
+      <mat-expansion-panel-header class="autoHeight">
+        <mat-panel-title class="text-align: center">
+          Filtros
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+                <br>
+
+                <div class="row">
+
+                    <div class="col-md-3" style="text-align: center;">
+                        <mat-form-field class="">
+                        <mat-label>Fecha:</mat-label>
+                        <input class="textAlingCenter" matInput [matDatepicker]="picker" placeholder="Seleccione una fecha" [(ngModel)]="egresoForm.date">
+                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                        </mat-form-field>
+                    </div>
+                                    
+                    <div class="col-md-6">
+                        <mat-form-field class="example-full-width with100">
+                            <mat-label>Descripción</mat-label>
+                            <textarea #tbxDesc
+                            matInput
+                            cdkTextareaAutosize
+                            placeholder="Ingrese una descripción"
+                            [(ngModel)]="egresoForm.description"></textarea>
+                        </mat-form-field>
+                    </div>
+            
+            
+                    <div class="col-md-3">
+                    
+                        <mat-form-field class="with100">
+                            <mat-label>Monto</mat-label>
+                            <input #tbxMonto
+                            class="textAlingRight colorGreen"
+                            
+                            matInput
+                            currencyMask
+                            placeholder="PAGA"
+                            [(ngModel)]="egresoForm.amount">
+                        </mat-form-field>
+                        
+                    </div>
+            
+                </div>
+
+                <div class="row top10px">
+                    <div class="col-md-12">
+                        <div style="float: left;">
+                            
+                            <button mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            (click)="fn_getEgresosListWithPage()">
+                            <mat-icon matPrefix class="my-icon">search</mat-icon>
+                            Buscar</button>
+                            
+                            <button mat-raised-button
+                            type="button"
+                            (click)="parametersForm_Clear()">
+                            <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                            limpiar</button>                
+                            
+                        </div>
+                    </div>
+                </div>
+
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+<div class="divMain" style="width: 100%; margin-top: 10px !important;">
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter padding-th">Acciones</th>
+                        <th class="textAlingLeft padding-th"># Egreso</th>
+                        <th class="textAlingLeft padding-th">Descripción</th>
+                        <th class="textAlingCenter padding-th">Monto</th>
+                        <th class="textAlingCenter padding-th">Fecha</th>
+                    </thead>
+    
+                    <tbody>
+                        <tr *ngFor="let item of oData">
+                            <td class="textAlingCenter">
+                                <div style="width: 50px;">
+                                    <span *ngIf="selectPrinter.idPrinter > 0" class="material-icons manitaSobre colorGreen" title="Imprimir"
+                                        (click)="fn_btnRePrinter(item.idEgreso)">
+                                        print
+                                        </span>
+                                </div>
+                            </td>
+    
+                            <td style="text-align: left;">{{ item.idEgreso }}</td>
+                            
+                            <td style="text-align: left;">{{ item.description }}</td>
+                            <td style="text-align: right;">{{ item.amount | currency }}</td>
+
+                            <td class="textAlingCenter">
+
+                                <div style="width: 120px;">
+
+                                    <div class="row">
+                                        <div class="col-md-1">
+                                            <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                            
+                                        </div>
+                                        <div class="col-md-10">
+                                            <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
+                                            <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                
+                            </td>
+                        </tr>
+                        
+                    </tbody>
+                    
+                </table>
+            </div>
+            
+            <app-pagination *ngIf="oData" [IPagination]="pagination"
+                (OPagination)="changePagination($event)">
+            </app-pagination>
+
+        </div>
+    
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

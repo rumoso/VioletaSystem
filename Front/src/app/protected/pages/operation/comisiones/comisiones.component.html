@@ -99,8 +99,7 @@
                             color="primary"
                             type="submit"
                             class="marginRight10px"
-                            (click)="fn_GenerarComision()"
-                            [disabled]="parametersForm?.startDate?.length == 0 || parametersForm?.endDate?.length == 0 || parametersForm?.idSeller_idUser == 0">
+                            (click)="fn_ShowGenComision()">
                             <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
                             GENERAR COMISIÓN</button>
                             
@@ -163,7 +162,7 @@
 
                                         <span class="material-icons manitaSobre colorRed"
                                         matTooltip="Eliminar Comisión"
-                                        (click)="fn_startPhysicInventory( item.idComision)"
+                                        (click)="fn_disabledComision( item.idComision)"
                                             
                                             *ngIf="item.active">
                                             delete_outline

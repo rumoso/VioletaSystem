@@ -80,6 +80,7 @@
                 <table class="table table-hover">
                     <thead>
                         <th class="textAlingCenter padding-th">Acciones</th>
+                        <th class="textAlingLeft padding-th"># Egreso</th>
                         <th class="textAlingLeft padding-th">Descripción</th>
                         <th class="textAlingCenter padding-th">Monto</th>
                     </thead>
@@ -99,6 +100,8 @@
                                         </span>
                                 </div>
                             </td>
+
+                            <td style="text-align: left;">{{ item.idEgreso }}</td>
                             
                             <td style="text-align: left;">{{ item.description }}</td>
                             <td style="text-align: right;">{{ item.amount | currency }}</td>

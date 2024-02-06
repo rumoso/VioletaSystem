@@ -19,6 +19,7 @@ import { PaymentsComponent } from '../payments/payments.component';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
+import { QuestionCancelPaymentComponent } from '../question-cancel-payment/question-cancel-payment.component';
 
 @Component({
   selector: 'app-nsale',
@@ -224,26 +225,24 @@ export class NsaleComponent {
 // SECCIÓN DE CONEXIONES AL BACK
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  bShowActionAuthorization: boolean = false;
-  fn_disablePayment( idPayment: any , iPagoCortado: number ){
+  bShowAction: boolean = false;
+  fn_disableSaleDetail( item: any ){
 
-    if(!this.bShowActionAuthorization){
+    if(!this.bShowAction){
       
-      this.bShowActionAuthorization = true;
+      this.bShowAction = true;
 
       this.servicesGServ.showDialog('¿Estás seguro?'
-      , ( iPagoCortado == 0 ? 'Está apunto de cancelar el pago #' + idPayment :
-      iPagoCortado > 0 ? 'Está apunto de cancelar el pago #' + idPayment + ', COMO EL PAGO YA ESTUVO EN UN CORTE DE CAJA SE DEBE GENERAR UNA DEVOLUCIÓN POR DINERO ELECTRÓNICO O POR EGRESO'
-      : '' )
+      , 'Está apunto de eliminar el producto: ' + item.productDesc + ' de la venta #' + this.idSale
       , '¿Desea continuar?'
-      , 'Si', 'No', ( iPagoCortado > 0 ? '600px' : '250px' ) )
+      , 'Si', 'No', '500px' )
       .afterClosed().subscribe({
         next: ( resp ) =>{
           
           if(resp){
 
             var paramsMDL: any = {
-              actionName: ( iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' ) 
+              actionName: 'ventas_CancelarSaleDetail'
               , bShowAlert: false
             }
           
@@ -253,23 +252,22 @@ export class NsaleComponent {
           
                 if( resp ){
 
-                  this.bShowActionAuthorization = false;
+                  this.bShowAction = false;
 
                   this.bShowSpinner = true;
 
                   var oParams: any = {
-                    idSale: this.idSale,
-                    idPayment: idPayment
+                    idSaleDetail: item.idSaleDetail
                   }
 
-                  this.saleServ.CDisabledPayment( oParams )
+                  this.saleServ.CDisableSaleDetail( oParams )
                   .subscribe({
                     next: (resp: any) => {
             
                       if( resp.status === 0 ){
 
                         this.fn_getSaleByID( this.idSale );
-                          
+
                       }
                       
                       this.servicesGServ.showAlertIA( resp );
@@ -287,11 +285,153 @@ export class NsaleComponent {
 
                 }
                 else{
-                  this.bShowActionAuthorization = false;
+                  this.bShowAction = false;
                 }
 
               }
             });
+
+          }
+          else{
+            this.bShowAction = false;
+          }
+          
+        }
+      });
+
+    }
+          
+  }
+
+  bShowActionAuthorization: boolean = false;
+  fn_disablePayment( item: any ){
+
+    if(!this.bShowActionAuthorization){
+      
+      this.bShowActionAuthorization = true;
+
+      this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Está apunto de cancelar el pago #' + item.idPayment
+      , '¿Desea continuar?'
+      , 'Si', 'No' )
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+          
+          if(resp){
+
+            this.bShowActionAuthorization = false;
+            
+            if( item.iPagoCortado > 0 ){
+
+              this.servicesGServ.showModalWithParams( QuestionCancelPaymentComponent, item, '600px')
+              .afterClosed().subscribe({
+                next: ( sOption ) =>{
+
+                  var paramsMDL: any = {
+                    actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' ) 
+                    , bShowAlert: false
+                  }
+                
+                  this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+                  .afterClosed().subscribe({
+                    next: ( resp ) =>{
+                
+                      if( resp ){
+      
+                        this.bShowSpinner = true;
+      
+                        var oParams: any = {
+                          idSale: this.idSale,
+                          idPayment: item.idPayment,
+                          sOption: sOption
+                        }
+      
+                        this.saleServ.CDisabledPayment( oParams )
+                        .subscribe({
+                          next: (resp: any) => {
+                  
+                            if( resp.status === 0 ){
+      
+                              this.fn_getSaleByID( this.idSale );
+                                
+                            }
+                            
+                            this.servicesGServ.showAlertIA( resp );
+                            
+                            this.bShowSpinner = false;
+                  
+                          },
+                          error: (ex) => {
+                  
+                            this.servicesGServ.showSnakbar( ex.error.message );
+                            this.bShowSpinner = false;
+                  
+                          }
+                        });
+      
+                      }
+
+                    }
+                  });
+  
+                }
+              });
+
+            }else{
+
+              var paramsMDL: any = {
+                actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' ) 
+                , bShowAlert: false
+              }
+            
+              this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+              .afterClosed().subscribe({
+                next: ( resp ) =>{
+            
+                  if( resp ){
+  
+                    this.bShowActionAuthorization = false;
+  
+                    this.bShowSpinner = true;
+  
+                    var oParams: any = {
+                      idSale: this.idSale,
+                      idPayment: item.idPayment,
+                      sOption: ''
+                    }
+  
+                    this.saleServ.CDisabledPayment( oParams )
+                    .subscribe({
+                      next: (resp: any) => {
+              
+                        if( resp.status === 0 ){
+  
+                          this.fn_getSaleByID( this.idSale );
+                            
+                        }
+                        
+                        this.servicesGServ.showAlertIA( resp );
+                        
+                        this.bShowSpinner = false;
+              
+                      },
+                      error: (ex) => {
+              
+                        this.servicesGServ.showSnakbar( ex.error.message );
+                        this.bShowSpinner = false;
+              
+                      }
+                    });
+  
+                  }
+                  else{
+                    this.bShowActionAuthorization = false;
+                  }
+  
+                }
+              });
+
+            }
 
           }
           else{
@@ -327,9 +467,19 @@ export class NsaleComponent {
 
                 this.nextInputFocus( this.tbxCantidad, 500);
 
+              }else{
+                
+                this.salesDetailForm.barCode = '';
+                this.salesDetailForm.idProduct = 0;
+                this.salesDetailForm.productDesc = '';
+                this.salesDetailForm.cost = 0;
+                this.salesDetailForm.precioUnitario = 0;
+
+                this.salesDetailForm.catInventary = 0;
+                
               }
     
-              this.servicesGServ.showSnakbar(resp.message);
+              this.servicesGServ.showAlertIA(resp, false);
               this.bShowSpinner = false;
     
             },
@@ -1075,9 +1225,10 @@ ev_fn_barCode_keyup_enter(event: any){
     
     if( this.salesDetailForm.barCode.length > 0){
       this.fn_getProductByBarCode();
-    }else if(this.salesHeaderForm.saleDetail.length > 0 && this.salesDetailForm.barCode.length == 0){
-      this.fn_ShowPaymentCreateSale( this.salesHeaderForm.idSaleType != 3 && this.salesHeaderForm.idSaleType != 4 && this.selectCajas.idCaja > 0);
     }
+    // else if(this.salesHeaderForm.saleDetail.length > 0 && this.salesDetailForm.barCode.length == 0){
+    //   this.fn_ShowPaymentCreateSale( this.salesHeaderForm.idSaleType != 3 && this.salesHeaderForm.idSaleType != 4 && this.selectCajas.idCaja > 0);
+    // }
 
   }
 }

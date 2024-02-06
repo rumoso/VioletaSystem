@@ -54,21 +54,15 @@ export class UserComponent implements OnInit {
     , private authServ: AuthService
   ) { }
 
-  userForm: FormGroup = this.fb.group({
+  userForm: any = {
     idUser: 0,
-    name: ['',[ Validators.required ]],
-    userName: ['',[ Validators.required ]],
-    pwd: ['', Validators.compose([
-      Validators.minLength(6),
-      Validators.pattern(/(?=.*[0-9])/),
-      Validators.pattern(/(?=.*[A-Z])/),
-      Validators.pattern(/(?=.*[a-z])/),
-      Validators.pattern(/(?=.*[-_.,$@^!%*?&])/)
-    ])],
+    name: '',
+    userName: '',
+    pwd: '',
     authorizationCode: '',
     comision: 0,
-    active: [true]
-  });
+    active: true
+  };
 
   addRoleForm: FormGroup = this.fb.group({
     idUser: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
@@ -138,12 +132,12 @@ export class UserComponent implements OnInit {
             
             this.idUser = resp.data.idUser;
 
-            this.userForm.get('idUser')?.setValue( resp.data.idUser )
-            this.addRoleForm.get('idUser')?.setValue( resp.data.idUser )
-            this.addSucursalForm.get('idUser')?.setValue( resp.data.idUser )
-            this.changePwdForm.get('idUser')?.setValue( resp.data.idUser )
+            this.userForm.idUser = resp.data.idUser;
+            this.addRoleForm.get('idUser')?.setValue( resp.data.idUser );
+            this.addSucursalForm.get('idUser')?.setValue( resp.data.idUser );
+            this.changePwdForm.get('idUser')?.setValue( resp.data.idUser );
 
-           this.userForm.setValue({
+           this.userForm = {
              idUser: resp.data.idUser,
              name: resp.data.name,
              userName: resp.data.userName,
@@ -151,7 +145,7 @@ export class UserComponent implements OnInit {
              authorizationCode: resp.data.authorizationCode,
              comision: resp.data.comision,
              active: resp.data.active
-           });
+           };
 
 
            this.fn_getRolesByIdUser();
@@ -162,6 +156,18 @@ export class UserComponent implements OnInit {
          this.bShowSpinner = false;
       } )
 
+  }
+
+  fn_validFormPrincipal(){
+    var bOK = false
+  
+    if( this.userForm.name.length > 0
+      && this.userForm.userName.length > 0
+      ){
+      bOK = true;
+    }
+  
+    return bOK;
   }
 
   changeRoute( route: string ): void {
@@ -177,7 +183,7 @@ export class UserComponent implements OnInit {
     this.bShowSpinner = true;
 
     if(this.idUser > 0){
-      this.usersServ.CUpdateUser( this.userForm.value )
+      this.usersServ.CUpdateUser( this.userForm )
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
             
@@ -193,7 +199,7 @@ export class UserComponent implements OnInit {
           }
         })
     }else{
-    this.usersServ.CInsertUser( this.userForm.value )
+    this.usersServ.CInsertUser( this.userForm )
       .subscribe({
         next: (resp: ResponseDB_CRUD) => {
 
@@ -201,7 +207,7 @@ export class UserComponent implements OnInit {
             
             this.idUser = resp.insertID;
 
-            this.userForm.get('idUser')?.setValue( resp.insertID )
+            this.userForm.idUser = resp.insertID;
             this.addRoleForm.get('idUser')?.setValue( resp.insertID )
             this.addSucursalForm.get('idUser')?.setValue( resp.insertID )
             this.changePwdForm.get('idUser')?.setValue( resp.insertID )

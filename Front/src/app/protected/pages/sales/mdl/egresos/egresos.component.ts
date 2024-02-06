@@ -32,15 +32,10 @@ export class EgresosComponent {
   egresosList: any = [];
 
   egresoForm: any = {
-
     idCaja: 0,
-
     idFormaPago: 1,
-
     amount: 0,
-    
     description: ''
-
   };
 
   selectPrinter: any = {

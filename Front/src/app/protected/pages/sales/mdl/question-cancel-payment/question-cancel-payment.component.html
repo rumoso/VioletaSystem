@@ -1,0 +1,49 @@
+<div style="padding: 30px;">
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Estás cancelando un pago por : ${{ ODataP.pago }} </h1>
+            <h1>Selecciona una opción si deseas hacer lo siguiente:</h1>
+            
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <mat-radio-group [(ngModel)]="paramsForm.sOption">
+                <mat-radio-button class="" value="EM">Agregarlo como Dinero electrónico al cliente</mat-radio-button>
+                <mat-radio-button class="" value="E">Crear un Egreso por el mismo importe ya que se le devolverá en efectivo</mat-radio-button>
+            </mat-radio-group>
+        </div>
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                <button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL( paramsForm.sOption )">
+                <mat-icon matPrefix class="my-icon">check_circle</mat-icon>
+                Seleccionar</button>
+                
+            </div>
+
+            <div style="float: left;">
+                <button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_CerrarMDL( '' )">
+                Cerrar</button>
+                
+            </div>
+        </div>
+    </div>
+
+</div>
+    
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

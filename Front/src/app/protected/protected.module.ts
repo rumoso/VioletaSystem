@@ -38,6 +38,10 @@ import { PhysicalInventoryComponent } from './pages/reports/physical-inventory/p
 import { PhysicalInventoryListComponent } from './pages/reports/physical-inventory-list/physical-inventory-list.component';
 import { ComisionesComponent } from './pages/operation/comisiones/comisiones.component';
 import { ComisionComponent } from './pages/operation/comision/comision.component';
+import { EgresosListComponent } from './pages/sales/egresos-list/egresos-list.component';
+import { CatComponent } from './pages/catssales/mdl/cat/cat.component';
+import { QuestionCancelPaymentComponent } from './pages/sales/mdl/question-cancel-payment/question-cancel-payment.component';
+import { GenComisionComponent } from './pages/operation/gen-comision/gen-comision.component';
 
 @NgModule({
     declarations: [
@@ -73,6 +77,10 @@ import { ComisionComponent } from './pages/operation/comision/comision.component
     PhysicalInventoryListComponent,
     ComisionesComponent,
     ComisionComponent,
+    EgresosListComponent,
+    CatComponent,
+    QuestionCancelPaymentComponent,
+    GenComisionComponent,
   ],
     imports: [
         CommonModule,

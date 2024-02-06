@@ -7,321 +7,355 @@
         }}
         {{title}}
     </div>
+
     <div class="row">
         <div class="col-md-12">
 
                 <br>
                 
-                <form action=""
-                autocomplete="off"
-                [formGroup]="productForm"
-                (ngSubmit)="fn_saveProduct()">
-
-                    <div class="row top20px">
-                                
-                        <div class="col-md-12">
-                            <mat-label>Sucursal: </mat-label>
-                            <mat-form-field
-                            style="width: 100%;"
-                            (click)="cbxSucursales_Search()">
-                                <input type="text"
-                                        id="cbxSucursal"
-                                        style="width: 100%;"
-                                        placeholder="Selecciona..."
-                                        aria-label="Number"
-                                        matInput
-                                        formControlName="sucursalDesc"
-                                        [matAutocomplete]="cbxSucursal"
-                                        (input)="cbxSucursales_Search()">
-                                        <button *ngIf="productForm.value.sucursalDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSucursales_Clear()">
-                                            <mat-icon>close</mat-icon>
-                                        </button>
-                                <mat-autocomplete autoActiveFirstOption
-                                                    #cbxSucursal="matAutocomplete"
-                                                    (optionSelected)="cbxSucursales_SelectedOption( $event )">
-                                    <mat-option *ngFor="let role of cbxSucursales" [value]="role">
-                                        {{ role.name }}
-                                    </mat-option>
-                    
-                                    <mat-option value="" *ngIf="cbxSucursales.length == 0 && productForm.value.sucursalDesc">
-                                        No se encontró nada...
-                                    </mat-option>
-                    
-                                </mat-autocomplete>
-                            </mat-form-field>
-                        </div>
-
+                <div class="row top20px">
+                            
+                    <div class="col-md-12">
+                        <mat-label>Sucursal: </mat-label>
+                        <mat-form-field
+                        style="width: 100%;"
+                        (click)="cbxSucursales_Search()">
+                            <input type="text"
+                                    id="cbxSucursal"
+                                    style="width: 100%;"
+                                    placeholder="Selecciona..."
+                                    aria-label="Number"
+                                    matInput
+                                    [(ngModel)]="productForm.sucursalDesc"
+                                    [matAutocomplete]="cbxSucursal"
+                                    (input)="cbxSucursales_Search()"
+                                    (click)="cbxSucursales_Clear()">
+                                    <button *ngIf="productForm.sucursalDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSucursales_Clear()">
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                            <mat-autocomplete autoActiveFirstOption
+                                                #cbxSucursal="matAutocomplete"
+                                                (optionSelected)="cbxSucursales_SelectedOption( $event )">
+                                <mat-option *ngFor="let role of cbxSucursales" [value]="role">
+                                    {{ role.name }}
+                                </mat-option>
+                
+                                <mat-option value="" *ngIf="cbxSucursales.length == 0 && productForm.sucursalDesc">
+                                    No se encontró nada...
+                                </mat-option>
+                
+                            </mat-autocomplete>
+                        </mat-form-field>
                     </div>
 
-                    <div class="row">
-                            
-                        <div class="col-md-12">
-                            <mat-label>Proveedor: </mat-label>
-                            <span class="material-icons manitaSobre colorGreen"
-                                (click)="showSuppliersCat()">
-                                add_circle_outline
-                            </span>
+                </div>
+
+                <div class="row">
+                        
+                    <div class="col-md-12">
+                        <mat-label>Proveedor: </mat-label>
+                        <span class="material-icons manitaSobre colorGreen"
+                            (click)="showSuppliersCat()">
+                            add_circle_outline
+                        </span>
+                        <mat-form-field
+                        style="width: 100%;"
+                        (click)="cbxSupplier_Search()">
+                            <input type="text"
+                                    id="cbxSupplier"
+                                    style="width: 100%;"
+                                    placeholder="Selecciona..."
+                                    aria-label="Number"
+                                    matInput
+                                    [(ngModel)]="productForm.supplierDesc"
+                                    [matAutocomplete]="cbxSupplier"
+                                    (input)="cbxSupplier_Search()"
+                                    (focus)="cbxSupplier_Search()"
+                                    (click)="cbxSupplier_Clear()">
+                                    <button *ngIf="productForm.supplierDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSupplier_Clear()">
+                                        <mat-icon>close</mat-icon>
+                                        </button>
+                            <mat-autocomplete autoActiveFirstOption
+                                                #cbxSupplier="matAutocomplete"
+                                                (optionSelected)="cbxSupplier_SelectedOption( $event )">
+                                <mat-option *ngFor="let item of cbxSupplierList" [value]="item">
+                                    {{ item.name }}
+                                </mat-option>
+                
+                                <mat-option value="" *ngIf="cbxSupplierList.length == 0 && productForm.supplierDesc">
+                                    No se encontró nada...
+                                </mat-option>
+                
+                            </mat-autocomplete>
+                        </mat-form-field>
+                    </div>
+
+                </div>
+
+                <div class="row top20px">
+                    <div class="col-md-4">
+                        <mat-form-field class="with100">
+                            <mat-label>Código de barras</mat-label>
+                            <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
+                            <input id="barCode" matInput placeholder="Ingrese un Código de barras"
+                            [(ngModel)]="productForm.barCode"
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxCost')">
+                        </mat-form-field>
+                    </div>
+                    
+
+                    <div class="col-md-4">
+                        <mat-form-field class="with100">
+                            <mat-label>Costo: </mat-label>
+                            <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
+                            <input id="tbxCost" matInput placeholder="Ingrese un costo"
+                            type="number"
+                            [(ngModel)]="productForm.cost"
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxPrice')">
+                        </mat-form-field>
+                    </div>
+
+                    <div class="col-md-4">
+                        <mat-form-field class="with100">
+                            <mat-label>Precio: </mat-label>
+                            <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
+                            <input id="tbxPrice" matInput placeholder="Ingrese un precio"
+                            type="number"
+                            [(ngModel)]="productForm.price"
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxName')">
+                        </mat-form-field>
+                    </div>
+                    
+                </div>
+
+                <div class="row top20px">
+
+                    <div class="col-md-6">
+                        <mat-form-field class="with100">
+                            <mat-label>Nombre</mat-label>
+                            <input id="tbxName" matInput placeholder="Ingrese un nombre"
+                            [(ngModel)]="productForm.name"
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxGramos')">
+                        </mat-form-field>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <mat-form-field class="with100">
+                            <mat-label>Gramos</mat-label>
+                            <input id="tbxGramos" matInput placeholder="Ingrese los gramos"
+                            type="number"
+                            [(ngModel)]="productForm.gramos"
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('cbxGroups')">
+                        </mat-form-field>
+                    </div>
+
+                </div>
+
+                <div class="row top20px" text>
+
+                    <div class="col-md-3">
+                        
+                        
+                        <mat-label>Grupo: </mat-label>
+                        <span class="material-icons manitaSobre colorGreen"
+                            (click)="showCat( 'Groups' )">
+                            add_circle_outline
+                        </span>
                             <mat-form-field
                             style="width: 100%;"
-                            (click)="cbxSupplier_Search()">
-                                <input type="text"
-                                        id="cbxSupplier"
+                            (click)="cbxGroups_Search()">
+                                <input #cbxGroupsCBX
+                                        type="text"
+                                        id="cbxGroups"
                                         style="width: 100%;"
                                         placeholder="Selecciona..."
                                         aria-label="Number"
                                         matInput
-                                        formControlName="supplierDesc"
-                                        [matAutocomplete]="cbxSupplier"
-                                        (input)="cbxSupplier_Search()">
-                                        <button *ngIf="productForm.value.supplierDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSupplier_Clear()">
+                                        [(ngModel)]="productForm.groupDesc"
+                                        [matAutocomplete]="cbxGroups"
+                                        (input)="cbxGroups_Search()"
+                                        (focus)="cbxGroups_Search()"
+                                        (click)="cbxGroups_Clear()">
+                                        <button *ngIf="productForm.groupDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxGroups_Clear()">
                                             <mat-icon>close</mat-icon>
-                                          </button>
+                                            </button>
                                 <mat-autocomplete autoActiveFirstOption
-                                                    #cbxSupplier="matAutocomplete"
-                                                    (optionSelected)="cbxSupplier_SelectedOption( $event )">
-                                    <mat-option *ngFor="let item of cbxSupplierList" [value]="item">
+                                                    #cbxGroups="matAutocomplete"
+                                                    (optionSelected)="cbxGroups_SelectedOption( $event )"
+                                                    (click)="cbxGroups_Clear()">
+                                    <mat-option *ngFor="let item of cbxGroupsList" [value]="item">
                                         {{ item.name }}
                                     </mat-option>
                     
-                                    <mat-option value="" *ngIf="cbxSupplierList.length == 0 && productForm.value.supplierDesc">
+                                    <mat-option value="" *ngIf="cbxGroupsList.length == 0 && productForm.groupDesc">
                                         No se encontró nada...
                                     </mat-option>
                     
                                 </mat-autocomplete>
                             </mat-form-field>
-                        </div>
 
                     </div>
-
-                    <div class="row top20px">
-                        <div class="col-md-4">
-                            <mat-form-field class="with100">
-                                <mat-label>Código de barras</mat-label>
-                                <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
-                                <input matInput placeholder="Ingrese un Código de barras"
-                                formControlName="barCode">
-                            </mat-form-field>
-                        </div>
-                        
-
-                        <div class="col-md-4">
-                            <mat-form-field class="with100">
-                                <mat-label>Costo: </mat-label>
-                                <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
-                                <input matInput placeholder="Ingrese un costo"
-                                type="number"
-                                formControlName="cost">
-                            </mat-form-field>
-                        </div>
-
-                        <div class="col-md-4">
-                            <mat-form-field class="with100">
-                                <mat-label>Precio: </mat-label>
-                                <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
-                                <input matInput placeholder="Ingrese un precio"
-                                type="number"
-                                formControlName="price">
-                            </mat-form-field>
-                        </div>
-                        
-                    </div>
-
-                    <div class="row top20px">
-
-                        <div class="col-md-6">
-                            <mat-form-field class="with100">
-                                <mat-label>Nombre</mat-label>
-                                <input matInput placeholder="Ingrese un nombre"
-                                formControlName="name">
-                            </mat-form-field>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <mat-form-field class="with100">
-                                <mat-label>Gramos</mat-label>
-                                <input matInput placeholder="Ingrese los gramos"
-                                type="number"
-                                formControlName="gramos">
-                            </mat-form-field>
-                        </div>
-
-                    </div>
-
-                    <div class="row top20px" text>
-
-                        <div class="col-md-3">
-                            
-                            <mat-label>Grupo: </mat-label>
-                                <mat-form-field
-                                style="width: 100%;"
-                                (click)="cbxGroups_Search()">
-                                    <input type="text"
-                                            id="cbxGroups"
-                                            style="width: 100%;"
-                                            placeholder="Selecciona..."
-                                            aria-label="Number"
-                                            matInput
-                                            formControlName="groupDesc"
-                                            [matAutocomplete]="cbxGroups"
-                                            (input)="cbxGroups_Search()">
-                                            <button *ngIf="productForm.value.groupDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxGroups_Clear()">
-                                                <mat-icon>close</mat-icon>
-                                                </button>
-                                    <mat-autocomplete autoActiveFirstOption
-                                                        #cbxGroups="matAutocomplete"
-                                                        (optionSelected)="cbxGroups_SelectedOption( $event )">
-                                        <mat-option *ngFor="let item of cbxGroupsList" [value]="item">
-                                            {{ item.name }}
-                                        </mat-option>
-                        
-                                        <mat-option value="" *ngIf="cbxGroupsList.length == 0 && productForm.value.groupDesc">
-                                            No se encontró nada...
-                                        </mat-option>
-                        
-                                    </mat-autocomplete>
-                                </mat-form-field>
-
-                        </div>
-                    
-                        <div class="col-md-3">
-                            
-                            <mat-label>Familia: </mat-label>
-                                <mat-form-field
-                                style="width: 100%;"
-                                (click)="cbxFamilies_Search()">
-                                    <input type="text"
-                                            id="cbxFamilies"
-                                            style="width: 100%;"
-                                            placeholder="Selecciona..."
-                                            aria-label="Number"
-                                            matInput
-                                            formControlName="familyDesc"
-                                            [matAutocomplete]="cbxFamilies"
-                                            (input)="cbxFamilies_Search()">
-                                            <button *ngIf="productForm.value.familyDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFamilies_Clear()">
-                                                <mat-icon>close</mat-icon>
-                                                </button>
-                                    <mat-autocomplete autoActiveFirstOption
-                                                        #cbxFamilies="matAutocomplete"
-                                                        (optionSelected)="cbxFamilies_SelectedOption( $event )">
-                                        <mat-option *ngFor="let item of cbxFamiliesList" [value]="item">
-                                            {{ item.name }}
-                                        </mat-option>
-                        
-                                        <mat-option value="" *ngIf="cbxFamiliesList.length == 0 && productForm.value.familyDesc">
-                                            No se encontró nada...
-                                        </mat-option>
-                        
-                                    </mat-autocomplete>
-                                </mat-form-field>
-
-                        </div>
-
-                        <div class="col-md-3">
-                            
-                            <mat-label>Calidad: </mat-label>
-                                <mat-form-field
-                                style="width: 100%;"
-                                (click)="cbxQuality_Search()">
-                                    <input type="text"
-                                            id="cbxQuality"
-                                            style="width: 100%;"
-                                            placeholder="Selecciona..."
-                                            aria-label="Number"
-                                            matInput
-                                            formControlName="qualityDesc"
-                                            [matAutocomplete]="cbxQuality"
-                                            (input)="cbxQuality_Search()">
-                                            <button *ngIf="productForm.value.qualityDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxQuality_Clear()">
-                                                <mat-icon>close</mat-icon>
-                                                </button>
-                                    <mat-autocomplete autoActiveFirstOption
-                                                        #cbxQuality="matAutocomplete"
-                                                        (optionSelected)="cbxQuality_SelectedOption( $event )">
-                                        <mat-option *ngFor="let item of cbxQualityList" [value]="item">
-                                            {{ item.name }}
-                                        </mat-option>
-                        
-                                        <mat-option value="" *ngIf="cbxQualityList.length == 0 && productForm.value.qualityDesc">
-                                            No se encontró nada...
-                                        </mat-option>
-                        
-                                    </mat-autocomplete>
-                                </mat-form-field>
-
-                        </div>
-
-                        <div class="col-md-3">
-                            
-                            <mat-label>Origen: </mat-label>
-                                <mat-form-field
-                                style="width: 100%;"
-                                (click)="cbxOrigin_Search()">
-                                    <input type="text"
-                                            id="cbxOrigin"
-                                            style="width: 100%;"
-                                            placeholder="Selecciona..."
-                                            aria-label="Number"
-                                            matInput
-                                            formControlName="originDesc"
-                                            [matAutocomplete]="cbxOrigin"
-                                            (input)="cbxOrigin_Search()">
-                                            <button *ngIf="productForm.value.originDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxOrigin_Clear()">
-                                                <mat-icon>close</mat-icon>
-                                                </button>
-                                    <mat-autocomplete autoActiveFirstOption
-                                                        #cbxOrigin="matAutocomplete"
-                                                        (optionSelected)="cbxOrigin_SelectedOption( $event )">
-                                        <mat-option *ngFor="let item of cbxOriginList" [value]="item">
-                                            {{ item.name }}
-                                        </mat-option>
-                        
-                                        <mat-option value="" *ngIf="cbxOriginList.length == 0 && productForm.value.originDesc">
-                                            No se encontró nada...
-                                        </mat-option>
-                        
-                                    </mat-autocomplete>
-                                </mat-form-field>
-
-                        </div>
-                        
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-1">
-                            <mat-checkbox class="example-margin" formControlName="active">Activo</mat-checkbox>
-                        </div>
-                        <div class="col-md-3" *ngIf="idProduct == 0">
-                            <mat-form-field class="with100">
-                                <mat-label>Agregar al inventario</mat-label>
-                                <input matInput placeholder="Ingrese una cantidad"
-                                type="number"
-                                formControlName="addInv">
-                            </mat-form-field>
-                        </div>
-                    </div>
-
-
-                    <div class="row top10px">
-                        <div class="col-md-12">
-                            <div style="float: left;">
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px"
-                                [disabled]="productForm.invalid">Guardar</button>
-                                
-                                <button mat-raised-button
-                                type="button"
-                                class="marginRight10px"
-                                (click)="changeRoute('productList')">Cancelar</button>
-                                
-                            </div>
-                        </div>
-                    </div>
-
-                </form>
                 
+                    <div class="col-md-3">
+                        
+                        <mat-label>Familia: </mat-label>
+                        <span class="material-icons manitaSobre colorGreen"
+                            (click)="showCat( 'Families' )">
+                            add_circle_outline
+                        </span>
+                            <mat-form-field
+                            style="width: 100%;"
+                            (click)="cbxFamilies_Search()">
+                                <input #cbxFamiliesCBX
+                                        type="text"
+                                        id="cbxFamilies"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="productForm.familyDesc"
+                                        [matAutocomplete]="cbxFamilies"
+                                        (input)="cbxFamilies_Search()"
+                                        (focus)="cbxFamilies_Search()"
+                                        (click)="cbxFamilies_Clear()">
+                                        <button *ngIf="productForm.familyDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFamilies_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                            </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxFamilies="matAutocomplete"
+                                                    (optionSelected)="cbxFamilies_SelectedOption( $event )">
+                                    <mat-option *ngFor="let item of cbxFamiliesList" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="cbxFamiliesList.length == 0 && productForm.familyDesc">
+                                        No se encontró nada...
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+
+                    </div>
+
+                    <div class="col-md-3">
+                        
+                        <mat-label>Calidad: </mat-label>
+                        <span class="material-icons manitaSobre colorGreen"
+                            (click)="showCat( 'Quality' )">
+                            add_circle_outline
+                        </span>
+                            <mat-form-field
+                            style="width: 100%;"
+                            (click)="cbxQuality_Search()">
+                                <input #cbxQualityCBX
+                                        type="text"
+                                        id="cbxQuality"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="productForm.qualityDesc"
+                                        [matAutocomplete]="cbxQuality"
+                                        (input)="cbxQuality_Search()"
+                                        (focus)="cbxQuality_Search()"
+                                        (click)="cbxQuality_Clear()">
+                                        <button *ngIf="productForm.qualityDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxQuality_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                            </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxQuality="matAutocomplete"
+                                                    (optionSelected)="cbxQuality_SelectedOption( $event )">
+                                    <mat-option *ngFor="let item of cbxQualityList" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="cbxQualityList.length == 0 && productForm.qualityDesc">
+                                        No se encontró nada...
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+
+                    </div>
+
+                    <div class="col-md-3">
+                        
+                        <mat-label>Origen: </mat-label>
+                        <span class="material-icons manitaSobre colorGreen"
+                            (click)="showCat( 'Origin' )">
+                            add_circle_outline
+                        </span>
+                            <mat-form-field
+                            style="width: 100%;"
+                            (click)="cbxOrigin_Search()">
+                                <input #cbxOriginCBX
+                                        type="text"
+                                        id="cbxOrigin"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="productForm.originDesc"
+                                        [matAutocomplete]="cbxOrigin"
+                                        (input)="cbxOrigin_Search()"
+                                        (focus)="cbxOrigin_Search()"
+                                        (click)="cbxOrigin_Clear()">
+                                        <button *ngIf="productForm.originDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxOrigin_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                            </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxOrigin="matAutocomplete"
+                                                    (optionSelected)="cbxOrigin_SelectedOption( $event )">
+                                    <mat-option *ngFor="let item of cbxOriginList" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="cbxOriginList.length == 0 && productForm.originDesc">
+                                        No se encontró nada...
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+
+                    </div>
+                    
+                </div>
+
+                <div class="row">
+                    <div class="col-md-1">
+                        <mat-checkbox class="example-margin" [(ngModel)]="productForm.active">Activo</mat-checkbox>
+                    </div>
+                    <div class="col-md-3" *ngIf="idProduct == 0">
+                        <mat-form-field class="with100">
+                            <mat-label>Agregar al inventario</mat-label>
+                            <input id="tbxAddInv" matInput placeholder="Ingrese una cantidad"
+                            type="number"
+                            [(ngModel)]="productForm.addInv"
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('btnSave')">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <div class="row top10px">
+                    <div class="col-md-12">
+                        <div style="float: left;">
+                            <button id="btnSave"
+                            mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            (click)="fn_saveProduct()"
+                            [disabled]="!fn_validForm()">Guardar</button>
+                            
+                            <button mat-raised-button
+                            type="button"
+                            class="marginRight10px"
+                            (click)="changeRoute('productList')">Cancelar</button>
+                            
+                        </div>
+                    </div>
+                </div>
+
         </div>
     </div>
     

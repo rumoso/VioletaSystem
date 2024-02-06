@@ -16,6 +16,7 @@ import { RoleListComponent } from "./pages/security/roles/role-list/role-list.co
 import { RoleComponent } from "./pages/security/roles/role/role.component";
 import { PhysicalInventoryListComponent } from "./pages/reports/physical-inventory-list/physical-inventory-list.component";
 import { ComisionesComponent } from "./pages/operation/comisiones/comisiones.component";
+import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.component";
 
 const routes: Routes = [
     {
@@ -93,6 +94,10 @@ const routes: Routes = [
         {
           path: 'comisiones',
           component: ComisionesComponent
+        },
+        {
+          path: 'egresosList',
+          component: EgresosListComponent
         },
 
       ]

@@ -1,0 +1,93 @@
+<div style="margin: 20px !important">
+
+    <div class="row">
+
+        <div class="col-md-12">
+            <button mat-icon-button
+                style="float: right;"
+                    (click)="fn_CerrarMDL(0)">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+    </div>
+    
+    <div class="row">
+
+        <div class="col-md-4" style="text-align: left; margin-top: 20px;">
+            <mat-form-field class="with100">
+                <mat-label>Fecha:</mat-label>
+                <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                    <input matStartDate [(ngModel)]="parametersForm.startDate" placeholder="Fecha inicio">
+                    <input matEndDate [(ngModel)]="parametersForm.endDate" placeholder="Fecha fin">
+                </mat-date-range-input>
+                <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-date-range-picker #picker></mat-date-range-picker>
+                
+                </mat-form-field>
+        </div>
+
+        <div class="col-md-8">
+            <mat-label>Vendedor: </mat-label>
+            <mat-form-field
+            style="width: 100%;">
+                <input #cbxSellerCBX
+                type="text"
+                        id="cbxSeller"
+                        style="width: 100%;"
+                        placeholder="Selecciona..."
+                        aria-label="Number"
+                        matInput
+                        [(ngModel)]="parametersForm.sellerDesc"
+                        [matAutocomplete]="cbxSeller"
+                        
+                        (keyup)="CBXskeyup( 1, cbxSellerCBX.value )"
+
+                        (click)="cbxSellers_Clear()">
+                        <button *ngIf="parametersForm.sellerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSellers_Clear()">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                <mat-autocomplete autoActiveFirstOption
+                                    #cbxSeller="matAutocomplete"
+                                    (optionSelected)="cbxSellers_SelectedOption( $event )">
+                    <mat-option *ngFor="let item of cbxSellers" [value]="item">
+                        {{ item.name }}
+                    </mat-option>
+    
+                    <mat-option value="" *ngIf="parametersForm?.sellerDesc?.length > 0 && parametersForm?.sellerResp?.length > 0">
+                        {{ parametersForm.sellerResp }}
+                    </mat-option>
+    
+                </mat-autocomplete>
+            </mat-form-field>
+        </div>
+
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_generarAllComisiones()">
+                <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
+                GENERAR COMISIÓN</button>
+                
+                <button mat-raised-button
+                type="button"
+                class="marginRight10px"
+                (click)="fn_ClearParameters()">
+                <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                limpiar</button>
+                
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

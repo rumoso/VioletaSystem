@@ -398,4 +398,25 @@ export class SalesService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disabledPayment`, data );
   }
 
+  CGetEgresosListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
+    
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getEgresosListWithPage`, data);
+
+  }
+
+  CDisableSaleDetail( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disableSaleDetail`, data );
+  }
+
 }

@@ -50,7 +50,20 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
 
       const columnWidths = this.calculateColumnWidths(data);
       ws['!cols'] = columnWidths;
-  
+
+      // Configurar protección de la hoja directamente en la hoja de trabajo
+      ws['!protect'] = {
+        password: 'Violeta2024', // Define una contraseña si es necesario
+        formatCells: false,
+        formatColumns: false,
+        formatRows: false,
+        insertColumns: false,
+        insertRows: false,
+        insertHyperlinks: false,
+        deleteColumns: false,
+        deleteRows: false,
+      };
+
       const wb: XLSX.WorkBook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
   
@@ -182,7 +195,7 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
       return dialog;
     }
 
-    showAlertIA( resp: any ){
+    showAlertIA( resp: any, bShowTrue: boolean = true ){
 
       var type = resp.status == 0 ? 'S' : 'W';
       var header = resp.status == 0 ? 'OK!' : 'Alerta!';
@@ -194,14 +207,18 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
         message: message
       }
 
-      const dialog = this.dialog.open( AlertComponent,{
-        width: 'auto',
-        data: paramsAlert
-      } )
+      if( resp.status != 0 || bShowTrue ){
+        const dialog = this.dialog.open( AlertComponent,{
+          width: 'auto',
+          data: paramsAlert
+        } )
 
-      //this.showSnakbar( message );
-  
-      return dialog;
+        return dialog;
+      }
+      else{
+        return false;
+      }
+      
     }
 
     Unidades( num: number){

@@ -986,6 +986,56 @@ export class PrintTicketService {
       }
 
     }
+    else if(type == "DineroElectronico"){
+
+      // AGREGO LA INFORMACIÓN DEL CLIENTE
+      const OCustomerData = await this.customersServ.CGetCustomerByIDPromise( idRelation );
+
+      if( OCustomerData != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "CLIENTE: " + OCustomerData.lastName + " " + OCustomerData.name }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "DIRECCIÓN: " + OCustomerData.address }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "TELEFONO: " + OCustomerData.tel }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "DESCRIPCIÓN", iWith: 60 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "SALDO", iWith: 40 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 9, text: 'Dinero Electrónico', iWith: 60 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 9, text: USDollar.format( iPayments ), iWith: 40 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+    }
 
     if(idPrinter > 0){
       

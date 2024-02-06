@@ -247,7 +247,7 @@
                                             remove_red_eye
                                             </span>
 
-                                            <span *ngIf="item.pendingAmount < 1" class="material-icons manitaSobre colorGreen"
+                                            <span *ngIf="item.pendingAmount < 1 && item.abonado > 0" class="material-icons manitaSobre colorGreen"
                                             matTooltip="Pagado"
                                             >
                                                 check_circle

@@ -413,10 +413,17 @@
                                                         && item.consCantidad > 0"
                                                         class="manitaSobre"
                                                         [(ngModel)]="item.select"></mat-checkbox>
+
                                                         <span *ngIf="idSale.length == 0" class="material-icons manitaSobre colorRed"
                                                             (click)="event_fnClick_DeleteProductFromList( i )">
                                                             delete_outline
                                                         </span>
+
+                                                        <span *ngIf="idSale.length > 0" class="material-icons manitaSobre colorRed"
+                                                            (click)="fn_disableSaleDetail( item )">
+                                                            delete_outline
+                                                        </span>
+
                                                     </div>
                                                 </td>
 
@@ -540,13 +547,13 @@
                                                     <span class="material-icons manitaSobre colorRed"
                                                         matTooltip="Cancelar pago"
                                                         *ngIf="item.active && item.iPagoCortado == 0"
-                                                        (click)="fn_disablePayment( item.idPayment, item.iPagoCortado )">
+                                                        (click)="fn_disablePayment( item )">
                                                             delete_outline
                                                     </span>
                                                     <span class="material-icons manitaSobre colorRed"
-                                                        matTooltip="Devolución de pago ( Crear Egreso si se regresa efectivo )"
+                                                        matTooltip="Devolución de pago"
                                                         *ngIf="item.active && item.iPagoCortado > 0"
-                                                        (click)="fn_disablePayment( item.idPayment, item.iPagoCortado )">
+                                                        (click)="fn_disablePayment( item )">
                                                         backspace
                                                     </span>
 

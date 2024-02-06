@@ -6,6 +6,8 @@ import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { ElectronicMoneyService } from 'src/app/protected/services/electronic-money.service';
+import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
+import { PrintersService } from 'src/app/protected/services/printers.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 
@@ -39,6 +41,7 @@ electronicMoneyForm: any = {
 };
 
 electronicMoneyList: any[] = [];
+electronicMoneySum: number = 0;
 
 //-------------------------------
 // VARIABLES PARA LA PAGINACIÓN
@@ -51,6 +54,12 @@ pagination: Pagination = {
   pageSizeOptions: [5, 10, 25, 100]
 }
 //-------------------------------
+
+selectPrinter: any = {
+  idSucursal: 0,
+  idPrinter: 0,
+  printerName: ''
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE VARIABLES
@@ -70,6 +79,9 @@ constructor(
 
   , private electronicMoneyServ: ElectronicMoneyService
 
+  , private printTicketServ: PrintTicketService
+  , private printersServ: PrintersService
+
   ) { }
 
   async ngOnInit() {
@@ -87,6 +99,12 @@ constructor(
 
     this.nextInputFocus( this.tbxDescription, 500 );
 
+    this.fn_getSelectPrintByIdUser( this.idUserLogON );
+
+  }
+
+  async ev_PrintTicket(){
+    this.printTicketServ.printTicket("DineroElectronico", this.electronicMoneyForm.idCustomer, this.selectPrinter.idPrinter, this.electronicMoneySum);
   }
 
   ////************************************************ */
@@ -116,6 +134,38 @@ constructor(
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE CONEXIONES AL BACK
 //////////////////////////////////////////////////////////////////////////////////////////////////
+
+fn_getSelectPrintByIdUser( idUser: number ) {
+
+  this.printersServ.CGetSelectPrinterByIdUser( idUser )
+  .subscribe({
+    
+    next: ( resp: ResponseGet ) => {
+
+      if( resp.status == 0 ){
+
+        this.selectPrinter.idSucursal = resp.data.idSucursal;
+        this.selectPrinter.idPrinter = resp.data.idPrinter;
+        this.selectPrinter.printerName = resp.data.printerName;
+
+      }
+      else{
+
+        this.selectPrinter.idSucursal = 0;
+        this.selectPrinter.idPrinter = 0;
+        this.selectPrinter.printerName = '';
+
+      }
+
+      console.log( resp );
+    },
+    error: (ex: HttpErrorResponse) => {
+      this.servicesGServ.showSnakbar( ex.error.data );
+    }
+
+  })
+  
+}
 
 bInsertElectronicMoney: boolean = false;
 
@@ -184,6 +234,8 @@ this.electronicMoneyServ.CGetElectronicMoneyListWithPage( this.pagination, this.
     this.electronicMoneyList = resp.data.rows;
     this.pagination.length = resp.data.count;
     this.bShowSpinner = false;
+
+    this.electronicMoneySum = resp.data.count > 0 ? this.electronicMoneyList[0].electronicMoneySum : 0;
 
   },
   error: (ex: HttpErrorResponse) => {

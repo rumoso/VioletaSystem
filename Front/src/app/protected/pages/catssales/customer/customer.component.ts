@@ -44,17 +44,17 @@ export class CustomerComponent implements OnInit {
     , private authServ: AuthService
     ) { }
 
-    customerForm: FormGroup = this.fb.group({
+    customerForm: any = {
       idCustomer: 0,
       createDate: '',
-      name: ['',[ Validators.required ]],
+      name: '',
       lastName: '',
       address: '',
       tel: '',
       eMail: '',
       active: true,
       idUser: 0
-    });
+    };
 
     async ngOnInit() {
       this.authServ.checkSession();
@@ -74,7 +74,7 @@ export class CustomerComponent implements OnInit {
                 
                 this.id = resp.data.idCustomer;
     
-               this.customerForm.setValue({
+               this.customerForm = {
                 idCustomer: resp.data.idCustomer,
                 createDate: resp.data.createDate,
                 name: resp.data.name,
@@ -84,7 +84,7 @@ export class CustomerComponent implements OnInit {
                 eMail: resp.data.eMail,
                 active: resp.data.active,
                 idUser: this.idUserLogON
-               });
+               };
 
                this.name = this.event_getDescCustomer();
     
@@ -96,12 +96,35 @@ export class CustomerComponent implements OnInit {
           } );
 
       }
+
+      setTimeout (() => {
+        this.ev_fn_nextInput_keyup_enter( 'tbxLastName' );
+      }, 500);
   
     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE MÉTODOS CON EL FRONT
 //////////////////////////////////////////////////////////////////////////////////////////////////
+
+ev_fn_nextInput_keyup_enter( idInput: any ){
+  //console.log(150)
+  setTimeout (() => {
+    // idInput.nativeElement.focus();
+    var miElemento = document.getElementById( idInput )!.focus();
+  }, 100);
+
+}
+
+fn_validForm(){
+  var bOK = false
+
+  if( this.customerForm.name.length > 0){
+    bOK = true;
+  }
+
+  return bOK;
+}
 
 close(){
 
@@ -136,12 +159,12 @@ public inputFocus(idInput: any) {
 
     fn_saveCustomer() {
 
-      this.customerForm.get('idUser')?.setValue( this.idUserLogON );
+      this.customerForm.idUser = this.idUserLogON;
 
       this.bShowSpinner = true;
   
       if( this.id > 0 ){
-        this.customerServ.CUpdateCustomer( this.customerForm.value )
+        this.customerServ.CUpdateCustomer( this.customerForm )
           .subscribe({
             next: (resp: ResponseDB_CRUD) => {
 
@@ -161,7 +184,7 @@ public inputFocus(idInput: any) {
             }
           })
       }else{
-      this.customerServ.CInsertCustomer( this.customerForm.value )
+      this.customerServ.CInsertCustomer( this.customerForm )
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
   
@@ -169,7 +192,7 @@ public inputFocus(idInput: any) {
               this.id = resp.insertID;
               this.name = this.event_getDescCustomer();
   
-              this.customerForm.get('idCustomer')?.setValue( resp.insertID );
+              this.customerForm.idCustomer = resp.insertID;
 
               this.servicesGServ.showAlertIA( resp );
   
@@ -199,10 +222,10 @@ public inputFocus(idInput: any) {
 
 event_getDescCustomer(): string{
 
-  return this.customerForm.value.lastName
-  + ' ' + this.customerForm.value.name
-  + ' - ' + this.customerForm.value.tel
-  + ' - ' + this.customerForm.value.address
+  return this.customerForm.lastName
+  + ' ' + this.customerForm.name
+  + ' - ' + this.customerForm.tel
+  + ' - ' + this.customerForm.address
 
 }
 

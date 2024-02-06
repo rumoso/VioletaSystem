@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
@@ -19,6 +19,7 @@ import { environment } from 'src/environments/environment';
 import { InventarylogComponent } from '../mdl/inventarylog/inventarylog.component';
 import { SuppliersService } from 'src/app/protected/services/suppliers.service';
 import { SuppliersComponent } from '../suppliers/suppliers.component';
+import { CatComponent } from '../mdl/cat/cat.component';
 
 @Component({
   selector: 'app-product',
@@ -28,6 +29,8 @@ import { SuppliersComponent } from '../suppliers/suppliers.component';
 export class ProductComponent implements OnInit {
 
   private _appMain: string = environment.appMain;
+
+  @ViewChild('cbxSucursalCBX') cbxSucursalCBX!: ElementRef;
 
   title: string = 'Producto';
   bShowSpinner: boolean = false;
@@ -82,30 +85,30 @@ export class ProductComponent implements OnInit {
     , private authServ: AuthService
     ) { }
 
-    productForm: FormGroup = this.fb.group({
+    productForm: any = {
       idSucursal: 0,
       sucursalDesc: '',
       idProduct: 0,
       createDate: '',
-      barCode: ['',[ Validators.required ]],
-      name: ['',[ Validators.required ]],
+      barCode: '',
+      name: '',
       gramos: 0,
-      cost: [0, [ Validators.required, Validators.pattern(/^[0-9]+(.[0-9]{0,2})?$/)  ]],
-      price: [0, [ Validators.required, Validators.pattern(/^[0-9]+(.[0-9]{0,2})?$/) ]],
-      idFamily: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
-      familyDesc: [''],
-      idGroup: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
-      groupDesc: [''],
-      idQuality: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
-      qualityDesc: [''],
-      idOrigin: [0, [ Validators.required, Validators.pattern(/^[1-9]\d*$/) ]],
-      originDesc: [''],
-      idSupplier: [0],
-      supplierDesc: [''],
+      cost: 0,
+      price: 0,
+      idFamily: 0,
+      familyDesc: '',
+      idGroup: 0,
+      groupDesc: '',
+      idQuality: 0,
+      qualityDesc: 'NA',
+      idOrigin: 0,
+      originDesc: 'NA',
+      idSupplier: 0,
+      supplierDesc: '',
       active: true,
       addInv: 1,
       idUser: 0
-    });
+    };
 
     async ngOnInit() {
       this.authServ.checkSession();
@@ -128,9 +131,9 @@ export class ProductComponent implements OnInit {
           console.log(resp)
            if(resp.status == 0){
               
-              this.idProduct = resp.data.idProduct;
+            this.idProduct = resp.data.idProduct;
   
-             this.productForm.setValue({
+            this.productForm = {
               idProduct: resp.data.idProduct,
               idSucursal: resp.data.idSucursal,
               sucursalDesc: resp.data.sucursalDesc,
@@ -153,7 +156,7 @@ export class ProductComponent implements OnInit {
               active: resp.data.active,
               addInv: 1,
               idUser: this.idUserLogON
-             });
+             };
   
   
              this.fn_getInventarylogByIdProductWithPage();
@@ -162,21 +165,84 @@ export class ProductComponent implements OnInit {
            }
            this.bShowSpinner = false;
         } )
-  
+    }
+
+    fn_ClearForm(){
+      this.idProduct = 0;
+      this.productForm.idProduct = 0;
+      this.productForm.createDate = '';
+      this.productForm.barCode = '';
+      this.productForm.name = '';
+      this.productForm.gramos = 0;
+      this.productForm.cost = 0;
+      this.productForm.price = 0;
+      this.productForm.idFamily = 0;
+      this.productForm.familyDesc = '';
+      this.productForm.idGroup = 0;
+      this.productForm.groupDesc = '';
+      this.productForm.idQuality = 0;
+      this.productForm.qualityDesc = 'NA';
+      this.productForm.idOrigin = 0;
+      this.productForm.originDesc = 'NA';
+      this.productForm.idSupplier = 0;
+      this.productForm.supplierDesc = '';
+      this.productForm.active = true;
+      this.productForm.addInv = 1;
+    }
+
+    ev_fn_nextInput_keyup_enter( idInput: any ){
+      //console.log(150)
+      setTimeout (() => {
+        // idInput.nativeElement.focus();
+        var miElemento = document.getElementById( idInput )!.focus();
+      }, 100);
+
     }
 
     changeRoute( route: string ): void {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
     }
 
+    showCat( sOption: string ){
+
+      var OParams: any = {
+        sOption: sOption
+      }
+  
+      this.servicesGServ.showModalWithParams( CatComponent, OParams, '1500px')
+      .afterClosed().subscribe({
+        next: ( resp: any ) =>{
+  
+        }
+      });
+    }
+
+    fn_validForm(){
+      var bOK = false
+
+      if( this.productForm.idSucursal > 0
+      && this.productForm.idFamily > 0
+      && this.productForm.idGroup > 0
+      && this.productForm.idQuality > 0
+      && this.productForm.idOrigin > 0
+      && this.productForm.barCode.length > 0
+      && this.productForm.name.length > 0
+      && this.productForm.cost >= 0
+      && this.productForm.price > 0){
+        bOK = true;
+      }
+
+      return bOK;
+    }
+
     fn_saveProduct() {
 
-      this.productForm.get('idUser')?.setValue( this.idUserLogON );
+      this.productForm.idUser = this.idUserLogON ;
 
       this.bShowSpinner = true;
   
       if(this.idProduct > 0){
-        this.productsServ.CUpdateProduct( this.productForm.value )
+        this.productsServ.CUpdateProduct( this.productForm )
           .subscribe({
             next: (resp: ResponseDB_CRUD) => {
 
@@ -197,17 +263,18 @@ export class ProductComponent implements OnInit {
             }
           })
       }else{
-      this.productsServ.CInsertProduct( this.productForm.value )
+      this.productsServ.CInsertProduct( this.productForm )
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
   
             if( resp.status === 0 ){
               this.idProduct = resp.insertID;
   
-              this.productForm.get('idProduct')?.setValue( resp.insertID );
+              this.productForm.idProduct = resp.insertID;
 
               this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
-              this.fn_getInventarylogByIdProductWithPage();
+              
+              this.fn_ClearForm();
   
             }
             else{
@@ -252,7 +319,10 @@ export class ProductComponent implements OnInit {
   cbxFamiliesList: any[] = [];
 
   cbxFamilies_Search() {
-      this.familiesServ.CCbxGetFamiliesCombo( this.productForm.value.familyDesc )
+
+    this.cbxFamilies_Clear();
+
+      this.familiesServ.CCbxGetFamiliesCombo( this.productForm.familyDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -277,14 +347,16 @@ export class ProductComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.productForm.get('idFamily')?.setValue( rol.idFamily )
-    this.productForm.get('familyDesc')?.setValue( rol.name )
+    this.productForm.idFamily = rol.idFamily;
+    this.productForm.familyDesc = rol.name;
+
+    this.ev_fn_nextInput_keyup_enter( 'cbxQuality' );
 
   }
 
   cbxFamilies_Clear(){
-    this.productForm.get('idFamily')?.setValue( 0 );
-    this.productForm.get('familyDesc')?.setValue( '' );
+    this.productForm.idFamily = 0;
+    this.productForm.familyDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -294,7 +366,8 @@ export class ProductComponent implements OnInit {
   cbxGroupsList: any[] = [];
 
   cbxGroups_Search() {
-      this.groupsServ.CCbxGetGroupsCombo( this.productForm.value.groupDesc )
+    
+      this.groupsServ.CCbxGetGroupsCombo( this.productForm.groupDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -319,14 +392,16 @@ export class ProductComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.productForm.get('idGroup')?.setValue( rol.idGroup )
-    this.productForm.get('groupDesc')?.setValue( rol.name )
+    this.productForm.idGroup = rol.idGroup;
+    this.productForm.groupDesc = rol.name;
+
+    this.ev_fn_nextInput_keyup_enter( 'cbxFamilies' );
 
   }
 
   cbxGroups_Clear(){
-    this.productForm.get('idGroup')?.setValue( 0 );
-    this.productForm.get('groupDesc')?.setValue( '' );
+    this.productForm.idGroup = 0;
+    this.productForm.groupDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -336,7 +411,8 @@ export class ProductComponent implements OnInit {
   cbxQualityList: any[] = [];
 
   cbxQuality_Search() {
-      this.qualityServ.CCbxGetQualityCombo( this.productForm.value.qualityDesc )
+
+      this.qualityServ.CCbxGetQualityCombo( this.productForm.qualityDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -361,14 +437,16 @@ export class ProductComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.productForm.get('idQuality')?.setValue( rol.idQuality )
-    this.productForm.get('qualityDesc')?.setValue( rol.name )
+    this.productForm.idQuality = rol.idQuality;
+    this.productForm.qualityDesc = rol.name;
+
+    this.ev_fn_nextInput_keyup_enter( 'cbxOrigin' );
 
   }
 
   cbxQuality_Clear(){
-    this.productForm.get('idQuality')?.setValue( 0 );
-    this.productForm.get('qualityDesc')?.setValue( '' );
+    this.productForm.idQuality = 0;
+    this.productForm.qualityDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -378,7 +456,8 @@ export class ProductComponent implements OnInit {
   cbxOriginList: any[] = [];
 
   cbxOrigin_Search() {
-      this.originServ.CCbxGetOriginCombo( this.productForm.value.originDesc )
+
+      this.originServ.CCbxGetOriginCombo( this.productForm.originDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -403,14 +482,16 @@ export class ProductComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.productForm.get('idOrigin')?.setValue( rol.idOrigin )
-    this.productForm.get('originDesc')?.setValue( rol.name )
+    this.productForm.idOrigin = rol.idOrigin;
+    this.productForm.originDesc = rol.name;
+
+    this.ev_fn_nextInput_keyup_enter( 'tbxAddInv' );
 
   }
 
   cbxOrigin_Clear(){
-    this.productForm.get('idOrigin')?.setValue( 0 );
-    this.productForm.get('originDesc')?.setValue( '' );
+    this.productForm.idOrigin = 0;
+    this.productForm.originDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -420,7 +501,8 @@ export class ProductComponent implements OnInit {
   cbxSucursales: any[] = [];
 
   cbxSucursales_Search() {
-      this.sucursalesServ.CCbxGetSucursalesCombo( this.productForm.value.sucursalDesc, this.idUserLogON )
+
+      this.sucursalesServ.CCbxGetSucursalesCombo( this.productForm.sucursalDesc, this.idUserLogON )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -445,16 +527,16 @@ export class ProductComponent implements OnInit {
 
     const ODataCbx: any = event.option.value;
 
-    console.log(ODataCbx)
+    this.productForm.idSucursal = ODataCbx.idSucursal;
+    this.productForm.sucursalDesc = ODataCbx.name;
 
-    this.productForm.get('idSucursal')?.setValue( ODataCbx.idSucursal )
-    this.productForm.get('sucursalDesc')?.setValue( ODataCbx.name )
+    this.ev_fn_nextInput_keyup_enter( 'cbxSupplier' );
 
   }
 
   cbxSucursales_Clear(){
-    this.productForm.get('idSucursal')?.setValue( 0 );
-    this.productForm.get('sucursalDesc')?.setValue( '' );
+    this.productForm.idSucursal = 0;
+    this.productForm.sucursalDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -464,7 +546,8 @@ export class ProductComponent implements OnInit {
   cbxSupplierList: any[] = [];
 
   cbxSupplier_Search() {
-      this.suppliersServ.CCbxGetSuppliersCombo( this.productForm.value.supplierDesc )
+
+      this.suppliersServ.CCbxGetSuppliersCombo( this.productForm.supplierDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -489,14 +572,18 @@ export class ProductComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.productForm.get('idSupplier')?.setValue( rol.idSupplier )
-    this.productForm.get('supplierDesc')?.setValue( rol.name )
+    if(this.productForm.idSupplier != rol.idSupplier){
+      this.productForm.idSupplier = rol.idSupplier;
+      this.productForm.supplierDesc = rol.name;
+    }
+
+    this.ev_fn_nextInput_keyup_enter( 'barCode' );
 
   }
 
   cbxSupplier_Clear(){
-    this.productForm.get('idSupplier')?.setValue( 0 );
-    this.productForm.get('supplierDesc')?.setValue( '' );
+    this.productForm.idSupplier = 0;
+    this.productForm.supplierDesc = '';
   }
   //--------------------------------------------------------------------------
 

@@ -11,6 +11,7 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ComisionComponent } from '../comision/comision.component';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
+import { GenComisionComponent } from '../gen-comision/gen-comision.component';
 
 @Component({
   selector: 'app-comisiones',
@@ -115,6 +116,22 @@ export class ComisionesComponent {
 
   // #region MÉTODOS DEL FRONT
 
+  fn_ShowGenComision(){
+
+    this.servicesGServ.showModalWithParams( GenComisionComponent, null, '800px')
+    .afterClosed().subscribe({
+      next: ( resp ) =>{
+  
+        if( resp ){
+
+          
+
+        }
+
+      }
+    }); 
+  }
+
   fn_setDates(){
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
@@ -164,7 +181,7 @@ export class ComisionesComponent {
 // #region CONEXION CON EL BACK
 
   bShowActionAuthorization: boolean = false;
-  fn_startPhysicInventory( idComision: any ){
+  fn_disabledComision( idComision: any ){
 
     if(!this.bShowActionAuthorization){
       
