@@ -90,6 +90,13 @@ const insertSale = async(req, res) => {
                                 , ${ saleD.idProduct }
                                 , '-${ saleD.cantidad }'
                                 , 'Salida por Venta #${ idSale }'
+
+                                , 1
+                                , 1
+                                , ''
+                                , 0
+                                , 0
+                                , 0
         
                                 , ${ idUserLogON }
                             )`,{ transaction: tran })
@@ -704,6 +711,13 @@ const regresarProductoDeConsignacion = async(req, res) => {
                 , ${saleD.idProduct}
                 , '${saleD.consCantidad}'
                 , 'Regreso de consignación #${ saleD.idSale }'
+
+                , 1
+                , 1
+                , ''
+                , 0
+                , 0
+                , 0
 
                 , ${ idUserLogON }
                 )`,{ transaction: tran })
@@ -1340,6 +1354,13 @@ const disabledSale = async(req, res) => {
                 , '${ saleD.cantidad }'
                 , 'Se regresa por cancelación de venta #${ idSale }'
 
+                , 1
+                , 1
+                , ''
+                , 0
+                , 0
+                , 0
+
                 , ${ idUserLogON }
             )`,{ transaction: tran })
 
@@ -1850,6 +1871,13 @@ const disableSaleDetail = async(req, res) => {
             ,  ${ oSaleDetail[0].idProduct }
             , '${ oSaleDetail[0].cantidad }'
             , 'Se regresa por cancelación de venta #${ oSaleDetail[0].idSale }'
+
+            , 1
+            , 1
+            , ''
+            , 0
+            , 0
+            , 0
 
             , ${ idUserLogON }
         )`,{ transaction: tran })

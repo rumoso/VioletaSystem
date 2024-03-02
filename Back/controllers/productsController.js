@@ -158,6 +158,8 @@ const insertProduct = async(req, res) => {
         active,
         addInv = 0,
 
+        noEntrada = '',
+
         idUserLogON,
         idSucursalLogON
     } = req.body;
@@ -206,9 +208,15 @@ const insertProduct = async(req, res) => {
 
                 var OSQL2 = await dbConnection.query(`call insertInventaryLog(
                 '${oGetDateNow}'
-                ,  ${idProduct}
-                , '${addInv}'
+                ,  ${ idProduct }
+                , '${ addInv }'
                 , 'Entrada de inventario'
+                , 0
+                , 0
+                , '${ noEntrada }'
+                , 0
+                , 0
+                , 0
 
                 , ${ idUserLogON }
                 )`,{ transaction: tran })
@@ -319,15 +327,18 @@ const updateProduct = async(req, res) => {
 const cbxGetProductsCombo = async(req, res = response) => {
 
     const {
-        idUser,
-        search = ''
+        iOption = 1
+        , search = ''
+
+        , idUserLogON
+        , idSucursalLogON
     } = req.body;
 
     console.log(req.body)
 
     try{
 
-        var OSQL = await dbConnection.query(`call cbxGetProductsCombo( '${search}', ${idUser} )`)
+        var OSQL = await dbConnection.query(`call cbxGetProductsCombo( ${ iOption }, '${ search }', ${ idUserLogON } )`)
 
         if(OSQL.length == 0){
 
@@ -654,6 +665,9 @@ const insertInventaryLog = async(req, res) => {
         idProduct
         , cantidad
         , description
+        , noEntrada = ''
+
+        , idUserAutorizante = 0
 
         , idUserLogON
         , idSucursalLogON
@@ -665,11 +679,25 @@ const insertInventaryLog = async(req, res) => {
 
     try{
 
+        var firmaVer = 0;
+        var firmaMost = 0;
+
+        if( cantidad < 0 ){
+            firmaVer = 1;
+            firmaMost = 1;
+        }
+
         var OSQL = await dbConnection.query(`call insertInventaryLog(
             '${oGetDateNow}'
             , ${ idProduct }
             , '${ cantidad }'
             , '${ description.trim() }'
+            , ${ firmaVer }
+            , ${ firmaMost }
+            , '${ noEntrada }'
+            , 0
+            , 0
+            , ${ idUserAutorizante }
 
             , ${ idUserLogON }
             )`)
@@ -1321,6 +1349,207 @@ const insertUpdateCat = async(req, res) => {
 
 }
 
+const getRepComprasProveedorListWithPage = async(req, res = response) => {
+
+    const {
+        idSupplier = 0
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+    } = req.body;
+
+    console.log(req.body)
+
+    const dbConnectionNEW = await createConexion();
+
+    try{
+
+        var OSQL = await dbConnectionNEW.query(`call rep_getRepComprasProveedorListWithPage(
+            ${ idSupplier }
+
+            ,'${ search }'
+            ,${ start }
+            ,${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: iRows,
+                rows: OSQL
+                }
+            });
+
+        }
+
+        await dbConnectionNEW.close();
+
+    }catch(error){
+
+        await dbConnectionNEW.close();
+
+        res.status(500).json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const getInventarylogParaFirmar = async(req, res = response) => {
+
+    const {
+        idProduct = 0
+        , startDate = ''
+        , endDate = ''
+        , noEntrada = ''
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+    } = req.body;
+
+    let responseData = {
+        status: -1,
+        message: '',
+        data: null
+    };
+
+    console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getInventarylogParaFirmar(
+        ${ idProduct }
+        ,'${ startDate.substring(0, 10) }'
+        ,'${ endDate.substring(0, 10) }'
+        ,'${ noEntrada.trim() }'
+        
+        ,'${ search }'
+        ,${ start }
+        ,${ limiter }
+        )`)
+
+        if(OSQL.length == 0){
+
+            responseData = {
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:
+                {
+                    count: 0,
+                    rows: null
+                }
+            };
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+
+            responseData = {
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            };
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+    //await logRequestResponse( req.body, responseData, idUser )
+
+    res.json(responseData);
+
+};
+
+const updateFirmaEntradaInventario = async(req, res) => {
+
+    const {
+        iOption
+        , idProduct = 0
+        , startDate = ''
+        , endDate = ''
+        , noEntrada = ''
+
+        , idUserLogON
+        , idSucursalLogON
+    } = req.body;
+
+    console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call updateFirmaEntradaInventario(
+        '${ iOption }'
+        , ${ idProduct }
+        ,'${ startDate.substring(0, 10) }'
+        ,'${ endDate.substring(0, 10) }'
+        ,'${ noEntrada.trim() }'
+        
+        , ${ idUserLogON }
+        )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se pudo realizar la acción."
+            });
+
+        }
+        else{
+
+            res.json({
+                status: OSQL[0].out_id > 0 ? 0 : 1,
+                message: OSQL[0].message
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+}
+
 module.exports = {
     getProductsListWithPage
     , getProductByID
@@ -1344,4 +1573,7 @@ module.exports = {
     , getPhysicalInventoryHeaderBySucursal
     , getCatListWithPage
     , insertUpdateCat
+    , getRepComprasProveedorListWithPage
+    , getInventarylogParaFirmar
+    , updateFirmaEntradaInventario
   }

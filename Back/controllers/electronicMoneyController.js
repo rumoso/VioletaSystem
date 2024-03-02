@@ -152,8 +152,72 @@ const deleteElectronicMoney = async(req, res) => {
     }
   }
 
+const getRepElectronicMoneyListWithPage = async(req, res = response) => {
+
+    const {
+        startDate = ''
+        , endDate = ''
+        , idCustomer = 0
+        
+        , search = ''
+        , limiter = 10
+        , start = 0
+    } = req.body;
+
+    console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getRepElectronicMoneyListWithPage(
+            '${ startDate.substring(0, 10) }'
+            ,'${ endDate.substring(0, 10) }'
+            , ${ idCustomer }
+            
+            ,'${ search }'
+            ,${ start }
+            ,${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "No se encontró información.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            });
+            
+        }
+        
+    }catch(error){
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
 module.exports = {
     getElectronicMoneyListWithPage
     , insertElectronicMoney
     , deleteElectronicMoney
+    , getRepElectronicMoneyListWithPage
   }

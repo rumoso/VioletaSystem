@@ -28,6 +28,11 @@ const {
    , getCatListWithPage
    , insertUpdateCat
 
+   , getRepComprasProveedorListWithPage
+
+   , getInventarylogParaFirmar
+   , updateFirmaEntradaInventario
+
    } = require('../controllers/productsController');
 
    
@@ -108,12 +113,7 @@ router.post('/updateProduct', [
   validarCampos
 ], updateProduct);
 
-router.post('/cbxGetProductsCombo', [
-  check('idUser','Id del usuario obligatorio').not().isEmpty(),
-  check('idUser','Id del usuario debe ser numérico').isNumeric(),
-
-  validarCampos
-], cbxGetProductsCombo);
+router.post('/cbxGetProductsCombo', cbxGetProductsCombo);
 
 router.post('/getProductByBarCode', [
   check('barCode','Id obligatorio').not().isEmpty(),
@@ -212,5 +212,17 @@ router.post('/insertUpdateCat', [
   
   validarCampos
 ], insertUpdateCat);
+
+router.post('/getRepComprasProveedorListWithPage', getRepComprasProveedorListWithPage);
+
+router.post('/getInventarylogParaFirmar', getInventarylogParaFirmar);
+
+router.post('/updateFirmaEntradaInventario', [
+
+  check('iOption','Opción obligatoria').not().isEmpty(),
+  check('iOption','La opción debe ser numérico').isNumeric(),
+
+  validarCampos
+], updateFirmaEntradaInventario);
 
 module.exports = router;

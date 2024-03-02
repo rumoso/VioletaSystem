@@ -10,6 +10,7 @@ const {
     , updateCustomer
     , deleteCustomer
     , cbxGetCustomersCombo
+    , getRepElectronicMoneyListWithPage
    } = require('../controllers/customersController');
 
    
@@ -60,5 +61,7 @@ router.post('/cbxGetCustomersCombo', [
 
   validarCampos
 ], cbxGetCustomersCombo);
+
+
 
 module.exports = router;

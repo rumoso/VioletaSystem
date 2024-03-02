@@ -7,6 +7,7 @@ const {
   getElectronicMoneyListWithPage
     , insertElectronicMoney
     , deleteElectronicMoney
+    , getRepElectronicMoneyListWithPage
    } = require('../controllers/electronicMoneyController');
 
    
@@ -39,5 +40,7 @@ router.post('/deleteElectronicMoney', [
 
   validarCampos
 ], deleteElectronicMoney);
+
+router.post('/getRepElectronicMoneyListWithPage', getRepElectronicMoneyListWithPage);
 
 module.exports = router;

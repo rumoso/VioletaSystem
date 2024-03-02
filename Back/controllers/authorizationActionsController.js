@@ -25,7 +25,8 @@ const authorizationActionAPI = async(req, res = response) => {
     
               res.json({
                   status: 1,
-                  message: "No tiene permisos para autorizar esta acción."
+                  message: "No tiene permisos para autorizar esta acción.",
+                  insertID: 0
               });
       
           }
@@ -34,7 +35,7 @@ const authorizationActionAPI = async(req, res = response) => {
               res.json({
                   status: 0,
                   message: "Acción autorizada con éxito.",
-                  insertID: OSQL[0].idAction
+                  insertID: OSQL[0].idUser
               });
       
           }

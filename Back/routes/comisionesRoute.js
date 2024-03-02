@@ -12,6 +12,7 @@ const {
   , getComisionesPagosDetailListWithPage
   , disabledComision
   , disabledComisionDetail
+  , changeStatusComision
 
 } = require('../controllers/comisionesController');
 
@@ -70,6 +71,17 @@ router.post('/disabledComisionDetail', [
 
   validarCampos
 ], disabledComisionDetail);
+
+router.post('/changeStatusComision', [
+
+  check('idComision','Id obligatorio').not().isEmpty(),
+
+  check('idStatus','Estatus obligatorio').not().isEmpty(),
+  check('idStatus','El estatus debe ser numérico').isNumeric(),
+
+  validarCampos
+], changeStatusComision);
+
 
 
 module.exports = router;
