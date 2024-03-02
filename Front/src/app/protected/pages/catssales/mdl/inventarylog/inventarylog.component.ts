@@ -8,6 +8,7 @@ import { AuthService } from 'src/app/auth/services/auth.service';
 import { ProductsService } from 'src/app/protected/services/products.service';
 import { ResponseDB_CRUD, ResponseGet } from 'src/app/protected/interfaces/global.interfaces';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
 
 @Component({
   selector: 'app-inventarylog',
@@ -22,6 +23,7 @@ export class InventarylogComponent {
 
 private _appMain: string = environment.appMain;
 
+@ViewChild('tbxNoEntrada') tbxNoEntrada!: ElementRef;
 @ViewChild('tbxDescription') tbxDescription!: ElementRef;
 @ViewChild('tbxCantidad') tbxCantidad!: ElementRef;
 
@@ -34,7 +36,9 @@ inventaryLogForm: any = {
 
   idProduct: 0,
   cantidad: 0,
-  description: ''
+  description: '',
+  noEntrada: '',
+  idUserAutorizante: 0
 
 };
 
@@ -70,7 +74,7 @@ constructor(
 
     this.inventaryLogForm.idProduct = this.ODataP.idProduct;
     
-    this.nextInputFocus( this.tbxDescription, 500 );
+    this.nextInputFocus( this.tbxNoEntrada, 500 );
 
   }
 
@@ -86,7 +90,7 @@ constructor(
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 bInsertInventaryLog: boolean = false;
-
+bShowActionAuthorization: boolean = false;
 fn_insertInventaryLog() {
 
   if( this.inventaryLogForm.idProduct > 0 && this.inventaryLogForm.cantidad != 0 ){
@@ -104,32 +108,90 @@ fn_insertInventaryLog() {
 
         if(resp){
 
-          this.bShowSpinner = true;
+          if( this.inventaryLogForm.cantidad > 0 ){
 
-          this.productsServ.CInsertInventaryLog( this.inventaryLogForm )
-            .subscribe({
-            next: (resp: ResponseDB_CRUD) => {
+            this.bShowSpinner = true;
 
-              if( resp.status === 0 ){
-                this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
-                this.fn_CerrarMDL();
+            this.inventaryLogForm.idUserAutorizante = 0;
+
+            this.productsServ.CInsertInventaryLog( this.inventaryLogForm )
+              .subscribe({
+              next: (resp: ResponseDB_CRUD) => {
+  
+                if( resp.status === 0 ){
+                  this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
+                  this.fn_CerrarMDL();
+                }
+                else{
+                  this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
+                }
+  
+                this.bShowSpinner = false;
+  
+                this.event_clear();
+  
+              },
+              error: (ex) => {
+                
+                this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+                this.bShowSpinner = false;
+  
               }
-              else{
-                this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
-              }
+            })
 
-              this.bShowSpinner = false;
+          }else{
 
-              this.event_clear();
-
-            },
-            error: (ex) => {
-              
-              this.servicesGServ.showSnakbar( "Problemas con el servicio" );
-              this.bShowSpinner = false;
-
+            var paramsMDL: any = {
+              actionName: 'prod_SalidaInventario'
+              , bShowAlert: false
             }
-          })
+          
+            this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+            .afterClosed().subscribe({
+              next: ( resp ) =>{
+          
+                if( resp ){
+
+                  this.bShowActionAuthorization = false;
+
+                  this.bShowSpinner = true;
+
+                  this.inventaryLogForm.idUserAutorizante = resp;
+
+                  this.productsServ.CInsertInventaryLog( this.inventaryLogForm )
+                    .subscribe({
+                    next: (resp: ResponseDB_CRUD) => {
+        
+                      if( resp.status === 0 ){
+                        this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
+                        this.fn_CerrarMDL();
+                      }
+                      else{
+                        this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
+                      }
+        
+                      this.bShowSpinner = false;
+        
+                      this.event_clear();
+        
+                    },
+                    error: (ex) => {
+                      
+                      this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+                      this.bShowSpinner = false;
+        
+                    }
+                  })
+
+                }
+                else{
+                  this.bShowActionAuthorization = false;
+                }
+
+              }
+            });
+
+          }
 
         }
       }
@@ -164,6 +226,16 @@ event_clear(){
   this.inventaryLogForm.description = '';
   this.inventaryLogForm.cantidad = 0;
   this.nextInputFocus( this.tbxDescription, 500 );
+
+}
+
+ev_fn_noEntrada_keyup_enter(event: any){
+  
+  if(event.keyCode == 13) { // PRESS ENTER
+    
+    this.nextInputFocus( this.tbxDescription, 0 );
+
+  }
 
 }
 

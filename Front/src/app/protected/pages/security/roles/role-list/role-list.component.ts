@@ -8,6 +8,7 @@ import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ActionsconfComponent } from '../../mdl/actionsconf/actionsconf.component';
+import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.component';
 
 @Component({
   selector: 'app-role-list',
@@ -65,6 +66,24 @@ export class RoleListComponent {
 
     changeRoute( route: string ): void {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
+    }
+
+    showMenusPermisos( id: number, name: string ){
+
+      var oData: any = {
+        relationType: 'R',
+        idRelation: id,
+        description: 'Permisos del Rol: ' + name
+      }
+  
+      this.servicesGServ.showModalWithParams( MenupermisosComponent, oData, '1500px')
+      .afterClosed().subscribe({
+        next: ( resp: any ) =>{
+  
+          //this.fn_getCustomersListWithPage();
+          
+        }
+      });
     }
 
   

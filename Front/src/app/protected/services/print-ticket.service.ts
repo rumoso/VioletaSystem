@@ -49,6 +49,21 @@ export class PrintTicketService {
 
       var oLines: any = [];
 
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 20, text: "NOTA" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
       for(var i = 0; i < HeaderSuc.length; i++){
 
         oLines = [];
@@ -331,6 +346,21 @@ export class PrintTicketService {
 
       var oLines: any = [];
 
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 20, text: "PAGO" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
       for(var i = 0; i < HeaderSuc.length; i++){
 
         oLines = [];
@@ -446,26 +476,40 @@ export class PrintTicketService {
 
 
       // CONSTRUYO EL FOOTER
-      const FooterSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.data.idSucursal, "footer");
+      // const FooterSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.data.idSucursal, "footer");
+
+      // oLines = [];
+      // var oLine: any = { aling: "Left", size: 7, text: " " }
+      // oLines.push( oLine );
+      // oLinesP.push( { oLines: oLines } );
+
+      // for(var i = 0; i < FooterSuc.length; i++){
+
+      //   oLines = [];
+
+      //   var oLine: any = {
+      //     aling: FooterSuc[i].aling
+      //     , size: FooterSuc[i].size
+      //     , text: FooterSuc[i].text
+      //   }
+
+      //   oLines.push( oLine );
+      //   oLinesP.push( { oLines: oLines } );
+      // }
 
       oLines = [];
       var oLine: any = { aling: "Left", size: 7, text: " " }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
-      for(var i = 0; i < FooterSuc.length; i++){
-
-        oLines = [];
-
-        var oLine: any = {
-          aling: FooterSuc[i].aling
-          , size: FooterSuc[i].size
-          , text: FooterSuc[i].text
-        }
-
-        oLines.push( oLine );
-        oLinesP.push( { oLines: oLines } );
-      }
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 7, text: "GRACIAS POR SU PAGO" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 7, text: "CONSERVE SU TICKET PARA DECLARACIONES" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
 
     }
     else if(type == "CorteCaja"){
@@ -1054,6 +1098,7 @@ export class PrintTicketService {
   
         console.log(printParameters);
   
+        bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
         bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
   
         return new Promise((resolve, reject) => {

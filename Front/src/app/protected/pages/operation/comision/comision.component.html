@@ -14,6 +14,32 @@
         </div>
     </div>
 
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_changeStatusComision(2)"
+                *ngIf="oComisionDetailHeader.idStatus == 1">
+                <mat-icon matPrefix class="my-icon">done_all</mat-icon>
+                Pagado</button>
+                
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_changeStatusComision(3)"
+                *ngIf="( oComisionDetailHeader.idStatus == 1 || oComisionDetailHeader.idStatus == 2 )">
+                <mat-icon matPrefix class="my-icon">cancel</mat-icon>
+                Cancelar comisión</button>
+
+            </div>
+        </div>
+    </div>
+
     <mat-accordion>
     
         <mat-expansion-panel (opened)="panelComisionDetailOpenState = true"

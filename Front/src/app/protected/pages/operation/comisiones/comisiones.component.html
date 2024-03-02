@@ -71,9 +71,12 @@
     
                 <div class="row">
                                 
-                    
-
-                    
+                    <div class="col-md-6">
+                        <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bPending">En revisión</mat-checkbox>
+                        <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bPagada">Pagada</mat-checkbox>
+                        <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bCancel">Cancelada</mat-checkbox>
+                    </div>
+        
                 </div>
 
                 <div class="row top10px">
@@ -114,7 +117,7 @@
     </mat-expansion-panel>
   </mat-accordion>
 
-<div class="divSection" *ngIf="sumComisiones > 0">
+<div class="divSection" *ngIf="sumComisiones != 0">
     
 
     <div class="row" style="margin-top: -35px;">
@@ -143,8 +146,10 @@
                             
                             <th class="textAlingCenter padding-th">Acciones</th>
                             <th class="textAlingLeft padding-th"># Comisión</th>
+                            <th class="textAlingLeft padding-th">Estatus</th>
                             <th class="textAlingLeft padding-th">Empleado</th>
                             <th class="textAlingRight padding-th">Comisión</th>
+                            <th class="textAlingCenter padding-th">Rango</th>
                             <th class="textAlingCenter padding-th">Fecha de creación</th>
                             <th class="textAlingLeft padding-th">Creador</th>
 
@@ -179,6 +184,23 @@
 
                                 <td class="textAlingLeft">
                                     <div style="width: 200px; padding: 2px;">
+                                        <div class="row">
+                                            <div class="col-md-1">
+                                                <span *ngIf="item.idStatus == 1" class="material-icons manitaSobre colorBlue">autorenew</span>
+                                                <span *ngIf="item.idStatus == 2" class="material-icons manitaSobre colorGreen">done_all</span>
+                                                <span *ngIf="item.idStatus == 3" class="material-icons manitaSobre colorRed">cancel</span>
+                                            </div>
+                                            <div class="col-md-10">
+                                                <label style="margin-left: 10px;">{{ item.statusName }}</label>
+                                            </div>
+                                        </div>    
+                                    </div>
+                                    
+                                    
+                                </td>
+
+                                <td class="textAlingLeft">
+                                    <div style="width: 200px; padding: 2px;">
                                         {{ item.userName }}
                                     </div>
                                 </td>
@@ -186,6 +208,12 @@
                                 <td class="textAlingRight">
                                     <div style="width: 100px; padding: 2px;">
                                         {{ item.comision | currency }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingCenter">
+                                    <div style="width: 100px; padding: 2px;">
+                                        {{ item.startDate }} {{ item.endDate }}
                                     </div>
                                 </td>
 

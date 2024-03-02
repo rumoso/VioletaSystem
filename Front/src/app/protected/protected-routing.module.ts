@@ -17,6 +17,9 @@ import { RoleComponent } from "./pages/security/roles/role/role.component";
 import { PhysicalInventoryListComponent } from "./pages/reports/physical-inventory-list/physical-inventory-list.component";
 import { ComisionesComponent } from "./pages/operation/comisiones/comisiones.component";
 import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.component";
+import { RepcomprasproveedorComponent } from "./pages/reports/repcomprasproveedor/repcomprasproveedor.component";
+import { VerificacionEntradasComponent } from "./pages/operation/verificacion-entradas/verificacion-entradas.component";
+import { RepMobDineoelectComponent } from "./pages/reports/rep-mob-dineoelect/rep-mob-dineoelect.component";
 
 const routes: Routes = [
     {
@@ -98,6 +101,18 @@ const routes: Routes = [
         {
           path: 'egresosList',
           component: EgresosListComponent
+        },
+        {
+          path: 'rep_compras_proveedor',
+          component: RepcomprasproveedorComponent
+        },
+        {
+          path: 'verifi_entradas',
+          component: VerificacionEntradasComponent
+        },
+        {
+          path: 'rep_mod_dineroelect',
+          component: RepMobDineoelectComponent
         },
 
       ]

@@ -56,7 +56,10 @@ export class ComisionesComponent {
     idSeller_idUser: 0,
     sellerDesc: '',
     sellerResp: '',
-    comision: 0
+    comision: 0,
+    bPending: false,
+    bPagada: false,
+    bCancel: false,
   };
 
 
@@ -124,7 +127,7 @@ export class ComisionesComponent {
   
         if( resp ){
 
-          
+          this.fn_getComisionesListWithPage();
 
         }
 

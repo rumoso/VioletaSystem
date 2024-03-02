@@ -57,4 +57,20 @@ export class ElectronicMoneyService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteElectronicMoney`, data );
   }
 
+  CGetRepElectronicMoneyListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
+    
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getRepElectronicMoneyListWithPage`, data);
+
+  }
+
 }

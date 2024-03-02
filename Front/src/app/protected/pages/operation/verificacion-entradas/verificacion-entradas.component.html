@@ -1,0 +1,202 @@
+<mat-accordion >
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         class="divMain"
+                         style="margin-top: 10px !important;">
+      <mat-expansion-panel-header class="autoHeight">
+        <mat-panel-title class="text-align: center">
+          Filtros
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+            <br>
+            
+            <div class="row">
+                <div class="col-md-12" style="text-align: left;">
+                    <mat-form-field class="with100">
+                        <mat-label>Fecha de creación:</mat-label>
+                        <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                            <input matStartDate [(ngModel)]="parametersForm.startDate" placeholder="Start date">
+                            <input matEndDate [(ngModel)]="parametersForm.endDate" placeholder="End date">
+                        </mat-date-range-input>
+                        <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-date-range-picker #picker></mat-date-range-picker>
+                        
+                        </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                        
+                <div class="col-md-4">
+                    <mat-form-field class="example-full-width with100">
+                        <mat-label># Entrada</mat-label>
+                        <input #tbxNoEntrada
+                        matInput
+                        cdkTextareaAutosize
+                        placeholder="Ingrese número de entrada"
+                        [(ngModel)]="parametersForm.noEntrada">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-md-8">
+                    <mat-form-field
+                    style="width: 100%;"
+                    (click)="cbxProducts_Search()">
+                        <input #cbxProductss
+                                type="text"
+                                id="cbxProduct"
+                                style="width: 100%;"
+                                placeholder="Selecciona un producto..."
+                                aria-label="Number"
+                                matInput
+                                [(ngModel)]="parametersForm.productDesc"
+                                [matAutocomplete]="cbxProduct"
+                                
+                                (input)="cbxProducts_Search()"
+                                (click)="cbxProducts_Clear()">
+                                <button *ngIf="parametersForm.productDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxProducts_Clear()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                        <mat-autocomplete autoActiveFirstOption
+                                            #cbxProduct="matAutocomplete"
+                                            (optionSelected)="cbxProducts_SelectedOption( $event )">
+                            <mat-option *ngFor="let item of cbxProducts" [value]="item">
+                                <mat-icon matPrefix class="my-icon">qr_code</mat-icon>{{ item.nameConcat }}
+                            </mat-option>
+            
+                            <mat-option value="" *ngIf="cbxProducts.length == 0 && parametersForm.productDesc">
+                                No se encontró nada...
+                            </mat-option>
+            
+                        </mat-autocomplete>
+                    </mat-form-field>
+                </div>
+
+            </div>
+
+            <div class="row top10px">
+                <div class="col-md-12">
+                    <div style="float: left;">
+                        
+                        <button mat-raised-button
+                        color="primary"
+                        type="submit"
+                        class="marginRight10px"
+                        (click)="fn_getInventarylogParaFirmar()">
+                        <mat-icon matPrefix class="my-icon">search</mat-icon>
+                        Buscar</button>
+                        
+                        <button mat-raised-button
+                        type="button"
+                        (click)="parametersForm_Clear()">
+                        <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                        limpiar</button>                
+                        
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+<div class="divMain" style="width: 100%; margin-top: 10px !important;">
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                
+                <button id="btnVerificar"
+                mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                matTooltip="Con este botón verificas todas las entradas filtradas"
+                (click)="fn_updateFirmaEntradaInventario(1, 'btnVerificar')">
+                <mat-icon matPrefix class="my-icon">done</mat-icon>
+                VERIFICAR</button>
+                
+                <button id="btnRecibirMostrador"
+                mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                matTooltip="Con este botón verificas todas las entradas filtradas"
+                (click)="fn_updateFirmaEntradaInventario(2, 'btnRecibirMostrador')">
+                <mat-icon matPrefix class="my-icon">done</mat-icon>
+                RECIBIR EN MOSTRADOR</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <th class="textAlingCenter padding-th">Estatus</th>
+                            <th class="textAlingLeft padding-th"># Entrada</th>
+                            <th class="textAlingLeft padding-th">Código de barras</th>
+                            <th class="textAlingLeft padding-th">Nombre</th>
+                            <th class="textAlingRight padding-th">Cantidad</th>
+                            <th class="textAlingLeft padding-th">Registrado por</th>
+                            <th class="textAlingCenter padding-th">Creado</th>
+                            <th class="textAlingCenter padding-th">Activo</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of catlist">
+                                <td class="textAlingCenter">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <span *ngIf="item.firmaVer == 0" matTooltip="Pendiente por verificar" class="material-icons manitaSobre colorBlue">autorenew</span>
+                                            <span *ngIf="item.firmaVer == 1" matTooltip="Verificado" class="material-icons manitaSobre colorGreen">done</span>
+                                            <span *ngIf="item.firmaMost == 0" matTooltip="Pendiente recibir en mostrador" class="material-icons manitaSobre colorBlue">autorenew</span>
+                                            <span *ngIf="item.firmaMost == 1" matTooltip="Recibido en mostrador" class="material-icons manitaSobre colorGreen">done_all</span>
+                                        </div>
+                                    </div>
+                                    
+                                </td>
+                                <td class="textAlingLeft">{{ item.noEntrada }}</td>
+                                <td class="textAlingLeft">
+                                    <div class="row">
+                                        <div class="col-md-1">
+                                            <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">qr_code</mat-icon>
+                                        </div>
+                                        <div class="col-md-10">
+                                            <label style="margin-left: 10px;">{{ item.barCode }}</label>
+                                        </div>
+                                    </div>
+                                    
+                                </td>
+                                <td class="textAlingLeft">{{ item.productName }}</td>
+                                
+                                <td class="textAlingRight">{{ item.cantidad }} piezas</td>
+                                <td class="textAlingLeft">{{ item.userName }}</td>
+                                <td class="textAlingCenter">{{ item.createDate | date:'dd-MM-yyyy' }}</td>
+                                <td class="textAlingCenter">
+                                    <mat-checkbox class="example-margin" [(ngModel)]="item.active" disabled></mat-checkbox>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <app-pagination *ngIf="catlist" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                </app-pagination>
+            
+            </div>
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

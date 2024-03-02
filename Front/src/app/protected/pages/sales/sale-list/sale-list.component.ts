@@ -610,18 +610,16 @@ fn_ClearFilters(){
 
   cbxCustomers_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxCustomers_Clear();
+    
+    setTimeout (() => {
+      
+      const ODataCbx: any = event.option.value;
 
-    const ODataCbx: any = event.option.value;
+      this.parametersForm.idCustomer =  ODataCbx.idCustomer;
+      this.parametersForm.customerDesc = ODataCbx.name;
 
-    this.parametersForm.idCustomer =  ODataCbx.idCustomer;
-    this.parametersForm.customerDesc = ODataCbx.name;
-
-    // setTimeout (() => {
-    //   this.inputFocus(idInput);
-    // }, 500);
+    }, 1);
 
   }
 
@@ -657,14 +655,16 @@ fn_ClearFilters(){
 
   cbxSalesType_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxSalesType_Clear();
+    
+    setTimeout (() => {
+      
+      const ODataCbx: any = event.option.value;
 
-    const ODataCbx: any = event.option.value;
+      this.parametersForm.idSaleType = ODataCbx.id;
+      this.parametersForm.saleTypeDesc = ODataCbx.name;
 
-    this.parametersForm.idSaleType = ODataCbx.id;
-    this.parametersForm.saleTypeDesc = ODataCbx.name;
+    }, 1);
 
   }
 

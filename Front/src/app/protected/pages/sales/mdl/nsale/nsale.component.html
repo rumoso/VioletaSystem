@@ -104,7 +104,7 @@
                     <mat-label>Tipo de venta: </mat-label>
                     <mat-form-field
                     style="width: 100%;"
-                    (click)="cbxSalesType_Search()">
+                    (click)="cbxSalesType_Clear(); cbxSalesType_Search()">
                         <input #cbxSaleTypeCBX
                                 type="text"
                                 style="width: 100%;"
@@ -116,7 +116,7 @@
                                 
                                 (input)="cbxSalesType_Search()"
                                 (click)="cbxSalesType_Clear()"
-                                (focus)="cbxSalesType_Search()">
+                                (focus)="cbxSalesType_Clear(); cbxSalesType_Search()">
                                 <button *ngIf="salesHeaderForm.saleTypeDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSalesType_Clear()">
                                     <mat-icon>close</mat-icon>
                                 </button>

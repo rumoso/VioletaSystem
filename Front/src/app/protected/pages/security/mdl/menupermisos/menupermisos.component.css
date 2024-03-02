@@ -1,0 +1,48 @@
+#autoDashBoard {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    position: relative;
+}
+
+
+.divAutoDashBoard {
+    display: inline-block;
+    margin-top: 20px;
+    width: 300px;
+    height:150px;
+    background-color: white;
+    border-radius: 5px;
+    padding: 30px;
+    margin-left: 1%;
+    box-shadow: 5px 5px 10px grey;
+    transition-property: all;
+    transition-duration: 0.2s;
+    transition-timing-function: linear;
+}
+
+    .divAutoDashBoard:hover {
+        transform: scale(1.02);
+        box-shadow: 5px 5px 10px grey;
+    }
+
+.LabelCountInvoicingDashboard {
+    /*margin-left: 70px;
+    margin-top: 10px;
+    font-size: xx-large;
+    float: right;*/
+    font-size: 15px;
+    float: right;
+}
+
+.btnDashBoard {
+    border-radius: 50px;
+    transition-property: all;
+    transition-duration: 0.2s;
+    transition-timing-function: linear;
+}
+
+    .btnDashBoard:hover {
+        transform: scale(1.02);
+        box-shadow: 5px 5px 5px grey;
+    }

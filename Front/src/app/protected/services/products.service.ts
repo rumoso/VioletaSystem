@@ -64,11 +64,11 @@ export class ProductsService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateProduct`, data );
   }
 
-  CCbxGetProductsCombo( search: string, idUser: number ): Observable<ResponseGet> {
-    var data = {
-      idUser: idUser,
-      search: search
-    }
+  CCbxGetProductsCombo( data:any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetProductsCombo`, data);
   }
 
@@ -252,6 +252,43 @@ export class ProductsService {
     data.idSucursalLogON = this.idSucursal;
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertUpdateCat`, data );
+  }
+
+  CGetRepComprasProveedorListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
+    
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getRepComprasProveedorListWithPage`, data);
+
+  }
+
+  CGetInventarylogParaFirmar( pagination: Pagination, data: any ): Observable<ResponseGet> {
+    
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getInventarylogParaFirmar`, data);
+
+  }
+
+  CUpdateFirmaEntradaInventario( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateFirmaEntradaInventario`, data );
   }
 
 }

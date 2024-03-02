@@ -55,7 +55,8 @@ export class ComisionComponent {
   };
 
   oComisionDetailHeader: any = {
-    sumComisiones: 0
+    sumComisiones: 0,
+    idStatus: 0
   };
 
 
@@ -133,6 +134,81 @@ export class ComisionComponent {
   // #endregion
 
 // #region CONEXION CON EL BACK
+
+  fn_changeStatusComision( idStatus: number ){
+
+    if(!this.bShowActionAuthorization){
+
+      this.bShowActionAuthorization = true;
+
+      this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Está a punto de cambiar el Estatus de la comisión'
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+          
+          if(resp){
+
+            var paramsMDL: any = {
+              actionName: 'opera_ChangeStatus'
+              , bShowAlert: false
+            }
+          
+            this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+            .afterClosed().subscribe({
+              next: ( resp ) =>{
+          
+                if( resp ){
+
+                  this.bShowActionAuthorization = false;
+  
+                  this.bShowSpinner = true;
+
+                  var paramsAction: any = {
+                    idComision: this.ODataP.idComision 
+                    , idStatus: idStatus
+                  }
+        
+                  this.comisionesServ.CChangeStatusComision( paramsAction )
+                  .subscribe({
+                    next: (resp: any) => {
+            
+                      if( resp.status === 0 ){
+        
+                        this.fn_GetComisionDetail();
+                          
+                      }
+                      
+                      this.servicesGServ.showAlertIA( resp );
+                      
+                      this.bShowSpinner = false;
+            
+                    },
+                    error: (ex: any) => {
+            
+                      this.servicesGServ.showSnakbar( ex.error.message );
+                      this.bShowSpinner = false;
+            
+                    }
+                  });
+    
+                }else{
+                  this.bShowActionAuthorization = false;
+                }
+    
+              }
+            });
+              
+          }
+        }
+      });
+      
+    }else{
+      this.bShowActionAuthorization = false;
+    }
+
+  }
 
 bShowActionAuthorization: boolean = false;
   fn_startPhysicInventory( idComisionDetail: number ){
@@ -266,7 +342,8 @@ bShowActionAuthorization: boolean = false;
         if(resp.status == 0){
           
           this.oComisionDetail = resp.data.rows;
-          this.oComisionDetailHeader.sumComisiones = resp.data.header;
+          this.oComisionDetailHeader.sumComisiones = resp.data.header.sumComisiones;
+          this.oComisionDetailHeader.idStatus = resp.data.header.idStatus;
 
         }else{
 

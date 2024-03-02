@@ -81,8 +81,8 @@ export class GenComisionComponent {
 
   // #region MÉTODOS DEL FRONT
 
-  fn_CerrarMDL( id: number ){
-    this.dialogRef.close( id );
+  fn_CerrarMDL( bOK: boolean ){
+    this.dialogRef.close( bOK );
   }
 
   fn_setDates(){
@@ -156,12 +156,13 @@ export class GenComisionComponent {
               idSeller_idUser: this.parametersForm.idSeller_idUser
             };
           
-            this.comisionesServ.CGenerarComision( data )
+            this.comisionesServ.CGenerarAllComisiones( data )
               .subscribe({
                 next: (resp: ResponseDB_CRUD) => {
         
                   if( resp.status === 0 ){
         
+                    this.fn_CerrarMDL( true );
         
                   }
                   else{

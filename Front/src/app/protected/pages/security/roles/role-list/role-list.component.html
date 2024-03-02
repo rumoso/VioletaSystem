@@ -59,6 +59,13 @@
                                             https
                                         </span>
 
+                                        <span class="material-icons manitaSobre"
+                                        matTooltip="Configurar permisos de Menú"
+                                            (click)="showMenusPermisos(item.idRol, item.name)"
+                                            *ngIf="item.active">
+                                            menu
+                                        </span>
+
                                     </div>
                                 </td>
                                 <td class="textAlingLeft">{{ item.name }}</td>

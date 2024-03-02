@@ -12,21 +12,35 @@
 
     <div class="row">
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             
             <mat-form-field class="example-full-width with100">
-                <mat-label>Descripción</mat-label>
-                <textarea #tbxDescription
+                <mat-label># Entrada</mat-label>
+                <input #tbxNoEntrada
                 matInput
                 cdkTextareaAutosize
-                placeholder="Ingrese el motivo"
-                [(ngModel)]="inventaryLogForm.description"
-                (keyup)="ev_fn_description_keyup_enter( $event )"></textarea>
+                placeholder="Ingrese número de entrada"
+                [(ngModel)]="inventaryLogForm.noEntrada"
+                (keyup)="ev_fn_noEntrada_keyup_enter( $event )">
             </mat-form-field>
             
         </div>
 
         <div class="col-md-6">
+            
+            <mat-form-field class="example-full-width with100">
+                <mat-label>Descripción</mat-label>
+                <input #tbxDescription
+                matInput
+                cdkTextareaAutosize
+                placeholder="Ingrese el motivo"
+                [(ngModel)]="inventaryLogForm.description"
+                (keyup)="ev_fn_description_keyup_enter( $event )">
+            </mat-form-field>
+            
+        </div>
+
+        <div class="col-md-2">
             
             <mat-form-field class="with100">
                 <mat-label>Cantidad</mat-label>

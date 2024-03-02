@@ -1350,16 +1350,16 @@ async ev_PrintTicketConsHistoryList(){
 
   cbxCustomers_SelectedOption( event: MatAutocompleteSelectedEvent, idInput: any ) {
 
-    if(!event.option.value){
-      return;
-    }
+    setTimeout (() => {
+      
+      const ODataCbx: any = event.option.value;
 
-    const ODataCbx: any = event.option.value;
+      this.salesHeaderForm.idCustomer =  ODataCbx.idCustomer;
+      this.salesHeaderForm.customerDesc = ODataCbx.name;
+  
+      this.nextInputFocus( this.cbxSaleTypeCBX, 500 );
 
-    this.salesHeaderForm.idCustomer =  ODataCbx.idCustomer;
-    this.salesHeaderForm.customerDesc = ODataCbx.name;
-
-    this.nextInputFocus( this.cbxSaleTypeCBX, 500 );
+    }, 1);
 
   }
 
@@ -1376,40 +1376,49 @@ async ev_PrintTicketConsHistoryList(){
   cbxProducts: any[] = [];
 
   cbxProducts_Search() {
-      this.productsServ.CCbxGetProductsCombo( this.salesDetailForm.productDesc, this.idUserLogON )
-       .subscribe( {
-         next: (resp: ResponseGet) =>{
-           if(resp.status === 0){
-             this.cbxProducts = resp.data
-           }
-           else{
-            this.cbxProducts = [];
-           }
-         },
-         error: (ex) => {
-           this.servicesGServ.showSnakbar( "Problemas con el servicio" );
-           this.bShowSpinner = false;
-         }
-       });
+    
+    var oParams: any = {
+      iOption: 2,
+      search: this.salesDetailForm.productDesc
+    }
+
+    this.productsServ.CCbxGetProductsCombo( oParams )
+      .subscribe( {
+        next: (resp: ResponseGet) =>{
+          if(resp.status === 0){
+            this.cbxProducts = resp.data
+          }
+          else{
+          this.cbxProducts = [];
+          }
+        },
+        error: (ex) => {
+          this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+          this.bShowSpinner = false;
+        }
+      });
   }
 
   cbxProducts_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxProducts_Clear();
 
-    const ODataCbx: any = event.option.value;
+    setTimeout (() => {
+      
+      const ODataCbx: any = event.option.value;
 
-    this.salesDetailForm.idProduct = ODataCbx.idProduct;
-    this.salesDetailForm.productDesc = ODataCbx.name;
-    this.salesDetailForm.barCode = ODataCbx.barCode;
+      this.salesDetailForm.idProduct = ODataCbx.idProduct;
+      this.salesDetailForm.productDesc = ODataCbx.name;
+      this.salesDetailForm.barCode = ODataCbx.barCode;
+      
+      this.salesDetailForm.cost = ODataCbx.cost;
+      this.salesDetailForm.precioUnitario = ODataCbx.price;
+      this.salesDetailForm.catInventary = ODataCbx.catInventary;
+  
+      this.nextInputFocus( this.tbxCantidad, 500);
+
+    }, 1);
     
-    this.salesDetailForm.cost = ODataCbx.cost;
-    this.salesDetailForm.precioUnitario = ODataCbx.price;
-    this.salesDetailForm.catInventary = ODataCbx.catInventary;
-
-    this.nextInputFocus( this.tbxCantidad, 500);
   }
 
   cbxProducts_Clear(){
@@ -1447,25 +1456,27 @@ async ev_PrintTicketConsHistoryList(){
 
   cbxSalesType_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxSalesType_Clear();
 
-    const ODataCbx: any = event.option.value;
+    setTimeout (() => {
+      
+      const ODataCbx: any = event.option.value;
 
-    this.salesHeaderForm.idSaleType = ODataCbx.id;
-    this.salesHeaderForm.saleTypeDesc = ODataCbx.name;
+      this.salesHeaderForm.idSaleType = ODataCbx.id;
+      this.salesHeaderForm.saleTypeDesc = ODataCbx.name;
+  
+      //alert(this.salesHeaderForm.idSaleType)
+  
+      if(this.salesHeaderForm.idSaleType == 5){
+        setTimeout (() => {
+          var miInput = document.getElementById('tbxDescription');
+          miInput?.focus();
+        }, 500);
+      }else{
+        this.nextInputFocus( this.barCode, 500);
+      }
 
-    //alert(this.salesHeaderForm.idSaleType)
-
-    if(this.salesHeaderForm.idSaleType == 5){
-      setTimeout (() => {
-        var miInput = document.getElementById('tbxDescription');
-        miInput?.focus();
-      }, 500);
-    }else{
-      this.nextInputFocus( this.barCode, 500);
-    }
+    }, 1);
 
   }
 
@@ -1504,17 +1515,19 @@ async ev_PrintTicketConsHistoryList(){
 
   cbxSellers_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxSellers_Clear();
+    
+    setTimeout (() => {
+      
+      const ODataCbx: any = event.option.value;
 
-    const ODataCbx: any = event.option.value;
+      this.salesHeaderForm.idSeller_idUser =  ODataCbx.idUser;
+      this.salesHeaderForm.sellerDesc = ODataCbx.name;
+      this.salesHeaderForm.sellerResp = '';
+  
+      this.nextInputFocus( this.cbxCustomerCBX, 500 );
 
-    this.salesHeaderForm.idSeller_idUser =  ODataCbx.idUser;
-    this.salesHeaderForm.sellerDesc = ODataCbx.name;
-    this.salesHeaderForm.sellerResp = '';
-
-    this.nextInputFocus( this.cbxCustomerCBX, 500 );
+    }, 1);
 
   }
 

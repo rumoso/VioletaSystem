@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of, tap } from 'rxjs';
 import { Login, ResponseGet } from 'src/app/interfaces/general.interfaces';
+import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 
@@ -128,6 +129,23 @@ export class AuthService {
     }
 
     return false;
+  }
+
+  CGetMenuForPermissions( data : any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getMenuForPermissions`, data);
+
+  }
+
+  CInsertMenusPermisionsByIdRelation( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertMenusPermisionsByIdRelation`, data );
   }
 
 }

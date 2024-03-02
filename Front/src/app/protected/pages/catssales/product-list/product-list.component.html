@@ -288,6 +288,7 @@
                             <th class="textAlingLeft padding-th">Nombre</th>
                             <th class="textAlingRight padding-th">Costo</th>
                             <th class="textAlingRight padding-th">Precio</th>
+                            <th class="textAlingRight padding-th">Verificación</th>
                             <th class="textAlingRight padding-th">Inventario</th>
                             <th class="textAlingLeft padding-th">Gramos</th>
                             <th class="textAlingCenter padding-th">Creado</th>
@@ -328,6 +329,7 @@
                                 
                                 <td class="textAlingRight">{{ item.cost | currency }}</td>
                                 <td class="textAlingRight">{{ item.price | currency }}</td>
+                                <td class="textAlingRight">{{ item.catInventaryVerify }} piezas</td>
                                 <td class="textAlingRight">{{ item.catInventary }} piezas</td>
                                 <td class="textAlingLeft">{{ item.gramos }}</td>
                                 <td class="textAlingCenter">{{ item.createDate | date:'dd-MM-yyyy' }}</td>

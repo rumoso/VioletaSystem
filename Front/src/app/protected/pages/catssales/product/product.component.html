@@ -19,7 +19,7 @@
                         <mat-label>Sucursal: </mat-label>
                         <mat-form-field
                         style="width: 100%;"
-                        (click)="cbxSucursales_Search()">
+                        (click)="cbxSucursales_Clear(); cbxSucursales_Search();">
                             <input type="text"
                                     id="cbxSucursal"
                                     style="width: 100%;"
@@ -28,7 +28,10 @@
                                     matInput
                                     [(ngModel)]="productForm.sucursalDesc"
                                     [matAutocomplete]="cbxSucursal"
+                                    
                                     (input)="cbxSucursales_Search()"
+                                    (focus)="cbxSucursales_Clear(); cbxSucursales_Search()"
+                                    
                                     (click)="cbxSucursales_Clear()">
                                     <button *ngIf="productForm.sucursalDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSucursales_Clear()">
                                         <mat-icon>close</mat-icon>
@@ -52,7 +55,7 @@
 
                 <div class="row">
                         
-                    <div class="col-md-12">
+                    <div class="col-md-8">
                         <mat-label>Proveedor: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
                             (click)="showSuppliersCat()">
@@ -60,7 +63,7 @@
                         </span>
                         <mat-form-field
                         style="width: 100%;"
-                        (click)="cbxSupplier_Search()">
+                        (click)="cbxSupplier_Clear(); cbxSupplier_Search();">
                             <input type="text"
                                     id="cbxSupplier"
                                     style="width: 100%;"
@@ -70,8 +73,8 @@
                                     [(ngModel)]="productForm.supplierDesc"
                                     [matAutocomplete]="cbxSupplier"
                                     (input)="cbxSupplier_Search()"
-                                    (focus)="cbxSupplier_Search()"
-                                    (click)="cbxSupplier_Clear()">
+                                    (focus)="cbxSupplier_Clear(); cbxSupplier_Search()"
+                                    (click)="cbxSupplier_Clear();">
                                     <button *ngIf="productForm.supplierDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSupplier_Clear()">
                                         <mat-icon>close</mat-icon>
                                         </button>
@@ -90,16 +93,25 @@
                         </mat-form-field>
                     </div>
 
+                    <div class="col-md-4 top30px">
+                        <mat-form-field class="with100">
+                            <mat-label># Entrada</mat-label>
+                            <input id="tbxNoEntrada" matInput placeholder="Ingrese número de entrada"
+                            [(ngModel)]="productForm.noEntrada"
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('barCode')">
+                        </mat-form-field>
+                    </div>
+
                 </div>
 
-                <div class="row top20px">
+                <div class="row">
                     <div class="col-md-4">
                         <mat-form-field class="with100">
                             <mat-label>Código de barras</mat-label>
                             <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
                             <input id="barCode" matInput placeholder="Ingrese un Código de barras"
                             [(ngModel)]="productForm.barCode"
-                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxCost')">
+                            (keyup.enter)="fn_getProductByBarCode(); ev_fn_nextInput_keyup_enter('tbxCost')">
                         </mat-form-field>
                     </div>
                     
@@ -163,7 +175,7 @@
                         </span>
                             <mat-form-field
                             style="width: 100%;"
-                            (click)="cbxGroups_Search()">
+                            (click)="cbxGroups_Clear(); cbxGroups_Search();">
                                 <input #cbxGroupsCBX
                                         type="text"
                                         id="cbxGroups"
@@ -174,7 +186,7 @@
                                         [(ngModel)]="productForm.groupDesc"
                                         [matAutocomplete]="cbxGroups"
                                         (input)="cbxGroups_Search()"
-                                        (focus)="cbxGroups_Search()"
+                                        (focus)="cbxGroups_Clear(); cbxGroups_Search()"
                                         (click)="cbxGroups_Clear()">
                                         <button *ngIf="productForm.groupDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxGroups_Clear()">
                                             <mat-icon>close</mat-icon>
@@ -205,7 +217,7 @@
                         </span>
                             <mat-form-field
                             style="width: 100%;"
-                            (click)="cbxFamilies_Search()">
+                            (click)="cbxFamilies_Clear(); cbxFamilies_Search();">
                                 <input #cbxFamiliesCBX
                                         type="text"
                                         id="cbxFamilies"
@@ -216,7 +228,7 @@
                                         [(ngModel)]="productForm.familyDesc"
                                         [matAutocomplete]="cbxFamilies"
                                         (input)="cbxFamilies_Search()"
-                                        (focus)="cbxFamilies_Search()"
+                                        (focus)="cbxFamilies_Clear(); cbxFamilies_Search()"
                                         (click)="cbxFamilies_Clear()">
                                         <button *ngIf="productForm.familyDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFamilies_Clear()">
                                             <mat-icon>close</mat-icon>
@@ -246,7 +258,7 @@
                         </span>
                             <mat-form-field
                             style="width: 100%;"
-                            (click)="cbxQuality_Search()">
+                            (click)="cbxQuality_Clear(); cbxQuality_Search()">
                                 <input #cbxQualityCBX
                                         type="text"
                                         id="cbxQuality"
@@ -257,7 +269,7 @@
                                         [(ngModel)]="productForm.qualityDesc"
                                         [matAutocomplete]="cbxQuality"
                                         (input)="cbxQuality_Search()"
-                                        (focus)="cbxQuality_Search()"
+                                        (focus)="cbxQuality_Clear(); cbxQuality_Search()"
                                         (click)="cbxQuality_Clear()">
                                         <button *ngIf="productForm.qualityDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxQuality_Clear()">
                                             <mat-icon>close</mat-icon>
@@ -287,7 +299,7 @@
                         </span>
                             <mat-form-field
                             style="width: 100%;"
-                            (click)="cbxOrigin_Search()">
+                            (click)="cbxOrigin_Clear(); cbxOrigin_Search();">
                                 <input #cbxOriginCBX
                                         type="text"
                                         id="cbxOrigin"
@@ -298,7 +310,7 @@
                                         [(ngModel)]="productForm.originDesc"
                                         [matAutocomplete]="cbxOrigin"
                                         (input)="cbxOrigin_Search()"
-                                        (focus)="cbxOrigin_Search()"
+                                        (focus)="cbxOrigin_Clear(); cbxOrigin_Search()"
                                         (click)="cbxOrigin_Clear()">
                                         <button *ngIf="productForm.originDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxOrigin_Clear()">
                                             <mat-icon>close</mat-icon>

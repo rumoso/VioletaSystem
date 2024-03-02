@@ -29,6 +29,15 @@ export class ComisionesService {
 
   }
 
+  CGenerarAllComisiones( data: any ): Observable<ResponseDB_CRUD> {
+    
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/generarAllComisiones`, data);
+
+  }
+
   CGetComisionesListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
     
     let start = pagination.pageIndex * pagination.pageSize;
@@ -78,6 +87,14 @@ export class ComisionesService {
     data.idSucursalLogON = this.idSucursal;
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disabledComisionDetail`, data );
+  }
+
+  CChangeStatusComision( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/changeStatusComision`, data );
   }
 
 }

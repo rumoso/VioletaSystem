@@ -100,11 +100,12 @@ export class ProductComponent implements OnInit {
       idGroup: 0,
       groupDesc: '',
       idQuality: 0,
-      qualityDesc: 'NA',
+      qualityDesc: '',
       idOrigin: 0,
-      originDesc: 'NA',
+      originDesc: '',
       idSupplier: 0,
       supplierDesc: '',
+      noEntrada: '',
       active: true,
       addInv: 1,
       idUser: 0
@@ -181,13 +182,18 @@ export class ProductComponent implements OnInit {
       this.productForm.idGroup = 0;
       this.productForm.groupDesc = '';
       this.productForm.idQuality = 0;
-      this.productForm.qualityDesc = 'NA';
+      this.productForm.qualityDesc = '';
       this.productForm.idOrigin = 0;
-      this.productForm.originDesc = 'NA';
-      this.productForm.idSupplier = 0;
-      this.productForm.supplierDesc = '';
+      this.productForm.originDesc = '';
       this.productForm.active = true;
       this.productForm.addInv = 1;
+
+      setTimeout (() => {
+      
+        this.ev_fn_nextInput_keyup_enter( 'barCode' );
+
+      }, 3000);
+      
     }
 
     ev_fn_nextInput_keyup_enter( idInput: any ){
@@ -312,6 +318,37 @@ export class ProductComponent implements OnInit {
         }
       })
     }
+  
+  fn_getProductByBarCode() {
+
+    if( this.productForm.idProduct == 0 && this.productForm.barCode.length > 0){
+    
+      this.bShowSpinner = true;
+
+      this.productsServ.CGetProductByBarCode( this.productForm.barCode, this.idUserLogON )
+        .subscribe({
+          next: (resp: ResponseGet) => {
+            
+            if( resp.status === 0 ){
+      
+              this.servicesGServ.showAlert('W', 'Alerta!', 'Ese código de barras ya existe.', false);
+      
+            }
+      
+            this.bShowSpinner = false;
+      
+          },
+          error: (ex) => {
+      
+            this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+            this.bShowSpinner = false;
+      
+          }
+        })
+    
+    }
+  }
+  
 
     //--------------------------------------------------------------------------
   // MÉTODOS PARA COMBO DE Familias
@@ -320,7 +357,7 @@ export class ProductComponent implements OnInit {
 
   cbxFamilies_Search() {
 
-    this.cbxFamilies_Clear();
+    //this.cbxFamilies_Clear();
 
       this.familiesServ.CCbxGetFamiliesCombo( this.productForm.familyDesc )
        .subscribe( {
@@ -339,18 +376,20 @@ export class ProductComponent implements OnInit {
        });
   }
 
-  cbxFamilies_SelectedOption( event: MatAutocompleteSelectedEvent ) {
+  cbxFamilies_SelectedOption( event: any ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxFamilies_Clear();
 
-    const rol: any = event.option.value;
+    setTimeout (() => {
+      
+      const rol: any = event.option.value;
 
-    this.productForm.idFamily = rol.idFamily;
-    this.productForm.familyDesc = rol.name;
+      this.productForm.idFamily = rol.idFamily;
+      this.productForm.familyDesc = rol.name;
+  
+      this.ev_fn_nextInput_keyup_enter( 'cbxQuality' );
 
-    this.ev_fn_nextInput_keyup_enter( 'cbxQuality' );
+    }, 1);
 
   }
 
@@ -386,16 +425,18 @@ export class ProductComponent implements OnInit {
 
   cbxGroups_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxGroups_Clear();
 
-    const rol: any = event.option.value;
+    setTimeout (() => {
+      
+      const rol: any = event.option.value;
 
-    this.productForm.idGroup = rol.idGroup;
-    this.productForm.groupDesc = rol.name;
+      this.productForm.idGroup = rol.idGroup;
+      this.productForm.groupDesc = rol.name;
+  
+      this.ev_fn_nextInput_keyup_enter( 'cbxFamilies' );
 
-    this.ev_fn_nextInput_keyup_enter( 'cbxFamilies' );
+    }, 1);
 
   }
 
@@ -431,16 +472,18 @@ export class ProductComponent implements OnInit {
 
   cbxQuality_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxQuality_Clear();
 
-    const rol: any = event.option.value;
+    setTimeout (() => {
+      
+      const rol: any = event.option.value;
 
-    this.productForm.idQuality = rol.idQuality;
-    this.productForm.qualityDesc = rol.name;
+      this.productForm.idQuality = rol.idQuality;
+      this.productForm.qualityDesc = rol.name;
+  
+      this.ev_fn_nextInput_keyup_enter( 'cbxOrigin' );
 
-    this.ev_fn_nextInput_keyup_enter( 'cbxOrigin' );
+    }, 1);
 
   }
 
@@ -476,16 +519,18 @@ export class ProductComponent implements OnInit {
 
   cbxOrigin_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxOrigin_Clear();
 
-    const rol: any = event.option.value;
+    setTimeout (() => {
+      
+      const rol: any = event.option.value;
 
-    this.productForm.idOrigin = rol.idOrigin;
-    this.productForm.originDesc = rol.name;
+      this.productForm.idOrigin = rol.idOrigin;
+      this.productForm.originDesc = rol.name;
+  
+      this.ev_fn_nextInput_keyup_enter( 'tbxAddInv' );
 
-    this.ev_fn_nextInput_keyup_enter( 'tbxAddInv' );
+    }, 1);
 
   }
 
@@ -521,16 +566,18 @@ export class ProductComponent implements OnInit {
 
   cbxSucursales_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxSucursales_Clear();
 
-    const ODataCbx: any = event.option.value;
+    setTimeout (() => {
+      
+      const ODataCbx: any = event.option.value;
 
-    this.productForm.idSucursal = ODataCbx.idSucursal;
-    this.productForm.sucursalDesc = ODataCbx.name;
+      this.productForm.idSucursal = ODataCbx.idSucursal;
+      this.productForm.sucursalDesc = ODataCbx.name;
+  
+      this.ev_fn_nextInput_keyup_enter( 'cbxSupplier' );
 
-    this.ev_fn_nextInput_keyup_enter( 'cbxSupplier' );
+    }, 1);
 
   }
 
@@ -564,20 +611,23 @@ export class ProductComponent implements OnInit {
        });
   }
 
-  cbxSupplier_SelectedOption( event: MatAutocompleteSelectedEvent ) {
+  cbxSupplier_SelectedOption( event: any ) {
 
-    if(!event.option.value){
-      return;
-    }
+    this.cbxSupplier_Clear();
 
-    const rol: any = event.option.value;
+    setTimeout (() => {
+      
+      const rol: any = event.option.value;
 
-    if(this.productForm.idSupplier != rol.idSupplier){
-      this.productForm.idSupplier = rol.idSupplier;
-      this.productForm.supplierDesc = rol.name;
-    }
+      if(this.productForm.idSupplier != rol.idSupplier){
+        this.productForm.idSupplier = rol.idSupplier;
+        this.productForm.supplierDesc = rol.name;
+      }
 
-    this.ev_fn_nextInput_keyup_enter( 'barCode' );
+      //this.ev_fn_nextInput_keyup_enter( 'barCode' );
+      this.ev_fn_nextInput_keyup_enter( 'tbxNoEntrada' );
+
+    }, 1);
 
   }
 

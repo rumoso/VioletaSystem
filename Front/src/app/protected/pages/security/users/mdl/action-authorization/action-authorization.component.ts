@@ -66,7 +66,7 @@ constructor(
 
     setTimeout (() => {
       this.tbxAuthorizationCode.nativeElement.focus();
-    }, 1000);
+    }, 500);
 
   }
 
@@ -99,7 +99,7 @@ constructor(
                   this.servicesGServ.showAlertIA( resp );
 
                 if( resp.status == 0 && resp.insertID > 0 ){
-                  this.fn_CerrarMDL( true );
+                  this.fn_CerrarMDL( resp.insertID );
                 }else{
                   this.servicesGServ.showAlertIA( resp );
                   this.actionForm.authorizationCode = '';
@@ -143,8 +143,8 @@ constructor(
     }
   }
 
-  fn_CerrarMDL( bOK: boolean ){
-    this.dialogRef.close( bOK );
+  fn_CerrarMDL( idUser: number ){
+    this.dialogRef.close( idUser );
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////

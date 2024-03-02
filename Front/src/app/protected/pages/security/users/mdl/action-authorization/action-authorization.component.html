@@ -8,7 +8,7 @@
                 <input #tbxAuthorizationCode
                 matInput
                 placeholder="Ingrese el código de autorización"
-                type="text"
+                type="password"
                 [(ngModel)]="actionForm.authorizationCode"
                 (keyup)="event_fn_Enter( $event )">
             </mat-form-field>
@@ -30,7 +30,7 @@
 
                 <button mat-raised-button
                 type="button"
-                (click)="fn_CerrarMDL(false)">
+                (click)="fn_CerrarMDL( 0 )">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
                 

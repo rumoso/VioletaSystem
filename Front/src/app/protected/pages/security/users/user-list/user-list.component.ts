@@ -9,6 +9,7 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ActionsComponent } from '../mdl/actions/actions.component';
 import { ActionsconfComponent } from '../../mdl/actionsconf/actionsconf.component';
+import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.component';
 
 @Component({
   selector: 'app-user-list',
@@ -128,6 +129,24 @@ export class UserListComponent implements OnInit {
     }
 
     this.servicesGServ.showModalWithParams( ActionsconfComponent, oData, '1500px')
+    .afterClosed().subscribe({
+      next: ( resp: any ) =>{
+
+        //this.fn_getCustomersListWithPage();
+        
+      }
+    });
+  }
+
+  showMenusPermisos( id: number, name: string ){
+
+    var oData: any = {
+      relationType: 'U',
+      idRelation: id,
+      description: 'Permisos del Usuario: ' + name
+    }
+
+    this.servicesGServ.showModalWithParams( MenupermisosComponent, oData, '1500px')
     .afterClosed().subscribe({
       next: ( resp: any ) =>{
 

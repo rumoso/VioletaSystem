@@ -1,0 +1,157 @@
+
+
+<mat-accordion >
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         [expanded]="true"
+                         class="divMain"
+                         style="margin-top: 10px !important;">
+      <mat-expansion-panel-header class="autoHeight">
+        <mat-panel-title class="text-align: center">
+          Filtros
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+            <br>
+            
+            <div class="row">
+                        
+                <div class="col-md-12">
+                    <mat-label>Proveedor: </mat-label>
+                    <mat-form-field
+                    style="width: 100%;"
+                    (click)="cbxSupplier_Search()">
+                        <input type="text"
+                                id="cbxSupplier"
+                                style="width: 100%;"
+                                placeholder="Selecciona..."
+                                aria-label="Number"
+                                matInput
+                                [(ngModel)]="parametersForm.supplierDesc"
+                                [matAutocomplete]="cbxSupplier"
+                                (input)="cbxSupplier_Search()"
+                                (focus)="cbxSupplier_Search()"
+                                (click)="cbxSupplier_Clear()">
+                                <button *ngIf="parametersForm.supplierDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSupplier_Clear()">
+                                    <mat-icon>close</mat-icon>
+                                    </button>
+                        <mat-autocomplete autoActiveFirstOption
+                                            #cbxSupplier="matAutocomplete"
+                                            (optionSelected)="cbxSupplier_SelectedOption( $event )">
+                            <mat-option *ngFor="let item of cbxSupplierList" [value]="item">
+                                {{ item.name }}
+                            </mat-option>
+            
+                            <mat-option value="" *ngIf="cbxSupplierList.length == 0 && parametersForm.supplierDesc">
+                                No se encontró nada...
+                            </mat-option>
+            
+                        </mat-autocomplete>
+                    </mat-form-field>
+                </div>
+
+            </div>
+
+            <div class="row top10px">
+                <div class="col-md-12">
+                    <div style="float: left;">
+                        
+                        <button mat-raised-button
+                        color="primary"
+                        type="submit"
+                        class="marginRight10px"
+                        (click)="fn_getRepComprasProveedorListWithPage()">
+                        <mat-icon matPrefix class="my-icon">search</mat-icon>
+                        Buscar</button>
+                        
+                        <button mat-raised-button
+                        type="button"
+                        (click)="parametersForm_Clear()">
+                        <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                        limpiar</button>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+<div *ngIf="oHeaderForm.iPzs > 0" class="divSection">
+
+    <div class="row">
+        <div class="col-md-2">
+            <h1>{{ oHeaderForm.iPzs }} PZ</h1>
+        </div>
+        <div class="col-md-5" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Costo Total: {{ oHeaderForm.costSum | currency }}</h2>
+        </div>
+        <div class="col-md-5" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Importe Total: {{ oHeaderForm.priceSum | currency }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="divMain" style="width: 100%; margin-top: 10px !important;">
+
+    <div class="row top20px">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            
+                            <th class="textAlingLeft padding-th">Código de barras</th>
+                            <th class="textAlingLeft padding-th">Nombre</th>
+                            <th class="textAlingRight padding-th">Costo</th>
+                            <th class="textAlingRight padding-th">Precio</th>
+                            <th class="textAlingRight padding-th">Inventario</th>
+                            <th class="textAlingCenter padding-th">Fecha compra</th>
+                            <th class="textAlingLeft padding-th">Proveedor</th>
+
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of catlist">
+                                
+                                <td class="textAlingLeft">
+                                    <div class="row" style="width: 150px;">
+                                        <div class="col-md-1">
+                                            <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">qr_code</mat-icon>
+                                        </div>
+                                        <div class="col-md-10">
+                                            <label style="margin-left: 10px;">{{ item.barCode }}</label>
+                                        </div>
+                                    </div>
+                                    
+                                </td>
+                                <td class="textAlingLeft">{{ item.name }}</td>
+                                
+                                <td class="textAlingRight">{{ item.cost | currency }}</td>
+                                <td class="textAlingRight">{{ item.price | currency }}</td>
+                                <td class="textAlingRight">{{ item.catInventary }} PZ</td>
+                                <td class="textAlingCenter">{{ item.compraDate }}</td>
+                                <td class="textAlingLeft">{{ item.supplierDesc }}</td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+                <app-pagination *ngIf="catlist" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                </app-pagination>
+            
+            </div>
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

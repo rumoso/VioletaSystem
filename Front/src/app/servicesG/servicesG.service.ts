@@ -129,6 +129,13 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
     changeRouteWithParameter( route: string, parameter : number ): void {
       this.router.navigate( [route, parameter] );
     }
+
+    disableEnableButton( idHtml: string, bDisable: boolean ): void {
+      const myButton = document.getElementById(idHtml) as HTMLButtonElement | null;
+      if (myButton) {
+          myButton.disabled = bDisable;
+      }
+    }
   
     showDialog( header: string, message: string, question: string, buttonYes: string, buttonNo: string, sWidth: string = '250px' ){
      

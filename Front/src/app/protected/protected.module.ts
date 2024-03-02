@@ -42,6 +42,10 @@ import { EgresosListComponent } from './pages/sales/egresos-list/egresos-list.co
 import { CatComponent } from './pages/catssales/mdl/cat/cat.component';
 import { QuestionCancelPaymentComponent } from './pages/sales/mdl/question-cancel-payment/question-cancel-payment.component';
 import { GenComisionComponent } from './pages/operation/gen-comision/gen-comision.component';
+import { RepcomprasproveedorComponent } from './pages/reports/repcomprasproveedor/repcomprasproveedor.component';
+import { VerificacionEntradasComponent } from './pages/operation/verificacion-entradas/verificacion-entradas.component';
+import { RepMobDineoelectComponent } from './pages/reports/rep-mob-dineoelect/rep-mob-dineoelect.component';
+import { MenupermisosComponent } from './pages/security/mdl/menupermisos/menupermisos.component';
 
 @NgModule({
     declarations: [
@@ -81,6 +85,10 @@ import { GenComisionComponent } from './pages/operation/gen-comision/gen-comisio
     CatComponent,
     QuestionCancelPaymentComponent,
     GenComisionComponent,
+    RepcomprasproveedorComponent,
+    VerificacionEntradasComponent,
+    RepMobDineoelectComponent,
+    MenupermisosComponent,
   ],
     imports: [
         CommonModule,

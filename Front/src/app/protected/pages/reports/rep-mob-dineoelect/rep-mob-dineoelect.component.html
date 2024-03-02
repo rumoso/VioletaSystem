@@ -1,0 +1,178 @@
+<mat-accordion>
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         class="divMain"
+                         style="margin-top: 10px !important;">
+      <mat-expansion-panel-header class="autoHeight">
+        <mat-panel-title class="text-align: center">
+          Filtros
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+            <br>
+
+            <div class="row">
+                <div class="col-md-3 top20px" style="text-align: left;">
+                    <mat-form-field class="with100">
+                        <mat-label>Fecha de creación:</mat-label>
+                        <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                            <input matStartDate [(ngModel)]="parametersForm.startDate" placeholder="Start date">
+                            <input matEndDate [(ngModel)]="parametersForm.endDate" placeholder="End date">
+                        </mat-date-range-input>
+                        <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-date-range-picker #picker></mat-date-range-picker>
+                        
+                        </mat-form-field>
+                </div>
+
+                <div class="col-md-9">
+                    <mat-label>Cliente: </mat-label>
+                    
+                    <mat-form-field
+                    style="width: 100%;">
+                        <input #cbxCustomerCBX
+                        type="text"
+                                id="cbxCustomer"
+                                style="width: 100%;"
+                                placeholder="Selecciona..."
+                                aria-label="Number"
+                                matInput
+                                [(ngModel)]="parametersForm.customerDesc"
+                                [matAutocomplete]="cbxCustomer"
+                                
+                                (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
+
+                                (click)="cbxCustomers_Clear()">
+                                <button *ngIf="parametersForm.customerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                        <mat-autocomplete autoActiveFirstOption
+                                            #cbxCustomer="matAutocomplete"
+                                            (optionSelected)="cbxCustomers_SelectedOption( $event )">
+                            <mat-option *ngFor="let item of cbxCustomers" [value]="item">
+                                {{ item.name }}
+                            </mat-option>
+            
+                            <mat-option value="" *ngIf="parametersForm.customerResp.length > 0 && parametersForm.customerResp.length > 0">
+                                {{ parametersForm.customerResp }}
+                            </mat-option>
+            
+                        </mat-autocomplete>
+                    </mat-form-field>
+                </div>
+
+            </div>
+
+            <div class="row top10px">
+                <div class="col-md-12">
+                    <div style="float: left;">
+                        
+                        <button mat-raised-button
+                        color="primary"
+                        type="submit"
+                        class="marginRight10px"
+                        (click)="fn_getRepElectronicMoneyListWithPage()">
+                        <mat-icon matPrefix class="my-icon">search</mat-icon>
+                        Buscar</button>
+                        
+                        <button mat-raised-button
+                        type="button"
+                        (click)="parametersForm_Clear()">
+                        <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                        limpiar</button>                
+                        
+                    </div>
+                </div>
+            </div>
+                
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+  <div class="divSection">
+    
+
+    <div class="row" style="margin-top: -35px;">
+        <div class="col-md-12">
+            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                Sumas de Dinero electrónico
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Acomulado: {{ oCustomerHeader.sumDineroElectronico | currency }}</h2>
+        </div>
+        <div class="col-md-3" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Otorgado: {{ oCustomerHeader.electronicMoneyOtorgado | currency }}</h2>
+        </div>
+        <div class="col-md-3" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Gastado: {{ oCustomerHeader.electronicMoneyGastado | currency }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="divMain" style="width: 100%; margin-top: 10px !important;">
+
+    <div class="row top20px">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <th class="textAlingLeft padding-th">Movimiento</th>
+                            <th class="textAlingRight padding-th">Importe</th>
+                            <th class="textAlingLeft padding-th">Cliente</th>
+                            <th class="textAlingCenter padding-th">Creado</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of catlist">
+                                
+                                <td class="textAlingLeft">{{ item.description }}</td>
+                                <td class="textAlingRight">{{ item.amount | currency }}</td>
+                                <td class="textAlingLeft">{{ item.customerName }}</td>
+
+                                <td class="textAlingCenter">
+
+                                    <div style="width: 120px;">
+    
+                                        <div class="row">
+                                            <div class="col-md-1">
+                                                <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                                
+                                            </div>
+                                            <div class="col-md-10">
+                                                <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy' }}</label>
+                                                <label style="margin-left: 10px;">{{ item.createDate | date:'h:mm:ss a' }}</label>
+                                            </div>
+                                        </div>
+    
+                                    </div>
+                                    
+                                </td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <app-pagination *ngIf="catlist" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                </app-pagination>
+            
+            </div>
+    </div>
+    
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>
