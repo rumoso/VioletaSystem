@@ -214,6 +214,8 @@ const getVentasListWithPage = async(req, res = response) => {
             , ${ idSucursalLogON }
             )`)
 
+        console.log(OSQL)
+
         if(OSQL.length == 0){
 
             res.json({

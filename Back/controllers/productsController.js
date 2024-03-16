@@ -1423,6 +1423,8 @@ const getInventarylogParaFirmar = async(req, res = response) => {
         , endDate = ''
         , noEntrada = ''
 
+        , bPending = false
+
         , search = ''
         , limiter = 10
         , start = 0
@@ -1444,6 +1446,8 @@ const getInventarylogParaFirmar = async(req, res = response) => {
         ,'${ startDate.substring(0, 10) }'
         ,'${ endDate.substring(0, 10) }'
         ,'${ noEntrada.trim() }'
+
+        , ${ bPending }
         
         ,'${ search }'
         ,${ start }
@@ -1480,11 +1484,11 @@ const getInventarylogParaFirmar = async(req, res = response) => {
 
     }catch(error){
 
-        res.json({
+        responseData = {
             status: 2,
             message: "Sucedió un error inesperado",
             data: error.message
-        });
+        };
 
     }
 

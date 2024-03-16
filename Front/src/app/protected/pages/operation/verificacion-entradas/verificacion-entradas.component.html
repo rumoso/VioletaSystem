@@ -80,6 +80,14 @@
 
             </div>
 
+            <div class="row">
+                                
+                <div class="col-md-6">
+                    <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bPending">Pendiente</mat-checkbox>
+                </div>
+    
+            </div>
+
             <div class="row top10px">
                 <div class="col-md-12">
                     <div style="float: left;">
@@ -134,6 +142,14 @@
                 (click)="fn_updateFirmaEntradaInventario(2, 'btnRecibirMostrador')">
                 <mat-icon matPrefix class="my-icon">done</mat-icon>
                 RECIBIR EN MOSTRADOR</button>
+
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="exportDataToExcel( true )">
+                <mat-icon matPrefix class="my-icon">insert_drive_file</mat-icon>
+                EXPORTAR A EXCEL PARA IMPRIMIR</button>
                 
             </div>
         </div>
