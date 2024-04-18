@@ -21,12 +21,12 @@ export class SalesService {
   ) { }
 
   CInsertSale( params: any ): Observable<ResponseDB_CRUD> {
-    
+
     const data: any = {
       idSeller_idUser: params.idSeller_idUser
       , idCustomer: params.idCustomer
       , idSaleType: params.idSaleType
-      
+
       , saleDetail: params.saleDetail
     };
 
@@ -38,7 +38,7 @@ export class SalesService {
   }
 
   CGetVentasListWithPage( pagination: Pagination, params: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -46,8 +46,7 @@ export class SalesService {
     var bPagada = params.bPagada;
 
     const data: any = {
-      idUser: params.idUser
-      , createDateStart: params.createDateStart
+      createDateStart: params.createDateStart
       , createDateEnd: params.createDateEnd
       , idCustomer: params.idCustomer
       , idSaleType: params.idSaleType
@@ -70,7 +69,7 @@ export class SalesService {
   }
 
   CGetSaleByID( idSale: any ): Observable<ResponseGet> {
-    
+
     var data: any = {
       idSale: idSale
     };
@@ -107,7 +106,7 @@ export class SalesService {
   }
 
   CInsertPayments( params: any, idCaja: number, idCustomer: number ): Observable<ResponseDB_CRUD> {
-    
+
     const data: any = {
       idCaja: idCaja,
       idCustomer: idCustomer,
@@ -120,9 +119,9 @@ export class SalesService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertPayments`, data);
 
   }
-  
+
   CGetPaymentsByIdSaleListWithPage( pagination: Pagination, idSale: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -142,7 +141,7 @@ export class SalesService {
   }
 
   CInsertSaleByConsignation( data: any ): Observable<ResponseDB_CRUD> {
-    
+
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
 
@@ -151,16 +150,16 @@ export class SalesService {
   }
 
   CRegresarProductoDeConsignacion( data: any ): Observable<ResponseDB_CRUD> {
-    
+
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
-    
+
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/regresarProductoDeConsignacion`, data);
 
   }
 
   CGetPreCorteCaja( data: any ): Observable<ResponseGet> {
-    
+
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
 
@@ -169,7 +168,7 @@ export class SalesService {
   }
 
   CInsertCorteCaja( data: any ): Observable<ResponseDB_CRUD> {
-    
+
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
 
@@ -178,7 +177,7 @@ export class SalesService {
   }
 
   CGetPreEgresosCorteCaja( idCaja: number ): Observable<ResponseGet> {
-    
+
     const data: any = {
       idCaja: idCaja
     };
@@ -194,7 +193,7 @@ export class SalesService {
 
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
-    
+
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertEgresos`, data);
 
   }
@@ -283,7 +282,7 @@ export class SalesService {
   }
 
   CGetCorteCajaListWithPage( pagination: Pagination, params: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -305,11 +304,7 @@ export class SalesService {
 
   }
 
-  CDisabledSale( idSale: any ): Observable<ResponseDB_CRUD> {
-    
-    const data: any = {
-      idSale: idSale
-    };
+  CDisabledSale( data: any ): Observable<ResponseDB_CRUD> {
 
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
@@ -399,7 +394,7 @@ export class SalesService {
   }
 
   CGetEgresosListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -417,6 +412,30 @@ export class SalesService {
     data.idSucursalLogON = this.idSucursal;
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disableSaleDetail`, data );
+  }
+
+  CEditSobreTaller( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/editSobreTaller`, data );
+  }
+
+  CGetRepVentasDetailWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getRepVentasDetailWithPage`, data );
+
   }
 
 }

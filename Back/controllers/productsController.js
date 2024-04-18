@@ -1507,38 +1507,96 @@ const updateFirmaEntradaInventario = async(req, res) => {
         , endDate = ''
         , noEntrada = ''
 
+        , auth_idUser = 0
+
+        , invSelectList
+
         , idUserLogON
         , idSucursalLogON
     } = req.body;
 
     console.log(req.body)
 
+    const tran = await dbConnection.transaction();
+
+    var bOK = true;
+
     try{
 
-        var OSQL = await dbConnection.query(`call updateFirmaEntradaInventario(
-        '${ iOption }'
-        , ${ idProduct }
-        ,'${ startDate.substring(0, 10) }'
-        ,'${ endDate.substring(0, 10) }'
-        ,'${ noEntrada.trim() }'
+        if( invSelectList.length == 0 ){
+
+            var OSQL = await dbConnection.query(`call updateFirmaEntradaInventario(
+                '${ iOption }'
+                , ${ idProduct }
+                ,'${ startDate.substring(0, 10) }'
+                ,'${ endDate.substring(0, 10) }'
+                ,'${ noEntrada.trim() }'
+                , ${ auth_idUser }
+                
+                , ${ idUserLogON }
+                )`)
         
-        , ${ idUserLogON }
-        )`)
+            if(OSQL.length == 0){
+    
+                res.json({
+                    status: 1,
+                    message: "No se pudo realizar la acción."
+                });
+    
+            }
+            else{
+    
+                res.json({
+                    status: OSQL[0].out_id > 0 ? 0 : 1,
+                    message: OSQL[0].message
+                });
+    
+            }
 
-        if(OSQL.length == 0){
+        }else if( invSelectList.length > 0 ){
 
-            res.json({
-                status: 1,
-                message: "No se pudo realizar la acción."
-            });
+            var sMessage = '';
 
-        }
-        else{
+            for(var i = 0; i < invSelectList.length; i++){
 
-            res.json({
-                status: OSQL[0].out_id > 0 ? 0 : 1,
-                message: OSQL[0].message
-            });
+                var oInvSelect = invSelectList[i];
+        
+                var OSQL2 = await dbConnection.query(`call updateFirmaEntradaInventarioByidInventarylog(
+                    '${ iOption }'
+                      , ${ oInvSelect.idInventarylog }
+                      , ${ auth_idUser }
+
+                      , ${ idUserLogON }
+                      )`,{ transaction: tran })
+
+                  if(bOK && OSQL2[0].out_id > 0){
+                      bOK = true;
+                      sMessage = OSQL2[0].message;
+                  }else{
+                      bOK = false;
+                      break;
+                  }
+
+            }
+
+            if(bOK){
+                await tran.commit();
+
+                res.json({
+                    status: 0,
+                    message: sMessage
+                });
+
+            }else{
+
+                await tran.rollback();
+
+                res.json({
+                    status: 1,
+                    message: "No se pudo realizar la acción."
+                });
+                
+            }
 
         }
 
@@ -1553,6 +1611,301 @@ const updateFirmaEntradaInventario = async(req, res) => {
     }
 
 }
+
+const saveDevoluInventario = async(req, res) => {
+
+    const {
+        auth_idUser = 0,
+
+        idProduct = 0,
+        productDesc = '',
+        justify = '',
+
+        idUserLogON,
+        idSucursalLogON
+
+    } = req.body;
+
+    console.log(req.body)
+
+    const tran = await dbConnection.transaction();
+
+    var bOK = false;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        if(auth_idUser == 0){
+            res.json({
+                status: 1,
+                message: "No se pudo hacer la devolución porque no fue autorizada la acción."
+            });
+            return;
+        }
+
+        var OSQL2 = await dbConnection.query(`call insertInventaryLog(
+            '${oGetDateNow}'
+            ,  ${ idProduct }
+            , '-1'
+            , 'Devolución: ${ justify }'
+            , 0
+            , 1
+            , ''
+            , 0
+            , ${ auth_idUser }
+            , 0
+
+            , ${ idUserLogON }
+            )`,{ transaction: tran })
+
+            if(OSQL2[0].out_id > 0){
+                bOK = true;
+            }else{
+                bOK = false;
+            }
+
+            var OSQL_insertInventaryLogDevolution = await dbConnection.query(`call insertInventaryLogDevolution(
+                '${oGetDateNow}'
+                , ${ OSQL2[0].out_id }
+    
+                , ${ idUserLogON }
+            )`,{ transaction: tran })
+    
+            if(bOK && OSQL_insertInventaryLogDevolution[0].out_id > 0){
+                bOK = true;
+            }else{
+                bOK = false;
+            }
+
+        var OSQL_insertAutorizaciones = await dbConnection.query(`call insertAutorizaciones(
+            '${oGetDateNow}'
+            ,  '${ OSQL2[0].out_id }'
+            , 'firmaMost'
+            , 'inventaryLog'
+            , ${ auth_idUser }
+            , 1
+            , 'SE AUTORIZA la debolución del producto: ${ productDesc }'
+
+            , ${ idUserLogON }
+        )`,{ transaction: tran })
+
+        if(bOK && OSQL_insertAutorizaciones[0].out_id > 0){
+            bOK = true;
+        }else{
+            bOK = false;
+        }
+    
+        if(bOK){
+            
+            await tran.commit();
+
+            res.json({
+                status: 0,
+                message: "Devolución registrada",
+            });
+
+        }else{
+            
+            await tran.rollback();
+
+            res.json({
+                status: 1,
+                message: "No se pudo realizar la devolución",
+            });
+
+        }
+      
+    }catch(error){
+
+        await tran.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+}
+
+const getInventarylog_devolution = async(req, res = response) => {
+
+    const {
+        bPending = false
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+    } = req.body;
+
+    let responseData = {
+        status: -1,
+        message: '',
+        data: null
+    };
+
+    console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getInventarylog_devolution(
+        ${ bPending }
+        
+        ,'${ search }'
+        ,${ start }
+        ,${ limiter }
+        )`)
+
+        if(OSQL.length == 0){
+
+            responseData = {
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:
+                {
+                    count: 0,
+                    rows: null
+                }
+            };
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+
+            responseData = {
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            };
+
+        }
+
+    }catch(error){
+
+        responseData = {
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        };
+
+    }
+
+    //await logRequestResponse( req.body, responseData, idUser )
+
+    res.json(responseData);
+
+};
+
+const updateFirmaDevoluInventario = async(req, res) => {
+
+    const {
+        auth_idUser
+        , invSelectList
+
+        , idUserLogON
+        , idSucursalLogON
+    } = req.body;
+
+    console.log(req.body)
+
+    const tran = await dbConnection.transaction();
+
+    var bOK = true;
+
+    try{
+
+        if( invSelectList.length == 0 ){
+
+            var OSQL = await dbConnection.query(`call updateFirmaDevoluInventario(
+                ${ auth_idUser }
+                
+                , ${ idSucursalLogON }
+                , ${ idUserLogON }
+                )`)
+        
+            if(OSQL.length == 0){
+    
+                res.json({
+                    status: 1,
+                    message: "No se pudo realizar la acción."
+                });
+    
+            }
+            else{
+    
+                res.json({
+                    status: OSQL[0].out_id > 0 ? 0 : 1,
+                    message: OSQL[0].message
+                });
+    
+            }
+
+        }else if( invSelectList.length > 0 ){
+
+            var sMessage = '';
+
+            for(var i = 0; i < invSelectList.length; i++){
+
+                var oInvSelect = invSelectList[i];
+        
+                var OSQL2 = await dbConnection.query(`call updateFirmaDevoluInventarioByidInventarylog(
+                    ${ auth_idUser }
+                      , ${ oInvSelect.idInventarylog }
+
+                      , ${ idSucursalLogON }
+                      , ${ idUserLogON }
+                      )`,{ transaction: tran })
+
+                  if(bOK && OSQL2[0].out_id > 0){
+                      bOK = true;
+                      sMessage = OSQL2[0].message;
+                  }else{
+                      bOK = false;
+                      break;
+                  }
+
+            }
+
+            if(bOK){
+                await tran.commit();
+
+                res.json({
+                    status: 0,
+                    message: sMessage
+                });
+
+            }else{
+
+                await tran.rollback();
+
+                res.json({
+                    status: 1,
+                    message: "No se pudo realizar la acción."
+                });
+                
+            }
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+}
+
 
 module.exports = {
     getProductsListWithPage
@@ -1580,4 +1933,7 @@ module.exports = {
     , getRepComprasProveedorListWithPage
     , getInventarylogParaFirmar
     , updateFirmaEntradaInventario
+    , saveDevoluInventario
+    , getInventarylog_devolution
+    , updateFirmaDevoluInventario
   }

@@ -162,8 +162,7 @@ const insertSale = async(req, res) => {
 const getVentasListWithPage = async(req, res = response) => {
 
     var {
-        idUser
-        , createDateStart = ''
+        createDateStart = ''
         , createDateEnd = ''
         , idCustomer = 0
         , idSaleType = 0
@@ -197,7 +196,7 @@ const getVentasListWithPage = async(req, res = response) => {
         console.log( bPagada )
 
         var OSQL = await dbConnectionNEW.query(`call getVentasListWithPage(
-            ${idUser}
+            ${idUserLogON}
             , '${createDateStart.substring(0, 10)}'
             , '${createDateEnd.substring(0, 10)}'
             , ${idCustomer}
@@ -1320,6 +1319,7 @@ const disabledSale = async(req, res) => {
 
     const {
         idSale,
+        auth_idUser = 0,
 
         idUserLogON,
         idSucursalLogON
@@ -1335,6 +1335,14 @@ const disabledSale = async(req, res) => {
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     try{
+
+        if(auth_idUser == 0){
+            res.json({
+                status: 1,
+                message: "No se pudo cancelar la Venta porque no fue autorizada la acción."
+            });
+            return;
+        }
 
         var saleDetail = await dbConnection.query(`call getSalesDetail( '${ idSale }' )`)
 
@@ -1919,6 +1927,221 @@ const disableSaleDetail = async(req, res) => {
     res.json( oResponse );
 }
 
+const editSobreTaller = async(req, res) => {
+
+    const {
+        auth_idUser = 0,
+        idSale = '',
+        importe = 0,
+        descriptionTaller = '',
+
+        idUserLogON,
+        idSucursalLogON
+
+    } = req.body;
+
+    console.log(req.body)
+
+    const tran = await dbConnection.transaction();
+
+    var bOK = false;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        if(auth_idUser == 0){
+            res.json({
+                status: 1,
+                message: "No se pudo cancelar la Venta porque no fue autorizada la acción."
+            });
+            return;
+        }
+
+        var OSQL_editSobreTaller = await dbConnection.query(`call editSobreTaller(
+            '${ idSale }'
+            ,'${ importe }'
+            ,'${ descriptionTaller }'
+        )`,{ transaction: tran })
+
+        if(OSQL_editSobreTaller[0].iRows > 0){
+            bOK = true;
+        }else{
+            bOK = false;
+        }
+
+        var OSQL_insertAutorizaciones = await dbConnection.query(`call insertAutorizaciones(
+            '${oGetDateNow}'
+            ,  '${ idSale }'
+            , ''
+            , 'Sales'
+            , ${ auth_idUser }
+            , 1
+            , 'SE AUTORIZA la actualización del sobre #${ idSale }'
+
+            , ${ idUserLogON }
+        )`,{ transaction: tran })
+
+        if(OSQL_insertAutorizaciones[0].out_id > 0){
+            bOK = true;
+        }else{
+            bOK = false;
+        }
+    
+        if(bOK){
+            
+            await tran.commit();
+
+            res.json({
+                status: 0,
+                message: "Sobre actualizado",
+            });
+
+        }else{
+            
+            await tran.rollback();
+
+            res.json({
+                status: 1,
+                message: "No se pudo actualizar el sobre",
+            });
+
+        }
+      
+    }catch(error){
+
+        await tran.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+}
+
+const getRepVentasDetailWithPage = async(req, res = response) => {
+
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSaleType = 0
+
+        , bCancel = false
+        , bPending = false
+        , bPagada = false
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    console.log(req.body)
+
+    const dbConnectionNEW = await createConexion();
+
+    try{
+
+        if (bPending && bPagada)
+        {
+            bPending = false;
+            bPagada = false;
+        }
+
+        var OSQL_Sum = await dbConnectionNEW.query(`call getRepVentasSumByIdSaleType(
+            ${idUserLogON}
+            , '${createDateStart.substring(0, 10)}'
+            , '${createDateEnd.substring(0, 10)}'
+            , ${idCustomer}
+            , ${idSaleType}
+
+            , ${bCancel}
+            , ${bPending}
+            , ${bPagada}
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        console.log( OSQL_Sum )
+
+
+
+        var OSQL = await dbConnectionNEW.query(`call getRepVentasDetailWithPage(
+            ${idUserLogON}
+            , '${createDateStart.substring(0, 10)}'
+            , '${createDateEnd.substring(0, 10)}'
+            , ${idCustomer}
+            , ${idSaleType}
+
+            , ${bCancel}
+            , ${bPending}
+            , ${bPagada}
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        console.log(OSQL)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL,
+                    repVentasSumByIdSaleType: OSQL_Sum
+                }
+            });
+            
+        }
+
+        await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+
+
 module.exports = {
     insertSale
     , getVentasListWithPage
@@ -1950,5 +2173,9 @@ module.exports = {
     , getEgresosListWithPage
 
     , disableSaleDetail
+
+    , editSobreTaller
+
+    , getRepVentasDetailWithPage
 
 }

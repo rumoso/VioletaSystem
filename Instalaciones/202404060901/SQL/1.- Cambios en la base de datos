@@ -1,0 +1,2 @@
+INSERT INTO `menus` (`idMenu`, `createDate`, `idMenuPadre`, `lugar`, `name`, `description`, `icon`, `linkCat`, `linkList`, `imgDash`, `imgDashSize`, `idAplication`, `active`)
+VALUES (NULL, '2024-04-05 21:00:17', '13', '6', 'Reporte de Ventas', 'Se puede revisar el movimiento en ventas', NULL, NULL, 'rep_sales', 'assets/img/icons/repUtilidad.png', 80, '1', '1');

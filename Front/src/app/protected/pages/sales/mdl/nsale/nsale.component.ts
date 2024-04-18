@@ -20,6 +20,7 @@ import { UsersService } from 'src/app/protected/services/users.service';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
 import { QuestionCancelPaymentComponent } from '../question-cancel-payment/question-cancel-payment.component';
+import { AuthorizationActionService } from 'src/app/protected/services/authorization-action.service';
 
 @Component({
   selector: 'app-nsale',
@@ -39,14 +40,19 @@ export class NsaleComponent {
   @ViewChild('cbxSaleTypeCBX') cbxSaleTypeCBX!: ElementRef;
   @ViewChild('barCode') barCode!: ElementRef;
   @ViewChild('tbxCantidad') tbxCantidad!: ElementRef;
-  @ViewChild('cbxDescuento') cbxDescuento!: ElementRef;
+  @ViewChild('cbxDescuentoEnPorcentaje') cbxDescuentoEnPorcentaje!: ElementRef;
+  @ViewChild('cbxDescuentoEnPesos') cbxDescuentoEnPesos!: ElementRef;
   @ViewChild('total') total!: ElementRef;
+  //@ViewChild('btnAdd') btnAdd!: ElementRef;
 
   private timeCBXskeyup: Subject<any> = new Subject<any>();
 
   title: string = 'Venta';
   bShowSpinner: boolean = false;
   idSale: any = '';
+
+  dialogAbierto: boolean = false;
+  isPrecioUnitarioEditable: boolean = true;
 
   showPaymentsAtStart: boolean = true;
 
@@ -91,7 +97,8 @@ export class NsaleComponent {
 
     saleDetail: [],
     paymentList: [],
-    ConsHistoryList: []
+    ConsHistoryList: [],
+    autorizacionesList: []
 
   };
 
@@ -103,8 +110,10 @@ export class NsaleComponent {
 
     cantidad: 1,
     precioUnitario: 0,
-    descuento: 0,
+    descuento: '',
+    descuentoEnPesos: '',
     cost: 0,
+    costPlusPorcent: 0,
     precio: 0,
     importe: 0,
 
@@ -166,6 +175,8 @@ export class NsaleComponent {
     , private saleServ: SalesService
     , private userServ: UsersService
 
+    , private authorizationActionServ: AuthorizationActionService
+
     , private printTicketServ: PrintTicketService
     ) { }
 
@@ -197,6 +208,7 @@ export class NsaleComponent {
       if( this.ODataP.idSale.length > 0 ){
 
         this.fn_getSaleByID( this.ODataP.idSale );
+        this.fn_getAutorizacionesByRelation( this.ODataP.idSale );
 
       }
 
@@ -229,7 +241,7 @@ export class NsaleComponent {
   fn_disableSaleDetail( item: any ){
 
     if(!this.bShowAction){
-      
+
       this.bShowAction = true;
 
       this.servicesGServ.showDialog('¿Estás seguro?'
@@ -238,18 +250,18 @@ export class NsaleComponent {
       , 'Si', 'No', '500px' )
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
 
             var paramsMDL: any = {
               actionName: 'ventas_CancelarSaleDetail'
               , bShowAlert: false
             }
-          
+
             this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
             .afterClosed().subscribe({
               next: ( resp ) =>{
-          
+
                 if( resp ){
 
                   this.bShowAction = false;
@@ -263,23 +275,23 @@ export class NsaleComponent {
                   this.saleServ.CDisableSaleDetail( oParams )
                   .subscribe({
                     next: (resp: any) => {
-            
+
                       if( resp.status === 0 ){
 
                         this.fn_getSaleByID( this.idSale );
 
                       }
-                      
+
                       this.servicesGServ.showAlertIA( resp );
-                      
+
                       this.bShowSpinner = false;
-            
+
                     },
                     error: (ex) => {
-            
+
                       this.servicesGServ.showSnakbar( ex.error.message );
                       this.bShowSpinner = false;
-            
+
                     }
                   });
 
@@ -295,19 +307,19 @@ export class NsaleComponent {
           else{
             this.bShowAction = false;
           }
-          
+
         }
       });
 
     }
-          
+
   }
 
   bShowActionAuthorization: boolean = false;
   fn_disablePayment( item: any ){
 
     if(!this.bShowActionAuthorization){
-      
+
       this.bShowActionAuthorization = true;
 
       this.servicesGServ.showDialog('¿Estás seguro?'
@@ -316,11 +328,11 @@ export class NsaleComponent {
       , 'Si', 'No' )
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
 
             this.bShowActionAuthorization = false;
-            
+
             if( item.iPagoCortado > 0 ){
 
               this.servicesGServ.showModalWithParams( QuestionCancelPaymentComponent, item, '600px')
@@ -328,106 +340,106 @@ export class NsaleComponent {
                 next: ( sOption ) =>{
 
                   var paramsMDL: any = {
-                    actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' ) 
+                    actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' )
                     , bShowAlert: false
                   }
-                
+
                   this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
                   .afterClosed().subscribe({
                     next: ( resp ) =>{
-                
+
                       if( resp ){
-      
+
                         this.bShowSpinner = true;
-      
+
                         var oParams: any = {
                           idSale: this.idSale,
                           idPayment: item.idPayment,
                           sOption: sOption
                         }
-      
+
                         this.saleServ.CDisabledPayment( oParams )
                         .subscribe({
                           next: (resp: any) => {
-                  
+
                             if( resp.status === 0 ){
-      
+
                               this.fn_getSaleByID( this.idSale );
-                                
+
                             }
-                            
+
                             this.servicesGServ.showAlertIA( resp );
-                            
+
                             this.bShowSpinner = false;
-                  
+
                           },
                           error: (ex) => {
-                  
+
                             this.servicesGServ.showSnakbar( ex.error.message );
                             this.bShowSpinner = false;
-                  
+
                           }
                         });
-      
+
                       }
 
                     }
                   });
-  
+
                 }
               });
 
             }else{
 
               var paramsMDL: any = {
-                actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' ) 
+                actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' )
                 , bShowAlert: false
               }
-            
+
               this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
               .afterClosed().subscribe({
                 next: ( resp ) =>{
-            
+
                   if( resp ){
-  
+
                     this.bShowActionAuthorization = false;
-  
+
                     this.bShowSpinner = true;
-  
+
                     var oParams: any = {
                       idSale: this.idSale,
                       idPayment: item.idPayment,
                       sOption: ''
                     }
-  
+
                     this.saleServ.CDisabledPayment( oParams )
                     .subscribe({
                       next: (resp: any) => {
-              
+
                         if( resp.status === 0 ){
-  
+
                           this.fn_getSaleByID( this.idSale );
-                            
+
                         }
-                        
+
                         this.servicesGServ.showAlertIA( resp );
-                        
+
                         this.bShowSpinner = false;
-              
+
                       },
                       error: (ex) => {
-              
+
                         this.servicesGServ.showSnakbar( ex.error.message );
                         this.bShowSpinner = false;
-              
+
                       }
                     });
-  
+
                   }
                   else{
                     this.bShowActionAuthorization = false;
                   }
-  
+
                 }
               });
 
@@ -437,57 +449,67 @@ export class NsaleComponent {
           else{
             this.bShowActionAuthorization = false;
           }
-          
+
         }
       });
 
     }
-          
+
   }
 
     fn_getProductByBarCode() {
 
       if(this.salesDetailForm.barCode.length > 0){
-        
+
         this.bShowSpinner = true;
 
-  
+
         this.productsServ.CGetProductByBarCode( this.salesDetailForm.barCode, this.idUserLogON )
           .subscribe({
             next: (resp: ResponseGet) => {
-              
+
               if( resp.status === 0 ){
-    
+
                 this.salesDetailForm.idProduct = resp.data.idProduct ;
                 this.salesDetailForm.productDesc = resp.data.name;
                 this.salesDetailForm.cost = resp.data.cost;
+                this.salesDetailForm.costPlusPorcent = parseFloat( ( resp.data.costPlusPorcent ).toFixed(2) );
                 this.salesDetailForm.precioUnitario = resp.data.price;
 
                 this.salesDetailForm.catInventary = resp.data.catInventary;
 
                 this.nextInputFocus( this.tbxCantidad, 500);
 
+                setTimeout (() => {
+                  this.isPrecioUnitarioEditable = false;
+                }, 1);
+
               }else{
-                
+
                 this.salesDetailForm.barCode = '';
                 this.salesDetailForm.idProduct = 0;
                 this.salesDetailForm.productDesc = '';
                 this.salesDetailForm.cost = 0;
+                this.salesDetailForm.costPlusPorcent = 0;
                 this.salesDetailForm.precioUnitario = 0;
 
                 this.salesDetailForm.catInventary = 0;
-                
+
+                setTimeout (() => {
+                  this.isPrecioUnitarioEditable = false;
+                }, 1);
+
               }
-    
+
               this.servicesGServ.showAlertIA(resp, false);
               this.bShowSpinner = false;
-    
+
             },
             error: (ex) => {
-    
+
               this.servicesGServ.showSnakbar( "Problemas con el servicio" );
               this.bShowSpinner = false;
-    
+
             }
           })
 
@@ -498,14 +520,14 @@ export class NsaleComponent {
   fn_getSaleByID( idSale: any ) {
 
     this.bShowSpinner = true;
-  
+
     this.saleServ.CGetSaleByID( idSale )
       .subscribe( ( resp: any ) => {
 
         console.log(resp)
 
           if(resp.status == 0){
-            
+
             this.idSale = resp.data.idSale;
 
             this.salesHeaderForm.idSale = resp.data.idSale;
@@ -564,6 +586,32 @@ export class NsaleComponent {
 
   }
 
+  fn_getAutorizacionesByRelation( idSale: any ) {
+
+    this.bShowSpinner = true;
+
+    var oParams: any = {
+      idRelation: idSale
+      , idRelation2: ''
+      , relationType: 'Sales'
+    }
+
+    this.authorizationActionServ.CGetAutorizacionesByRelation( oParams )
+      .subscribe( ( resp: any ) => {
+
+          if(resp.status == 0){
+
+            this.salesHeaderForm.autorizacionesList = resp.data.rows;
+            console.log(resp)
+
+          }else{
+            this.servicesGServ.showSnakbar(resp.message);
+          }
+          this.bShowSpinner = false;
+      } );
+
+  }
+
   fn_getPaymentsByIdSaleListWithPage( idSale: any ) {
 
     this.bShowSpinner = true;
@@ -602,7 +650,7 @@ export class NsaleComponent {
       } );
 
   }
-    
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE CONEXIONES AL BACK
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -611,17 +659,93 @@ export class NsaleComponent {
 // SECCIÓN DE MÉTODOS CON EL FRONT
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+fn_habilitarPrice(  ){
+
+  if( !this.isPrecioUnitarioEditable && this.salesDetailForm.precioUnitario > 0 ){
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+    , 'Quieres cambiar el precio del producto?'
+    , '¿Desea continuar?'
+    , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: ( resp ) =>{
+
+        if( resp ){
+
+          var paramsMDL: any = {
+            actionName: 'ventas_changePrice'
+          }
+
+          this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+          .afterClosed().subscribe({
+            next: ( resp ) =>{
+
+              if( resp ){
+
+                this.isPrecioUnitarioEditable = true;
+
+              }
+
+            }
+
+          });
+
+        }
+
+      }
+
+     });
+
+   }
+
+}
+
+fn_changeDescuentoEnPesos(  ){
+
+  if( !this.dialogAbierto ){
+
+    if( this.salesDetailForm.descuentoEnPesos > 0 ){
+      this.dialogAbierto = true;
+      this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Quieres agregar un descuento de $' + this.salesDetailForm.descuentoEnPesos
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+
+          this.dialogAbierto = false;
+
+          if(!resp){
+
+            this.salesDetailForm.descuentoEnPesos = '';
+
+          }else{
+            this.addSaleDetail();
+          }
+
+        }
+
+      });
+
+    }else{
+      this.addSaleDetail();
+    }
+
+  }
+
+}
+
 fn_btnRePrinter( idPayment: any ){
 
   if( this.selectPrinter.idPrinter > 0 ){
-  
+
     this.servicesGServ.showDialog('¿Estás seguro?'
     , 'Estás apunto de reimprimir este Pago'
     , '¿Desea continuar?'
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
 
           this.printTicketServ.printTicket("RePayment", this.idSale, this.selectPrinter.idPrinter, 1, idPayment);
@@ -633,8 +757,8 @@ fn_btnRePrinter( idPayment: any ){
     });
 
   }
-  
-}    
+
+}
 
 public nextInputFocus( idInput: any, milliseconds: number ) {
         setTimeout (() => {
@@ -650,21 +774,23 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
 
           if( this.salesHeaderForm.saleDetail.filter(( x: any ) => x.idProduct == this.salesDetailForm.idProduct).length == 0 ){
             if(this.salesDetailForm.catInventary >= this.salesDetailForm.cantidad){
-  
+
               //SACO EL PREIMPORTE
               var preImporte = this.salesDetailForm.precioUnitario * this.salesDetailForm.cantidad;
-  
+
               //SACO EL DESCUENTO
               // CONVIERTO EN DECIMAL LE PORCENTAJE
-              var porcentajeDescuento = this.salesDetailForm.descuento / 100;
+              var porcentajeDescuento = ( this.salesDetailForm.descuento ? this.salesDetailForm.descuento : 0 ) / 100;
               var precioDescuento = porcentajeDescuento * this.salesDetailForm.precioUnitario;
-    
+              precioDescuento += this.salesDetailForm.descuentoEnPesos ? this.salesDetailForm.descuentoEnPesos : 0;
+              precioDescuento = parseFloat( precioDescuento.toFixed(2) );
+
               var precio = this.salesDetailForm.precioUnitario - precioDescuento;
-    
+
               var importe = precio * this.salesDetailForm.cantidad;
-  
-              if(precio > this.salesDetailForm.cost){
-                
+
+              if(precio > this.salesDetailForm.costPlusPorcent){
+
                 var saleDetail:any = {
                   select: false,
                   barCode: this.salesDetailForm.barCode,
@@ -672,30 +798,31 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                   productDesc: this.salesDetailForm.productDesc,
                   cantidad: this.salesDetailForm.cantidad,
                   cost: this.salesDetailForm.cost,
+                  costPlusPorcent: this.salesDetailForm.costPlusPorcent,
                   precioUnitario: this.salesDetailForm.precioUnitario,
                   descuento: precioDescuento,
                   precio: precio,
                   importe: importe
                 };
-      
+
                 this.salesHeaderForm.saleDetail.push(saleDetail);
-      
+
                 if(precioDescuento > 0)
                 {
                   this.interface.showDescuento = true;
                 }
-      
+
                 //VOY SUMANDO LOS IMPORTES
                 this.salesHeaderForm.total = this.salesHeaderForm.saleDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
                 this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
-      
+
                 this.fnClearSalesDetailForm();
-  
+
               }else{
-                this.servicesGServ.showAlert('W', 'Alerta!', "No se puede aplicar tanto descuento.", false);    
+                this.servicesGServ.showAlert('W', 'Alerta!', "No se puede aplicar tanto descuento.", false);
               }
-    
-              
+
+
             }else{
                this.servicesGServ.showAlert('W', 'Alerta!', "Solo hay " + this.salesDetailForm.catInventary + " en existencia.", true);
             }
@@ -707,7 +834,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
 
           if(this.salesHeaderForm?.saleDetail?.length == 0)
           {
-            
+
             var saleDetail:any = {
               select: false,
               barCode: 'SOBRE001',
@@ -715,26 +842,28 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
               productDesc: this.salesDetailForm.description,
               cantidad: 1,
               cost: this.salesDetailForm.precioSobre,
+              costPlusPorcent: 0,
               precioUnitario: this.salesDetailForm.precioSobre,
               descuento: 0,
+              descuentoEnPesos: 0,
               precio: this.salesDetailForm.precioSobre,
               importe: this.salesDetailForm.precioSobre
             };
-  
+
             this.salesHeaderForm.saleDetail.push(saleDetail);
-  
+
             this.interface.showDescuento = false;
-  
+
             //VOY SUMANDO LOS IMPORTES
             this.salesHeaderForm.total = this.salesHeaderForm.saleDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
             this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
-  
+
             this.fnClearSalesDetailForm();
 
           }
-          
+
         }
-        
+
       }
 
     }
@@ -745,15 +874,19 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
       this.salesDetailForm.productDesc = '';
       this.salesDetailForm.cantidad = 1;
       this.salesDetailForm.precioUnitario = 0;
-      this.salesDetailForm.descuento = 0;
+      this.salesDetailForm.descuento = '';
+      this.salesDetailForm.descuentoEnPesos = '';
       this.salesDetailForm.cost = 0;
+      this.salesDetailForm.costPlusPorcent = 0;
       this.salesDetailForm.precio = 0;
       this.salesDetailForm.importe = 0;
-      
+
       this.salesDetailForm.description = '';
       this.salesDetailForm.precioSobre = 0;
 
       this.nextInputFocus( this.barCode , 0);
+
+      this.isPrecioUnitarioEditable = false;
     }
 
   fn_ShowPayments(){
@@ -776,13 +909,13 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
         this.servicesGServ.showModalWithParams( PaymentsComponent, OParams, '1500px')
         .afterClosed().subscribe({
           next: ( resp ) =>{
-            
+
             if( resp.length > 0 ){
-            
+
               this.fn_NuevaVenta();
 
               this.fn_getSaleByID( resp );
-          
+
             }
           }
       });
@@ -803,48 +936,108 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
       .afterClosed().subscribe({
         next: ( resp ) =>{
 
-          
+
           if(resp){
-          
-            this.bShowSpinner = true;
 
-            this.saleServ.CInsertSale( this.salesHeaderForm )
-              .subscribe({
-                next: (resp: ResponseDB_CRUD) => {
-        
-                  if( resp.status === 0 ){
-                    this.idSale = resp.insertID;
-                    this.salesHeaderForm.idSale = resp.insertID;
+            if( this.salesHeaderForm.idCustomer == 11447937
+              && this.salesHeaderForm.idSaleType == 4 ){
 
-                    this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
-                    this.salesHeaderForm.pagado = 0;
+                var paramsMDL: any = {
+                  actionName: 'ventas_CrearConsMartin'
+                }
 
-                    // if( bShowPayment ){
-                    //   this.fn_ShowPayments();
-                    // }
-                    // else{
-                      this.ev_PrintTicket()
-                      this.servicesGServ.showAlertIA( resp );
-                    //}
+                this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+                .afterClosed().subscribe({
+                  next: ( resp ) =>{
+
+                    if( resp ){
+
+                      this.bShowSpinner = true;
+
+                      this.saleServ.CInsertSale( this.salesHeaderForm )
+                        .subscribe({
+                          next: (resp: ResponseDB_CRUD) => {
+
+                            if( resp.status === 0 ){
+                              this.idSale = resp.insertID;
+                              this.salesHeaderForm.idSale = resp.insertID;
+
+                              this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
+                              this.salesHeaderForm.pagado = 0;
+
+                              // if( bShowPayment ){
+                              //   this.fn_ShowPayments();
+                              // }
+                              // else{
+                                this.ev_PrintTicket()
+                                this.servicesGServ.showAlertIA( resp );
+                              //}
+
+                            }
+
+                            this.bShowSpinner = false;
+
+                            this.bSaveSale = false;
+
+                          },
+                          error: (ex) => {
+
+                            this.servicesGServ.showSnakbar( ex.error.message );
+                            this.bShowSpinner = false;
+                            this.bSaveSale = false;
+
+                          }
+                        });
+
+                    }
+                    else{
+                      this.bSaveSale = false;
+                    }
 
                   }
-                  
-                  this.bShowSpinner = false;
+                });
 
-                  this.bSaveSale = false;
-        
-                },
-                error: (ex) => {
-        
-                  this.servicesGServ.showSnakbar( ex.error.message );
-                  this.bShowSpinner = false;
-        
-                }
-              });
+              }
+              else{
 
-              
+                this.bShowSpinner = true;
 
+                this.saleServ.CInsertSale( this.salesHeaderForm )
+                  .subscribe({
+                    next: (resp: ResponseDB_CRUD) => {
 
+                      if( resp.status === 0 ){
+                        this.idSale = resp.insertID;
+                        this.salesHeaderForm.idSale = resp.insertID;
+
+                        this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
+                        this.salesHeaderForm.pagado = 0;
+
+                        // if( bShowPayment ){
+                        //   this.fn_ShowPayments();
+                        // }
+                        // else{
+                          this.ev_PrintTicket()
+                          this.servicesGServ.showAlertIA( resp );
+                        //}
+
+                      }
+
+                      this.bShowSpinner = false;
+
+                      this.bSaveSale = false;
+
+                    },
+                    error: (ex) => {
+
+                      this.servicesGServ.showSnakbar( ex.error.message );
+                      this.bShowSpinner = false;
+                      this.bSaveSale = false;
+
+                    }
+                  });
+
+              }
           }
           else{
             this.bSaveSale = false;
@@ -867,13 +1060,13 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
       next: ( resp: any ) =>{
 
         if( resp.bOK ){
-          
+
           this.salesHeaderForm.idCustomer = resp.id;
           this.salesHeaderForm.customerDesc = resp.name;
           this.salesHeaderForm.customerResp = '';
 
         }
-        
+
       }
     });
   }
@@ -888,15 +1081,15 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
         , 'Si', 'No')
         .afterClosed().subscribe({
           next: ( resp ) =>{
-            
+
             if(resp){
-            
+
               this.bShowSpinner = true;
 
               this.saleServ.CInsertSale( this.salesHeaderForm )
                 .subscribe({
                   next: (resp: ResponseDB_CRUD) => {
-          
+
                     if( resp.status === 0 ){
                       this.salesHeaderForm.idSale = resp.insertID;
 
@@ -904,16 +1097,16 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                       this.salesHeaderForm.pagado = 0;
                       //this.dialogRef.close( this.data );
                     }
-          
+
                     this.servicesGServ.showSnakbar(resp.message);
                     this.bShowSpinner = false;
-          
+
                   },
                   error: (ex) => {
-          
+
                     this.servicesGServ.showSnakbar( ex.error.message );
                     this.bShowSpinner = false;
-          
+
                   }
                 });
 
@@ -958,8 +1151,10 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
     this.salesDetailForm.catInventary = 0;
     this.salesDetailForm.cantidad = 1,
     this.salesDetailForm.precioUnitario = 0;
-    this.salesDetailForm.descuento = 0;
+    this.salesDetailForm.descuento = '';
+    this.salesDetailForm.descuentoEnPesos = '';
     this.salesDetailForm.cost = 0;
+    this.salesDetailForm.costPlusPorcent = 0;
     this.salesDetailForm.precio = 0;
     this.salesDetailForm.importe = 0;
 
@@ -984,7 +1179,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
 
     let productsSelect = this.salesHeaderForm.saleDetail.filter(function( item: any ) {
       return ( item.select == true
-        && item.cantidad >= item.consCantidad 
+        && item.cantidad >= item.consCantidad
         && item.consCantidad > 0 )
     });
 
@@ -996,25 +1191,25 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
       , 'Si', 'No')
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
 
             var paramsMDL: any = {
               actionName: ( idSaleType == 1 ? 'ventas_consVentaCredito' : idSaleType == 2 ? 'ventas_consVentaContado' : idSaleType == 3 ? 'ventas_consApartado' : '' )
             }
-          
+
             this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
             .afterClosed().subscribe({
               next: ( resp ) =>{
-          
+
                 if( resp ){
-                  
+
                   let ODataHeader: any = {
                     idSaleOld: this.dataStone.idSale
                     , idSeller_idUser: this.dataStone.idSeller_idUser
                     , idCustomer: this.dataStone.idCustomer
                     , idSaleType: idSaleType
-                    
+
                     , saleDetail: productsSelect
                   }
 
@@ -1023,26 +1218,26 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                   this.saleServ.CInsertSaleByConsignation( ODataHeader )
                   .subscribe({
                     next: (resp: any) => {
-            
+
                       if( resp.status === 0 ){
 
                           this.fn_getSaleByID( this.idSale );
-                          
+
                           if(this.selectPrinter.idPrinter > 0){
                             this.printTicketServ.printTicket("Venta", resp.idSaleNew, this.selectPrinter.idPrinter);
                           }
 
                       }
-            
+
                       this.servicesGServ.showAlertIA( resp );
                       this.bShowSpinner = false;
-            
+
                     },
                     error: (ex) => {
-            
+
                       this.servicesGServ.showSnakbar( ex.error.message );
                       this.bShowSpinner = false;
-            
+
                     }
                   });
 
@@ -1052,10 +1247,10 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
             });
 
           }
-          
+
         }
       });
-          
+
     }else{
       this.servicesGServ.showAlert('W', 'Alerta!', "Selecciona almenos un producto de la lista.", false);
     }
@@ -1077,51 +1272,51 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
       , 'Si', 'No')
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
 
             var paramsMDL: any = {
-              actionName: 'ventas_consignacionRegresarAInventario'
+              actionName: 'ventas_consRegresarAInventario'
             }
-          
+
             this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
             .afterClosed().subscribe({
               next: ( resp ) =>{
-          
+
                 if( resp ){
-                  
+
                   let ODataHeader: any = {
                     idSaleOld: this.dataStone.idSale
                     , idSeller_idUser: this.dataStone.idSeller_idUser
-                    
+
                     , saleDetail: productsSelect
                   }
-      
+
                   this.bShowSpinner = true;
-      
+
                   this.saleServ.CRegresarProductoDeConsignacion( ODataHeader )
                     .subscribe({
                       next: (resp: any) => {
-              
+
                         if( resp.status === 0 ){
-      
+
                           if( resp.bBorro == 1 ){
                             this.fn_CerrarMDL();
                           }else{
                             this.fn_getSaleByID( this.idSale );
                           }
-      
+
                         }
-              
+
                         this.servicesGServ.showAlertIA( resp );
                         this.bShowSpinner = false;
-              
+
                       },
                       error: (ex) => {
-              
+
                         this.servicesGServ.showSnakbar( ex.error.message );
                         this.bShowSpinner = false;
-              
+
                       }
                     });
 
@@ -1140,7 +1335,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
     }
 
   }
-    
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE MÉTODOS CON EL FRONT
@@ -1159,7 +1354,7 @@ onConsDescuentoChange(descuento: number, item: any) {
 
   var precio = item.precioUnitario - precioDescuento;
 
-  if(precio < item.cost){
+  if(precio < item.costPlusPorcent){
     this.servicesGServ.showAlert('W', 'Alerta!', "No se puede aplicar tanto descuento.", false);
     item.consDescuento = 0;
   }
@@ -1222,7 +1417,7 @@ ev_fnShowBtnPagar(): boolean {
 
 ev_fn_barCode_keyup_enter(event: any){
   if(event.keyCode == 13) { // PRESS ENTER
-    
+
     if( this.salesDetailForm.barCode.length > 0){
       this.fn_getProductByBarCode();
     }
@@ -1237,9 +1432,29 @@ ev_fn_cbxCantidad_keyup_enter(event: any){
   if(event.keyCode == 13) { // PRESS ENTER
 
     if( this.salesDetailForm.cantidad > 0 ){
-      this.nextInputFocus( this.cbxDescuento, 0);
+      this.nextInputFocus( this.cbxDescuentoEnPorcentaje, 0);
     }
-    
+
+  }
+}
+
+ev_fn_cbxPrecio_keyup_enter(event: any){
+  if(event.keyCode == 13) { // PRESS ENTER
+
+    if( this.salesDetailForm.cantidad > 0 ){
+      this.nextInputFocus( this.cbxDescuentoEnPorcentaje, 0);
+    }
+
+  }
+}
+
+ev_fn_cbxDescuentoEnPorcentaje_keyup_enter(event: any){
+  if(event.keyCode == 13) { // PRESS ENTER
+
+    if( this.salesDetailForm.cantidad > 0 ){
+      this.nextInputFocus( this.cbxDescuentoEnPesos, 0);
+    }
+
   }
 }
 
@@ -1284,7 +1499,7 @@ ev_showInterface(){
     this.interface.showReferencia = this.salesHeaderForm.paymentList.filter(function( item: any ) {
       return item.referencia?.length > 0
     }).length > 0;
-  
+
     this.interface.showFxRate = this.salesHeaderForm.paymentList.filter(function( item: any ) {
       return item.fxRate > 0
     }).length > 0;
@@ -1310,7 +1525,7 @@ async ev_PrintTicketConsHistoryList(){
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE COMBOS
 //////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
 
   //--------------------------------------------------------------------------
   // MÉTODOS PARA COMBO DE ÁREAS
@@ -1334,7 +1549,7 @@ async ev_PrintTicketConsHistoryList(){
            if(resp.status === 0){
              this.cbxCustomers = resp.data;
              this.salesHeaderForm.customerResp = '';
-             
+
            }
            else{
             this.cbxCustomers = [];
@@ -1351,12 +1566,12 @@ async ev_PrintTicketConsHistoryList(){
   cbxCustomers_SelectedOption( event: MatAutocompleteSelectedEvent, idInput: any ) {
 
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.salesHeaderForm.idCustomer =  ODataCbx.idCustomer;
       this.salesHeaderForm.customerDesc = ODataCbx.name;
-  
+
       this.nextInputFocus( this.cbxSaleTypeCBX, 500 );
 
     }, 1);
@@ -1376,7 +1591,7 @@ async ev_PrintTicketConsHistoryList(){
   cbxProducts: any[] = [];
 
   cbxProducts_Search() {
-    
+
     var oParams: any = {
       iOption: 2,
       search: this.salesDetailForm.productDesc
@@ -1404,21 +1619,25 @@ async ev_PrintTicketConsHistoryList(){
     this.cbxProducts_Clear();
 
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.salesDetailForm.idProduct = ODataCbx.idProduct;
       this.salesDetailForm.productDesc = ODataCbx.name;
       this.salesDetailForm.barCode = ODataCbx.barCode;
-      
+
       this.salesDetailForm.cost = ODataCbx.cost;
+      this.salesDetailForm.costPlusPorcent = parseFloat( ( ODataCbx.costPlusPorcent ).toFixed(2) );
       this.salesDetailForm.precioUnitario = ODataCbx.price;
       this.salesDetailForm.catInventary = ODataCbx.catInventary;
-  
+
       this.nextInputFocus( this.tbxCantidad, 500);
 
+      this.isPrecioUnitarioEditable = false;
+
+
     }, 1);
-    
+
   }
 
   cbxProducts_Clear(){
@@ -1428,6 +1647,7 @@ async ev_PrintTicketConsHistoryList(){
     this.salesDetailForm.precioUnitario = 0;
     this.salesDetailForm.catInventary = 0;
     this.salesDetailForm.cost = 0;
+    this.salesDetailForm.costPlusPorcent = 0;
   }
   //--------------------------------------------------------------------------
 
@@ -1459,14 +1679,14 @@ async ev_PrintTicketConsHistoryList(){
     this.cbxSalesType_Clear();
 
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.salesHeaderForm.idSaleType = ODataCbx.id;
       this.salesHeaderForm.saleTypeDesc = ODataCbx.name;
-  
+
       //alert(this.salesHeaderForm.idSaleType)
-  
+
       if(this.salesHeaderForm.idSaleType == 5){
         setTimeout (() => {
           var miInput = document.getElementById('tbxDescription');
@@ -1483,7 +1703,7 @@ async ev_PrintTicketConsHistoryList(){
   cbxSalesType_Clear(){
     this.salesHeaderForm.idSaleType = 0;
     this.salesHeaderForm.saleTypeDesc = '';
-    
+
   }
   //--------------------------------------------------------------------------
 
@@ -1499,7 +1719,7 @@ async ev_PrintTicketConsHistoryList(){
            if(resp.status === 0){
              this.cbxSellers = resp.data;
              this.salesHeaderForm.sellerResp = '';
-             
+
            }
            else{
             this.cbxSellers = [];
@@ -1516,15 +1736,15 @@ async ev_PrintTicketConsHistoryList(){
   cbxSellers_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
     this.cbxSellers_Clear();
-    
+
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.salesHeaderForm.idSeller_idUser =  ODataCbx.idUser;
       this.salesHeaderForm.sellerDesc = ODataCbx.name;
       this.salesHeaderForm.sellerResp = '';
-  
+
       this.nextInputFocus( this.cbxCustomerCBX, 500 );
 
     }, 1);
@@ -1538,7 +1758,7 @@ async ev_PrintTicketConsHistoryList(){
   }
   //--------------------------------------------------------------------------
 
-  
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE COMBOS

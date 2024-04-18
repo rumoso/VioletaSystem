@@ -5,6 +5,7 @@ const { validarCampos } = require('../middlewares/validar-campos')
 
 const { 
   authorizationActionAPI
+  , getAutorizacionesByRelation
    } = require('../controllers/authorizationActionsController');
 
    
@@ -17,5 +18,14 @@ router.post('/authorizationActionAPI', [
   
   validarCampos
 ], authorizationActionAPI);
+
+router.post('/getAutorizacionesByRelation', [
+
+  check('idRelation','La relación es obligatoria').not().isEmpty(),
+
+  check('relationType','El tipo de relación es obligatorio').not().isEmpty(),
+
+  validarCampos
+], getAutorizacionesByRelation);
 
 module.exports = router;

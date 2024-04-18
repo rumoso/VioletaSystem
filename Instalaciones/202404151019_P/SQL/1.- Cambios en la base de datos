@@ -1,0 +1,2 @@
+INSERT INTO `actions` (`keyx`, `idAction`, `createDate`, `idActionSection`, `name`, `nameHtml`, `description`, `active`)
+VALUES (NULL, '11515', '2024-04-15 22:16:46', '1', 'ventas_changePrice', 'Cambiar precio de producto al agregar a nota de venta ( REQUIERE CÓDIGO DE AUTORIZACIÓN )', 'Con este permiso se puede cambiar el precio unitario de los productos antes de agregar a la nota de venta.', '1');

@@ -28,7 +28,7 @@ export class VerificacionEntradasComponent {
   catlist: any[] = [];
 
   panelOpenState: boolean = false;
-  
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -44,14 +44,14 @@ export class VerificacionEntradasComponent {
   parametersForm: any = {
     idProduct: 0,
     productDesc: '',
-    
+
     startDate: '',
     endDate: '',
 
     noEntrada: '',
 
     bPending: true
-    
+
   };
 
 // #endregion
@@ -80,7 +80,7 @@ export class VerificacionEntradasComponent {
 // #region MÉTODOS PARA EL FRONT
 
 exportDataToExcel( bCostos: boolean ): void {
-    
+
   this.bShowSpinner = true;
 
   var Newpagination: Pagination = {
@@ -131,7 +131,7 @@ exportDataToExcel( bCostos: boolean ): void {
     }
   })
 
-  
+
 }
 
     ////************************************************ */
@@ -158,7 +158,7 @@ exportDataToExcel( bCostos: boolean ): void {
       this.parametersForm.endDate = '';
       this.parametersForm.noEntrada = '';
       this.parametersForm.bPending = true;
-  
+
       this.fn_getInventarylogParaFirmar();
     }
 
@@ -168,8 +168,20 @@ exportDataToExcel( bCostos: boolean ): void {
   bShowActionAuthorization = false;
   fn_updateFirmaEntradaInventario( iOption: any, idHtml: string ){
 
+    let invSelectList = this.catlist.filter(function( item: any ) {
+      return ( item.select == true
+        &&
+        (
+          item.firmaVer == 0
+          || item.firmaMost == 0
+        )
+      )
+    });
+
+    console.log( invSelectList )
+
     if(!this.bShowActionAuthorization){
-      
+
       this.bShowActionAuthorization = true;
       this.servicesGServ.disableEnableButton( idHtml, true );
 
@@ -179,19 +191,19 @@ exportDataToExcel( bCostos: boolean ): void {
       , 'Si', 'No')
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
 
             var paramsMDL: any = {
               actionName: ( iOption == 1 ? 'opera_VeriEnt_Verification' : 'opera_VeriEnt_Mostrador' )
               , bShowAlert: false
             }
-          
+
             this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
             .afterClosed().subscribe({
-              next: ( resp ) =>{
-          
-                if( resp ){
+              next: ( auth_idUser ) =>{
+
+                if( auth_idUser ){
 
                   this.bShowActionAuthorization = false;
                   this.servicesGServ.disableEnableButton( idHtml, false );
@@ -199,28 +211,30 @@ exportDataToExcel( bCostos: boolean ): void {
                   this.bShowSpinner = true;
 
                   this.parametersForm.iOption = iOption;
+                  this.parametersForm.auth_idUser = auth_idUser;
+                  this.parametersForm.invSelectList = invSelectList;
 
                   this.productsServ.CUpdateFirmaEntradaInventario( this.parametersForm )
                   .subscribe({
                     next: (resp: any) => {
-            
+
                       if( resp.status === 0 ){
 
                         this.fn_getInventarylogParaFirmar();
-                          
+
                       }
 
                       this.servicesGServ.showAlertIA( resp );
-            
-                      
+
+
                       this.bShowSpinner = false;
-            
+
                     },
                     error: (ex) => {
-            
+
                       this.servicesGServ.showSnakbar( ex.error.message );
                       this.bShowSpinner = false;
-            
+
                     }
                   });
 
@@ -238,12 +252,12 @@ exportDataToExcel( bCostos: boolean ): void {
             this.bShowActionAuthorization = false;
             this.servicesGServ.disableEnableButton( idHtml, false );
           }
-          
+
         }
       });
 
     }
-          
+
   }
 
   fn_getInventarylogParaFirmar() {
@@ -301,14 +315,14 @@ exportDataToExcel( bCostos: boolean ): void {
     this.cbxProducts_Clear();
 
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.parametersForm.idProduct = ODataCbx.idProduct;
       this.parametersForm.productDesc = ODataCbx.barCode + ' - ' + ODataCbx.name;
-  
+
     }, 1);
-    
+
   }
 
   cbxProducts_Clear(){

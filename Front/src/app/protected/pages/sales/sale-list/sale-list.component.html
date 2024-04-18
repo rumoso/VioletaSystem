@@ -3,7 +3,7 @@
     <div class="row">
         <div class="col-md-12">
 
-                
+
 
             <div class="row">
 
@@ -28,14 +28,14 @@
                         <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                         <mat-date-range-picker #picker></mat-date-range-picker>
-                        
+
                         </mat-form-field>
                 </div>
 
             </div>
 
             <div class="row">
-                            
+
                 <div class="col-md-8">
                     <mat-label>Cliente: </mat-label>
                     <mat-form-field
@@ -49,7 +49,7 @@
                                 matInput
                                 [(ngModel)]="parametersForm.customerDesc"
                                 [matAutocomplete]="cbxCustomer"
-                                
+
                                 (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
 
                                 (click)="cbxCustomers_Clear()">
@@ -62,11 +62,11 @@
                             <mat-option *ngFor="let item of cbxCustomers" [value]="item">
                                 {{ item.name }}
                             </mat-option>
-            
+
                             <mat-option value="" *ngIf="parametersForm.customerResp.length > 0">
                                 {{ parametersForm.customerResp }}
                             </mat-option>
-            
+
                         </mat-autocomplete>
                     </mat-form-field>
                 </div>
@@ -84,7 +84,7 @@
                                 matInput
                                 [(ngModel)]="parametersForm.saleTypeDesc"
                                 [matAutocomplete]="cbxSaleType"
-                                
+
                                 (input)="cbxSalesType_Search()"
                                 (click)="cbxSalesType_Clear()"
                                 (focus)="cbxSalesType_Search()">
@@ -97,21 +97,21 @@
                             <mat-option *ngFor="let item of cbxSalesType" [value]="item">
                                 {{ item.name }}
                             </mat-option>
-            
+
                             <mat-option value="" *ngIf="cbxSalesType.length == 0 && parametersForm.saleTypeDesc">
                                 No se encontró nada...
                             </mat-option>
-            
+
                         </mat-autocomplete>
                     </mat-form-field>
                 </div>
-                
+
             </div>
-                
+
             <div class="row top10px">
                 <div class="col-md-3">
                     <div style="float: left;">
-                        
+
                         <button mat-raised-button
                         color="primary"
                         type="submit"
@@ -119,13 +119,13 @@
                         (click)="fn_getVentasListWithPage()">
                         <mat-icon matPrefix class="my-icon">search</mat-icon>
                         Buscar</button>
-                        
+
                         <button mat-raised-button
                         type="button"
                         (click)="fn_ClearFilters()">
                         <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                        limpiar</button>                
-                        
+                        limpiar</button>
+
                     </div>
                 </div>
 
@@ -145,7 +145,7 @@
 
         <div class="col-md-7">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
@@ -194,7 +194,7 @@
                 *ngIf="selectPrinter.idPrinter == 0">
                 <mat-icon matPrefix class="my-icon">print</mat-icon>
                 Seleccionar impresora</button>
-                
+
             </div>
         </div>
 
@@ -260,9 +260,16 @@
                                                 delete_outline
                                             </span>
 
+                                            <span class="material-icons manitaSobre colorGreen"
+                                            (click)="fn_ShowEditTaller( item.idSale )"
+                                            matTooltip="Editar sobre de taller"
+                                            *ngIf="item.idSaleType == 5">
+                                            edit
+                                            </span>
+
                                         </div>
                                     </td>
-                                    
+
                                     <td style="text-align:left;">
                                         <div style="width: 120px;">
                                             #{{ item.idSale }}
@@ -270,7 +277,7 @@
                                     </td>
 
                                     <td style="text-align:left;">{{ item.saleTypeDesc }}</td>
-                                    
+
                                     <td style="text-align: right;">{{ item.total | currency }}</td>
                                     <td style="text-align: right;">{{ item.abonado | currency }}</td>
                                     <td style="text-align: right;" [ngClass]="{'colorRed elemento-animado': item.pendingAmount > 0}">{{ ( item.pendingAmount ) | currency }}</td>
@@ -278,20 +285,20 @@
                                     <td class="textAlingCenter">
 
                                         <div style="width: 120px;">
-        
+
                                             <div class="row">
                                                 <div class="col-md-1">
                                                     <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                                    
+
                                                 </div>
                                                 <div class="col-md-10">
                                                     <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
                                                     <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
                                                 </div>
                                             </div>
-        
+
                                         </div>
-                                        
+
                                     </td>
 
                                     <td style="text-align:left;">
@@ -304,22 +311,22 @@
                                     <td style="text-align:left;">{{ item.sellerName }}</td>
 
                                 </tr>
-                                
+
                             </tbody>
-                            
+
                         </table>
                     </div>
 
                     <app-pagination *ngIf="saleslist" [IPagination]="pagination"
                                 (OPagination)="changePagination($event)">
                     </app-pagination>
-                    
+
                 </div>
 
             </div>
-    
+
         </div>
-    
+
     </div>
 
 </div>

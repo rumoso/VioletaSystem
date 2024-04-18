@@ -14,14 +14,14 @@ export class ProductsService {
   private idSucursal: number = environment.idSucursal;
 
   _api: string = 'api/products';
-  
+
   constructor(
     private http: HttpClient
     , private authServ: AuthService
   ) { }
 
   CGetProductsListWithPage( pagination: Pagination, parametersForm: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -81,7 +81,7 @@ export class ProductsService {
   }
 
   CGetInventaryListWithPage( pagination: Pagination, parametersForm: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -106,7 +106,7 @@ export class ProductsService {
   }
 
   CGetInventaryBySucursal( parametersForm: any ): Observable<ResponseGet> {
-    
+
     const data = {
       idUser: parametersForm.idUser
       , idSucursal: parametersForm.idSucursal
@@ -132,7 +132,7 @@ export class ProductsService {
   }
 
   CGetInventarylogByIdProductWithPage( pagination: Pagination, idProduct: number ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -165,7 +165,7 @@ export class ProductsService {
   }
 
   CGetPhysicalInventoryListWithPage( pagination: Pagination, parametersForm: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -186,7 +186,7 @@ export class ProductsService {
   }
 
   CGetPhysicalInventoryDetailListWithPage( pagination: Pagination, idPhysicalInventory: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -234,7 +234,7 @@ export class ProductsService {
   }
 
   CGetCatListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -255,7 +255,7 @@ export class ProductsService {
   }
 
   CGetRepComprasProveedorListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -268,7 +268,7 @@ export class ProductsService {
   }
 
   CGetInventarylogParaFirmar( pagination: Pagination, data: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -289,6 +289,38 @@ export class ProductsService {
     data.idSucursalLogON = this.idSucursal;
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateFirmaEntradaInventario`, data );
+  }
+
+  CSaveDevoluInventario( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/saveDevoluInventario`, data );
+  }
+
+  CGetInventarylog_devolution( pagination: Pagination, data: any ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getInventarylog_devolution`, data);
+
+  }
+
+  CUpdateFirmaDevoluInventario( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateFirmaDevoluInventario`, data );
   }
 
 }

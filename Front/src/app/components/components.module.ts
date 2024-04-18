@@ -6,6 +6,8 @@ import { SpinnerComponent } from './spinner/spinner.component';
 import { FormsModule } from '@angular/forms';
 import { MaterialModule } from '../material/material.module';
 import { AlertComponent } from './alert/alert.component';
+import { DecimalNumberDirective } from './directives/decimal-number.directive';
+import { DecimalNumberNegDirective } from './directives/decimal-number-neg.directive';
 
 
 
@@ -14,11 +16,15 @@ import { AlertComponent } from './alert/alert.component';
     ConfirmComponent,
     PaginationComponent,
     SpinnerComponent,
-    AlertComponent
+    AlertComponent,
+    DecimalNumberDirective,
+    DecimalNumberNegDirective
   ],
   exports:[
     SpinnerComponent,
-    PaginationComponent
+    PaginationComponent,
+    DecimalNumberDirective,
+    DecimalNumberNegDirective
   ],
   imports: [
     CommonModule,

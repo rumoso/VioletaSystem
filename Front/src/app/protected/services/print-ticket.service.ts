@@ -134,31 +134,58 @@ export class PrintTicketService {
 
       }
 
-      oLines = [];
-      var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 35 }
-      oLines.push( oLine );
-      var oLine: any = { aling: "Center", size: 5, style: "Bold", text: "CANTIDAD", iWith: 15 }
-      oLines.push( oLine );
-      var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PRECIO", iWith: 25 }
-      oLines.push( oLine );
-      var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "IMPORTE", iWith: 25 }
-      oLines.push( oLine );
-      oLinesP.push( { oLines: oLines } );
-
-      for(var i = 0; i < sale.dataDetail.length; i++){
-
-        var ODataDetail = sale.dataDetail[i];
+      if( sale.data.idSaleType == 5 ){
 
         oLines = [];
-        var oLine: any = { aling: "Left", size: 7, text: ODataDetail.productDesc, iWith: 35 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Center", size: 7, text: ODataDetail.cantidad, iWith: 15 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, text: USDollar.format( ODataDetail.precio ), iWith: 25 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, text: USDollar.format( ODataDetail.importe ), iWith: 25 }
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 100 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
+
+        for(var i = 0; i < sale.dataDetail.length; i++){
+
+          var ODataDetail = sale.dataDetail[i];
+
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, text: ODataDetail.productDesc, iWith: 100 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+        }
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }else{
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 35 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 5, style: "Bold", text: "CANTIDAD", iWith: 15 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PRECIO", iWith: 25 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "IMPORTE", iWith: 25 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        for(var i = 0; i < sale.dataDetail.length; i++){
+
+          var ODataDetail = sale.dataDetail[i];
+
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, text: ODataDetail.productDesc, iWith: 35 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Center", size: 7, text: ODataDetail.cantidad, iWith: 15 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( ODataDetail.precio ), iWith: 25 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( ODataDetail.importe ), iWith: 25 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+        }
 
       }
 
@@ -187,10 +214,10 @@ export class PrintTicketService {
       var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sale.data.saleTotal ), iWith: 25 }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
-      
+
       //SI ES DE CONSIGNACIÓN, DEBE FIRMAR EL CLIENTE
       if(sale.data.idSaleType == 4 || sale.data.idSaleType == 1){
-          
+
         oLines = [];
         var oLine: any = { aling: "Left", size: 7, text: " " }
         oLines.push( oLine );
@@ -405,7 +432,7 @@ export class PrintTicketService {
       if( sale != null ){
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 7, text: "OPERACIÓN: " 
+        var oLine: any = { aling: "Center", size: 7, text: "OPERACIÓN: "
         + ( sale.data.idSaleType == "1" ? "Abono al crédito #" : sale.data.idSaleType == "2" ? "Pago de la venta #" : sale.data.idSaleType == "3" ? "Abono al apartado #" : "Pago al #" ) +  sale.data.idSale }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
@@ -507,7 +534,7 @@ export class PrintTicketService {
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
       oLines = [];
-      var oLine: any = { aling: "Center", size: 7, text: "CONSERVE SU TICKET PARA DECLARACIONES" }
+      var oLine: any = { aling: "Center", size: 7, text: "CONSERVE SU TICKET PARA ACLARACIONES" }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
@@ -578,16 +605,20 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "VENTA:", iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "VENTA:", iWith: 33 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "EGRESOS:", iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "TALLER:", iWith: 33 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "INGRESO TOTAL:", iWith: 34 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.sales ), iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.sales ), iWith: 33 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.egresos ), iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.tallerSales ), iWith: 33 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.ingresoTotal ), iWith: 34 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
@@ -597,12 +628,16 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 9, style: "Bold", text: "INGRESO TOTAL:", iWith: 100 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "EGRESOS:", iWith: 50 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "INGRESO TOTAL:", iWith: 50 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 9, style: "Bold", text: USDollar.format( oCorteCaja.data.ingresoTotal ), iWith: 100 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.egresos ), iWith: 50 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.ingresoReal ), iWith: 50 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
@@ -778,14 +813,14 @@ export class PrintTicketService {
             var oLine: any = { aling: "Right", size: 7, text: USDollar.format( oEgresos.data[i].amount ), iWith: 30 }
             oLines.push( oLine );
             oLinesP.push( { oLines: oLines } );
-    
+
           }
 
         }
 
       }
 
-      
+
 
     }
     else if(type == "Egreso"){
@@ -1082,38 +1117,41 @@ export class PrintTicketService {
     }
 
     if(idPrinter > 0){
-      
+
       var oPrinterData = await this.printersServ.CGetPrinterByIDPromise( idPrinter );
 
       if( oPrinterData.status == 0 && oLinesP.length > 0 ){
-  
+
         let oPrinter: any = {
-          printerName: oPrinterData.data.printerName
+          printerName: oPrinterData.data.printerName,
+          maxMargen: oPrinterData.data.maxMargen
         };
-  
+
         let printParameters: any = {
           oPrinter: oPrinter,
           oLinesP: oLinesP
         }
-  
+
         console.log(printParameters);
-  
-        bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
-        bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
-  
+
+        //for( var pri = 0; pri < iCopy; pri++ ){
+          bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
+          bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
+        //}
+
         return new Promise((resolve, reject) => {
           resolve( bOK )
         });
-        
+
       }
 
     }
-    
+
 
   }
 
   CPrintTicketAwait( _api:string, data : any ): Promise<any> {
-    
+
     return new Promise((resolve, reject) => {
 
       this.http.post<ResponseGet>( `${ _api }/printTicket`, data)

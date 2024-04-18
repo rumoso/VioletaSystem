@@ -46,6 +46,9 @@ import { RepcomprasproveedorComponent } from './pages/reports/repcomprasproveedo
 import { VerificacionEntradasComponent } from './pages/operation/verificacion-entradas/verificacion-entradas.component';
 import { RepMobDineoelectComponent } from './pages/reports/rep-mob-dineoelect/rep-mob-dineoelect.component';
 import { MenupermisosComponent } from './pages/security/mdl/menupermisos/menupermisos.component';
+import { EditTallerComponent } from './pages/sales/mdl/edit-taller/edit-taller.component';
+import { SalesComponent } from './pages/reports/sales/sales.component';
+import { DevoluInventarioComponent } from './pages/operation/devolu-inventario/devolu-inventario.component';
 
 @NgModule({
     declarations: [
@@ -89,6 +92,9 @@ import { MenupermisosComponent } from './pages/security/mdl/menupermisos/menuper
     VerificacionEntradasComponent,
     RepMobDineoelectComponent,
     MenupermisosComponent,
+    EditTallerComponent,
+    SalesComponent,
+    DevoluInventarioComponent,
   ],
     imports: [
         CommonModule,

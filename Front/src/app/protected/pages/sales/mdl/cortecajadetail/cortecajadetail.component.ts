@@ -15,7 +15,7 @@ export class CortecajadetailComponent {
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // SECCIÓN DE VARIABLES
   //////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   bShowSpinner: boolean = false;
   idCorteCaja: any = 0;
 
@@ -26,6 +26,7 @@ export class CortecajadetailComponent {
     sales: 0,
     egresos: 0,
     ingresoTotal: 0,
+    ingresoReal: 0,
     pesos: 0,
     pesosCaja: 0,
     dolares: 0,

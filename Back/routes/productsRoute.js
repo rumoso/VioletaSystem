@@ -33,6 +33,10 @@ const {
    , getInventarylogParaFirmar
    , updateFirmaEntradaInventario
 
+   , saveDevoluInventario
+   , getInventarylog_devolution
+   , updateFirmaDevoluInventario
+
    } = require('../controllers/productsController');
 
    
@@ -222,7 +226,30 @@ router.post('/updateFirmaEntradaInventario', [
   check('iOption','Opción obligatoria').not().isEmpty(),
   check('iOption','La opción debe ser numérico').isNumeric(),
 
+  check('auth_idUser','Autorizante obligatorio').not().isEmpty(),
+  check('auth_idUser','El Autorzante debe ser numérico').isNumeric(),
+
   validarCampos
 ], updateFirmaEntradaInventario);
+
+router.post('/saveDevoluInventario', [
+
+  check('idProduct','Producto obligatorio').not().isEmpty(),
+  check('idProduct','El producto debe ser numérico').isNumeric(),
+
+  validarCampos
+], saveDevoluInventario);
+
+router.post('/getInventarylog_devolution', getInventarylog_devolution);
+
+router.post('/updateFirmaDevoluInventario', [
+
+  check('auth_idUser','Autorizante obligatorio').not().isEmpty(),
+  check('auth_idUser','El Autorzante debe ser numérico').isNumeric(),
+
+  validarCampos
+], updateFirmaDevoluInventario);
+
+
 
 module.exports = router;

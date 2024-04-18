@@ -1,0 +1,89 @@
+<div style="padding: 10px;">
+
+  <button mat-icon-button
+          style="position: absolute; top: 10px; right: 10px;"
+          (click)="fn_CerrarMDL(0)">
+      <mat-icon>close</mat-icon>
+  </button>
+
+  <div class="row">
+
+      <div class="col-md-12">
+
+          <!-- <h1>Venta de {{ ODataP.saleTypeDesc }} por {{ ODataP.total | currency }}, Saldo a cubrir </h1> -->
+
+      </div>
+
+  </div>
+
+  <div class="row top10px">
+      <div class="col-md-12">
+          <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+              MODIFICACIÓN DE SOBRE DE TALLER
+          </div>
+      </div>
+  </div>
+
+  <div class="row">
+
+    <div class="col-md-12">
+        <mat-form-field class="example-full-width with100 top20px">
+            <mat-label>Descripción</mat-label>
+            <textarea #tbxDescription
+            matInput
+            cdkTextareaAutosize
+            placeholder="Ingrese la descripción del sobre"
+            [(ngModel)]="oDataSale.descriptionTaller"></textarea>
+        </mat-form-field>
+    </div>
+
+</div>
+
+  <div class="row top10px">
+
+    <div class="col-md-6">
+    </div>
+
+      <div class="col-md-6">
+          <mat-form-field fxLayout.xs="column" class="with100">
+              <mat-label>Precio del sobre</mat-label>
+              <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+              <input
+              matInput
+              class="textAlingRight"
+              type="text"
+              [(ngModel)]="oDataSale.importe"
+              appDecimalNumber>
+          </mat-form-field>
+      </div>
+
+  </div>
+
+  <div class="row top10px">
+      <div class="col-md-12">
+          <div style="float: left;">
+
+              <button mat-raised-button
+              color="primary"
+              type="submit"
+              class="marginRight10px"
+
+              (click)="fn_editTaller()"
+              *ngIf="this.ODataP.idSale.length > 0 && oDataSale.importe > 0 && oDataSale.descriptionTaller.length > 0">
+              <mat-icon matPrefix class="my-icon">save</mat-icon>
+              Editar sobre de taller</button>
+
+              <button mat-raised-button
+              type="button"
+              class="marginRight10px"
+              (click)="fn_CerrarMDL(0)">
+              <mat-icon matPrefix class="my-icon">close</mat-icon>
+              Cerrar</button>
+
+          </div>
+      </div>
+  </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

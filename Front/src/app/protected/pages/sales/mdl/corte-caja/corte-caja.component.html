@@ -7,13 +7,13 @@
     </button>
 
     <div class="row">
-                                    
+
         <div class="col-md-12">
-            
+
             <!-- <h1>Venta de {{ ODataP.saleTypeDesc }} por {{ ODataP.total | currency }}, Saldo a cubrir </h1> -->
 
         </div>
-            
+
     </div>
 
     <div class="row top10px">
@@ -30,29 +30,29 @@
     <div class="row top10px">
         <div class="col-md-12">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
                 class="marginRight10px"
-                
+
                 (click)="fn_InsertCorteCaja()"
-                *ngIf="preCorteCaja.sales > 0">
+                *ngIf="preCorteCaja.sales > 0 || preCorteCaja.tallerSales > 0">
                 <mat-icon matPrefix class="my-icon">save</mat-icon>
                 Guardar Corte de Caja</button>
-                
+
                 <button mat-raised-button
                 type="button"
                 class="marginRight10px"
                 (click)="fn_CerrarMDL(0)">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
 
-    
+
 
     <div class="row top10px">
         <div class="col-md-12">
@@ -63,8 +63,8 @@
     </div>
 
     <div class="row top10px">
-                            
-        <div class="col-md-6">
+
+        <div class="col-md-4">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>VENTA</mat-label>
                 <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
@@ -76,30 +76,54 @@
             </mat-form-field>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>EGRESOS</mat-label>
+                <mat-label>TALLER</mat-label>
                 <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
                 <input
                 matInput
                 class="textAlingRight"
-                [(ngModel)]="preCorteCaja.egresos"
+                [(ngModel)]="preCorteCaja.tallerSales"
                 readonly>
             </mat-form-field>
         </div>
 
+        <div class="col-md-4">
+          <mat-form-field fxLayout.xs="column" class="with100">
+              <mat-label>INGRESO TOTAL</mat-label>
+              <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+              <input
+              matInput
+              class="textAlingRight"
+              [(ngModel)]="preCorteCaja.ingresoTotal"
+              readonly>
+          </mat-form-field>
+      </div>
+
     </div>
 
     <div class="row top10px">
-                            
-        <div class="col-md-12">
+
+      <div class="col-md-6">
+          <mat-form-field fxLayout.xs="column" class="with100">
+              <mat-label>EGRESOS</mat-label>
+              <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+              <input
+              matInput
+              class="textAlingRight"
+              [(ngModel)]="preCorteCaja.egresos"
+              readonly>
+          </mat-form-field>
+      </div>
+
+        <div class="col-md-6">
             <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>INGRESO TOTAL</mat-label>
+                <mat-label>INGRESO REAL</mat-label>
                 <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
                 <input
                 matInput
                 class="textAlingRight"
-                [(ngModel)]="preCorteCaja.ingresoTotal"
+                [(ngModel)]="preCorteCaja.ingresoReal"
                 readonly>
             </mat-form-field>
         </div>
@@ -120,7 +144,7 @@
     </div>
 
     <div class="row top10px">
-                            
+
         <div class="col-md-6">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>PESOS</mat-label>
@@ -149,7 +173,7 @@
     </div>
 
     <div class="row top10px">
-                            
+
         <div class="col-md-6">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>DÓLARES ( {{ preCorteCaja.dolares | currency }} - TC:{{ preCorteCaja.fxRate | currency }}  )</mat-label>
@@ -179,7 +203,7 @@
     </div>
 
     <div class="row top10px">
-                            
+
         <div class="col-md-6">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>VOUCHERS</mat-label>
@@ -209,7 +233,7 @@
     </div>
 
     <div class="row top10px">
-                            
+
         <div class="col-md-6">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>TRANSFERENCIAS</mat-label>
@@ -239,7 +263,7 @@
     </div>
 
     <div class="row top10px">
-                            
+
         <div class="col-md-6">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>DINERO ELECTRÓNICO</mat-label>
@@ -271,7 +295,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                CONCUSIÓN
+              CONCLUSIÓN
             </div>
         </div>
     </div>
@@ -280,7 +304,7 @@
 
         <div class="col-md-6">
         </div>
-                            
+
         <div class="col-md-6">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>DIFERENCIA</mat-label>
@@ -297,7 +321,7 @@
     </div>
 
     <div class="row">
-                                    
+
         <div class="col-md-12">
             <mat-form-field class="example-full-width with100 top20px">
                 <mat-label>Comentarios</mat-label>
@@ -314,28 +338,28 @@
     <div class="row top10px">
         <div class="col-md-12">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
                 class="marginRight10px"
-                
+
                 (click)="fn_InsertCorteCaja()"
-                *ngIf="preCorteCaja.sales > 0">
+                *ngIf="preCorteCaja.sales > 0 || preCorteCaja.tallerSales > 0">
                 <mat-icon matPrefix class="my-icon">save</mat-icon>
                 Guardar Corte de Caja</button>
-                
+
                 <button mat-raised-button
                 type="button"
                 class="marginRight10px"
                 (click)="fn_CerrarMDL(0)">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

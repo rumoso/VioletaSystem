@@ -16,7 +16,7 @@
         <div class="col-md-12">
 
             <div class="row">
-                            
+
                 <div class="col-md-12">
                     <mat-label>Vendedor: </mat-label>
                     <mat-form-field
@@ -30,7 +30,7 @@
                                 matInput
                                 [(ngModel)]="salesHeaderForm.sellerDesc"
                                 [matAutocomplete]="cbxSeller"
-                                
+
                                 (keyup)="CBXskeyup( 2, cbxSellerCBX.value )"
 
                                 (click)="cbxSellers_Clear()">
@@ -43,11 +43,11 @@
                             <mat-option *ngFor="let item of cbxSellers" [value]="item">
                                 {{ item.name }}
                             </mat-option>
-            
+
                             <mat-option value="" *ngIf="salesHeaderForm.sellerDesc.length > 0 && salesHeaderForm.sellerResp.length > 0">
                                 {{ salesHeaderForm.sellerResp }}
                             </mat-option>
-            
+
                         </mat-autocomplete>
                     </mat-form-field>
                 </div>
@@ -55,7 +55,7 @@
             </div>
 
             <div class="row">
-                            
+
                 <div class="col-md-10">
                     <mat-label>Cliente: </mat-label>
                     <span class="material-icons manitaSobre colorGreen"
@@ -78,7 +78,7 @@
                                 matInput
                                 [(ngModel)]="salesHeaderForm.customerDesc"
                                 [matAutocomplete]="cbxCustomer"
-                                
+
                                 (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
 
                                 (click)="cbxCustomers_Clear()">
@@ -91,11 +91,11 @@
                             <mat-option *ngFor="let item of cbxCustomers" [value]="item">
                                 {{ item.name }}
                             </mat-option>
-            
+
                             <mat-option value="" *ngIf="salesHeaderForm.customerResp.length > 0 && salesHeaderForm.customerResp.length > 0">
                                 {{ salesHeaderForm.customerResp }}
                             </mat-option>
-            
+
                         </mat-autocomplete>
                     </mat-form-field>
                 </div>
@@ -113,7 +113,7 @@
                                 matInput
                                 [(ngModel)]="salesHeaderForm.saleTypeDesc"
                                 [matAutocomplete]="cbxSaleType"
-                                
+
                                 (input)="cbxSalesType_Search()"
                                 (click)="cbxSalesType_Clear()"
                                 (focus)="cbxSalesType_Clear(); cbxSalesType_Search()">
@@ -126,11 +126,11 @@
                             <mat-option *ngFor="let item of cbxSalesType" [value]="item">
                                 {{ item.name }}
                             </mat-option>
-            
+
                             <mat-option value="" *ngIf="cbxSalesType.length == 0 && salesHeaderForm.saleTypeDesc">
                                 No se encontró nada...
                             </mat-option>
-            
+
                         </mat-autocomplete>
                     </mat-form-field>
                 </div>
@@ -141,7 +141,7 @@
                 <div class="col-md-12">
 
                     <div class="row" *ngIf="salesHeaderForm.idSaleType == 5">
-                            
+
                         <div class="col-md-10">
                             <mat-form-field class="example-full-width with100">
                                 <mat-label>Descripción</mat-label>
@@ -167,7 +167,7 @@
                     </div>
 
                     <div class="row" *ngIf="salesHeaderForm.idSale.length == 0 && salesHeaderForm.idSaleType != 5">
-                        
+
                         <div class="col-md-4">
                             <mat-form-field fxLayout.xs="column" class="with100">
                                 <mat-label>Código de barras</mat-label>
@@ -194,7 +194,7 @@
                                         matInput
                                         [(ngModel)]="salesDetailForm.productDesc"
                                         [matAutocomplete]="cbxProduct"
-                                        
+
                                         (input)="cbxProducts_Search()"
                                         (click)="cbxProducts_Clear()">
                                         <button *ngIf="salesDetailForm.productDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxProducts_Clear()">
@@ -206,11 +206,11 @@
                                     <mat-option *ngFor="let item of cbxProducts" [value]="item">
                                         <mat-icon matPrefix class="my-icon">qr_code</mat-icon>{{ item.nameConcat }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxProducts.length == 0 && salesDetailForm.productDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
                         </div>
@@ -218,8 +218,8 @@
                     </div>
 
                     <div class="row" *ngIf="salesHeaderForm.idSale.length == 0 && salesHeaderForm.idSaleType != 5">
-                        
-                        <div class="col-md-4">
+
+                        <div class="col-md-3">
                             <mat-form-field class="with100">
                                 <mat-label>Cantidad</mat-label>
                                 <input #tbxCantidad
@@ -232,38 +232,56 @@
                             </mat-form-field>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <mat-form-field class="with100">
                                 <mat-label>Precio unitario</mat-label>
                                 <input matInput currencyMask placeholder="Ingrese el precio unitario"
                                 #precioUnitario
                                 class="textAlingRight"
                                 [(ngModel)]="salesDetailForm.precioUnitario"
-                                
-                                readonly="true">
+                                (click)="fn_habilitarPrice()"
+                                (keyup.enter)="ev_fn_cbxPrecio_keyup_enter($event)"
+                                [readOnly]="!isPrecioUnitarioEditable">
                             </mat-form-field>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <mat-form-field class="with100">
-                                <mat-label>Descuento</mat-label>
-                                <input #cbxDescuento
+                                <mat-label>Descuento en %</mat-label>
+                                <input #cbxDescuentoEnPorcentaje
                                 matInput
-                                placeholder="Ingrese un descuento"
+                                placeholder="Ingrese un descuento en %"
                                 type="number"
                                 class="textAlingRight"
                                 [(ngModel)]="salesDetailForm.descuento"
-                                (keyup.enter)="addSaleDetail()">
+                                (keyup.enter)="ev_fn_cbxDescuentoEnPorcentaje_keyup_enter($event)"
+                                appDecimalNumber>
                             </mat-form-field>
                         </div>
-                        
+
+                        <div class="col-md-3">
+                          <mat-form-field class="with100">
+                              <mat-label>Descuento en $</mat-label>
+                              <input #cbxDescuentoEnPesos
+                              matInput
+                              placeholder="Ingrese un descuento en $"
+                              type="number"
+                              class="textAlingRight"
+                              [(ngModel)]="salesDetailForm.descuentoEnPesos"
+                              (keyup.enter)="fn_changeDescuentoEnPesos()"
+                              (blur)="fn_changeDescuentoEnPesos()"
+                              appDecimalNumberNeg>
+                          </mat-form-field>
+                      </div>
+
                     </div>
 
                     <div class="row top10px">
                         <div class="col-md-12">
                             <div style="float: left;">
-                                
+
                                 <button mat-raised-button
+                                #btnAdd
                                 color="primary"
                                 type="submit"
                                 class="marginRight10px top10px"
@@ -272,7 +290,7 @@
                                 *ngIf="salesHeaderForm.idSale.length == 0">
                                 <mat-icon matPrefix class="my-icon">add</mat-icon>
                                 Agregar</button>
-                                
+
                                 <button mat-raised-button
                                 type="button"
                                 class="marginRight10px top10px"
@@ -365,7 +383,7 @@
                                 <mat-icon matPrefix class="my-icon">print</mat-icon>
                                 Imprimir</button>
 
-                                
+
                             </div>
                         </div>
                     </div>
@@ -400,7 +418,7 @@
                                             <th class="textAlingRight padding-th">Precio</th>
                                             <th class="textAlingRight padding-th">Importe</th>
                                         </thead>
-    
+
                                         <tbody>
                                             <tr *ngFor="let item of salesHeaderForm.saleDetail; let i = index">
 
@@ -408,8 +426,8 @@
                                                 <td class="textAlingCenter padding-th">
                                                     <div style="width: 80px;">
                                                         <mat-checkbox style="margin-top: -50px;"
-                                                        *ngIf="dataStone.idSaleType == 4 
-                                                        && item.cantidad >= item.consCantidad 
+                                                        *ngIf="dataStone.idSaleType == 4
+                                                        && item.cantidad >= item.consCantidad
                                                         && item.consCantidad > 0"
                                                         class="manitaSobre"
                                                         [(ngModel)]="item.select"></mat-checkbox>
@@ -436,7 +454,7 @@
                                                     type="number"
                                                     [(ngModel)]="item.consCantidad"
                                                     >
-                
+
                                                 </td>
 
                                                 <td class="textAlingCenter padding-th" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">
@@ -449,7 +467,7 @@
                                                     [(ngModel)]="item.consDescuento"
                                                     (ngModelChange)="onConsDescuentoChange($event, item)"
                                                     >
-                
+
                                                 </td>
 
                                                 <td class="textAlingLeft padding-th">
@@ -461,7 +479,7 @@
                                                             <label style="margin-left: 10px;">{{ item.barCode }}</label>
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </td>
                                                 <td class="textAlingLeft padding-th">{{ item.productDesc }}</td>
                                                 <td class="textAlingRight padding-th">{{ item.cantidad }}</td>
@@ -472,20 +490,20 @@
                                                 <td class="textAlingRight padding-th">{{ item.precio | currency }}</td>
                                                 <td class="textAlingRight padding-th">{{ item.importe | currency }}</td>
                                             </tr>
-                                            
+
                                         </tbody>
-                                        
+
                                     </table>
                                 </div>
-                                
+
                             </div>
 
                         </div>
 
                         <div class="row">
-                            
+
                             <div class="col-md-8">
-                                
+
                             </div>
 
                             <div class="col-md-4">
@@ -498,22 +516,22 @@
                                             matInput
                                             currencyMask
                                             placeholder="TOTAL"
-                                            
+
                                             [(ngModel)]="salesHeaderForm.total"
-                                            
+
                                             readonly="true">
                                         </mat-form-field>
                                     </div>
                                 </div>
 
                             </div>
-        
+
                         </div>
 
                     </div>
 
                     <div class="row divSection" *ngIf="salesHeaderForm.paymentList?.length > 0">
-                        
+
                         <div class="col-md-12">
 
                             <div class="row" style="margin-top: -30px;">
@@ -537,13 +555,13 @@
                                         <th class="textAlingCenter padding-th">Fecha</th>
 
                                     </thead>
-                
+
                                     <tbody>
                                         <tr *ngFor="let item of salesHeaderForm.paymentList; let i = index">
 
                                             <td class="textAlingLeft">
                                                 <div style="width: 150px;">
-        
+
                                                     <span class="material-icons manitaSobre colorRed"
                                                         matTooltip="Cancelar pago"
                                                         *ngIf="item.active && item.iPagoCortado == 0"
@@ -564,7 +582,7 @@
                                                     </span>
 
                                                     {{ item.idPayment }}
-                                                    
+
                                                 </div>
                                             </td>
 
@@ -576,25 +594,25 @@
                                             <td style="text-align: right;" *ngIf="interface.showReferencia">{{ item.referencia }}</td>
 
                                             <td style="text-align:left;">{{ item.sellerName }}</td>
-                
+
                                             <td class="textAlingCenter">
-                
+
                                                 <div class="row">
                                                     <div class="col-md-12">
                                                         <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
                                                         <label style="margin-left: 10px;">{{ item.createDateString }}</label>
                                                     </div>
                                                 </div>
-                                                
+
                                             </td>
-                
+
                                         </tr>
-                                        
+
                                     </tbody>
-                                    
+
                                 </table>
                             </div>
-                
+
                             <app-pagination *ngIf="salesHeaderForm.paymentList " [IPagination]="pagination"
                                 (OPagination)="changePagination($event)">
                             </app-pagination>
@@ -603,7 +621,7 @@
                     </div>
 
                     <div class="row divSection" *ngIf="salesHeaderForm.ConsHistoryList?.length > 0">
-                        
+
                         <div class="col-md-12">
 
                             <div class="row" style="margin-top: -30px;">
@@ -617,7 +635,7 @@
                             <div class="row top10px">
                                 <div class="col-md-12">
                                     <div style="float: left;">
-                                        
+
                                         <button mat-raised-button
                                         color="primary"
                                         type="submit"
@@ -626,8 +644,8 @@
                                         *ngIf="idSale.length > 0 && selectPrinter.idPrinter > 0">
                                         <mat-icon matPrefix class="my-icon">print</mat-icon>
                                         Imprimir</button>
-    
-                                        
+
+
                                     </div>
                                 </div>
                             </div>
@@ -642,37 +660,87 @@
                                         <th class="textAlingCenter padding-th">Fecha</th>
 
                                     </thead>
-                
+
                                     <tbody>
                                         <tr *ngFor="let item of salesHeaderForm.ConsHistoryList; let i = index">
 
                                             <td class="textAlingLeft padding-th">{{ item.name }}</td>
-                                            
+
                                             <td class="textAlingRight padding-th">{{ item.consCantidad }}</td>
                                             <td class="textAlingLeft padding-th">{{ item.description }}</td>
 
                                             <td class="textAlingCenter padding-th">
-                
+
                                                 <div class="row">
                                                     <div class="col-md-12">
                                                         <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
                                                         <label style="margin-left: 10px;">{{ item.createDateString }}</label>
                                                     </div>
                                                 </div>
-                                                
+
                                             </td>
 
                                         </tr>
-                                        
+
                                     </tbody>
-                                    
+
                                 </table>
                             </div>
-                
+
                         </div>
 
                     </div>
-                
+
+                    <div class="row divSection" *ngIf="salesHeaderForm.autorizacionesList?.length > 0">
+
+                      <div class="col-md-12">
+
+                          <div class="row" style="margin-top: -30px;">
+                              <div class="col-md-12">
+                                  <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+                                      Autorizaciones
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div class="table-responsive top10px">
+                              <table class="table table-hover">
+                                  <thead>
+                                      <th class="textAlingLeft padding-th">Descripción</th>
+                                      <th class="textAlingLeft padding-th">Usuario</th>
+                                      <th class="textAlingCenter padding-th">Fecha</th>
+
+                                  </thead>
+
+                                  <tbody>
+                                      <tr *ngFor="let item of salesHeaderForm.autorizacionesList; let i = index">
+
+                                          <td class="textAlingLeft padding-th">{{ item.description }}</td>
+
+                                          <td class="textAlingLeft padding-th">{{ item.userName }}</td>
+
+                                          <td class="textAlingCenter padding-th">
+
+                                              <div class="row">
+                                                  <div class="col-md-12">
+                                                      <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+                                                      <label style="margin-left: 10px;">{{ item.createDateString }}</label>
+                                                  </div>
+                                              </div>
+
+                                          </td>
+
+                                      </tr>
+
+                                  </tbody>
+
+                              </table>
+                          </div>
+
+                      </div>
+
+                  </div>
+
                 </div>
             </div>
 
@@ -702,13 +770,13 @@
                         </mat-form-field>
                 </div>
 
-                
+
             </div> -->
 
             <!-- <div class="row top10px">
                 <div class="col-md-12">
                     <div style="float: left;">
-                        
+
                         <button mat-raised-button
                         color="primary"
                         type="submit"
@@ -716,19 +784,19 @@
                         (click)="fn_getProductsListWithPage()">
                         <mat-icon matPrefix class="my-icon">search</mat-icon>
                         Buscar</button>
-                        
+
                         <button mat-raised-button
                         type="button"
                         (click)="parametersForm_Clear()">
                         <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                        limpiar</button>                
-                        
+                        limpiar</button>
+
                     </div>
                 </div>
             </div> -->
-    
+
         </div>
-    
+
     </div>
 
 </div>

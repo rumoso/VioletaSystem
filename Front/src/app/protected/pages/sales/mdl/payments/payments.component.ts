@@ -19,7 +19,7 @@ export class PaymentsComponent {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE VARIABLES
 //////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   bShowSpinner: boolean = false;
   bPago: boolean = false;
 
@@ -101,6 +101,9 @@ ngOnInit(): void {
   this.paymentForm.idCustomer = this.ODataP.idCustomer;
 
   if(this.ODataP.pendingAmount > 0){
+
+    this.ODataP.pendingAmount = parseFloat( this.ODataP.pendingAmount.toFixed(2) );
+
     this.pendingAmount = this.ODataP.pendingAmount;
     this.saldoACubrir = this.ODataP.pendingAmount;
     this.showPending = true;
@@ -125,7 +128,7 @@ async fn_savePayment() {
     this.pendingAmount == 0 ){
       if(!this.bPago){
         this.bPago = true;
-  
+
         this.servicesGServ.showDialog('¿Estás seguro?'
         , 'Está a punto de guardar el pago'
         , '¿Desea continuar?'
@@ -133,34 +136,34 @@ async fn_savePayment() {
         .afterClosed().subscribe({
           next: async( resp ) =>{
             if(resp){
-              
+
               this.bPago = false;
-            
+
               this.bShowSpinner = true;
-  
+
               this.salesServ.CInsertPayments( this.paymentList, this.paymentForm.idCaja, this.paymentForm.idCustomer )
                 .subscribe({
                   next: async (resp: ResponseDB_CRUD) => {
-          
+
                     if( resp.status === 0 ){
-                      this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, this.paymentList.length);
+                      this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, this.paymentList.length, '');
                       console.log(this.idSale)
                       this.dialogRef.close( this.idSale );
                     }
-          
+
                     this.servicesGServ.showAlertIA( resp );
                     this.bShowSpinner = false;
-  
-          
+
+
                   },
                   error: (ex) => {
-          
+
                     this.servicesGServ.showSnakbar( ex.error.message );
                     this.bShowSpinner = false;
-          
+
                   }
                 });
-  
+
             }
             else{
               this.bPago = false;
@@ -253,11 +256,12 @@ event_fn_Paga( event: any ){
         this.tbxReferencia.nativeElement.focus();
 
       }else if( this.paymentForm.idFormaPago == 5 ){
-        
+
         if( this.ev_getSumElectronicCurrency() >= this.paymentForm.paga ){
-          
+
           this.pendingAmount -= this.paymentForm.paga;
-          
+          this.pendingAmount = parseFloat( this.pendingAmount.toFixed(2) );
+
           this.addPayment();
 
           this.paymentForm.idFormaPago = 0;
@@ -267,13 +271,13 @@ event_fn_Paga( event: any ){
           this.paymentForm.idFxRate = 0;
           this.paymentForm.fxRate = 0;
           this.paymentForm.electronicMoneySum = 0;
-      
+
           this.paymentForm.paga = 0;
           this.paymentForm.pagaF = 0;
-      
+
           this.paymentForm.pagaCon = 0;
           this.paymentForm.cambio = 0;
-      
+
           this.paymentForm.referencia = '';
 
           //this.cbxFormasPagoC.nativeElement.focus();
@@ -281,7 +285,7 @@ event_fn_Paga( event: any ){
           this.fn_savePayment();
 
         }else{
-          this.servicesGServ.showAlert('W', 'Alerta!', "Solo tienes " + ( this.ev_getSumElectronicCurrency() ) + " de dinero electrónico", true);  
+          this.servicesGServ.showAlert('W', 'Alerta!', "Solo tienes " + ( this.ev_getSumElectronicCurrency() ) + " de dinero electrónico", true);
         }
 
       }
@@ -293,7 +297,7 @@ event_fn_Paga( event: any ){
     }
 
   }
-  
+
 }
 
 event_fn_PagaCon_GetCambio( event: any ){
@@ -304,12 +308,13 @@ event_fn_PagaCon_GetCambio( event: any ){
       this.paymentForm.pagaF = this.paymentForm.pagaCon;
       this.paymentForm.pagaCon = this.paymentForm.pagaCon * this.paymentForm.fxRate;
     }
-    
+
     if( this.paymentForm.paga > 0 && this.paymentForm.pagaCon >= this.paymentForm.paga && this.paymentForm.paga <= this.pendingAmount ){
       this.paymentForm.cambio = this.paymentForm.pagaCon - this.paymentForm.paga;
 
       this.pendingAmount -= this.paymentForm.paga;
-      
+      this.pendingAmount = parseFloat( this.pendingAmount.toFixed(2) );
+
 
       this.addPayment();
 
@@ -318,14 +323,14 @@ event_fn_PagaCon_GetCambio( event: any ){
 
       this.tbxCambio.nativeElement.focus();
     }else{
-      this.servicesGServ.showAlert('W', 'Alerta!', 
+      this.servicesGServ.showAlert('W', 'Alerta!',
       !( this.paymentForm.pagaCon >= this.paymentForm.paga ) ? "No está cubriendo el monto a pagar: " + this.paymentForm.paga :
         this.paymentForm.paga == 0 ? "Debe indicar cuanto paga" :
         this.paymentForm.paga > this.pendingAmount ? "Saldas con " + this.pendingAmount : "", true);
     }
 
   }
-  
+
 }
 
 event_fn_Referencia( event: any ){
@@ -338,6 +343,7 @@ event_fn_Referencia( event: any ){
       if( this.paymentForm.idFormaPago > 0 && this.paymentForm.paga > 0 && this.paymentForm.paga <= this.pendingAmount ){
 
         this.pendingAmount -= this.paymentForm.paga;
+        this.pendingAmount = parseFloat( this.pendingAmount.toFixed(2) );
 
         this.addPayment();
 
@@ -348,13 +354,13 @@ event_fn_Referencia( event: any ){
         this.paymentForm.idFxRate = 0;
         this.paymentForm.fxRate = 0;
         this.paymentForm.electronicMoneySum = 0;
-    
+
         this.paymentForm.paga = 0;
         this.paymentForm.pagaF = 0;
-    
+
         this.paymentForm.pagaCon = 0;
         this.paymentForm.cambio = 0;
-    
+
         this.paymentForm.referencia = '';
 
         // if(this.pendingAmount > 0){
@@ -369,7 +375,7 @@ event_fn_Referencia( event: any ){
 
       }
       else{
-        this.servicesGServ.showAlert('W', 'Alerta!', 
+        this.servicesGServ.showAlert('W', 'Alerta!',
         this.paymentForm.idFormaPago == 0 ? "Selecciona forma de pago" :
         this.paymentForm.paga == 0 ? "Debe indicar cuanto paga" :
         this.paymentForm.paga > this.pendingAmount ? "Saldas con " + this.pendingAmount : "", true);
@@ -378,7 +384,7 @@ event_fn_Referencia( event: any ){
     }
 
   }
-  
+
 }
 
 event_fn_Cambio( event: any ){
@@ -392,13 +398,13 @@ event_fn_Cambio( event: any ){
       this.paymentForm.idFxRate = 0;
       this.paymentForm.fxRate = 0;
       this.paymentForm.electronicMoneySum = 0;
-  
+
       this.paymentForm.paga = 0;
       this.paymentForm.pagaF = 0;
-  
+
       this.paymentForm.pagaCon = 0;
       this.paymentForm.cambio = 0;
-  
+
       this.paymentForm.referencia = '';
 
       // if(this.pendingAmount > 0){
@@ -411,10 +417,10 @@ event_fn_Cambio( event: any ){
 
       this.fn_savePayment()
 
-      
-  
+
+
   }
-  
+
 }
 
 
@@ -426,6 +432,7 @@ event_fnClick_DeleteSalesPaymentFromList( index: number ){
   var acumulado = this.paymentList.reduce((sum: any, x: any) => sum + x.paga, 0);
 
   this.pendingAmount = this.saldoACubrir - acumulado;
+  this.pendingAmount = parseFloat( this.pendingAmount.toFixed(2) );
 }
 
 ev_showInterface(){

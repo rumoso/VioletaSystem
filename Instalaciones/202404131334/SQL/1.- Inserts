@@ -1,0 +1,19 @@
+INSERT INTO `menus` (`idMenu`, `createDate`, `idMenuPadre`, `lugar`, `name`, `description`, `icon`, `linkCat`, `linkList`, `imgDash`, `imgDashSize`, `idAplication`, `active`)
+VALUES (NULL, '2024-04-13 13:18:17', '19', '3', 'Devolución de inventario', 'Sección para devolver inventario del mostrador', NULL, NULL, 'devolu_inv', 'assets/img/icons/backInv.png', '80', '1', '1');
+
+INSERT INTO `actions` (`keyx`, `idAction`, `createDate`, `idActionSection`, `name`, `nameHtml`, `description`, `active`)
+VALUES (NULL, '11513', '2024-04-13 14:07:50', '6', 'prod_DevolutionInventario', 'Devolución de inventario ( REQUIERE CÓDIGO DE AUTORIZACIÓN )', 'Con este permiso se pueden crear devoluciones de productos', '1');
+
+INSERT INTO `actions` (`keyx`, `idAction`, `createDate`, `idActionSection`, `name`, `nameHtml`, `description`, `active`)
+VALUES (NULL, '11514', '2024-04-13 14:07:50', '6', 'prod_VeryDevolutionInventario', 'Verificar devolución de inventario ( REQUIERE CÓDIGO DE AUTORIZACIÓN )', 'Con este permiso se pueden verificar las devoluciones de productos', '1');
+
+
+ CREATE TABLE IF NOT EXISTS `db_violetasystem`.`inventarylog_devolution` (
+          `keyx` BIGINT(20) NOT NULL AUTO_INCREMENT,
+          `idDevolu` BIGINT(20) NOT NULL,
+          `createDate` DATETIME NULL DEFAULT NULL,
+          `inventarylog` BIGINT(20) NULL DEFAULT NULL,
+          UNIQUE INDEX `keyx_UNIQUE` (`keyx` ASC),
+          PRIMARY KEY (`idDevolu`))
+        ENGINE = InnoDB
+        DEFAULT CHARACTER SET = utf8

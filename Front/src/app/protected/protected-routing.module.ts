@@ -20,6 +20,8 @@ import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.co
 import { RepcomprasproveedorComponent } from "./pages/reports/repcomprasproveedor/repcomprasproveedor.component";
 import { VerificacionEntradasComponent } from "./pages/operation/verificacion-entradas/verificacion-entradas.component";
 import { RepMobDineoelectComponent } from "./pages/reports/rep-mob-dineoelect/rep-mob-dineoelect.component";
+import { SalesComponent } from "./pages/reports/sales/sales.component";
+import { DevoluInventarioComponent } from "./pages/operation/devolu-inventario/devolu-inventario.component";
 
 const routes: Routes = [
     {
@@ -113,6 +115,14 @@ const routes: Routes = [
         {
           path: 'rep_mod_dineroelect',
           component: RepMobDineoelectComponent
+        },
+        {
+          path: 'rep_sales',
+          component: SalesComponent
+        },
+        {
+          path: 'devolu_inv',
+          component: DevoluInventarioComponent
         },
 
       ]

@@ -32,7 +32,7 @@ export class CorteCajaComponent {
   @ViewChild('tbxComentarios') tbxComentarios!: ElementRef;
 
 
-  
+
   idUserLogON: number = 0;
   bShowSpinner: boolean = false;
   idCaja: number = 0;
@@ -42,8 +42,10 @@ export class CorteCajaComponent {
   preCorteCaja: any = {
 
     sales: 0,
+    tallerSales: 0,
     egresos: 0,
     ingresoTotal: 0,
+    ingresoReal: 0,
     pesos: 0,
     pesosCaja: 0,
     dolares: 0,
@@ -108,7 +110,7 @@ export class CorteCajaComponent {
        this.fn_getSelectPrintByIdUser( this.idUserLogON );
        this.fn_getPreCorteCaja( this.ODataP.idCaja );
 
-       
+
 
     }
 
@@ -146,15 +148,17 @@ export class CorteCajaComponent {
 
   fn_InsertCorteCaja(){
 
+    this.fn_SUMAll();
+
     this.servicesGServ.showDialog('¿Estás seguro?'
     , 'Está a punto de guardar el corte de caja'
     , '¿Desea continuar?'
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
-        
+
           this.bShowSpinner = true;
 
           const data: any = {
@@ -166,24 +170,24 @@ export class CorteCajaComponent {
           this.salesServ.CInsertCorteCaja( data )
             .subscribe({
               next: (resp: ResponseDB_CRUD) => {
-      
+
                 if( resp.status === 0 ){
                   //this.idSale = resp.insertID;
                   if(this.selectPrinter.idPrinter > 0){
                     this.printTicketServ.printTicket("CorteCaja", resp.insertID, this.selectPrinter.idPrinter);
                   }
-                  
+
                   this.fn_CerrarMDL( resp.insertID );
                 }
                 this.servicesGServ.showAlertIA( resp );
                 this.bShowSpinner = false;
-      
+
               },
               error: (ex) => {
-      
+
                 this.servicesGServ.showSnakbar( ex.error.message );
                 this.bShowSpinner = false;
-      
+
               }
             });
 
@@ -199,7 +203,7 @@ export class CorteCajaComponent {
 
     this.printersServ.CGetSelectPrinterByIdUser( idUser )
     .subscribe({
-      
+
       next: ( resp: ResponseGet ) => {
 
         if( resp.status == 0 ){
@@ -224,11 +228,11 @@ export class CorteCajaComponent {
       }
 
     })
-    
+
   }
 
   // fn_InsertCorteCajaDetail( idCorteCaja: number ){
-        
+
   //   this.bShowSpinner = true;
 
   //   this.salesServ.CInsertCorteCajaDetail( idCorteCaja, this.idCaja )
@@ -261,6 +265,18 @@ export class CorteCajaComponent {
   // SECCIÓN DE MÉTODOS CON EL FRONT
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
+  fn_SUMAll( ){
+
+    this.preCorteCaja.totalCaja  =
+      ( parseFloat( this.preCorteCaja.pesosCaja ?? 0 )
+      + parseFloat( this.preCorteCaja.dolaresCaja ?? 0 )
+      + parseFloat( this.preCorteCaja.vouchersCaja ?? 0 )
+      + parseFloat( this.preCorteCaja.transferenciasCaja ?? 0 ) ).toFixed(2);
+
+      this.preCorteCaja.diferencia = ( ( this.preCorteCaja.totalCaja ?? 0 ) - ( this.preCorteCaja.ingresoReal ?? 0 ) ).toFixed(2);
+
+  }
+
   fn_CerrarMDL( id: number ){
     this.dialogRef.close( id );
   }
@@ -281,7 +297,7 @@ export class CorteCajaComponent {
       this.servicesGServ.showAlert('W', 'Alerta!', "Formato de fecha incorrecta.", false);
       this.preCorteCaja.selectedDate = '';
     }
-    
+
   }
 
   public nextInputFocus( idInput: any, milliseconds: number ) {
@@ -292,7 +308,7 @@ export class CorteCajaComponent {
 
   ev_fn_tbxPesosCaja_keyup_enter(event: any){
     if(event.keyCode == 13) { // PRESS ENTER
-  
+
       if( this.preCorteCaja.pesosCaja > 0 ){
         this.nextInputFocus( this.tbxDolaresCaja, 0);
       }else if(this.preCorteCaja.pesos == 0){
@@ -300,13 +316,15 @@ export class CorteCajaComponent {
         this.preCorteCaja.pesosCaja = 0;
         this.nextInputFocus( this.tbxDolaresCaja, 0);
       }
-      
+
+      this.fn_SUMAll();
+
     }
   }
 
   ev_fn_tbxDolaresCaja_keyup_enter(event: any){
     if(event.keyCode == 13) { // PRESS ENTER
-  
+
       if( this.preCorteCaja.dolaresCaja > 0 ){
         this.preCorteCaja.dolaresF = this.preCorteCaja.dolaresCaja;
         this.preCorteCaja.dolaresCaja = (this.preCorteCaja.dolaresCaja * this.preCorteCaja.fxRate).toFixed(2);
@@ -316,57 +334,65 @@ export class CorteCajaComponent {
         this.preCorteCaja.dolaresCaja = 0;
         this.nextInputFocus( this.tbxVouchersCaja, 0);
       }
-      
+
+      this.fn_SUMAll();
+
     }
   }
 
   ev_fn_tbxVouchersCaja_keyup_enter(event: any){
     if(event.keyCode == 13) { // PRESS ENTER
-  
+
       if( !(this.preCorteCaja.vouchersCaja) ){
         this.preCorteCaja.vouchersCaja = this.preCorteCaja.vouchers;
       }
 
       this.nextInputFocus( this.tbxTransferenciasCaja, 0);
-      
+
+      this.fn_SUMAll();
+
     }
   }
 
   ev_fn_tbxTransferenciasCaja_keyup_enter(event: any){
     if(event.keyCode == 13) { // PRESS ENTER
-  
+
       if( !(this.preCorteCaja.transferenciasCaja) ){
         this.preCorteCaja.transferenciasCaja = this.preCorteCaja.transferencias;
       }
 
-      this.preCorteCaja.totalCaja  =
-      ( parseFloat( this.preCorteCaja.pesosCaja )
-      + parseFloat( this.preCorteCaja.dolaresCaja )
-      + parseFloat( this.preCorteCaja.vouchersCaja )
-      + parseFloat( this.preCorteCaja.transferenciasCaja ) ).toFixed(2);
+      // this.preCorteCaja.totalCaja  =
+      // ( parseFloat( this.preCorteCaja.pesosCaja )
+      // + parseFloat( this.preCorteCaja.dolaresCaja )
+      // + parseFloat( this.preCorteCaja.vouchersCaja )
+      // + parseFloat( this.preCorteCaja.transferenciasCaja ) ).toFixed(2);
 
-      this.preCorteCaja.diferencia = ( this.preCorteCaja.totalCaja - this.preCorteCaja.ingresoTotal ).toFixed(2);
+      // this.preCorteCaja.diferencia = ( this.preCorteCaja.totalCaja - this.preCorteCaja.ingresoReal ).toFixed(2);
 
       this.nextInputFocus( this.tbxTotalCaja, 0);
 
-      
-      
+      this.fn_SUMAll();
+
     }
   }
 
   ev_fn_tbxTotalCaja_keyup_enter(event: any){
     if(event.keyCode == 13) { // PRESS ENTER
-  
+
       this.nextInputFocus( this.tbxDiferencia, 0);
-      
+
+      this.fn_SUMAll();
+
     }
   }
 
   ev_fn_tbxDiferencia_keyup_enter(event: any){
     if(event.keyCode == 13) { // PRESS ENTER
-  
+
       this.nextInputFocus( this.tbxComentarios, 0);
-      
+
+      this.fn_SUMAll();
+
     }
   }
 

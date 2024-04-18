@@ -33,6 +33,9 @@ const {
 
   , disableSaleDetail
 
+  , editSobreTaller
+
+  , getRepVentasDetailWithPage
 
 } = require('../controllers/salesController');
 
@@ -209,5 +212,22 @@ router.post('/disableSaleDetail', [
 
   validarCampos
 ], disableSaleDetail);
+
+router.post('/editSobreTaller', [
+
+  check('auth_idUser','El Autorizante es obligatorio').not().isEmpty(),
+
+  check('idSale','El id de la venta es obligatorio').not().isEmpty(),
+
+  check('importe','El id de la venta es obligatorio').not().isEmpty(),
+  check('importe','El importe debe ser numérico').isNumeric(),
+
+  check('descriptionTaller','La descripción del sobre es obligatorio').not().isEmpty(),
+
+
+  validarCampos
+], editSobreTaller);
+
+router.post('/getRepVentasDetailWithPage', getRepVentasDetailWithPage);
 
 module.exports = router;

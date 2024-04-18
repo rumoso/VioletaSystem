@@ -20,6 +20,7 @@ import { PrintersService } from 'src/app/protected/services/printers.service';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { SalestypeService } from 'src/app/protected/services/salestype.service';
+import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
 
 @Component({
   selector: 'app-sale-list',
@@ -59,7 +60,7 @@ export class SaleListComponent {
     pageSizeOptions: [5, 10, 25, 100]
   }
   //-------------------------------
-  
+
   parametersForm: any = {
     idSucursal: 0,
     sucursalDesc: '',
@@ -123,7 +124,7 @@ constructor(
     this.idUserLogON = await this.authServ.getIdUserSession();
     // this._actionsPermisionList = await this.authServ.CGetActionsPermissionPromise(this.idUserLogON);
     // console.log(this._actionsPermisionList)
-    
+
 
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
@@ -150,6 +151,21 @@ constructor(
 
   }
 
+  fn_ShowEditTaller( idSale: any ){
+
+      let OParams: any = {
+        idSale: idSale
+      }
+
+        this.servicesGServ.showModalWithParams( EditTallerComponent, OParams, '1500px')
+        .afterClosed().subscribe({
+          next: ( resp ) =>{
+            this.fn_getVentasListWithPage();
+          }
+      });
+
+  }
+
   ////************************************************ */
     // MÉTODOS DE PAGINACIÓN
     changePagination(pag: Pagination) {
@@ -173,9 +189,9 @@ constructor(
 
     ev_fn_search_keyup_enter(event: any){
       if(event.keyCode == 13) { // PRESS ENTER
-        
+
         this.fn_getVentasListWithPage()
-    
+
       }
     }
 
@@ -186,13 +202,12 @@ constructor(
 fn_getVentasListWithPage() {
 
   let OServParams: any = {
-    idUser: this.idUserLogON
-    , createDateStart: this.parametersForm.createDateStart
+    createDateStart: this.parametersForm.createDateStart
     , createDateEnd: this.parametersForm.createDateEnd
     , idCustomer: this.parametersForm.idCustomer
     , idSaleType: this.parametersForm.idSaleType
     , search: this.parametersForm.idSale
-    
+
     , bCancel: this.parametersForm.bCancel
     , bPending: this.parametersForm.bPending
     , bPagada: this.parametersForm.bPagada
@@ -211,14 +226,14 @@ fn_getVentasListWithPage() {
       this.bShowSpinner = false;
     }
   })
-  
+
 }
 
 fn_getSelectCajaByIdUser( idUser: number ) {
 
   this.cajasServ.CGetSelectCajaByIdUser( idUser )
   .subscribe({
-    
+
     next: ( resp: ResponseGet ) => {
 
       if( resp.status == 0 ){
@@ -249,14 +264,14 @@ fn_getSelectCajaByIdUser( idUser: number ) {
     }
 
   })
-  
+
 }
 
 fn_getSelectPrintByIdUser( idUser: number ) {
 
   this.printersServ.CGetSelectPrinterByIdUser( idUser )
   .subscribe({
-    
+
     next: ( resp: ResponseGet ) => {
 
       if( resp.status == 0 ){
@@ -281,7 +296,7 @@ fn_getSelectPrintByIdUser( idUser: number ) {
     }
 
   })
-  
+
 }
 
 fn_cerrarCaja(){
@@ -314,16 +329,16 @@ fn_cerrarCaja(){
 fn_btnCerrarCaja(){
 
   if( this.selectCajas.idCaja > 0 ){
-  
+
     this.servicesGServ.showDialog('¿Estás seguro?'
     , 'Está a punto de salir de la caja'
     , '¿Desea continuar?'
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
-        
+
           this.fn_cerrarCaja();
 
         }
@@ -339,18 +354,18 @@ fn_btnCerrarCaja(){
 fn_btnCerrarPrinter(){
 
   if( this.selectCajas.idCaja == 0 && this.selectPrinter.idPrinter > 0 ){
-  
+
     this.servicesGServ.showDialog('¿Estás seguro?'
     , 'Está a punto de deseleccionar la impresora'
     , '¿Desea continuar?'
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
 
           this.selectPrinter.idUser = this.idUserLogON;
-        
+
           this.printersServ.CDeleteSelectPrinter( this.selectPrinter )
           .subscribe({
             next: async (resp: ResponseDB_CRUD) => {
@@ -379,12 +394,17 @@ fn_btnCerrarPrinter(){
     });
 
   }
-  
+
 }
 
-fn_CDisabledSale( idSale: number ){
+fn_CDisabledSale( idSale: number, auth_idUser: number ){
 
-  this.salesServ.CDisabledSale( idSale )
+  var oParams: any = {
+    idSale: idSale,
+    auth_idUser: auth_idUser
+  }
+
+  this.salesServ.CDisabledSale( oParams )
   .subscribe({
     next: async (resp: ResponseDB_CRUD) => {
 
@@ -401,7 +421,7 @@ fn_CDisabledSale( idSale: number ){
 
     }
   });
-  
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -441,7 +461,7 @@ fn_ShowSelectCaja(){
     next: ( resp ) =>{
 
       this.fn_getSelectCajaByIdUser( this.idUserLogON );
-      
+
     }
   });
 
@@ -458,7 +478,7 @@ fn_ShowSelectPrint(){
     next: ( resp ) =>{
 
       this.fn_getSelectPrintByIdUser( this.idUserLogON );
-      
+
     }
   });
 
@@ -470,7 +490,7 @@ fn_ShowCorteCajaSale(){
     idCaja: this.selectCajas.idCaja
   }
 
-  this.servicesGServ.showModalWithParams( CorteCajaComponent, paramsMDL, '700px')
+  this.servicesGServ.showModalWithParams( CorteCajaComponent, paramsMDL, '800px')
   .afterClosed().subscribe({
     next: ( resp ) =>{
 
@@ -510,12 +530,12 @@ fn_disabledSale( idSale: number ){
 
   this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
   .afterClosed().subscribe({
-    next: ( resp ) =>{
+    next: ( auth_idUser ) =>{
 
-      if( resp ){
-        this.fn_CDisabledSale( idSale );
+      if( auth_idUser ){
+        this.fn_CDisabledSale( idSale, auth_idUser );
       }
-      
+
     }
   });
 
@@ -545,7 +565,7 @@ fn_ClearFilters(){
     bPagada: false
 
   };
-  
+
 }
 
 
@@ -594,7 +614,7 @@ fn_ClearFilters(){
            if(resp.status === 0){
              this.cbxCustomers = resp.data;
              this.parametersForm.customerResp = '';
-             
+
            }
            else{
             this.cbxCustomers = [];
@@ -611,9 +631,9 @@ fn_ClearFilters(){
   cbxCustomers_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
     this.cbxCustomers_Clear();
-    
+
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.parametersForm.idCustomer =  ODataCbx.idCustomer;
@@ -656,9 +676,9 @@ fn_ClearFilters(){
   cbxSalesType_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
     this.cbxSalesType_Clear();
-    
+
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.parametersForm.idSaleType = ODataCbx.id;
@@ -671,7 +691,7 @@ fn_ClearFilters(){
   cbxSalesType_Clear(){
     this.parametersForm.idSaleType = 0;
     this.parametersForm.saleTypeDesc = '';
-    
+
   }
   //--------------------------------------------------------------------------
 
@@ -681,5 +701,5 @@ fn_ClearFilters(){
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE COMBOS
 //////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
 }

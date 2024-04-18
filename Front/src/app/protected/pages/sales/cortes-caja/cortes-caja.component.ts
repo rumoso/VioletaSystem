@@ -100,12 +100,12 @@ async ngOnInit() {
   // MÉTODOS DE PAGINACIÓN
   changePagination(pag: Pagination) {
     this.pagination = pag;
-    //this.fn_getVentasListWithPage();
+    this.fn_getCorteCajaListWithPage();
   }
 
   onChangeEvent(event: any){
     this.pagination.search = event.target.value;
-    //this.fn_getVentasListWithPage();
+    this.fn_getCorteCajaListWithPage();
   }
   ////************************************************ */
 
@@ -147,7 +147,7 @@ async ngOnInit() {
 
     this.printersServ.CGetSelectPrinterByIdUser( idUser )
     .subscribe({
-      
+
       next: ( resp: ResponseGet ) => {
 
         if( resp.status == 0 ){
@@ -172,52 +172,52 @@ async ngOnInit() {
       }
 
     })
-    
+
   }
 
   fn_btnCerrarPrinter(){
 
     if( this.selectPrinter.idPrinter > 0 ){
-    
+
       this.servicesGServ.showDialog('¿Estás seguro?'
       , 'Está a punto de deseleccionar la impresora'
       , '¿Desea continuar?'
       , 'Si', 'No')
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
-  
+
             this.selectPrinter.idUser = this.idUserLogON;
-          
+
             this.printersServ.CDeleteSelectPrinter( this.selectPrinter )
             .subscribe({
               next: async (resp: ResponseDB_CRUD) => {
-  
+
                 if( resp.status === 0 ){
                   this.fn_getSelectPrintByIdUser( this.idUserLogON );
                 }
-  
+
                 this.servicesGServ.showAlertIA( resp );
                 this.bShowSpinner = false;
-  
+
               },
               error: (ex) => {
-  
+
                 this.servicesGServ.showSnakbar( ex.error.message );
                 this.bShowSpinner = false;
-  
+
               }
             });
-  
+
           }
-  
+
         }
-  
+
       });
-  
+
     }
-    
+
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -240,7 +240,7 @@ fn_ShowSelectPrint(){
     next: ( resp ) =>{
 
       this.fn_getSelectPrintByIdUser( this.idUserLogON );
-      
+
     }
   });
 
@@ -249,14 +249,14 @@ fn_ShowSelectPrint(){
 fn_btnRePrinter( idCorteCaja: any ){
 
   if( this.selectPrinter.idPrinter > 0 ){
-  
+
     this.servicesGServ.showDialog('¿Estás seguro?'
     , 'Estás apunto de reimprimir este corte de caja'
     , '¿Desea continuar?'
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
 
           this.printTicketServ.printTicket("CorteCaja", idCorteCaja, this.selectPrinter.idPrinter);
@@ -268,7 +268,7 @@ fn_btnRePrinter( idCorteCaja: any ){
     });
 
   }
-  
+
 }
 
 
@@ -286,7 +286,7 @@ fn_ShowCorteCajaDetail( idCorteCaja: any ){
     idCorteCaja: idCorteCaja
   }
 
-  this.servicesGServ.showModalWithParams( CortecajadetailComponent, paramsMDL, '500px')
+  this.servicesGServ.showModalWithParams( CortecajadetailComponent, paramsMDL, '800px')
   .afterClosed().subscribe({
     next: ( resp ) =>{
 
@@ -330,7 +330,7 @@ fn_ShowCorteCajaDetail( idCorteCaja: any ){
 //          if(resp.status === 0){
 //            this.cbxCustomers = resp.data;
 //            this.parametersForm.customerResp = '';
-           
+
 //          }
 //          else{
 //           this.cbxCustomers = [];
