@@ -66,14 +66,14 @@ export class CustomerComponent implements OnInit {
       if( this.OParamsData.id > 0 ){
 
         this.bShowSpinner = true;
-  
+
         this.customerServ.CGetCustomerByID( this.OParamsData.id )
           .subscribe( ( resp: any ) => {
 
              if(resp.status == 0){
-                
+
                 this.id = resp.data.idCustomer;
-    
+
                this.customerForm = {
                 idCustomer: resp.data.idCustomer,
                 createDate: resp.data.createDate,
@@ -87,8 +87,8 @@ export class CustomerComponent implements OnInit {
                };
 
                this.name = this.event_getDescCustomer();
-    
-    
+
+
              }else{
               this.servicesGServ.showSnakbar(resp.message);
              }
@@ -100,7 +100,7 @@ export class CustomerComponent implements OnInit {
       setTimeout (() => {
         this.ev_fn_nextInput_keyup_enter( 'tbxLastName' );
       }, 500);
-  
+
     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +162,7 @@ public inputFocus(idInput: any) {
       this.customerForm.idUser = this.idUserLogON;
 
       this.bShowSpinner = true;
-  
+
       if( this.id > 0 ){
         this.customerServ.CUpdateCustomer( this.customerForm )
           .subscribe({
@@ -171,42 +171,46 @@ public inputFocus(idInput: any) {
               if( resp.status === 0 ){
                 this.servicesGServ.showAlertIA( resp );
                 this.name = this.event_getDescCustomer();
+
+                this.close();
               }
-              
+
               this.bShowSpinner = false;
-  
+
             },
             error: (ex) => {
-  
+
               this.servicesGServ.showSnakbar( "Problemas con el servicio" );
               this.bShowSpinner = false;
-  
+
             }
           })
       }else{
       this.customerServ.CInsertCustomer( this.customerForm )
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
-  
+
             if( resp.status === 0 ){
               this.id = resp.insertID;
               this.name = this.event_getDescCustomer();
-  
+
               this.customerForm.idCustomer = resp.insertID;
 
               this.servicesGServ.showAlertIA( resp );
-  
+
+              this.close();
+
             }
-  
-            
+
+
             this.bShowSpinner = false;
-  
+
           },
           error: (ex) => {
-  
+
             this.servicesGServ.showSnakbar( "Problemas con el servicio" );
             this.bShowSpinner = false;
-  
+
           }
         })
       }

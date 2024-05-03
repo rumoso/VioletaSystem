@@ -14,6 +14,7 @@ import { QualityService } from 'src/app/protected/services/quality.service';
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
+import { InventarylogComponent } from '../mdl/inventarylog/inventarylog.component';
 
 @Component({
   selector: 'app-product-list',
@@ -21,7 +22,7 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./product-list.component.css']
 })
 export class ProductListComponent implements OnInit {
-  
+
   private _appMain: string = environment.appMain;
 
   idUserLogON: number = 0;
@@ -72,12 +73,29 @@ export class ProductListComponent implements OnInit {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
     }
 
+    fn_ShowInsertInventaryLog( idProduct: number ){
+
+      var paramsMDL: any = {
+        idProduct: idProduct
+      }
+
+      this.servicesGServ.showModalWithParams( InventarylogComponent, paramsMDL, '1500px')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+
+          this.fn_getProductsListWithPage();
+
+        }
+      });
+
+    }
+
   title = 'Lista de Products';
   bShowSpinner: boolean = false;
   catlist: any[] = [];
 
   panelOpenState: boolean = false;
-  
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -139,7 +157,7 @@ export class ProductListComponent implements OnInit {
       next: ( resp ) =>{
         if(resp){
           this.bShowSpinner = true;
-          
+
           this.productsServ.CDisableProduct( idProduct )
           .subscribe({
             next: (resp: ResponseDB_CRUD) => {
@@ -147,7 +165,7 @@ export class ProductListComponent implements OnInit {
               if( resp.status === 0 ){
                 this.fn_getProductsListWithPage();
               }
-              
+
               this.servicesGServ.showAlertIA( resp );
               this.bShowSpinner = false;
             },
@@ -156,7 +174,7 @@ export class ProductListComponent implements OnInit {
               this.servicesGServ.showSnakbar( ex.error.data );
               this.bShowSpinner = false;
             }
-      
+
           })
 
         }

@@ -1,5 +1,5 @@
 <mat-accordion >
-    
+
     <mat-expansion-panel (opened)="panelOpenState = true"
                          (closed)="panelOpenState = false"
                          class="divMain"
@@ -9,19 +9,19 @@
           Filtros de productos
         </mat-panel-title>
       </mat-expansion-panel-header>
-      
+
       <div class="row">
         <div class="col-md-12">
 
                 <br>
-                
+
                 <form action=""
                 autocomplete="off"
                 [formGroup]="parametersForm"
                 >
 
                     <div class="row">
-                                    
+
                         <div class="col-md-12">
                             <mat-label>Sucursal: </mat-label>
                             <mat-form-field
@@ -45,11 +45,11 @@
                                     <mat-option *ngFor="let role of cbxSucursales" [value]="role">
                                         {{ role.name }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxSucursales.length == 0 && parametersForm.value.sucursalDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
                         </div>
@@ -67,7 +67,7 @@
                                 <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
                                 <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                                 <mat-date-range-picker #picker></mat-date-range-picker>
-                              
+
                               </mat-form-field>
                         </div>
                     </div>
@@ -89,13 +89,13 @@
                                 formControlName="name">
                               </mat-form-field>
                         </div>
-                        
+
                     </div>
 
                     <div class="row top20px" text>
 
                         <div class="col-md-3">
-                            
+
                             <mat-label>Grupo: </mat-label>
                                 <mat-form-field
                                 style="width: 100%;"
@@ -118,18 +118,18 @@
                                         <mat-option *ngFor="let item of cbxGroupsList" [value]="item">
                                             {{ item.name }}
                                         </mat-option>
-                        
+
                                         <mat-option value="" *ngIf="cbxGroupsList.length == 0 && parametersForm.value.groupDesc">
                                             No se encontró nada...
                                         </mat-option>
-                        
+
                                     </mat-autocomplete>
                                 </mat-form-field>
 
                         </div>
-                        
+
                         <div class="col-md-3">
-                            
+
                             <mat-label>Familia: </mat-label>
                                 <mat-form-field
                                 style="width: 100%;"
@@ -152,18 +152,18 @@
                                         <mat-option *ngFor="let item of cbxFamiliesList" [value]="item">
                                             {{ item.name }}
                                         </mat-option>
-                        
+
                                         <mat-option value="" *ngIf="cbxFamiliesList.length == 0 && parametersForm.value.familyDesc">
                                             No se encontró nada...
                                         </mat-option>
-                        
+
                                     </mat-autocomplete>
                                 </mat-form-field>
 
                         </div>
 
                         <div class="col-md-3">
-                            
+
                             <mat-label>Calidad: </mat-label>
                                 <mat-form-field
                                 style="width: 100%;"
@@ -186,18 +186,18 @@
                                         <mat-option *ngFor="let item of cbxQualityList" [value]="item">
                                             {{ item.name }}
                                         </mat-option>
-                        
+
                                         <mat-option value="" *ngIf="cbxQualityList.length == 0 && parametersForm.value.qualityDesc">
                                             No se encontró nada...
                                         </mat-option>
-                        
+
                                     </mat-autocomplete>
                                 </mat-form-field>
 
                         </div>
 
                         <div class="col-md-3">
-                            
+
                             <mat-label>Origen: </mat-label>
                                 <mat-form-field
                                 style="width: 100%;"
@@ -220,16 +220,16 @@
                                         <mat-option *ngFor="let item of cbxOriginList" [value]="item">
                                             {{ item.name }}
                                         </mat-option>
-                        
+
                                         <mat-option value="" *ngIf="cbxOriginList.length == 0 && parametersForm.value.originDesc">
                                             No se encontró nada...
                                         </mat-option>
-                        
+
                                     </mat-autocomplete>
                                 </mat-form-field>
 
                         </div>
-                        
+
                     </div>
 
 
@@ -237,7 +237,7 @@
                     <div class="row top10px">
                         <div class="col-md-12">
                             <div style="float: left;">
-                                
+
                                 <button mat-raised-button
                                 color="primary"
                                 type="submit"
@@ -245,19 +245,19 @@
                                 (click)="fn_getProductsListWithPage()">
                                 <mat-icon matPrefix class="my-icon">search</mat-icon>
                                 Buscar</button>
-                                
+
                                 <button mat-raised-button
                                 type="button"
                                 (click)="parametersForm_Clear()">
                                 <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                                limpiar</button>                
-                                
+                                limpiar</button>
+
                             </div>
                         </div>
                     </div>
 
-                </form>   
-                
+                </form>
+
         </div>
 
     </div>
@@ -273,7 +273,7 @@
                 (click)="changeRoute('product')">
                 add_circle_outline
                 </span>
-                
+
             </div>
         </div>
     </div>
@@ -306,10 +306,18 @@
 
                                         <span class="material-icons manitaSobre colorRed"
                                         matTooltip="Eliminar Producto"
-                                        
+
                                             (click)="fn_disableProduct( item.idProduct )"
                                             *ngIf="item.active">
                                             delete_outline
+                                        </span>
+
+                                        <span class="material-icons manitaSobre colorGreen"
+                                        matTooltip="Modificar inventario"
+
+                                            (click)="fn_ShowInsertInventaryLog( item.idProduct )"
+                                            *ngIf="item.active">
+                                            move_to_inbox
                                         </span>
 
                                     </div>
@@ -323,10 +331,10 @@
                                             <label style="margin-left: 10px;">{{ item.barCode }}</label>
                                         </div>
                                     </div>
-                                    
+
                                 </td>
                                 <td class="textAlingLeft">{{ item.name }}</td>
-                                
+
                                 <td class="textAlingRight">{{ item.cost | currency }}</td>
                                 <td class="textAlingRight">{{ item.price | currency }}</td>
                                 <td class="textAlingRight">{{ item.catInventaryVerify }} piezas</td>
@@ -343,10 +351,10 @@
                 <app-pagination *ngIf="catlist" [IPagination]="pagination"
                                 (OPagination)="changePagination($event)">
                 </app-pagination>
-            
+
             </div>
     </div>
-    
+
 </div>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -18,13 +18,13 @@ const get_rep_getUtilidades = async(req, res = response) => {
 
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
-    const dbConnectionNEW = await createConexion();
+    //const dbConnectionNEW = await createConexion();
 
     try{
 
-        var OSQL = await dbConnectionNEW.query(`call rep_getUtilidades(
+        var OSQL = await dbConnection.query(`call rep_getUtilidades(
             '${ startDate.substring(0, 10) }'
             ,'${ endDate.substring(0, 10) }'
             , ${ idSucursal }
@@ -62,11 +62,11 @@ const get_rep_getUtilidades = async(req, res = response) => {
             
         }
 
-        await dbConnectionNEW.close();
+        // await dbConnectionNEW.close();
         
     }catch(error){
 
-        await dbConnectionNEW.close();
+        // await dbConnectionNEW.close();
       
         res.status(500).json({
             status:2,

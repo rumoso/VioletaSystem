@@ -36,7 +36,7 @@ export class PhysicalInventoryListComponent {
   physicalInventoryHeaderBySucursal: any[] = [];
 
   panelOpenState: boolean = false;
-  
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -89,7 +89,7 @@ export class PhysicalInventoryListComponent {
       //this.fn_getPhysicalInventoryListWithPage();
     }
 
-    
+
 
 // #region MÉTODOS PARA EL FRONT
 
@@ -125,7 +125,7 @@ export class PhysicalInventoryListComponent {
     changeRoute( route: string ): void {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
     }
-  
+
     edit( id: number ){
       this.servicesGServ.changeRouteWithParameter(`/${ this._appMain }/editInventarioFisico`, id)
     }
@@ -135,15 +135,15 @@ export class PhysicalInventoryListComponent {
       var paramsMDL: any = {
         idPhysicalInventory: idPhysicalInventory
       }
-    
+
       this.servicesGServ.showModalWithParams( PhysicalInventoryComponent, paramsMDL, '2500px')
       .afterClosed().subscribe({
         next: ( resp ) =>{
           this.fn_getPhysicalInventoryListWithPage();
         }
       });
-    
-    
+
+
     }
 
 // #endregion
@@ -155,8 +155,12 @@ fn_getPhysicalInventoryHeaderBySucursal() {
   this.productsServ.CGetPhysicalInventoryHeaderBySucursal( this.parametersForm )
   .subscribe({
     next: (resp: ResponseGet) => {
-      console.log(resp)
-      this.physicalInventoryHeaderBySucursal = resp.data.rows;
+
+      if( resp.status === 0 ){
+        console.log(resp)
+        this.physicalInventoryHeaderBySucursal = resp.data.rows;
+      }
+
     },
     error: (ex: HttpErrorResponse) => {
       console.log( ex )
@@ -169,7 +173,7 @@ bShowActionAuthorization: boolean = false;
 fn_startPhysicInventory(){
 
   if(!this.bShowActionAuthorization){
-    
+
     this.bShowActionAuthorization = true;
 
     this.servicesGServ.showDialog('¿Estás seguro?'
@@ -178,18 +182,18 @@ fn_startPhysicInventory(){
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
 
           var paramsMDL: any = {
             actionName: 'inv_CrearInventarioFisico'
             , bShowAlert: false
           }
-        
+
           this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
           .afterClosed().subscribe({
             next: ( resp ) =>{
-        
+
               if( resp ){
 
                 this.bShowActionAuthorization = false;
@@ -199,7 +203,7 @@ fn_startPhysicInventory(){
                 this.productsServ.CStartPhysicInventory( this.parametersForm )
                 .subscribe({
                   next: (resp: any) => {
-          
+
                     if( resp.status === 0 ){
 
                       this.parametersForm.idGroup = 0;
@@ -209,23 +213,23 @@ fn_startPhysicInventory(){
 
                       this.fn_ShowPhysicalInventory( resp.idPhysicalInventory );
                       this.fn_getPhysicalInventoryListWithPage();
-                        
+
                     }
                     else{
                       this.servicesGServ.showAlertIA( resp );
                     }
 
 
-          
-                    
+
+
                     this.bShowSpinner = false;
-          
+
                   },
                   error: (ex) => {
-          
+
                     this.servicesGServ.showSnakbar( ex.error.message );
                     this.bShowSpinner = false;
-          
+
                   }
                 });
 
@@ -241,16 +245,16 @@ fn_startPhysicInventory(){
         else{
           this.bShowActionAuthorization = false;
         }
-        
+
       }
     });
 
   }
-        
+
 }
 
 fn_getPhysicalInventoryListWithPage() {
-  
+
   this.catlist = [];
   this.physicalInventoryHeaderBySucursal = [];
 

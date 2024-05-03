@@ -31,7 +31,7 @@ const getProductsListWithPage = async(req, res = response) => {
         data: null
     };
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -102,7 +102,7 @@ const getProductByID = async(req, res = response) => {
         idProduct
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -164,7 +164,7 @@ const insertProduct = async(req, res) => {
         idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     const tran = await dbConnection.transaction();
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -287,7 +287,7 @@ const updateProduct = async(req, res) => {
         idUser
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -334,7 +334,7 @@ const cbxGetProductsCombo = async(req, res = response) => {
         , idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -377,7 +377,7 @@ const getProductByBarCode = async(req, res = response) => {
         barCode
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -432,13 +432,13 @@ const getInventaryListWithPage = async(req, res = response) => {
 
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
-    const dbConnectionNEW = await createConexion();
+    //const dbConnectionNEW = await createConexion();
 
     try{
 
-        var OSQL = await dbConnectionNEW.query(`call getInventaryListWithPage(
+        var OSQL = await dbConnection.query(`call getInventaryListWithPage(
             ${idUser}
             ,${idSucursal}
             ,'${ barCode }'
@@ -480,11 +480,11 @@ const getInventaryListWithPage = async(req, res = response) => {
 
         }
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
 
     }catch(error){
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
 
         res.status(500).json({
             status: 2,
@@ -508,13 +508,13 @@ const getInventaryBySucursal = async(req, res = response) => {
 
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
-    const dbConnectionNEW = await createConexion();
+    //const dbConnectionNEW = await createConexion();
 
     try{
 
-        var OSQL = await dbConnectionNEW.query(`call getInventaryBySucursal(
+        var OSQL = await dbConnection.query(`call getInventaryBySucursal(
             ${idUser}
             ,${idSucursal}
             ,'${ barCode }'
@@ -553,11 +553,11 @@ const getInventaryBySucursal = async(req, res = response) => {
 
         }
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
 
     }catch(error){
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
 
         res.status(500).json({
             status:2,
@@ -573,7 +573,7 @@ const disableProduct = async(req, res) => {
         idProduct
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -610,7 +610,7 @@ const getInventarylogByIdProductWithPage = async(req, res = response) => {
 
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -673,7 +673,7 @@ const insertInventaryLog = async(req, res) => {
         , idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
@@ -742,7 +742,7 @@ const startPhysicInventory = async(req, res) => {
         , idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     const tran = await dbConnection.transaction();
   
@@ -761,7 +761,7 @@ const startPhysicInventory = async(req, res) => {
             , ${ idUserLogON }
         )`)
 
-        //console.log( OSQL_GetProducts )
+        ////console.log( OSQL_GetProducts )
 
         if(OSQL_GetProducts.length == 0){
 
@@ -780,7 +780,7 @@ const startPhysicInventory = async(req, res) => {
                 , ${ idUserLogON }
                 )`,{ transaction: tran })
 
-                //console.log( OSQL_InsertPhysicInventory )
+                ////console.log( OSQL_InsertPhysicInventory )
 
             idPhysicalInventory = OSQL_InsertPhysicInventory[0].out_id;
 
@@ -863,13 +863,13 @@ const getPhysicalInventoryListWithPage = async(req, res = response) => {
        
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
-    const dbConnectionNEW = await createConexion();
+    //const dbConnectionNEW = await createConexion();
 
     try{
 
-        var OSQL = await dbConnectionNEW.query(`call getPhysicalInventoryListWithPage(
+        var OSQL = await dbConnection.query(`call getPhysicalInventoryListWithPage(
             '${ startDate.substring(0, 10) }'
             , '${ endDate.substring(0, 10) }'
             , ${ idSucursal }
@@ -908,11 +908,11 @@ const getPhysicalInventoryListWithPage = async(req, res = response) => {
             
         }
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
         
     }catch(error){
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
       
         res.json({
             status: 2,
@@ -937,7 +937,7 @@ const getPhysicalInventoryDetailListWithPage = async(req, res = response) => {
        
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -997,7 +997,7 @@ const verifyPhysicalInventoryDetail = async(req, res) => {
         idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -1049,7 +1049,7 @@ const changeStatusPhysicalInventory = async(req, res) => {
         idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -1080,7 +1080,7 @@ const getPhysicalInventoryHeader = async(req, res = response) => {
         idPhysicalInventory
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -1128,7 +1128,7 @@ const updateMostradorPhysicalInventoryDetail = async(req, res) => {
         idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -1169,13 +1169,13 @@ const getPhysicalInventoryHeaderBySucursal = async(req, res = response) => {
         , idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
-    const dbConnectionNEW = await createConexion();
+    //const dbConnectionNEW = await createConexion();
 
     try{
 
-        var OSQL = await dbConnectionNEW.query(`call getPhysicalInventoryHeaderBySucursal(
+        var OSQL = await dbConnection.query(`call getPhysicalInventoryHeaderBySucursal(
             '${ startDate }'
             ,'${ endDate }'
             , ${ idSucursal }
@@ -1187,7 +1187,7 @@ const getPhysicalInventoryHeaderBySucursal = async(req, res = response) => {
         if(OSQL.length == 0){
 
             res.json({
-                status: 0,
+                status: 1,
                 message: "No se encontró información.",
                 data: null
             });
@@ -1208,11 +1208,11 @@ const getPhysicalInventoryHeaderBySucursal = async(req, res = response) => {
 
         }
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
 
     }catch(error){
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
 
         res.status(500).json({
             status:2,
@@ -1236,13 +1236,13 @@ const getCatListWithPage = async(req, res = response) => {
        
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
-    const dbConnectionNEW = await createConexion();
+    //const dbConnectionNEW = await createConexion();
 
     try{
 
-        var OSQL = await dbConnectionNEW.query(`call getCatListWithPage(
+        var OSQL = await dbConnection.query(`call getCatListWithPage(
             '${ sOption }'
 
             , '${ search }'
@@ -1273,11 +1273,11 @@ const getCatListWithPage = async(req, res = response) => {
             
         }
 
-        await dbConnectionNEW.close();
+        //await dbConnectionNEW.close();
         
     }catch(error){
 
-        await dbConnectionNEW.close();
+        // await dbConnectionNEW.close();
       
         res.json({
             status: 2,
@@ -1302,7 +1302,7 @@ const insertUpdateCat = async(req, res) => {
         idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
@@ -1360,13 +1360,13 @@ const getRepComprasProveedorListWithPage = async(req, res = response) => {
 
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
-    const dbConnectionNEW = await createConexion();
+    //const dbConnectionNEW = await createConexion();
 
     try{
 
-        var OSQL = await dbConnectionNEW.query(`call rep_getRepComprasProveedorListWithPage(
+        var OSQL = await dbConnection.query(`call rep_getRepComprasProveedorListWithPage(
             ${ idSupplier }
 
             ,'${ search }'
@@ -1401,11 +1401,11 @@ const getRepComprasProveedorListWithPage = async(req, res = response) => {
 
         }
 
-        await dbConnectionNEW.close();
+        // await dbConnectionNEW.close();
 
     }catch(error){
 
-        await dbConnectionNEW.close();
+        // await dbConnectionNEW.close();
 
         res.status(500).json({
             status: 2,
@@ -1437,7 +1437,7 @@ const getInventarylogParaFirmar = async(req, res = response) => {
         data: null
     };
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -1515,7 +1515,7 @@ const updateFirmaEntradaInventario = async(req, res) => {
         , idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     const tran = await dbConnection.transaction();
 
@@ -1626,7 +1626,7 @@ const saveDevoluInventario = async(req, res) => {
 
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     const tran = await dbConnection.transaction();
 
@@ -1747,7 +1747,7 @@ const getInventarylog_devolution = async(req, res = response) => {
         data: null
     };
 
-    console.log(req.body)
+    //console.log(req.body)
 
     try{
 
@@ -1813,7 +1813,7 @@ const updateFirmaDevoluInventario = async(req, res) => {
         , idSucursalLogON
     } = req.body;
 
-    console.log(req.body)
+    //console.log(req.body)
 
     const tran = await dbConnection.transaction();
 
