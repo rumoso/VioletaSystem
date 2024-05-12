@@ -970,10 +970,11 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                               // }
                               // else{
                                 this.ev_PrintTicket()
-                                this.servicesGServ.showAlertIA( resp );
                               //}
 
                             }
+
+                            this.servicesGServ.showAlertIA( resp );
 
                             this.bShowSpinner = false;
 
@@ -1018,10 +1019,11 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                         // }
                         // else{
                           this.ev_PrintTicket()
-                          this.servicesGServ.showAlertIA( resp );
                         //}
 
                       }
+
+                      this.servicesGServ.showAlertIA( resp );
 
                       this.bShowSpinner = false;
 
