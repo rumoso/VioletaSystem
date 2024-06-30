@@ -211,7 +211,7 @@ fn_startPhysicInventory(){
                       this.parametersForm.idFamily = 0;
                       this.parametersForm.familyDesc = '';
 
-                      this.fn_ShowPhysicalInventory( resp.idPhysicalInventory );
+                      this.fn_ShowPhysicalInventory( resp.insertID );
                       this.fn_getPhysicalInventoryListWithPage();
 
                     }

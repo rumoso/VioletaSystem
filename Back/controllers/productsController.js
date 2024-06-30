@@ -701,17 +701,13 @@ const startPhysicInventory = async(req, res) => {
 
     //console.log(req.body)
 
-    const tran = await dbConnection.transaction();
-  
-    var bOK = false;
-    var idPhysicalInventory = '';
-
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     try{
 
-        var OSQL_GetProducts = await dbConnection.query(`call getProductsByStartPhysicInventory(
-            ${ idSucursal }
+        var OSQL = await dbConnection.query(`call generatePhysicInventory(
+            '${ oGetDateNow }'
+            , ${ idSucursal }
             , ${ idFamily }
             , ${ idGroup }
 
@@ -720,72 +716,21 @@ const startPhysicInventory = async(req, res) => {
 
         ////console.log( OSQL_GetProducts )
 
-        if(OSQL_GetProducts.length == 0){
+        if(OSQL.length == 0){
 
             res.json({
                 status: 1,
-                message:"No se encontraron productos."
+                message:"No se inició el inventario físico."
             });
 
         }
         else{
 
-            var OSQL_InsertPhysicInventory = await dbConnection.query(`call InsertPhysicInventory(
-                '${ oGetDateNow }'
-                , ${ idSucursal }
-                
-                , ${ idUserLogON }
-                )`,{ transaction: tran })
-
-                ////console.log( OSQL_InsertPhysicInventory )
-
-            idPhysicalInventory = OSQL_InsertPhysicInventory[0].out_id;
-
-            if( idPhysicalInventory.length > 0 ){
-            
-                for(var i = 0; i < OSQL_GetProducts.length; i++){
-                    var oProduct = OSQL_GetProducts[i];
-
-                    var OSQL_InsertPhysicInventoryDetail = await dbConnection.query(`call InsertPhysicInventoryDetail(
-                        '${ idPhysicalInventory }'
-                        , ${ oProduct.idProduct }
-                        , '${ oProduct.cost }'
-                        , '${ oProduct.price }'
-                        , '${ oProduct.cCantidad }'
-                        
-                        , ${ idUserLogON }
-                        )`,{ transaction: tran })
-
-                    if(OSQL_InsertPhysicInventoryDetail[0].out_id > 0){
-                        bOK = true;
-                    }else{
-                        bOK = false;
-                        break;
-                    }
-
-                }
-            
-            }
-
-            if(bOK){
-                await tran.commit();
-
-                res.json({
-                    status: 0,
-                    message: "Inventario físico iniciado con éxito.",
-                    idPhysicalInventory: idPhysicalInventory
-                });
-
-            }else{
-
-                await tran.rollback();
-
-                res.json({
-                    status: 1,
-                    message: "No se inició el inventario físico."
-                });
-                
-            }
+            res.json({
+                status: OSQL[0].out_id.length > 0 ? 0 : 1,
+                message: OSQL[0].message,
+                insertID: OSQL[0].out_id
+            });
 
         }
 
@@ -985,8 +930,6 @@ const verifyPhysicalInventoryDetail = async(req, res) => {
         }
 
     }catch(error){
-
-        await tran.rollback();
 
         res.json({
             status: 2,
