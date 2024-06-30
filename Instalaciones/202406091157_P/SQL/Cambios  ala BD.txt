@@ -1,0 +1,4 @@
+INSERT INTO `actions` (`keyx`, `idAction`, `createDate`, `idActionSection`, `name`, `nameHtml`, `description`, `active`)
+VALUES (NULL, '11516', '2024-06-09 11:55:10', '1', 'ventas_cancelIngreso', 'Cancelación de ingreso manual ( REQUIERE CÓDIGO DE AUTORIZACIÓN )', 'Con este permiso puedes cancelar ingresos manuales', '1');
+
+INSERT INTO `menus` (`idMenu`, `createDate`, `idMenuPadre`, `lugar`, `name`, `description`, `icon`, `linkCat`, `linkList`, `imgDash`, `imgDashSize`, `idAplication`, `active`) VALUES (NULL, '2024-06-09 16:20:52', '13', '7', 'Reporte de Pagos Cancelados', 'Se pueden visualizar los pagos cancelados', 'assets/img/icons/pagosCancelados.png', 80, 'rep_pagoscancelados', NULL, NULL, '1', '1');

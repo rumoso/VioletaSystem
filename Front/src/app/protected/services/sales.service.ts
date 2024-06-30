@@ -438,4 +438,131 @@ export class SalesService {
 
   }
 
+  CCbxGetSobreTellerStatusCombo( data : any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetSobreTellerStatusCombo`, data );
+  }
+
+  CInsertIngresos( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertIngresos`, data);
+
+  }
+
+  CGetPreIngresosCorteCaja( idCaja: number ): Observable<ResponseGet> {
+
+    const data: any = {
+      idCaja: idCaja
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getPreIngresosCorteCaja`, data);
+
+  }
+
+  CDisabledIngresos( idIngreso : any ): Observable<ResponseDB_CRUD> {
+    var data: any = {
+      idIngreso: idIngreso
+    }
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disabledIngresos`, data );
+  }
+
+  async CGetIngresoByIDPromise( idIngreso: any ): Promise<any> {
+    var data: any = {
+      idIngreso: idIngreso
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return new Promise((resolve, reject) => {
+
+      this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getIngresoByID`, data)
+      .subscribe({
+        next: ( resp: ResponseGet ) => {
+          resolve( resp );
+        }
+        , error: ( err: any ) => {
+          reject( err );
+        }
+      });
+
+    });
+
+  }
+
+  async CGetIngresosByIDCorteCaja( idCorteCaja: number ): Promise<any> {
+    var data: any = {
+      idCorteCaja: idCorteCaja
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return new Promise((resolve, reject) => {
+
+      this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getIngresosByIDCorteCaja`, data)
+      .subscribe({
+        next: ( resp: ResponseGet ) => {
+          resolve( resp );
+        }
+        , error: ( err: any ) => {
+          reject( err );
+        }
+      });
+
+    });
+
+  }
+
+  CGetIngresosListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getIngresosListWithPage`, data);
+
+  }
+
+  CGetDatosRelacionadosByIDCorteCaja( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getDatosRelacionadosByIDCorteCaja`, data);
+
+  }
+
+  CGetRepPagosCanceladosWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getRepPagosCanceladosWithPage`, data );
+
+  }
+
 }

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-main',
@@ -7,7 +8,9 @@ import { Router } from '@angular/router';
   styleUrls: ['./main.component.css']
 })
 export class MainComponent {
-  
+
+  public _IconApp: string = environment.iconApp;
+
   constructor( private router: Router ) { }
 
   ngOnInit(): void {
@@ -20,5 +23,5 @@ export class MainComponent {
     localStorage.setItem('idUser', '')
     this.router.navigate( ['./auth'] );
   }
-  
+
 }

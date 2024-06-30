@@ -1,13 +1,23 @@
 <div style="padding: 10px;">
 
+    <div class="row">
+
+      <div class="col-md-12">
+
+          <h1>Egresos</h1>
+
+      </div>
+
+    </div>
+
     <button mat-icon-button
             style="position: absolute; top: 10px; right: 10px;"
             (click)="fn_CerrarMDL()">
         <mat-icon>close</mat-icon>
     </button>
 
-    <div class="row top30px">
-                                    
+    <div class="row">
+
         <div class="col-md-9">
             <mat-form-field class="example-full-width with100 top20px">
                 <mat-label>Descripción</mat-label>
@@ -22,19 +32,19 @@
 
 
         <div class="col-md-3">
-        
+
             <mat-form-field class="with100 top20px">
                 <mat-label>Monto</mat-label>
                 <input #tbxMonto
                 class="textAlingRight colorGreen"
-                
+
                 matInput
                 currencyMask
                 placeholder="PAGA"
                 [(ngModel)]="egresoForm.amount"
                 (keyup)="event_fn_Amount( $event )">
             </mat-form-field>
-            
+
         </div>
 
     </div>
@@ -42,7 +52,7 @@
     <div class="row top10px">
         <div class="col-md-12">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
@@ -62,14 +72,14 @@
                 *ngIf="selectPrinter.idPrinter > 0">
                 <mat-icon matPrefix class="my-icon">save</mat-icon>
                 Guardar e imprimir ticket</button>
-                
+
                 <button mat-raised-button
                 type="button"
                 class="marginRight10px"
                 (click)="fn_CerrarMDL()">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
@@ -102,20 +112,20 @@
                             </td>
 
                             <td style="text-align: left;">{{ item.idEgreso }}</td>
-                            
+
                             <td style="text-align: left;">{{ item.description }}</td>
                             <td style="text-align: right;">{{ item.amount | currency }}</td>
                         </tr>
-                        
+
                     </tbody>
-                    
+
                 </table>
             </div>
-            
+
         </div>
 
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

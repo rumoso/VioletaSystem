@@ -1,22 +1,26 @@
 <div style="padding: 10px;">
 
-    <button mat-icon-button
-            style="position: absolute; top: 10px; right: 10px;"
-            (click)="fn_CerrarMDL(0)">
-        <mat-icon>close</mat-icon>
-    </button>
+  <button mat-icon-button
+          style="position: absolute; top: 10px; right: 10px;"
+          (click)="fn_CerrarMDL(0)">
+      <mat-icon>close</mat-icon>
+  </button>
 
-    <div class="row">
+  <div class="row">
 
-        <div class="col-md-12">
+      <div class="col-md-12">
 
-            <h1>Hecho por: {{ preCorteCaja.createUserName }}</h1>
+          <h1>Hecho por: {{ preCorteCaja.createUserName }}</h1>
 
-        </div>
+      </div>
 
-    </div>
+  </div>
 
-    <div class="row top10px">
+  <div class="row">
+
+    <div class="col-md-7">
+
+      <div class="row top10px">
         <div class="col-md-12" style="text-align: center;">
             <mat-form-field class="">
             <mat-label>Fecha de corte:</mat-label>
@@ -25,71 +29,83 @@
             <mat-datepicker #picker></mat-datepicker>
             </mat-form-field>
         </div>
-    </div>
+      </div>
 
-    <div class="row top10px">
-        <div class="col-md-12">
-            <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                INGRESOS SEGÚN REGISTROS
-            </div>
+      <div class="row top10px">
+          <div class="col-md-12">
+              <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+                  INGRESOS SEGÚN REGISTROS
+              </div>
+          </div>
+      </div>
+
+      <div class="row top10px">
+
+        <div class="col-md-4">
+            <mat-form-field fxLayout.xs="column" class="with100">
+                <mat-label>VENTA</mat-label>
+                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                <input
+                matInput
+                class="textAlingRight"
+                [(ngModel)]="preCorteCaja.sales"
+                readonly>
+            </mat-form-field>
         </div>
-    </div>
 
-    <div class="row top10px">
+        <div class="col-md-4">
+            <mat-form-field fxLayout.xs="column" class="with100">
+                <mat-label>TALLER</mat-label>
+                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                <input
+                matInput
+                class="textAlingRight"
+                [(ngModel)]="preCorteCaja.tallerSales"
+                readonly>
+            </mat-form-field>
+        </div>
 
-      <div class="col-md-4">
+        <div class="col-md-4">
           <mat-form-field fxLayout.xs="column" class="with100">
-              <mat-label>VENTA</mat-label>
+              <mat-label>INGRESO TOTAL</mat-label>
               <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
               <input
               matInput
               class="textAlingRight"
-              [(ngModel)]="preCorteCaja.sales"
+              [(ngModel)]="preCorteCaja.ingresoTotal"
               readonly>
           </mat-form-field>
+        </div>
+
       </div>
 
-      <div class="col-md-4">
+      <div class="row top10px">
+
+        <div class="col-md-4">
+            <mat-form-field fxLayout.xs="column" class="with100">
+                <mat-label>EGRESOS</mat-label>
+                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                <input
+                matInput
+                class="textAlingRight"
+                [(ngModel)]="preCorteCaja.egresos"
+                readonly>
+            </mat-form-field>
+        </div>
+
+        <div class="col-md-4">
           <mat-form-field fxLayout.xs="column" class="with100">
-              <mat-label>TALLER</mat-label>
+              <mat-label>INGRESOS MANUALES</mat-label>
               <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
               <input
               matInput
               class="textAlingRight"
-              [(ngModel)]="preCorteCaja.tallerSales"
+              [(ngModel)]="preCorteCaja.ingresosManuales"
               readonly>
           </mat-form-field>
-      </div>
+        </div>
 
-      <div class="col-md-4">
-        <mat-form-field fxLayout.xs="column" class="with100">
-            <mat-label>INGRESO TOTAL</mat-label>
-            <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-            <input
-            matInput
-            class="textAlingRight"
-            [(ngModel)]="preCorteCaja.ingresoTotal"
-            readonly>
-        </mat-form-field>
-      </div>
-
-    </div>
-
-    <div class="row top10px">
-
-      <div class="col-md-6">
-          <mat-form-field fxLayout.xs="column" class="with100">
-              <mat-label>EGRESOS</mat-label>
-              <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-              <input
-              matInput
-              class="textAlingRight"
-              [(ngModel)]="preCorteCaja.egresos"
-              readonly>
-          </mat-form-field>
-      </div>
-
-        <div class="col-md-6">
+        <div class="col-md-4">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>INGRESO REAL</mat-label>
                 <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
@@ -101,227 +117,370 @@
             </mat-form-field>
         </div>
 
+      </div>
+
+      <div class="row">
+          <div class="col-md-6">
+              <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+                  DESGLOSE SISTEMA
+              </div>
+          </div>
+          <div class="col-md-6">
+              <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+                  EXISTENCIA EN CAJA
+              </div>
+          </div>
+      </div>
+
+      <div class="row top10px">
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>PESOS</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input
+                  matInput
+                  class="textAlingRight"
+                  [(ngModel)]="preCorteCaja.pesos"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>PESOS</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input #tbxPesosCaja
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.pesosCaja"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+      </div>
+
+      <div class="row top10px">
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>DÓLARES ( {{ preCorteCaja.dolares | currency }} - TC:{{ preCorteCaja.fxRate | currency }}  )</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.dolaresMNX"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>DÓLARES ( TC:{{ preCorteCaja.fxRate | currency }}  )</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input #tbxDolaresCaja
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.dolaresCaja"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+      </div>
+
+      <div class="row top10px">
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>VOUCHERS</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.vouchers"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>VOUCHERS</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input #tbxVouchersCaja
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.vouchersCaja"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+      </div>
+
+      <div class="row top10px">
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>TRANSFERENCIAS</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.transferencias"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>TRANSFERENCIAS</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input #tbxTransferenciasCaja
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.transferenciasCaja"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+      </div>
+
+      <div class="row top10px">
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>DINERO ELECTRÓNICO</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.dineroElectronico"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>TOTAL CAJA</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input #tbxTotalCaja
+                  matInput
+                  class="textAlingRight"
+                  type="number"
+                  [(ngModel)]="preCorteCaja.totalCaja"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+      </div>
+
+      <div class="row">
+          <div class="col-md-12">
+              <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+                  CONCLUSIÓN
+              </div>
+          </div>
+      </div>
+
+      <div class="row top10px">
+
+          <div class="col-md-6">
+          </div>
+
+          <div class="col-md-6">
+              <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label>DIFERENCIA</mat-label>
+                  <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+                  <input #tbxDiferencia
+                  matInput
+                  class="textAlingRight"
+                  [(ngModel)]="preCorteCaja.diferencia"
+                  readonly>
+              </mat-form-field>
+          </div>
+
+      </div>
+
+      <div class="row">
+
+          <div class="col-md-12">
+              <mat-form-field class="example-full-width with100 top20px">
+                  <mat-label>Comentarios</mat-label>
+                  <textarea #tbxComentarios
+                  matInput
+                  cdkTextareaAutosize
+                  placeholder="Ingrese un comentario"
+                  [(ngModel)]="preCorteCaja.observaciones"
+                  readonly></textarea>
+              </mat-form-field>
+          </div>
+
+      </div>
+
+      <div class="row top10px">
+          <div class="col-md-12">
+              <div style="float: left;">
+
+                  <button mat-raised-button
+                  type="button"
+                  class="marginRight10px"
+                  (click)="fn_CerrarMDL(0)">
+                  <mat-icon matPrefix class="my-icon">close</mat-icon>
+                  Cerrar</button>
+
+              </div>
+          </div>
+      </div>
+
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                DESGLOSE SISTEMA
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                EXISTENCIA EN CAJA
-            </div>
-        </div>
-    </div>
+    <div class="col-md-5">
 
-    <div class="row top10px">
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>PESOS</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input
-                matInput
-                class="textAlingRight"
-                [(ngModel)]="preCorteCaja.pesos"
-                readonly>
-            </mat-form-field>
-        </div>
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>PESOS</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input #tbxPesosCaja
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.pesosCaja"
-                readonly>
-            </mat-form-field>
-        </div>
-
-    </div>
-
-    <div class="row top10px">
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>DÓLARES ( {{ preCorteCaja.dolares | currency }} - TC:{{ preCorteCaja.fxRate | currency }}  )</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.dolaresMNX"
-                readonly>
-            </mat-form-field>
-        </div>
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>DÓLARES ( TC:{{ preCorteCaja.fxRate | currency }}  )</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input #tbxDolaresCaja
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.dolaresCaja"
-                readonly>
-            </mat-form-field>
-        </div>
-
-    </div>
-
-    <div class="row top10px">
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>VOUCHERS</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.vouchers"
-                readonly>
-            </mat-form-field>
-        </div>
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>VOUCHERS</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input #tbxVouchersCaja
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.vouchersCaja"
-                readonly>
-            </mat-form-field>
-        </div>
-
-    </div>
-
-    <div class="row top10px">
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>TRANSFERENCIAS</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.transferencias"
-                readonly>
-            </mat-form-field>
-        </div>
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>TRANSFERENCIAS</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input #tbxTransferenciasCaja
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.transferenciasCaja"
-                readonly>
-            </mat-form-field>
-        </div>
-
-    </div>
-
-    <div class="row top10px">
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>DINERO ELECTRÓNICO</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.dineroElectronico"
-                readonly>
-            </mat-form-field>
-        </div>
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>TOTAL CAJA</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input #tbxTotalCaja
-                matInput
-                class="textAlingRight"
-                type="number"
-                [(ngModel)]="preCorteCaja.totalCaja"
-                readonly>
-            </mat-form-field>
-        </div>
-
-    </div>
-
-    <div class="row">
+      <div class="row top10px">
         <div class="col-md-12">
             <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                CONCLUSIÓN
+                EGRESOS
             </div>
         </div>
-    </div>
+      </div>
 
-    <div class="row top10px">
-
-        <div class="col-md-6">
-        </div>
-
-        <div class="col-md-6">
-            <mat-form-field fxLayout.xs="column" class="with100">
-                <mat-label>DIFERENCIA</mat-label>
-                <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-                <input #tbxDiferencia
-                matInput
-                class="textAlingRight"
-                [(ngModel)]="preCorteCaja.diferencia"
-                readonly>
-            </mat-form-field>
-        </div>
-
-    </div>
-
-    <div class="row">
-
+      <div class="row top20px">
         <div class="col-md-12">
-            <mat-form-field class="example-full-width with100 top20px">
-                <mat-label>Comentarios</mat-label>
-                <textarea #tbxComentarios
-                matInput
-                cdkTextareaAutosize
-                placeholder="Ingrese un comentario"
-                [(ngModel)]="preCorteCaja.observaciones"
-                readonly></textarea>
-            </mat-form-field>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter padding-th">Acciones</th>
+                        <th class="textAlingLeft padding-th"># Egreso</th>
+                        <th class="textAlingLeft padding-th">Descripción</th>
+                        <th class="textAlingCenter padding-th">Monto</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of egresosList">
+                            <td class="textAlingCenter">
+                                <div style="width: 50px;">
+                                    <span *ngIf="selectPrinter.idPrinter > 0" class="material-icons manitaSobre colorGreen" title="Imprimir"
+                                        (click)="fn_btnRePrinter(item.idEgreso, 'Egreso')">
+                                        print
+                                        </span>
+                                </div>
+                            </td>
+
+                            <td style="text-align: left;">{{ item.idEgreso }}</td>
+
+                            <td style="text-align: left;">{{ item.description }}</td>
+                            <td style="text-align: right;">{{ item.amount | currency }}</td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+            </div>
+
         </div>
 
-    </div>
+      </div>
 
-    <div class="row top10px">
+      <div class="row top10px">
         <div class="col-md-12">
-            <div style="float: left;">
-
-                <button mat-raised-button
-                type="button"
-                class="marginRight10px"
-                (click)="fn_CerrarMDL(0)">
-                <mat-icon matPrefix class="my-icon">close</mat-icon>
-                Cerrar</button>
-
+            <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+                INGRESOS MANUALES
             </div>
         </div>
+      </div>
+
+      <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter padding-th">Acciones</th>
+                        <th class="textAlingLeft padding-th"># Ingreso</th>
+                        <th class="textAlingLeft padding-th">Descripción</th>
+                        <th class="textAlingCenter padding-th">Monto</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of ingresosList">
+                            <td class="textAlingCenter">
+                                <div style="width: 50px;">
+                                    <span *ngIf="selectPrinter.idPrinter > 0" class="material-icons manitaSobre colorGreen" title="Imprimir"
+                                        (click)="fn_btnRePrinter(item.idIngreso, 'Ingreso')">
+                                        print
+                                        </span>
+                                </div>
+                            </td>
+
+                            <td style="text-align: left;">{{ item.idIngreso }}</td>
+
+                            <td style="text-align: left;">{{ item.description }}</td>
+                            <td style="text-align: right;">{{ item.amount | currency }}</td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+
+      </div>
+
+      <div class="row top10px">
+        <div class="col-md-12">
+            <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
+                PAGOS CANCELADOS DESPUES DE CORTE
+            </div>
+        </div>
+      </div>
+
+      <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter padding-th">Acciones</th>
+                        <th class="textAlingLeft padding-th"># Pago</th>
+                        <th class="textAlingLeft padding-th"># Venta</th>
+                        <th class="textAlingCenter padding-th">Monto</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of pagosCanList">
+                            <td class="textAlingCenter">
+                                <div style="width: 50px;">
+                                    <span *ngIf="selectPrinter.idPrinter > 0" class="material-icons manitaSobre colorGreen" title="Imprimir"
+                                        (click)="fn_btnRePrinter(item, 'RePayment')">
+                                        print
+                                        </span>
+                                </div>
+                            </td>
+
+                            <td style="text-align: left;">{{ item.idPayment }}</td>
+                            <td style="text-align: left;">{{ item.idRelation }}</td>
+
+                            <td style="text-align: right;">{{ item.pago | currency }}</td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+
+      </div>
+
     </div>
+
+  </div>
 
 </div>
 

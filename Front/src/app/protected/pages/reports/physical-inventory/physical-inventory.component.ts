@@ -4,12 +4,13 @@ import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
-import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
+import { ColumnFormat, ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { ProductsService } from 'src/app/protected/services/products.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
+import { SoundService } from 'src/app/protected/services/sound.service';
 
 @Component({
   selector: 'app-physical-inventory',
@@ -83,6 +84,8 @@ export class PhysicalInventoryComponent {
 
   , private productsServ: ProductsService
 
+  , private soundSer: SoundService
+
   ) { }
 
   ngOnInit(): void {
@@ -99,6 +102,61 @@ export class PhysicalInventoryComponent {
   }
 
 // #region MÉTODOS PARA FRONT
+
+exportDataToExcel( iOption: number ): void {
+
+  this.bShowSpinner = true;
+
+  var Newpagination: Pagination = {
+    search:'',
+    length: 10000000,
+    pageSize: 10000000,
+    pageIndex: 0,
+    pageSizeOptions: [5, 10, 25, 100]
+  }
+
+  this.productsServ.CGetPhysicalInventoryDetailListWithPage( Newpagination, this.ODataP.idPhysicalInventory, iOption )
+  .subscribe({
+    next: (resp: ResponseGet) => {
+      console.log(resp)
+
+      if(resp.status == 0){
+
+          const columnFormats: ColumnFormat[] = [
+            { col: 0, currencyFormat: false, textAlignment: 'left' },
+            { col: 1, currencyFormat: false, textAlignment: 'left' },
+            { col: 2, currencyFormat: false, textAlignment: 'right' },
+            { col: 3, currencyFormat: false, textAlignment: 'right' },
+          ];
+
+          var NewObj = resp.data.rows.map((originalItem: any) => {
+            return {
+              'Código de barras	': originalItem.barCode,
+              'Nombre': originalItem.name,
+              'Inventario': originalItem.cCantidad,
+              'Diferencia': originalItem.cDiff
+            };
+          });
+
+          const currentDateTime = new Date();
+          const formattedDateTime = currentDateTime.toISOString().replace(/[:.]/g, '-');
+
+          this.servicesGServ.exportToExcel(NewObj, `RepInventarioFisico_${formattedDateTime}.xlsx`, columnFormats);
+
+      }
+
+      this.bShowSpinner = false;
+
+    },
+    error: (ex: HttpErrorResponse) => {
+      console.log( ex )
+      this.servicesGServ.showSnakbar( ex.error.data );
+      this.bShowSpinner = false;
+    }
+  })
+
+
+}
 
   hasPermissionAction( action: string ): boolean{
     return this.authServ.hasPermissionAction(action);
@@ -137,56 +195,56 @@ ev_onMostradorChange(item: any, cantidad: number){
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
-  
+
           var paramsMDL: any = {
             actionName: 'inv_ModifMostradorInventarioFisico'
             , bShowAlert: false
           }
-        
+
           this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
           .afterClosed().subscribe({
             next: ( resp ) =>{
-        
+
               if( resp ){
 
                 this.bShowActionAuthorization = false;
-  
+
                 this.bShowSpinner = true;
-  
+
                 var oParams: any = {
                   idPhysicalInventory: item.idPhysicalInventory,
                   idPhysicalInventoryDetail: item.idPhysicalInventoryDetail,
                   cantidad: cantidad,
                 }
-  
+
                 this.productsServ.CUpdateMostradorPhysicalInventoryDetail( oParams )
                 .subscribe({
                   next: (resp: any) => {
 
                     if( resp.status === 0 ){
-  
+
                         this.fn_getPhysicalInventoryHeader();
-                        
-                        
+
+
                     }
-  
+
                     this.servicesGServ.showAlertIA( resp );
-                    
+
                     this.bShowSpinner = false;
-          
+
                   },
                   error: (ex) => {
-          
+
                     this.servicesGServ.showSnakbar( ex.error.message );
                     this.bShowSpinner = false;
 
                     this.bShowActionAuthorization = false;
-          
+
                   }
                 });
-  
+
               }else{
                 this.bShowActionAuthorization = false;
                 setTimeout (() => {
@@ -195,10 +253,10 @@ ev_onMostradorChange(item: any, cantidad: number){
                   }
                 }, 1000);
               }
-  
+
             }
           });
-  
+
         }else{
           this.bShowActionAuthorization = false;
           setTimeout (() => {
@@ -207,7 +265,7 @@ ev_onMostradorChange(item: any, cantidad: number){
             }
           }, 1000);
         }
-        
+
       }
     });
 
@@ -217,7 +275,7 @@ ev_onMostradorChange(item: any, cantidad: number){
 
 ev_fn_barCode_keyup_enter(event: any){
   if(event.keyCode == 13) { // PRESS ENTER
-    
+
     if( this.productData.barCode.length > 0){
       this.fn_verifyProductInPhysicalInventoryDetail();
     }
@@ -275,58 +333,58 @@ ev_fn_barCode_keyup_enter(event: any){
       , 'Si', 'No')
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
 
             if( idStatus == 3 || idStatus == 4 ){
 
               var paramsMDL: any = {
-                actionName: ( idStatus == 3 ? 'inv_VerificarInventarioFisico' : 'inv_TerminarinventarioFisico' ) 
+                actionName: ( idStatus == 3 ? 'inv_VerificarInventarioFisico' : 'inv_TerminarinventarioFisico' )
                 , bShowAlert: false
               }
-            
+
               this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
               .afterClosed().subscribe({
                 next: ( resp ) =>{
-            
+
                   if( resp ){
 
                     this.bShowActionAuthorization = false;
-    
+
                     this.bShowSpinner = true;
-  
+
                     var paramsAction: any = {
-                      idPhysicalInventory: this.ODataP.idPhysicalInventory 
+                      idPhysicalInventory: this.ODataP.idPhysicalInventory
                       , idStatus: idStatus
                     }
-          
+
                     this.productsServ.CChangeStatusPhysicalInventory( paramsAction )
                     .subscribe({
                       next: (resp: any) => {
-              
+
                         if( resp.status === 0 ){
-          
+
                             this.fn_getPhysicalInventoryHeader();
-                            
+
                         }
-                        
+
                         this.servicesGServ.showAlertIA( resp );
-                        
+
                         this.bShowSpinner = false;
-              
+
                       },
                       error: (ex) => {
-              
+
                         this.servicesGServ.showSnakbar( ex.error.message );
                         this.bShowSpinner = false;
-              
+
                       }
                     });
-      
+
                   }else{
                     this.bShowActionAuthorization = false;
                   }
-      
+
                 }
               });
 
@@ -335,39 +393,39 @@ ev_fn_barCode_keyup_enter(event: any){
               this.bShowActionAuthorization = false;
 
               this.bShowSpinner = true;
-  
+
               var paramsAction: any = {
-                idPhysicalInventory: this.ODataP.idPhysicalInventory 
+                idPhysicalInventory: this.ODataP.idPhysicalInventory
                 , idStatus: idStatus
               }
-    
+
               this.productsServ.CChangeStatusPhysicalInventory( paramsAction )
               .subscribe({
                 next: (resp: any) => {
-        
+
                   if( resp.status === 0 ){
-    
+
                       this.fn_getPhysicalInventoryHeader();
-                      
+
                   }
-                  
+
                   this.servicesGServ.showAlertIA( resp );
-                  
+
                   this.bShowSpinner = false;
-        
+
                 },
                 error: (ex) => {
-        
+
                   this.servicesGServ.showSnakbar( ex.error.message );
                   this.bShowSpinner = false;
-        
+
                 }
               });
 
             }
-  
+
           }
-          
+
         }
       });
     }else{
@@ -379,7 +437,7 @@ ev_fn_barCode_keyup_enter(event: any){
   fn_verifyProductInPhysicalInventoryDetail() {
 
     if(this.productData.barCode.length > 0){
-      
+
       this.bShowSpinner = true;
 
       var OParams: any = {
@@ -391,8 +449,12 @@ ev_fn_barCode_keyup_enter(event: any){
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
 
-            console.log(resp)
-            
+            if( resp.status == 1 ){
+              this.soundSer.playSuccessSound();
+            }else{
+              this.soundSer.playErrorSound();
+            }
+
             this.productData.description = resp.message
 
             this.productData.barCode = '';
@@ -419,7 +481,7 @@ ev_fn_barCode_keyup_enter(event: any){
     this.catlist = [];
 
     this.bShowSpinner = true;
-    this.productsServ.CGetPhysicalInventoryDetailListWithPage( this.pagination, this.ODataP.idPhysicalInventory )
+    this.productsServ.CGetPhysicalInventoryDetailListWithPage( this.pagination, this.ODataP.idPhysicalInventory, 1 )
     .subscribe({
       next: (resp: ResponseGet) => {
         console.log(resp)
@@ -436,10 +498,10 @@ ev_fn_barCode_keyup_enter(event: any){
     })
   }
 
-  
+
 
   // #endregion
 
-  
+
 
 }

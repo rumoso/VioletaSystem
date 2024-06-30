@@ -18,7 +18,7 @@
         <div class="col-md-12">
 
             <br>
-            
+
             <div class="row top20px">
                 <div class="col-md-4">
                     <mat-form-field class="with100">
@@ -28,7 +28,7 @@
                         (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxName')">
                     </mat-form-field>
                 </div>
-                
+
 
                 <div class="col-md-4">
                     <mat-form-field class="with100">
@@ -50,7 +50,7 @@
                         (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxAddress')">
                     </mat-form-field>
                 </div>
-                
+
             </div>
 
             <div class="row top20px">
@@ -65,7 +65,7 @@
                         (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxEmail')">
                     </mat-form-field>
                 </div>
-                
+
                 <div class="col-md-6">
                     <mat-form-field class="with100">
                         <mat-label>Correo electrónico</mat-label>
@@ -79,7 +79,7 @@
 
             <div class="row">
                 <div class="col-md-1">
-                    <mat-checkbox class="example-margin" [(ngModel)]="customerForm.active">Activo</mat-checkbox>
+                    <mat-checkbox class="example-margin" [(ngModel)]="customerForm.active" disabled>Activo</mat-checkbox>
                 </div>
             </div>
 
@@ -92,17 +92,17 @@
                         class="marginRight10px"
                         (click)="fn_saveCustomer()"
                         [disabled]="!fn_validForm()">Guardar</button>
-                        
+
                         <button mat-raised-button
                         type="button"
-                        (click)="close()">Cerrar</button>                
-                        
+                        (click)="close()">Cerrar</button>
+
                     </div>
                 </div>
             </div>
 
         </div>
-    </div>    
+    </div>
 </div>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

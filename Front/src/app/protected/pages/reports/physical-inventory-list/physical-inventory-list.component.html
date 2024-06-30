@@ -1,7 +1,7 @@
 
 
 <mat-accordion >
-    
+
     <mat-expansion-panel (opened)="panelOpenState = true"
                          (closed)="panelOpenState = false"
                          [expanded]="true"
@@ -24,18 +24,18 @@
                 <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
                 <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                 <mat-date-range-picker #picker></mat-date-range-picker>
-                
+
                 </mat-form-field>
         </div>
     </div>
-      
+
       <div class="row">
         <div class="col-md-12">
 
                 <br>
-                
+
                 <div class="row">
-                                
+
                     <div class="col-md-6">
                         <mat-label>Sucursal: </mat-label>
                         <mat-form-field
@@ -59,17 +59,17 @@
                                 <mat-option *ngFor="let role of cbxSucursales" [value]="role">
                                     {{ role.name }}
                                 </mat-option>
-                
+
                                 <mat-option value="" *ngIf="cbxSucursales.length == 0 && parametersForm.sucursalDesc">
                                     No se encontró nada...
                                 </mat-option>
-                
+
                             </mat-autocomplete>
                         </mat-form-field>
                     </div>
 
                     <div class="col-md-3">
-                        
+
                         <mat-label>Grupo: </mat-label>
                             <mat-form-field
                             style="width: 100%;"
@@ -92,18 +92,18 @@
                                     <mat-option *ngFor="let item of cbxGroupsList" [value]="item">
                                         {{ item.name }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxGroupsList.length == 0 && parametersForm.groupDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
 
                     </div>
-                    
+
                     <div class="col-md-3">
-                        
+
                         <mat-label>Familia: </mat-label>
                             <mat-form-field
                             style="width: 100%;"
@@ -126,11 +126,11 @@
                                     <mat-option *ngFor="let item of cbxFamiliesList" [value]="item">
                                         {{ item.name }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxFamiliesList.length == 0 && parametersForm.familyDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
 
@@ -141,7 +141,7 @@
                 <div class="row top10px">
                     <div class="col-md-12">
                         <div style="float: left;">
-                            
+
                             <button mat-raised-button
                             color="primary"
                             type="submit"
@@ -149,7 +149,7 @@
                             (click)="fn_getPhysicalInventoryListWithPage()">
                             <mat-icon matPrefix class="my-icon">search</mat-icon>
                             Buscar</button>
-                            
+
                             <button mat-raised-button
                             type="button"
                             class="marginRight10px"
@@ -165,7 +165,7 @@
                             [disabled]="parametersForm.idSucursal == 0">
                             <mat-icon matPrefix class="my-icon">inbox</mat-icon>
                             GENERAR INVENTARIO FÍSICO CON ESTOS FILTROS</button>
-                            
+
                         </div>
                     </div>
                 </div>
@@ -178,7 +178,7 @@
   </mat-accordion>
 
   <div *ngFor="let item of physicalInventoryHeaderBySucursal" class="divSection">
-    
+
 
     <div class="row" style="margin-top: -35px;">
         <div class="col-md-12">
@@ -226,7 +226,7 @@
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
-                            
+
                             <th class="textAlingCenter padding-th">Acciones</th>
                             <th class="textAlingCenter padding-th">Folio</th>
                             <th class="textAlingLeft padding-th">Estatus</th>
@@ -238,7 +238,7 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let item of catlist">
-                                
+
                                 <td class="textAlingCenter">
                                     <div style="width: 100px;">
                                         <span class="material-icons manitaSobre colorGreen"
@@ -249,8 +249,8 @@
 
                                         <span class="material-icons manitaSobre colorRed"
                                         matTooltip="Eliminar inventario físico"
-                                        
-                                            
+
+
                                             *ngIf="item.active">
                                             delete_outline
                                         </span>
@@ -259,6 +259,7 @@
                                 </td>
 
                                 <td class="textAlingLeft">
+                                  <div style="width: 120px;">
                                     <div class="row">
                                         <div class="col-md-1">
                                             <mat-icon *ngIf="item.idStatus == 1" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorBlue">autorenew</mat-icon>
@@ -269,7 +270,8 @@
                                             <label style="margin-left: 10px;">{{ item.idPhysicalInventory }}</label>
                                         </div>
                                     </div>
-                                    
+                                  </div>
+
                                 </td>
 
                                 <td class="textAlingLeft">
@@ -284,26 +286,26 @@
                                             <label style="margin-left: 10px;">{{ item.statusName }}</label>
                                         </div>
                                     </div>
-                                    
+
                                 </td>
-                                
+
                                 <td class="textAlingCenter">
 
                                     <div style="width: 120px;">
-    
+
                                         <div class="row">
                                             <div class="col-md-1">
                                                 <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                                
+
                                             </div>
                                             <div class="col-md-10">
                                                 <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
                                                 <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
                                             </div>
                                         </div>
-    
+
                                     </div>
-                                    
+
                                 </td>
                                 <td class="textAlingLeft">{{ item.sucursalName }}</td>
                                 <td class="textAlingLeft">{{ item.userName }}</td>
@@ -318,10 +320,10 @@
                 <app-pagination *ngIf="catlist" [IPagination]="pagination"
                                 (OPagination)="changePagination($event)">
                 </app-pagination>
-            
+
             </div>
     </div>
-    
+
 </div>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

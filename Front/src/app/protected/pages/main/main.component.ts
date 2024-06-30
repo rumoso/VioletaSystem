@@ -3,6 +3,7 @@ import { MatSidenav } from '@angular/material/sidenav';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
+import { SoundService } from '../../services/sound.service';
 
 @Component({
   selector: 'app-main',
@@ -12,7 +13,9 @@ import { environment } from 'src/environments/environment';
 export class MainComponent implements OnInit {
 
   private _appMain: string = environment.appMain;
-  
+  public _IconApp: string = environment.iconApp;
+  public _appName: string = environment.appName;
+
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   constructor(
@@ -23,7 +26,7 @@ export class MainComponent implements OnInit {
   get userLogin() {
     return this.authService.userLogin;
   }
-  
+
   _userLogin: any;
   _menuList: any = []
 
@@ -52,7 +55,7 @@ export class MainComponent implements OnInit {
   }
 
   getMenuByPermissions(idUser: any){
-    
+
     this.authService.getMenuByPermissions( idUser )
     .subscribe( data =>{
       //console.log(data);
@@ -62,5 +65,5 @@ export class MainComponent implements OnInit {
     })
 
   }
-  
+
 }

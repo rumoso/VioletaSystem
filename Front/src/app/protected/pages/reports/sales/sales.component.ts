@@ -161,9 +161,15 @@ export class SalesComponent {
     this.salesServ.CGetRepVentasDetailWithPage( this.pagination, this.parametersForm )
     .subscribe({
       next: (resp: ResponseGet) => {
-        this.saleslist = resp.data.rows;
-        this.repVentasSumByIdSaleType = resp.data.repVentasSumByIdSaleType;
-        this.pagination.length = resp.data.count;
+
+        if( resp.status === 0 ){
+
+          this.saleslist = resp.data.rows;
+          this.repVentasSumByIdSaleType = resp.data.repVentasSumByIdSaleType;
+          this.pagination.length = resp.data.count;
+
+        }
+
         this.bShowSpinner = false;
       },
       error: (ex: HttpErrorResponse) => {

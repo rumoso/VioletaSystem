@@ -110,14 +110,14 @@ constructor(
   ////************************************************ */
   // MÉTODOS DE PAGINACIÓN
   changePagination(pag: Pagination) {
-    
+
     this.pagination = pag;
     this.fn_getElectronicMoneyListWithPage();
 
   }
 
   onChangeEvent(event: any){
-    
+
     this.pagination.search = event.target.value;
     this.fn_getElectronicMoneyListWithPage();
 
@@ -139,7 +139,7 @@ fn_getSelectPrintByIdUser( idUser: number ) {
 
   this.printersServ.CGetSelectPrinterByIdUser( idUser )
   .subscribe({
-    
+
     next: ( resp: ResponseGet ) => {
 
       if( resp.status == 0 ){
@@ -164,7 +164,7 @@ fn_getSelectPrintByIdUser( idUser: number ) {
     }
 
   })
-  
+
 }
 
 bInsertElectronicMoney: boolean = false;
@@ -205,7 +205,7 @@ if( this.electronicMoneyForm.idCustomer > 0 && this.electronicMoneyForm.amount >
 
           },
           error: (ex) => {
-            
+
             this.servicesGServ.showSnakbar( "Problemas con el servicio" );
             this.bShowSpinner = false;
 
@@ -230,7 +230,7 @@ this.bShowSpinner = true;
 this.electronicMoneyServ.CGetElectronicMoneyListWithPage( this.pagination, this.electronicMoneyForm.idCustomer )
 .subscribe({
   next: (resp: ResponseGet) => {
-    
+
     this.electronicMoneyList = resp.data.rows;
     this.pagination.length = resp.data.count;
     this.bShowSpinner = false;
@@ -239,7 +239,7 @@ this.electronicMoneyServ.CGetElectronicMoneyListWithPage( this.pagination, this.
 
   },
   error: (ex: HttpErrorResponse) => {
-    
+
     this.servicesGServ.showSnakbar( ex.error.data );
     this.bShowSpinner = false;
 
@@ -249,55 +249,55 @@ this.electronicMoneyServ.CGetElectronicMoneyListWithPage( this.pagination, this.
 
 bDeleteElectronicMoney: boolean = false;
 
-fn_deleteElectronicMoney( idElectronicMoney: number ) {
+fn_deleteElectronicMoney( keyx: number ) {
 
   if( !this.bDeleteElectronicMoney ){
-  
+
     this.bDeleteElectronicMoney = true;
-  
+
     this.servicesGServ.showDialog('¿Estás seguro?'
     , 'Está a punto de Eliminar dinero electrónico al cliente'
     , '¿Desea continuar?'
     , 'Si', 'No')
       .afterClosed().subscribe({
       next: ( resp: any ) =>{
-  
+
         this.bDeleteElectronicMoney = false;
-  
+
         if(resp){
-  
+
           this.bShowSpinner = true;
-  
-          this.electronicMoneyServ.CDeleteElectronicMoney( idElectronicMoney )
+
+          this.electronicMoneyServ.CDeleteElectronicMoney( keyx )
             .subscribe({
             next: (resp: ResponseDB_CRUD) => {
-  
+
               if( resp.status === 0 ){
                 this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
               }
               else{
                 this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
               }
-  
+
               this.bShowSpinner = false;
-  
+
               this.event_clear();
-  
+
             },
             error: (ex) => {
-              
+
               this.servicesGServ.showSnakbar( "Problemas con el servicio" );
               this.bShowSpinner = false;
-  
+
             }
           })
-  
+
         }
       }
     });
-  
+
   }
-  
+
 }
 
 
@@ -338,9 +338,9 @@ event_clear(){
 }
 
 ev_fn_description_keyup_enter(event: any){
-  
+
   if(event.keyCode == 13) { // PRESS ENTER
-    
+
     if( this.electronicMoneyForm.description.length > 0 ){
       this.nextInputFocus( this.tbxMonto, 0 );
     }
@@ -350,9 +350,9 @@ ev_fn_description_keyup_enter(event: any){
 }
 
 ev_fn_amount_keyup_enter(event: any){
-  
+
   if(event.keyCode == 13) { // PRESS ENTER
-    
+
     if( this.electronicMoneyForm.amount > 0 ){
       this.fn_insertElectronicMoney();
     }

@@ -146,9 +146,12 @@ async fn_savePayment() {
                   next: async (resp: ResponseDB_CRUD) => {
 
                     if( resp.status === 0 ){
-                      this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, this.paymentList.length, '');
+
+                      var sumCambio = this.paymentList.reduce((sum: any, x: any) => sum + x.cambio, 0);
+                      this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, this.paymentList.length, '', sumCambio);
                       console.log(this.idSale)
                       this.dialogRef.close( this.idSale );
+
                     }
 
                     this.servicesGServ.showAlertIA( resp );
@@ -210,7 +213,8 @@ addPayment(){
     referencia: this.paymentForm.referencia,
     description: 'Pago',
     idFxRate: this.paymentForm.idFxRate,
-    fxRate: this.paymentForm.fxRate
+    fxRate: this.paymentForm.fxRate,
+    cambio: this.paymentForm.cambio
   }
 
   this.paymentList.push(Payment);

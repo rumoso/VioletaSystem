@@ -21,6 +21,8 @@ import { PrintTicketService } from 'src/app/protected/services/print-ticket.serv
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { SalestypeService } from 'src/app/protected/services/salestype.service';
 import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
+import { IngresosComponent } from '../mdl/ingresos/ingresos.component';
+import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 
 @Component({
   selector: 'app-sale-list',
@@ -522,22 +524,163 @@ fn_ShowEgresos(){
 
 }
 
-fn_disabledSale( idSale: number ){
+fn_ShowIngresos(){
 
   var paramsMDL: any = {
-    actionName: 'ventas_Cancelar'
+    idCaja: this.selectCajas.idCaja
   }
 
-  this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+  this.servicesGServ.showModalWithParams( IngresosComponent, paramsMDL, '2000px')
   .afterClosed().subscribe({
-    next: ( auth_idUser ) =>{
+    next: ( resp ) =>{
 
-      if( auth_idUser ){
-        this.fn_CDisabledSale( idSale, auth_idUser );
-      }
-
+      this.fn_getVentasListWithPage();
     }
   });
+
+}
+
+bShowActionAuthorization: boolean = false;
+fn_disabledSale( data: any ){
+
+  if(!this.bShowActionAuthorization){
+
+    this.bShowActionAuthorization = true;
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+    , 'Está apunto de cancelar la venta #' + data.idSale
+    , '¿Desea continuar?'
+    , 'Si', 'No' )
+    .afterClosed().subscribe({
+      next: ( resp ) =>{
+
+        if(resp){
+
+          this.bShowActionAuthorization = false;
+
+          if( data.pagosYaEnCorte > 0 ){
+
+            var paramsQuestionMDL: any = {
+              pagosYaEnCorte: data.pagosYaEnCorte
+            }
+
+            this.servicesGServ.showModalWithParams( QuestionCancelSalePaymentsComponent, paramsQuestionMDL, '600px')
+              .afterClosed().subscribe({
+                next: ( sOption ) =>{
+
+                  if(sOption){
+
+                    var paramsMDL: any = {
+                      actionName: 'ventas_Cancelar'
+                      , bShowAlert: false
+                    }
+
+                    this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+                    .afterClosed().subscribe({
+                      next: ( auth_idUser ) =>{
+
+                        if( auth_idUser ){
+
+                          this.bShowActionAuthorization = false;
+
+                          this.bShowSpinner = true;
+
+                          var oParams: any = {
+                            sOption: sOption,
+                            idSale: data.idSale,
+                            auth_idUser: auth_idUser
+                          }
+
+                          this.salesServ.CDisabledSale( oParams )
+                          .subscribe({
+                            next: async (resp: ResponseDB_CRUD) => {
+
+                              this.servicesGServ.showAlertIA( resp );
+                              this.bShowSpinner = false;
+
+                              this.fn_getVentasListWithPage();
+
+                            },
+                            error: (ex) => {
+
+                              this.servicesGServ.showSnakbar( ex.error.message );
+                              this.bShowSpinner = false;
+
+                            }
+
+                          });
+
+                        }
+                        else{
+                          this.bShowActionAuthorization = false;
+                        }
+
+                      }
+                    });
+
+                  }
+                }
+              });
+
+          }else{
+
+            var paramsMDL: any = {
+              actionName: 'ventas_Cancelar'
+              , bShowAlert: false
+            }
+
+            this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+            .afterClosed().subscribe({
+              next: ( auth_idUser ) =>{
+
+                if( auth_idUser ){
+
+                  this.bShowActionAuthorization = false;
+
+                  this.bShowSpinner = true;
+
+                  var oParams: any = {
+                    idSale: data.idSale,
+                    auth_idUser: auth_idUser
+                  }
+
+                  this.salesServ.CDisabledSale( oParams )
+                  .subscribe({
+                    next: async (resp: ResponseDB_CRUD) => {
+
+                      this.servicesGServ.showAlertIA( resp );
+                      this.bShowSpinner = false;
+
+                      this.fn_getVentasListWithPage();
+
+                    },
+                    error: (ex) => {
+
+                      this.servicesGServ.showSnakbar( ex.error.message );
+                      this.bShowSpinner = false;
+
+                    }
+
+                  });
+
+                }
+                else{
+                  this.bShowActionAuthorization = false;
+                }
+
+              }
+            });
+
+          }
+
+        }else{
+          this.bShowActionAuthorization = false;
+        }
+      }
+
+    });
+
+  }
 
 }
 

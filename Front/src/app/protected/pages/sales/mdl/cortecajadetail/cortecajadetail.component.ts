@@ -1,8 +1,11 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
+import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
+import { PrintersService } from 'src/app/protected/services/printers.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 
@@ -16,10 +19,16 @@ export class CortecajadetailComponent {
   // SECCIÓN DE VARIABLES
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
+  idUserLogON: number = 0;
   bShowSpinner: boolean = false;
   idCorteCaja: any = 0;
 
+
   selectedDate: any = '';
+
+  egresosList: any = [];
+  ingresosList: any = [];
+  pagosCanList: any = [];
 
   preCorteCaja: any = {
 
@@ -44,6 +53,12 @@ export class CortecajadetailComponent {
     observaciones: ''
   }
 
+  selectPrinter: any = {
+    idSucursal: 0,
+    idPrinter: 0,
+    printerName: ''
+  }
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // FIN SECCIÓN DE VARIABLES
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,20 +76,26 @@ export class CortecajadetailComponent {
   , private salesServ: SalesService
 
   , private printTicketServ: PrintTicketService
+
+  , private printersServ: PrintersService
   ) { }
 
-  ngOnInit(): void {
+  async ngOnInit() {
 
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
 
-    console.log( this.ODataP )
+    this.authServ.checkSession();
+    this.idUserLogON = await this.authServ.getIdUserSession();
 
     this.idCorteCaja = this.ODataP.idCorteCaja;
 
     if( this.ODataP.idCorteCaja.length > 0 ){
 
+      this.fn_getSelectPrintByIdUser( this.idUserLogON );
       this.fn_getCorteCajaDetailByID( this.ODataP.idCorteCaja );
+
+      this.fn_getDatosRelacionadosByIDCorteCaja( this.ODataP.idCorteCaja );
 
     }
 
@@ -83,6 +104,38 @@ export class CortecajadetailComponent {
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // SECCIÓN DE CONEXIONES AL BACK
   //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  fn_getSelectPrintByIdUser( idUser: number ) {
+
+    this.printersServ.CGetSelectPrinterByIdUser( idUser )
+    .subscribe({
+
+      next: ( resp: ResponseGet ) => {
+
+        if( resp.status == 0 ){
+
+          this.selectPrinter.idSucursal = resp.data.idSucursal;
+          this.selectPrinter.idPrinter = resp.data.idPrinter;
+          this.selectPrinter.printerName = resp.data.printerName;
+
+        }
+        else{
+
+          this.selectPrinter.idSucursal = 0;
+          this.selectPrinter.idPrinter = 0;
+          this.selectPrinter.printerName = '';
+
+        }
+
+        console.log( resp );
+      },
+      error: (ex: HttpErrorResponse) => {
+        this.servicesGServ.showSnakbar( ex.error.data );
+      }
+
+    })
+
+  }
 
   fn_getCorteCajaDetailByID( idCorteCaja: any ) {
 
@@ -105,9 +158,58 @@ export class CortecajadetailComponent {
 
   }
 
+  fn_getDatosRelacionadosByIDCorteCaja( idCorteCaja: any ) {
+
+    var oParams: any = {
+      idCorteCaja: idCorteCaja
+    }
+
+    this.salesServ.CGetDatosRelacionadosByIDCorteCaja( oParams )
+    .subscribe( ( resp: any ) => {
+
+      if(resp.status == 0){
+
+        this.egresosList = resp.egresosList;
+        this.ingresosList = resp.ingresosList;
+        this.pagosCanList = resp.pagosCanList;
+
+      }
+
+    } );
+
+  }
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // FIN SECCIÓN DE CONEXIONES AL BACK
   //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  fn_btnRePrinter( idRelation: any, relationType: string ){
+
+    if( this.selectPrinter.idPrinter > 0 ){
+
+      this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Estás apunto de reimprimir'
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+
+          if(resp){
+
+            if(relationType != "RePayment")
+              this.printTicketServ.printTicket(relationType, idRelation, this.selectPrinter.idPrinter);
+            else
+              this.printTicketServ.printTicket("RePayment", idRelation.idRelation, this.selectPrinter.idPrinter, 1, idRelation.idPayment);
+
+          }
+
+        }
+
+      });
+
+    }
+
+  }
 
   fn_CerrarMDL( id: number ){
     this.dialogRef.close( id );

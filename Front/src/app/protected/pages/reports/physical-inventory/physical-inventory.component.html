@@ -5,21 +5,21 @@
             (click)="fn_CerrarMDL(0)">
         <mat-icon>close</mat-icon>
     </button>
-    
+
     <div class="row">
-                                
+
         <div class="col-md-12">
-            
+
             <h1>Inventario físico #{{ ODataP.idPhysicalInventory }}</h1>
 
         </div>
-            
+
     </div>
 
     <div class="row top10px">
         <div class="col-md-12">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
@@ -28,7 +28,7 @@
                 *ngIf="oPhysicalInventoryHeader.idStatus == 1">
                 <mat-icon matPrefix class="my-icon">done</mat-icon>
                 Completar</button>
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
@@ -46,7 +46,7 @@
                 *ngIf="( oPhysicalInventoryHeader.idStatus == 1 || oPhysicalInventoryHeader.idStatus == 2 || oPhysicalInventoryHeader.idStatus == 3 )">
                 <mat-icon matPrefix class="my-icon">done_all</mat-icon>
                 Terminar</button>
-                
+
             </div>
         </div>
     </div>
@@ -66,7 +66,7 @@
     </div>
 
     <div *ngIf="oPhysicalInventoryHeader.idStatus != 1 && oPhysicalInventoryHeader.faltantePz != 0" class="divSection">
-    
+
 
         <div class="row" style="margin-top: -35px;">
             <div class="col-md-12">
@@ -75,7 +75,7 @@
                 </div>
             </div>
         </div>
-    
+
         <div class="row">
             <div class="col-md-2">
                 <h1>{{ oPhysicalInventoryHeader.faltantePz }} PZ</h1>
@@ -92,7 +92,7 @@
     </div>
 
     <div *ngIf="oPhysicalInventoryHeader.idStatus != 1 && oPhysicalInventoryHeader.sobrantePz != 0" class="divSection">
-    
+
 
         <div class="row" style="margin-top: -35px;">
             <div class="col-md-12">
@@ -101,7 +101,7 @@
                 </div>
             </div>
         </div>
-    
+
         <div class="row">
             <div class="col-md-2">
                 <h1>{{ oPhysicalInventoryHeader.sobrantePz }} PZ</h1>
@@ -148,8 +148,32 @@
                 readonly>
                 </mat-form-field>
         </div>
-        
+
     </div>
+
+    <div class="row top10px">
+      <div class="col-md-12">
+          <div style="float: left;">
+
+              <button mat-raised-button
+              color="primary"
+              type="submit"
+              class="marginRight10px"
+              (click)="exportDataToExcel( 1 )">
+              <mat-icon matPrefix class="my-icon">insert_drive_file</mat-icon>
+              EXPORTAR A EXCEL TODO</button>
+
+              <button mat-raised-button
+              color="primary"
+              type="submit"
+              class="marginRight10px"
+              (click)="exportDataToExcel( 2 )">
+              <mat-icon matPrefix class="my-icon">insert_drive_file</mat-icon>
+              EXPORTAR A EXCEL SOLO LAS DIFERENCIAS</button>
+
+          </div>
+      </div>
+  </div>
 
     <div class="row top20px">
         <div class="col-md-12">
@@ -165,7 +189,7 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let item of catlist">
-                            
+
                             <td class="textAlingLeft">
                                 <div class="row">
                                     <div class="col-md-1">
@@ -175,7 +199,7 @@
                                         <label style="margin-left: 10px;">{{ item.barCode }}</label>
                                     </div>
                                 </div>
-                                
+
                             </td>
                             <td class="textAlingLeft">
                                 <div class="row">
@@ -189,9 +213,9 @@
                                         <label style="margin-left: 10px;">{{ item.name }}</label>
                                     </div>
                                 </div>
-                                
+
                             </td>
-                            
+
                             <td class="textAlingRight">{{ item.cCantidad }}</td>
                             <td *ngIf="oPhysicalInventoryHeader.idStatus == 2 || oPhysicalInventoryHeader.idStatus == 4" class="textAlingRight">{{ item.cMostrador }}</td>
                             <td *ngIf="oPhysicalInventoryHeader.idStatus == 1 || oPhysicalInventoryHeader.idStatus == 3" class="textAlingCenter padding-th">
@@ -199,7 +223,7 @@
                                 <div style="width: 180px;" class="inlineDIV">
                                     <span class="material-icons manitaSobre colorGreen inlineObj"
                                     (click)="ev_onMostradorChange(item, -1)">remove</span>
-                                    
+
                                     <input
                                         class="textAlingCenter colorGreen inlineObj"
                                         style="width: 55px;"
@@ -207,7 +231,7 @@
                                         type="number"
                                         [(ngModel)]="item.cMostrador"
                                          readonly>
-                                    
+
                                     <span class="material-icons manitaSobre colorGreen inlineObj"
                                     (click)="ev_onMostradorChange(item, 1)">add</span>
 
@@ -215,7 +239,7 @@
                             </td>
                             <td class="textAlingRight">{{ item.cDiff }}</td>
 
-                            
+
                             <td *ngIf="oPhysicalInventoryHeader.idStatus == 2 || oPhysicalInventoryHeader.idStatus == 4" class="textAlingLeft">{{ item.comments }}</td>
                             <td *ngIf="oPhysicalInventoryHeader.idStatus == 1 || oPhysicalInventoryHeader.idStatus == 3" class="textAlingCenter padding-th">
 
@@ -230,11 +254,11 @@
             <app-pagination *ngIf="catlist" [IPagination]="pagination"
                             (OPagination)="changePagination($event)">
             </app-pagination>
-        
+
         </div>
-        
+
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

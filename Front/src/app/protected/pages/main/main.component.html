@@ -5,12 +5,12 @@
             <span>Menú</span>
 
             <span class="spacer"></span>
-            
+
             <button mat-icon-button
             (click)="sidenav.toggle()">
                 <mat-icon>menu</mat-icon>
             </button>
-            
+
         </mat-toolbar>
 
         <mat-expansion-panel [class.mat-elevation-z0]="true" *ngFor="let menuDad of _menuList">
@@ -24,7 +24,7 @@
                 </a>
             </mat-nav-list>
         </mat-expansion-panel>
-        
+
     </mat-sidenav>
 
     <mat-toolbar id="headerApp">
@@ -35,12 +35,12 @@
 
         <img width="60"
                 class="manitaSobre"
-                src="assets/img/icons/VioletaIcon.png"
+                [src]="_IconApp"
                 alt=""
                 routerLink="./dashboard">
         <h1 routerLink="./dashboard"
-            class="manitaSobre">VioletaSistem</h1>
-        <span class="spacer"></span> 
+            class="manitaSobre">{{ _appName }}</h1>
+        <span class="spacer"></span>
 
         <span class="spacer"></span>
         <img class="imgDashboard" style="width:50px !important" src="assets/img/icons/connectUser.gif"/>
@@ -57,5 +57,5 @@
     <div class="container" style="margin-bottom: 50px;">
         <router-outlet></router-outlet>
     </div>
-    
+
 </mat-sidenav-container>

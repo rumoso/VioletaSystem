@@ -10,6 +10,7 @@ import { PrintersService } from 'src/app/protected/services/printers.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 
 @Component({
   selector: 'app-edit-taller',
@@ -33,7 +34,9 @@ export class EditTallerComponent {
   oDataSale: any = {
 
     importe: '',
-    descriptionTaller: ''
+    descriptionTaller: '',
+    idStatusSobre: 0,
+    statusSobreDesc: ''
 
   }
 
@@ -95,6 +98,8 @@ export class EditTallerComponent {
 
             this.oDataSale.descriptionTaller = resp.dataDetail[0].productDesc;
             this.oDataSale.importe = resp.dataDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
+            this.oDataSale.idStatusSobre = resp.data.idStatusSobre;
+            this.oDataSale.statusSobreDesc = resp.data.statusSobreDesc;
 
           }else{
             this.servicesGServ.showSnakbar(resp.message);
@@ -139,7 +144,8 @@ export class EditTallerComponent {
                     auth_idUser: auth_idUser,
                     idSale: this.ODataP.idSale,
                     importe: this.oDataSale.importe,
-                    descriptionTaller: this.oDataSale.descriptionTaller
+                    descriptionTaller: this.oDataSale.descriptionTaller,
+                    idStatusSobre: this.oDataSale.idStatusSobre
                   }
 
                   this.salesServ.CEditSobreTaller( oParams )
@@ -219,5 +225,57 @@ export class EditTallerComponent {
 
   //#endregion
 
+
+//--------------------------------------------------------------------------
+  // MÉTODOS PARA COMBO DE ÁREAS
+
+  cbxSobreTallerStatus: any[] = [];
+
+  cbxSobreTallerStatus_Search() {
+
+    var oParams: any ={
+      search: this.oDataSale.statusSobreDesc
+    }
+
+      this.salesServ.CCbxGetSobreTellerStatusCombo( oParams )
+       .subscribe( {
+         next: (resp: ResponseGet) =>{
+           if(resp.status === 0){
+             this.cbxSobreTallerStatus = resp.data
+           }
+           else{
+            this.cbxSobreTallerStatus = [];
+           }
+         },
+         error: (ex) => {
+           this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+           this.bShowSpinner = false;
+         }
+       });
+  }
+
+  cbxSobreTallerStatus_SelectedOption( event: MatAutocompleteSelectedEvent ) {
+
+    this.cbxSobreTallerStatus_Clear();
+
+    setTimeout (() => {
+
+      const ODataCbx: any = event.option.value;
+
+      this.oDataSale.idStatusSobre = ODataCbx.id;
+      this.oDataSale.statusSobreDesc = ODataCbx.name;
+
+      //alert(this.salesHeaderForm.idSaleType)
+
+
+    }, 1);
+
+  }
+
+  cbxSobreTallerStatus_Clear(){
+    this.oDataSale.idStatusSobre = 0;
+    this.oDataSale.statusSobreDesc = '';
+  }
+  //--------------------------------------------------------------------------
 
 }

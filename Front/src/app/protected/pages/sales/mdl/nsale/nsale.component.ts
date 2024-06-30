@@ -339,52 +339,57 @@ export class NsaleComponent {
               .afterClosed().subscribe({
                 next: ( sOption ) =>{
 
-                  var paramsMDL: any = {
-                    actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' )
-                    , bShowAlert: false
-                  }
+                  if(sOption){
 
-                  this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
-                  .afterClosed().subscribe({
-                    next: ( resp ) =>{
+                    var paramsMDL: any = {
+                      actionName: ( item.iPagoCortado > 0 ? 'ventas_CancelarPagoCortado' : 'ventas_CancelarPago' )
+                      , bShowAlert: false
+                    }
 
-                      if( resp ){
+                    this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+                    .afterClosed().subscribe({
+                      next: ( auth_idUser ) =>{
 
-                        this.bShowSpinner = true;
+                        if( auth_idUser ){
 
-                        var oParams: any = {
-                          idSale: this.idSale,
-                          idPayment: item.idPayment,
-                          sOption: sOption
-                        }
+                          this.bShowSpinner = true;
 
-                        this.saleServ.CDisabledPayment( oParams )
-                        .subscribe({
-                          next: (resp: any) => {
+                          var oParams: any = {
+                            idSale: this.idSale,
+                            idPayment: item.idPayment,
+                            sOption: sOption,
+                            auth_idUser: auth_idUser
+                          }
 
-                            if( resp.status === 0 ){
+                          this.saleServ.CDisabledPayment( oParams )
+                          .subscribe({
+                            next: (resp: any) => {
 
-                              this.fn_getSaleByID( this.idSale );
+                              if( resp.status === 0 ){
+
+                                this.fn_getSaleByID( this.idSale );
+
+                              }
+
+                              this.servicesGServ.showAlertIA( resp );
+
+                              this.bShowSpinner = false;
+
+                            },
+                            error: (ex) => {
+
+                              this.servicesGServ.showSnakbar( ex.error.message );
+                              this.bShowSpinner = false;
 
                             }
+                          });
 
-                            this.servicesGServ.showAlertIA( resp );
-
-                            this.bShowSpinner = false;
-
-                          },
-                          error: (ex) => {
-
-                            this.servicesGServ.showSnakbar( ex.error.message );
-                            this.bShowSpinner = false;
-
-                          }
-                        });
+                        }
 
                       }
+                    });
 
-                    }
-                  });
+                  }
 
                 }
               });
@@ -398,9 +403,9 @@ export class NsaleComponent {
 
               this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
               .afterClosed().subscribe({
-                next: ( resp ) =>{
+                next: ( auth_idUser ) =>{
 
-                  if( resp ){
+                  if( auth_idUser ){
 
                     this.bShowActionAuthorization = false;
 
@@ -409,7 +414,8 @@ export class NsaleComponent {
                     var oParams: any = {
                       idSale: this.idSale,
                       idPayment: item.idPayment,
-                      sOption: ''
+                      sOption: '',
+                      auth_idUser: auth_idUser
                     }
 
                     this.saleServ.CDisabledPayment( oParams )

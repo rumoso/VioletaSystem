@@ -9,6 +9,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { CajasService } from './cajas.service';
 import { PrintersService } from './printers.service';
+import { ProductsService } from './products.service';
 
 @Injectable({
   providedIn: 'root'
@@ -25,11 +26,13 @@ export class PrintTicketService {
     , private servicesG: ServicesGService
     , private cajasServ: CajasService
     , private printersServ: PrintersService
+    , private productsServ: ProductsService
   ) { }
 
-  async printTicket( type: string, idRelation: any, idPrinter: number, iPayments: number = 0, idPayment: any = '' ): Promise<any> {
+  async printTicket( type: string, idRelation: any, idPrinter: number, iPayments: number = 0, idPayment: any = '', sumCambio: number = 0 ): Promise<any> {
 
     var bOK = false;
+    var sBarCode = '';
 
     let USDollar = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -501,6 +504,29 @@ export class PrintTicketService {
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
+      oLines = [];
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "CAMBIO:", iWith: 75 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sumCambio ), iWith: 25 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      if(sale.data.pendingAmount < 1){
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 20, text: "PAGADO" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
 
       // CONSTRUYO EL FOOTER
       // const FooterSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.data.idSucursal, "footer");
@@ -550,6 +576,21 @@ export class PrintTicketService {
       const HeaderSuc = await this.sucursalesServ.CGetPrintTicketSuc( oCorteCaja.data.idSucursal, "Header");
 
       var oLines: any = [];
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 20, text: "CORTE DE CAJA" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
 
       for(var i = 0; i < HeaderSuc.length; i++){
 
@@ -628,16 +669,20 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "EGRESOS:", iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "EGRESOS:", iWith: 33 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "INGRESO TOTAL:", iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "INGRESOS MANUALES:", iWith: 34 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: "INGRESO TOTAL:", iWith: 34 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.egresos ), iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.egresos ), iWith: 33 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.ingresoReal ), iWith: 50 }
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.ingresosManuales ), iWith: 33 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.ingresoReal ), iWith: 34 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
@@ -725,6 +770,20 @@ export class PrintTicketService {
         oLines = [];
         var oLine: any = { aling: "Left", size: 6, style: "Bold", text: " ", iWith: 25 }
         oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 6, style: "Bold", text: "TOTAL EN CAJA", iWith: 50 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( oCorteCaja.data.totalCaja ), iWith: 25 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 6, style: "Bold", text: " ", iWith: 25 }
+        oLines.push( oLine );
         var oLine: any = { aling: "Right", size: 7, style: "Bold", text: " ", iWith: 25 }
         oLines.push( oLine );
         var oLine: any = { aling: "Left", size: 6, style: "Bold", text: "DIFERENCIA", iWith: 25 }
@@ -775,8 +834,6 @@ export class PrintTicketService {
 
         const oEgresos = await this.salesServ.CGetEgresosByIDCorteCaja( idCorteCaja );
 
-        console.log(oEgresos)
-
         if( oEgresos.data.length > 0 ){
 
           oLines = [];
@@ -797,9 +854,9 @@ export class PrintTicketService {
           oLines = [];
           var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "# EGRESO", iWith: 20 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 50 }
+          var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 60 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "MONTO", iWith: 30 }
+          var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "MONTO", iWith: 20 }
           oLines.push( oLine );
           oLinesP.push( { oLines: oLines } );
 
@@ -808,9 +865,52 @@ export class PrintTicketService {
             oLines = [];
             var oLine: any = { aling: "Left", size: 7, text: oEgresos.data[i].idEgreso, iWith: 20 }
             oLines.push( oLine );
-            var oLine: any = { aling: "Left", size: 7, text: oEgresos.data[i].description, iWith: 50 }
+            var oLine: any = { aling: "Left", size: 7, text: oEgresos.data[i].description, iWith: 60 }
             oLines.push( oLine );
-            var oLine: any = { aling: "Right", size: 7, text: USDollar.format( oEgresos.data[i].amount ), iWith: 30 }
+            var oLine: any = { aling: "Right", size: 7, text: USDollar.format( oEgresos.data[i].amount ), iWith: 20 }
+            oLines.push( oLine );
+            oLinesP.push( { oLines: oLines } );
+
+          }
+
+        }
+
+        const oIngresos = await this.salesServ.CGetIngresosByIDCorteCaja( idCorteCaja );
+
+        if( oIngresos.data.length > 0 ){
+
+          oLines = [];
+          var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "LISTA DE INGRESOS MANUALES:", iWith: 100 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+          oLines = [];
+          var oLine: any = { aling: "Center", size: 10, text: " " }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "# Ingreso", iWith: 20 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 50 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "MONTO", iWith: 30 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+          for(var i = 0; i < oIngresos.data.length; i++){
+
+            oLines = [];
+            var oLine: any = { aling: "Left", size: 7, text: oIngresos.data[i].idIngreso, iWith: 20 }
+            oLines.push( oLine );
+            var oLine: any = { aling: "Left", size: 7, text: oIngresos.data[i].description, iWith: 50 }
+            oLines.push( oLine );
+            var oLine: any = { aling: "Right", size: 7, text: USDollar.format( oIngresos.data[i].amount ), iWith: 30 }
             oLines.push( oLine );
             oLinesP.push( { oLines: oLines } );
 
@@ -833,6 +933,21 @@ export class PrintTicketService {
       const HeaderSuc = await this.sucursalesServ.CGetPrintTicketSuc( egreso.data.idSucursal, "Header");
 
       var oLines: any = [];
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 20, text: "EGRESO" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
 
       for(var i = 0; i < HeaderSuc.length; i++){
 
@@ -988,6 +1103,99 @@ export class PrintTicketService {
       oLinesP.push( { oLines: oLines } );
 
     }
+    else if(type == "Ingreso"){
+
+      const ingreso = await this.salesServ.CGetIngresoByIDPromise( idRelation );
+
+      // CONSTRUYO EL HEADER
+      const HeaderSuc = await this.sucursalesServ.CGetPrintTicketSuc( ingreso.data.idSucursal, "Header");
+
+      var oLines: any = [];
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 20, text: "INGRESO" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      for(var i = 0; i < HeaderSuc.length; i++){
+
+        oLines = [];
+
+        var oLine: any = {
+          aling: HeaderSuc[i].aling
+          , size: HeaderSuc[i].size
+          , text: HeaderSuc[i].text
+        }
+
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      // AGREGO LA INFORMACIÓN DELA OPERACIÓN
+      if( ingreso != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "OPERACIÓN: INGRESO #" +  ingreso.data.idIngreso }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "FECHA: " + ingreso.data.createDateString }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 75 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "MONTO", iWith: 25 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, style: "Bold", text: ingreso.data.description, iWith: 75 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( ingreso.data.amount ), iWith: 25 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+    }
     else if(type == "ConsHistory"){
 
       const sale = await this.salesServ.CGetSaleByIDPromise( idRelation );
@@ -1115,6 +1323,33 @@ export class PrintTicketService {
       oLinesP.push( { oLines: oLines } );
 
     }
+    else if(type == "codigoBarras"){
+
+      var oProduct = await this.productsServ.CGetProductByIDPromise( idRelation )
+      console.log(oProduct)
+
+      var sCodeProduct = '';
+      sCodeProduct += this.safeSubstring(oProduct.groupDesc, 0, 1);
+      sCodeProduct += this.safeSubstring(oProduct.familyDesc, 0, 2);
+      sCodeProduct += oProduct.qualityValue > 0 ? oProduct.qualityValue : '';
+      sCodeProduct += this.safeSubstring(oProduct.originDesc, 0, 1);
+      sCodeProduct += oProduct.gramos > 0 ? oProduct.gramos : '';
+
+      console.log(sCodeProduct)
+
+      sBarCode = oProduct.barCode;
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 7, style: "Regular", text: sCodeProduct, iWith: 33 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 7, style: "Regular", text: USDollar.format( oProduct.price ), iWith: 33 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+    }
 
     if(idPrinter > 0){
 
@@ -1124,7 +1359,8 @@ export class PrintTicketService {
 
         let oPrinter: any = {
           printerName: oPrinterData.data.printerName,
-          maxMargen: oPrinterData.data.maxMargen
+          maxMargen: oPrinterData.data.maxMargen,
+          sBarCode: sBarCode
         };
 
         let printParameters: any = {
@@ -1136,7 +1372,7 @@ export class PrintTicketService {
 
         //for( var pri = 0; pri < iCopy; pri++ ){
           bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
-          bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
+          //bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
         //}
 
         return new Promise((resolve, reject) => {
@@ -1166,6 +1402,14 @@ export class PrintTicketService {
 
     });
 
+  }
+
+  safeSubstring(input: string | null | undefined, start: number, length?: number): string {
+    if (input == null || input == 'N/A') {
+        return '';
+    }
+
+    return input.substring(start, length).toUpperCase();
   }
 
 }

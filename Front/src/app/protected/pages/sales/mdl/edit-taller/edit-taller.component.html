@@ -42,20 +42,52 @@
   <div class="row top10px">
 
     <div class="col-md-6">
+      <mat-label>Estatus: </mat-label>
+
+        <mat-form-field
+        style="width: 100%;"
+        (click)="cbxSobreTallerStatus_Clear(); cbxSobreTallerStatus_Search()">
+            <input #cbxStatusSobreCBX
+                    type="text"
+                    style="width: 100%;"
+                    placeholder="Selecciona..."
+                    aria-label="Number"
+                    matInput
+                    [(ngModel)]="oDataSale.statusSobreDesc"
+                    [matAutocomplete]="cbxSaleType"
+
+                    (input)="cbxSobreTallerStatus_Search()"
+                    (click)="cbxSobreTallerStatus_Clear()">
+                    <button *ngIf="oDataSale.statusSobreDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSobreTallerStatus_Clear()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+            <mat-autocomplete autoActiveFirstOption
+                                #cbxSaleType="matAutocomplete"
+                                (optionSelected)="cbxSobreTallerStatus_SelectedOption( $event )">
+                <mat-option *ngFor="let item of cbxSobreTallerStatus" [value]="item">
+                    {{ item.name }}
+                </mat-option>
+
+                <mat-option value="" *ngIf="cbxSobreTallerStatus.length == 0 && oDataSale.statusSobreDesc">
+                    No se encontró nada...
+                </mat-option>
+
+            </mat-autocomplete>
+        </mat-form-field>
     </div>
 
-      <div class="col-md-6">
-          <mat-form-field fxLayout.xs="column" class="with100">
-              <mat-label>Precio del sobre</mat-label>
-              <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
-              <input
-              matInput
-              class="textAlingRight"
-              type="text"
-              [(ngModel)]="oDataSale.importe"
-              appDecimalNumber>
-          </mat-form-field>
-      </div>
+    <div class="col-md-6 top20px">
+        <mat-form-field fxLayout.xs="column" class="with100">
+            <mat-label>Precio del sobre</mat-label>
+            <mat-icon matPrefix class="my-icon">attach_money</mat-icon>
+            <input
+            matInput
+            class="textAlingRight"
+            type="text"
+            [(ngModel)]="oDataSale.importe"
+            appDecimalNumber>
+        </mat-form-field>
+    </div>
 
   </div>
 
@@ -69,7 +101,7 @@
               class="marginRight10px"
 
               (click)="fn_editTaller()"
-              *ngIf="this.ODataP.idSale.length > 0 && oDataSale.importe > 0 && oDataSale.descriptionTaller.length > 0">
+              *ngIf="this.ODataP.idSale.length > 0 && oDataSale.importe > 0 && oDataSale.descriptionTaller.length > 0 && oDataSale.idStatusSobre > 0">
               <mat-icon matPrefix class="my-icon">save</mat-icon>
               Editar sobre de taller</button>
 

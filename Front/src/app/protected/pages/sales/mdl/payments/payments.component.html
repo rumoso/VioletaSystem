@@ -7,19 +7,19 @@
     </button>
 
     <div class="row">
-                                    
+
         <div class="col-md-12">
-            
+
             <h1>Venta de {{ ODataP.saleTypeDesc }} por {{ ODataP.total | currency }}, Saldo a cubrir {{ pendingAmount | currency }}</h1>
 
         </div>
-            
+
     </div>
 
     <div class="row">
-                                    
+
         <div class="col-md-3">
-            
+
             <mat-label>Forma de pago:
                 <strong>{{ ( paymentForm.needFxRate ? " TC: " + paymentForm.fxRate : "" ) }}</strong>
                 <strong>{{ ( paymentForm.electronicMoneySum > 0 ? " D.E: " + ( ev_getSumElectronicCurrency() | currency ) : "" ) }}</strong>
@@ -36,7 +36,7 @@
                         matInput
                         [(ngModel)]="paymentForm.formaPagoDesc"
                         [matAutocomplete]="cbxFormaPago"
-                        
+
                         (input)="cbxFormasPago_Search()"
                         (focus)="cbxFormasPago_Search()">
                         <button *ngIf="paymentForm.formaPagoDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFormasPago_Clear()">
@@ -48,67 +48,67 @@
                     <mat-option *ngFor="let item of cbxFormasPago" [value]="item">
                         {{ item.name }}
                     </mat-option>
-    
+
                     <mat-option value="" *ngIf="cbxFormasPago.length == 0 && paymentForm.formaPagoDesc">
                         No se encontró nada...
                     </mat-option>
-    
+
                 </mat-autocomplete>
             </mat-form-field>
-            
+
         </div>
 
 
         <div class="col-md-3">
-        
+
             <mat-form-field class="with100 top20px">
                 <mat-label>PAGA</mat-label>
                 <input #tbxPaga
                 class="textAlingRight colorGreen fontSize"
-                
+
                 matInput
                 currencyMask
                 placeholder="PAGA"
                 [(ngModel)]="paymentForm.paga"
                 (keyup)="event_fn_Paga( $event )">
             </mat-form-field>
-            
+
         </div>
 
         <div class="col-md-3" *ngIf="paymentForm.needRef == 1">
-        
+
             <mat-form-field class="with100 top20px">
                 <mat-label>Referencia</mat-label>
                 <input #tbxReferencia
                 type="text"
                 class="textAlingRight colorGreen fontSize"
-                
+
                 matInput
                 placeholder="Referencia"
                 [(ngModel)]="paymentForm.referencia"
                 (keyup)="event_fn_Referencia( $event )">
             </mat-form-field>
-            
+
         </div>
 
         <div class="col-md-3" *ngIf="paymentForm.idFormaPago == 1 || paymentForm.idFormaPago == 3">
-            
+
             <mat-form-field class="with100 top20px">
                 <mat-label>PAGA CON <strong>{{ ( paymentForm.needFxRate ? " TC: " + paymentForm.fxRate : "" ) }}</strong></mat-label>
                 <input #tbxPagaCon
                 class="textAlingRight colorGreen fontSize"
-                
+
                 matInput
                 currencyMask
                 placeholder="PAGA CON"
                 [(ngModel)]="paymentForm.pagaCon"
                 (keyup)="event_fn_PagaCon_GetCambio( $event )">
             </mat-form-field>
-            
+
         </div>
 
         <div class="col-md-3" *ngIf="paymentForm.idFormaPago == 1 || paymentForm.idFormaPago == 3">
-            
+
             <mat-form-field class="with100 top20px">
                 <mat-label>CAMBIO</mat-label>
                 <input #tbxCambio
@@ -119,23 +119,23 @@
                 matInput
                 currencyMask
                 placeholder="CAMBIO"
-                
+
                 [(ngModel)]="paymentForm.cambio"
 
                 (keyup)="event_fn_Cambio( $event )"
-                
+
                 readonly="true">
             </mat-form-field>
-            
+
         </div>
 
-            
+
     </div>
 
     <div class="row top10px">
         <div class="col-md-12">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
@@ -144,14 +144,14 @@
                 (click)="fn_savePayment()">
                 <mat-icon matPrefix class="my-icon">save</mat-icon>
                 Guardar e imprimir ticket</button>
-                
+
                 <button mat-raised-button
                 type="button"
                 class="marginRight10px"
                 (click)="fn_CerrarMDL()">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
@@ -167,6 +167,7 @@
                         <th class="textAlingCenter padding-th" *ngIf="interface.showFxRate">Paga EXT</th>
                         <th class="textAlingCenter padding-th" *ngIf="interface.showFxRate">Tipo de cambio</th>
                         <th class="textAlingCenter padding-th" *ngIf="interface.showReferencia">Referencia</th>
+                        <th class="textAlingCenter padding-th">Cambio</th>
                     </thead>
 
                     <tbody>
@@ -179,19 +180,20 @@
                                     </span>
                                 </div>
                             </td>
-                            
+
                             <td style="text-align:left;">{{ item.formaPagoDesc }}</td>
                             <td style="text-align: right;">{{ item.paga | currency }}</td>
                             <td style="text-align: right;" *ngIf="interface.showFxRate">{{ item.pagaF | currency }}</td>
                             <td style="text-align: right;" *ngIf="interface.showFxRate">{{ item.fxRate | currency }}</td>
                             <td style="text-align: right;" *ngIf="interface.showReferencia">{{ item.referencia }}</td>
+                            <td style="text-align: right;">{{ item.cambio | currency }}</td>
                         </tr>
-                        
+
                     </tbody>
-                    
+
                 </table>
             </div>
-            
+
         </div>
 
     </div>
@@ -203,11 +205,11 @@
                 <button mat-button #btnSaveSale (click)="saveAndPrint()" color="warn">Guardar e imprimir ticket</button>
                 <button mat-button (click)="close()">Salir</button>
             </div>
-            
+
         </div>
 
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

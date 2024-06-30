@@ -180,6 +180,16 @@
                 color="primary"
                 type="submit"
                 class="marginRight10px top10px700"
+                (click)="fn_ShowIngresos()"
+                [disabled]="_idSucursal == 0"
+                *ngIf="selectCajas.idCaja > 0 && hasPermissionAction('ventas_crearEgresos')">
+                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+                Ingresos</button>
+
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px top10px700"
                 (click)="fn_ShowSelectCaja()"
                 [disabled]="_idSucursal == 0"
                 *ngIf="selectCajas.idCaja == 0 && hasPermissionAction('ventas_abrirCaja')">
@@ -255,7 +265,7 @@
 
                                             <span class="material-icons manitaSobre colorRed"
                                             matTooltip="Cancelar"
-                                            (click)="fn_disabledSale( item.idSale )"
+                                            (click)="fn_disabledSale( item )"
                                             *ngIf="item.active">
                                                 delete_outline
                                             </span>
@@ -276,7 +286,11 @@
                                         </div>
                                     </td>
 
-                                    <td style="text-align:left;">{{ item.saleTypeDesc }}</td>
+                                    <td style="text-align:left;">
+                                      <div style="width: 120px;">
+                                        {{ item.saleTypeDesc }}
+                                      </div>
+                                    </td>
 
                                     <td style="text-align: right;">{{ item.total | currency }}</td>
                                     <td style="text-align: right;">{{ item.abonado | currency }}</td>

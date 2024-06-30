@@ -1,0 +1,239 @@
+<div class="divMain" style="width: 100%; margin-top: 10px !important;">
+
+  <div class="row">
+      <div class="col-md-12">
+
+
+
+          <div class="row">
+
+              <div class="col-md-4" style="text-align: left;">
+                <mat-form-field class="with100">
+                    <mat-label>Fecha de creación:</mat-label>
+                    <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                        <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date">
+                        <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date">
+                    </mat-date-range-input>
+                    <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-date-range-picker #picker></mat-date-range-picker>
+
+                </mat-form-field>
+              </div>
+
+              <div class="col-md-4">
+
+                  <mat-form-field fxLayout.xs="column" class="with100">
+                    <mat-label>Folio de venta</mat-label>
+                    <input #barCode
+                    matInput
+                    placeholder="Ingrese un Folio y presione ENTER"
+                    [(ngModel)]="parametersForm.idSale">
+                  </mat-form-field>
+
+              </div>
+
+              <div class="col-md-4">
+
+                <mat-form-field fxLayout.xs="column" class="with100">
+                  <mat-label># de Pago</mat-label>
+                  <input #barCode
+                  matInput
+                  placeholder="Ingrese un # de Pago y presione ENTER"
+                  [(ngModel)]="parametersForm.idPayment">
+                </mat-form-field>
+
+            </div>
+
+          </div>
+
+          <div class="row">
+
+              <div class="col-md-8">
+                  <mat-label>Cliente: </mat-label>
+                  <mat-form-field
+                  style="width: 100%;">
+                      <input #cbxCustomerCBX
+                      type="text"
+                              id="cbxCustomer"
+                              style="width: 100%;"
+                              placeholder="Selecciona..."
+                              aria-label="Number"
+                              matInput
+                              [(ngModel)]="parametersForm.customerDesc"
+                              [matAutocomplete]="cbxCustomer"
+
+                              (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
+
+                              (click)="cbxCustomers_Clear()">
+                              <button *ngIf="parametersForm.customerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
+                                  <mat-icon>close</mat-icon>
+                              </button>
+                      <mat-autocomplete autoActiveFirstOption
+                                          #cbxCustomer="matAutocomplete"
+                                          (optionSelected)="cbxCustomers_SelectedOption( $event )">
+                          <mat-option *ngFor="let item of cbxCustomers" [value]="item">
+                              {{ item.name }}
+                          </mat-option>
+
+                          <mat-option value="" *ngIf="parametersForm.customerResp.length > 0">
+                              {{ parametersForm.customerResp }}
+                          </mat-option>
+
+                      </mat-autocomplete>
+                  </mat-form-field>
+              </div>
+
+
+
+          </div>
+
+          <div class="row top10px">
+              <div class="col-md-3">
+                  <div style="float: left;">
+
+                      <button mat-raised-button
+                      color="primary"
+                      type="submit"
+                      class="marginRight10px"
+                      (click)="fn_getRepVentasDetailWithPage()">
+                      <mat-icon matPrefix class="my-icon">search</mat-icon>
+                      Buscar</button>
+
+                      <button mat-raised-button
+                      type="button"
+                      (click)="fn_ClearFilters()">
+                      <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                      limpiar</button>
+
+                  </div>
+              </div>
+
+          </div>
+
+      </div>
+
+  </div>
+
+</div>
+
+<div *ngIf="repVentasSumByIdSaleType.length > 0" class="divSection">
+
+  <div class="row" style="margin-top: -35px;">
+    <div class="col-md-12">
+        <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+            Sumatoria por tipo de venta
+        </div>
+    </div>
+  </div>
+
+  <div *ngFor="let item of repVentasSumByIdSaleType">
+
+    <div class="row">
+        <div class="col-md-2">
+            <h1>{{ item.saleTypeName }}</h1>
+        </div>
+        <div class="col-md-3" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Tot: {{ item.total | currency }}</h2>
+        </div>
+        <div class="col-md-3" style="position: relative;">
+            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+            <h2 style="display: inline-block;">Pag: {{ item.abonado | currency }}</h2>
+        </div>
+        <div class="col-md-3" style="position: relative;">
+          <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
+          <h2 style="display: inline-block;">Pend: {{ item.pendiente | currency }}</h2>
+      </div>
+    </div>
+
+    <hr>
+
+  </div>
+
+</div>
+
+<div class="divMain" style="width: 100%; margin-top: 10px !important;">
+
+  <div class="row top10px">
+      <div class="col-md-12">
+
+          <div class="row">
+              <div class="col-md-12">
+                  <div class="table-responsive">
+                      <table class="table table-hover">
+                          <thead>
+                              <th class="textAlingCenter padding-th"># Pago</th>
+                              <th class="textAlingRight padding-th">Monto Pago</th>
+                              <th class="textAlingCenter padding-th">Folio de venta</th>
+                              <th class="textAlingCenter padding-th">Corte de Caja</th>
+                              <th class="textAlingCenter padding-th">Fecha de cancelación</th>
+                              <th class="textAlingLeft padding-th">Cliente</th>
+                              <th class="textAlingLeft padding-th">Vendedor</th>
+                          </thead>
+
+                          <tbody>
+                              <tr *ngFor="let item of repList; let i = index">
+
+                                  <td style="text-align: Center;">{{ item.idPayment }}</td>
+
+                                  <td style="text-align: right;">{{ item.totalPago | currency }}</td>
+                                  <td style="text-align: Center;">{{ item.idSale }}</td>
+
+                                  <td class="textAlingCenter">
+                                    <div style="width: 150px;">
+
+                                        <span class="material-icons manitaSobre colorGreen" title="Ver"
+                                        (click)="fn_ShowCorteCajaDetail(item.idCorteCaja)"
+                                        *ngIf="item.idCorteCaja.length > 0">
+                                        remove_red_eye
+                                        </span>
+                                        {{ item.idCorteCaja }}
+
+                                    </div>
+                                </td>
+
+                                  <td class="textAlingCenter">
+
+                                      <div style="width: 120px;">
+
+                                          <div class="row">
+                                              <div class="col-md-1">
+                                                  <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+
+                                              </div>
+                                              <div class="col-md-10">
+                                                  <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
+                                                  <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
+                                              </div>
+                                          </div>
+
+                                      </div>
+
+                                  </td>
+
+                                  <td style="text-align:left;">{{ item.customerName }}</td>
+                                  <td style="text-align:left;">{{ item.sellerName }}</td>
+
+                              </tr>
+
+                          </tbody>
+
+                      </table>
+                  </div>
+
+                  <app-pagination *ngIf="repList" [IPagination]="pagination"
+                              (OPagination)="changePagination($event)">
+                  </app-pagination>
+
+              </div>
+
+          </div>
+
+      </div>
+
+  </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

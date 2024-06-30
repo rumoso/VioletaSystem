@@ -54,6 +54,27 @@ export class ProductsService {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getProductByID`, data);
   }
 
+  async CGetProductByIDPromise( id: number ): Promise<any> {
+    var data = {
+      idProduct: id
+    }
+
+    return new Promise((resolve, reject) => {
+
+      this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getProductByID`, data)
+      .subscribe({
+        next: ( resp: ResponseGet ) => {
+          resolve( resp.data );
+        }
+        , error: ( err: any ) => {
+          reject( err );
+        }
+      });
+
+    });
+
+  }
+
   CInsertProduct( data : any ): Observable<ResponseDB_CRUD> {
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
@@ -185,13 +206,14 @@ export class ProductsService {
 
   }
 
-  CGetPhysicalInventoryDetailListWithPage( pagination: Pagination, idPhysicalInventory: any ): Observable<ResponseGet> {
+  CGetPhysicalInventoryDetailListWithPage( pagination: Pagination, idPhysicalInventory: any, iOption: number ): Observable<ResponseGet> {
 
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
     const data = {
-      idPhysicalInventory: idPhysicalInventory
+      iOption: iOption
+      ,idPhysicalInventory: idPhysicalInventory
 
       ,search: pagination.search
       ,start: start

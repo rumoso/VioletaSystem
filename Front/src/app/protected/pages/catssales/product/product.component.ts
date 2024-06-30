@@ -20,6 +20,7 @@ import { InventarylogComponent } from '../mdl/inventarylog/inventarylog.componen
 import { SuppliersService } from 'src/app/protected/services/suppliers.service';
 import { SuppliersComponent } from '../suppliers/suppliers.component';
 import { CatComponent } from '../mdl/cat/cat.component';
+import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 
 @Component({
   selector: 'app-product',
@@ -83,6 +84,7 @@ export class ProductComponent implements OnInit {
     , private suppliersServ: SuppliersService
 
     , private authServ: AuthService
+    , private printTicketServ: PrintTicketService
     ) { }
 
     productForm: any = {
@@ -117,13 +119,13 @@ export class ProductComponent implements OnInit {
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
-  
+
       if( !this.router.url.includes('editProduct') ){
         return;
       }
-  
+
       this.bShowSpinner = true;
-  
+
       this.activatedRoute.params
         .pipe(
           switchMap( ({ id }) => this.productsServ.CGetProductByID( id ) )
@@ -131,9 +133,9 @@ export class ProductComponent implements OnInit {
         .subscribe( ( resp: any ) => {
           console.log(resp)
            if(resp.status == 0){
-              
+
             this.idProduct = resp.data.idProduct;
-  
+
             this.productForm = {
               idProduct: resp.data.idProduct,
               idSucursal: resp.data.idSucursal,
@@ -158,8 +160,8 @@ export class ProductComponent implements OnInit {
               addInv: 1,
               idUser: this.idUserLogON
              };
-  
-  
+
+
              this.fn_getInventarylogByIdProductWithPage();
            }else{
             this.servicesGServ.showSnakbar(resp.message);
@@ -189,11 +191,11 @@ export class ProductComponent implements OnInit {
       this.productForm.addInv = 1;
 
       setTimeout (() => {
-      
+
         this.ev_fn_nextInput_keyup_enter( 'barCode' );
 
       }, 3000);
-      
+
     }
 
     ev_fn_nextInput_keyup_enter( idInput: any ){
@@ -214,11 +216,11 @@ export class ProductComponent implements OnInit {
       var OParams: any = {
         sOption: sOption
       }
-  
+
       this.servicesGServ.showModalWithParams( CatComponent, OParams, '1500px')
       .afterClosed().subscribe({
         next: ( resp: any ) =>{
-  
+
         }
       });
     }
@@ -246,7 +248,7 @@ export class ProductComponent implements OnInit {
       this.productForm.idUser = this.idUserLogON ;
 
       this.bShowSpinner = true;
-  
+
       if(this.idProduct > 0){
         this.productsServ.CUpdateProduct( this.productForm )
           .subscribe({
@@ -259,42 +261,42 @@ export class ProductComponent implements OnInit {
                 this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
               }
               this.bShowSpinner = false;
-  
+
             },
             error: (ex) => {
-  
+
               this.servicesGServ.showSnakbar( "Problemas con el servicio" );
               this.bShowSpinner = false;
-  
+
             }
           })
       }else{
       this.productsServ.CInsertProduct( this.productForm )
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
-  
+
             if( resp.status === 0 ){
               this.idProduct = resp.insertID;
-  
+
               this.productForm.idProduct = resp.insertID;
 
               this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
-              
+
               this.fn_ClearForm();
-  
+
             }
             else{
               this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
             }
-  
+
             this.bShowSpinner = false;
-  
+
           },
           error: (ex) => {
-  
+
             this.servicesGServ.showSnakbar( "Problemas con el servicio" );
             this.bShowSpinner = false;
-  
+
           }
         })
       }
@@ -318,37 +320,37 @@ export class ProductComponent implements OnInit {
         }
       })
     }
-  
+
   fn_getProductByBarCode() {
 
     if( this.productForm.idProduct == 0 && this.productForm.barCode.length > 0){
-    
+
       this.bShowSpinner = true;
 
       this.productsServ.CGetProductByBarCode( this.productForm.barCode, this.idUserLogON )
         .subscribe({
           next: (resp: ResponseGet) => {
-            
+
             if( resp.status === 0 ){
-      
+
               this.servicesGServ.showAlert('W', 'Alerta!', 'Ese código de barras ya existe.', false);
-      
+
             }
-      
+
             this.bShowSpinner = false;
-      
+
           },
           error: (ex) => {
-      
+
             this.servicesGServ.showSnakbar( "Problemas con el servicio" );
             this.bShowSpinner = false;
-      
+
           }
         })
-    
+
     }
   }
-  
+
 
     //--------------------------------------------------------------------------
   // MÉTODOS PARA COMBO DE Familias
@@ -381,12 +383,12 @@ export class ProductComponent implements OnInit {
     this.cbxFamilies_Clear();
 
     setTimeout (() => {
-      
+
       const rol: any = event.option.value;
 
       this.productForm.idFamily = rol.idFamily;
       this.productForm.familyDesc = rol.name;
-  
+
       this.ev_fn_nextInput_keyup_enter( 'cbxQuality' );
 
     }, 1);
@@ -405,7 +407,7 @@ export class ProductComponent implements OnInit {
   cbxGroupsList: any[] = [];
 
   cbxGroups_Search() {
-    
+
       this.groupsServ.CCbxGetGroupsCombo( this.productForm.groupDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
@@ -428,12 +430,12 @@ export class ProductComponent implements OnInit {
     this.cbxGroups_Clear();
 
     setTimeout (() => {
-      
+
       const rol: any = event.option.value;
 
       this.productForm.idGroup = rol.idGroup;
       this.productForm.groupDesc = rol.name;
-  
+
       this.ev_fn_nextInput_keyup_enter( 'cbxFamilies' );
 
     }, 1);
@@ -475,12 +477,12 @@ export class ProductComponent implements OnInit {
     this.cbxQuality_Clear();
 
     setTimeout (() => {
-      
+
       const rol: any = event.option.value;
 
       this.productForm.idQuality = rol.idQuality;
       this.productForm.qualityDesc = rol.name;
-  
+
       this.ev_fn_nextInput_keyup_enter( 'cbxOrigin' );
 
     }, 1);
@@ -522,12 +524,12 @@ export class ProductComponent implements OnInit {
     this.cbxOrigin_Clear();
 
     setTimeout (() => {
-      
+
       const rol: any = event.option.value;
 
       this.productForm.idOrigin = rol.idOrigin;
       this.productForm.originDesc = rol.name;
-  
+
       this.ev_fn_nextInput_keyup_enter( 'tbxAddInv' );
 
     }, 1);
@@ -569,12 +571,12 @@ export class ProductComponent implements OnInit {
     this.cbxSucursales_Clear();
 
     setTimeout (() => {
-      
+
       const ODataCbx: any = event.option.value;
 
       this.productForm.idSucursal = ODataCbx.idSucursal;
       this.productForm.sucursalDesc = ODataCbx.name;
-  
+
       this.ev_fn_nextInput_keyup_enter( 'cbxSupplier' );
 
     }, 1);
@@ -616,7 +618,7 @@ export class ProductComponent implements OnInit {
     this.cbxSupplier_Clear();
 
     setTimeout (() => {
-      
+
       const rol: any = event.option.value;
 
       if(this.productForm.idSupplier != rol.idSupplier){
@@ -642,16 +644,16 @@ export class ProductComponent implements OnInit {
     var paramsMDL: any = {
       idProduct: this.idProduct
     }
-  
+
     this.servicesGServ.showModalWithParams( InventarylogComponent, paramsMDL, '1500px')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-  
+
         this.fn_getInventarylogByIdProductWithPage();
-        
+
       }
     });
-  
+
   }
 
   showSuppliersCat(  ){
@@ -661,9 +663,14 @@ export class ProductComponent implements OnInit {
       next: ( resp: any ) =>{
 
         //this.fn_getCustomersListWithPage();
-        
+
       }
     });
+  }
+
+  async ev_PrintTicket(){
+    //async printTicket( type: string, idRelation: any, idPrinter: number, iPayments: number = 0, idPayment: any = '', sumCambio: number = 0 ): Promise<any> {
+    this.printTicketServ.printTicket("codigoBarras", this.productForm.idProduct, 2, this.productForm.addInv);
   }
 
 }

@@ -22,6 +22,8 @@ import { VerificacionEntradasComponent } from "./pages/operation/verificacion-en
 import { RepMobDineoelectComponent } from "./pages/reports/rep-mob-dineoelect/rep-mob-dineoelect.component";
 import { SalesComponent } from "./pages/reports/sales/sales.component";
 import { DevoluInventarioComponent } from "./pages/operation/devolu-inventario/devolu-inventario.component";
+import { IngresosListComponent } from "./pages/sales/ingresos-list/ingresos-list.component";
+import { PagosCanceladosComponent } from "./pages/reports/pagos-cancelados/pagos-cancelados.component";
 
 const routes: Routes = [
     {
@@ -123,6 +125,14 @@ const routes: Routes = [
         {
           path: 'devolu_inv',
           component: DevoluInventarioComponent
+        },
+        {
+          path: 'ingresosList',
+          component: IngresosListComponent
+        },
+        {
+          path: 'rep_pagoscancelados',
+          component: PagosCanceladosComponent
         },
 
       ]

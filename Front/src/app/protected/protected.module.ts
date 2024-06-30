@@ -1,3 +1,4 @@
+
 import { CommonModule } from "@angular/common";
 import { NgModule } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -49,6 +50,10 @@ import { MenupermisosComponent } from './pages/security/mdl/menupermisos/menuper
 import { EditTallerComponent } from './pages/sales/mdl/edit-taller/edit-taller.component';
 import { SalesComponent } from './pages/reports/sales/sales.component';
 import { DevoluInventarioComponent } from './pages/operation/devolu-inventario/devolu-inventario.component';
+import { IngresosComponent } from './pages/sales/mdl/ingresos/ingresos.component';
+import { IngresosListComponent } from './pages/sales/ingresos-list/ingresos-list.component';
+import { PagosCanceladosComponent } from './pages/reports/pagos-cancelados/pagos-cancelados.component';
+import { QuestionCancelSalePaymentsComponent } from './pages/sales/mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 
 @NgModule({
     declarations: [
@@ -95,6 +100,10 @@ import { DevoluInventarioComponent } from './pages/operation/devolu-inventario/d
     EditTallerComponent,
     SalesComponent,
     DevoluInventarioComponent,
+    IngresosComponent,
+    IngresosListComponent,
+    PagosCanceladosComponent,
+    QuestionCancelSalePaymentsComponent,
   ],
     imports: [
         CommonModule,

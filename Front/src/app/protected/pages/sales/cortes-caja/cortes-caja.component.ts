@@ -286,7 +286,7 @@ fn_ShowCorteCajaDetail( idCorteCaja: any ){
     idCorteCaja: idCorteCaja
   }
 
-  this.servicesGServ.showModalWithParams( CortecajadetailComponent, paramsMDL, '800px')
+  this.servicesGServ.showModalWithParams( CortecajadetailComponent, paramsMDL, '2000px')
   .afterClosed().subscribe({
     next: ( resp ) =>{
 

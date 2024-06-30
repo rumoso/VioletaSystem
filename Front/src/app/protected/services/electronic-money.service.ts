@@ -14,14 +14,14 @@ export class ElectronicMoneyService {
   private idSucursal: number = environment.idSucursal;
 
   _api: string = 'api/electronicMoney';
-  
+
   constructor(
     private http: HttpClient
     , private authServ: AuthService
   ) { }
 
   CGetElectronicMoneyListWithPage( pagination: Pagination, idCustomer: number ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -48,17 +48,17 @@ export class ElectronicMoneyService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertElectronicMoney`, data );
   }
 
-  CDeleteElectronicMoney( idElectronicMoney : number ): Observable<ResponseDB_CRUD> {
+  CDeleteElectronicMoney( keyx : number ): Observable<ResponseDB_CRUD> {
 
     let data: any = {
-      idElectronicMoney: idElectronicMoney
+      keyx: keyx
     }
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteElectronicMoney`, data );
   }
 
   CGetRepElectronicMoneyListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 

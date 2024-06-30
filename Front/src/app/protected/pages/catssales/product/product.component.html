@@ -12,9 +12,9 @@
         <div class="col-md-12">
 
                 <br>
-                
+
                 <div class="row top20px">
-                            
+
                     <div class="col-md-12">
                         <mat-label>Sucursal: </mat-label>
                         <mat-form-field
@@ -28,10 +28,10 @@
                                     matInput
                                     [(ngModel)]="productForm.sucursalDesc"
                                     [matAutocomplete]="cbxSucursal"
-                                    
+
                                     (input)="cbxSucursales_Search()"
                                     (focus)="cbxSucursales_Clear(); cbxSucursales_Search()"
-                                    
+
                                     (click)="cbxSucursales_Clear()">
                                     <button *ngIf="productForm.sucursalDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSucursales_Clear()">
                                         <mat-icon>close</mat-icon>
@@ -42,11 +42,11 @@
                                 <mat-option *ngFor="let role of cbxSucursales" [value]="role">
                                     {{ role.name }}
                                 </mat-option>
-                
+
                                 <mat-option value="" *ngIf="cbxSucursales.length == 0 && productForm.sucursalDesc">
                                     No se encontró nada...
                                 </mat-option>
-                
+
                             </mat-autocomplete>
                         </mat-form-field>
                     </div>
@@ -54,7 +54,7 @@
                 </div>
 
                 <div class="row">
-                        
+
                     <div class="col-md-8">
                         <mat-label>Proveedor: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
@@ -84,11 +84,11 @@
                                 <mat-option *ngFor="let item of cbxSupplierList" [value]="item">
                                     {{ item.name }}
                                 </mat-option>
-                
+
                                 <mat-option value="" *ngIf="cbxSupplierList.length == 0 && productForm.supplierDesc">
                                     No se encontró nada...
                                 </mat-option>
-                
+
                             </mat-autocomplete>
                         </mat-form-field>
                     </div>
@@ -114,7 +114,7 @@
                             (keyup.enter)="fn_getProductByBarCode(); ev_fn_nextInput_keyup_enter('tbxCost')">
                         </mat-form-field>
                     </div>
-                    
+
 
                     <div class="col-md-4">
                         <mat-form-field class="with100">
@@ -137,7 +137,7 @@
                             (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxName')">
                         </mat-form-field>
                     </div>
-                    
+
                 </div>
 
                 <div class="row top20px">
@@ -150,7 +150,7 @@
                             (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxGramos')">
                         </mat-form-field>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <mat-form-field class="with100">
                             <mat-label>Gramos</mat-label>
@@ -166,8 +166,8 @@
                 <div class="row top20px" text>
 
                     <div class="col-md-3">
-                        
-                        
+
+
                         <mat-label>Grupo: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
                             (click)="showCat( 'Groups' )">
@@ -198,18 +198,18 @@
                                     <mat-option *ngFor="let item of cbxGroupsList" [value]="item">
                                         {{ item.name }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxGroupsList.length == 0 && productForm.groupDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
 
                     </div>
-                
+
                     <div class="col-md-3">
-                        
+
                         <mat-label>Familia: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
                             (click)="showCat( 'Families' )">
@@ -239,18 +239,18 @@
                                     <mat-option *ngFor="let item of cbxFamiliesList" [value]="item">
                                         {{ item.name }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxFamiliesList.length == 0 && productForm.familyDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
 
                     </div>
 
                     <div class="col-md-3">
-                        
+
                         <mat-label>Calidad: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
                             (click)="showCat( 'Quality' )">
@@ -280,18 +280,18 @@
                                     <mat-option *ngFor="let item of cbxQualityList" [value]="item">
                                         {{ item.name }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxQualityList.length == 0 && productForm.qualityDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
 
                     </div>
 
                     <div class="col-md-3">
-                        
+
                         <mat-label>Origen: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
                             (click)="showCat( 'Origin' )">
@@ -321,16 +321,16 @@
                                     <mat-option *ngFor="let item of cbxOriginList" [value]="item">
                                         {{ item.name }}
                                     </mat-option>
-                    
+
                                     <mat-option value="" *ngIf="cbxOriginList.length == 0 && productForm.originDesc">
                                         No se encontró nada...
                                     </mat-option>
-                    
+
                                 </mat-autocomplete>
                             </mat-form-field>
 
                     </div>
-                    
+
                 </div>
 
                 <div class="row">
@@ -358,19 +358,27 @@
                             class="marginRight10px"
                             (click)="fn_saveProduct()"
                             [disabled]="!fn_validForm()">Guardar</button>
-                            
+
                             <button mat-raised-button
                             type="button"
                             class="marginRight10px"
                             (click)="changeRoute('productList')">Cancelar</button>
-                            
+
+                            <button mat-raised-button
+                                color="primary"
+                                type="submit"
+                                class="marginRight10px top10px"
+                                (click)="ev_PrintTicket()">
+                                <mat-icon matPrefix class="my-icon">print</mat-icon>
+                                Imprimir</button>
+
                         </div>
                     </div>
                 </div>
 
         </div>
     </div>
-    
+
 </div>
 
 <div class="divMain" style="padding: 30px;" *ngIf="idProduct > 0">
@@ -392,7 +400,7 @@
         </div>
     </div>
 
-    
+
 
     <div class="row top20px">
         <div class="col-md-12">
@@ -417,7 +425,7 @@
                                     <div class="row">
                                         <div class="col-md-1">
                                             <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                            
+
                                         </div>
                                         <div class="col-md-10">
                                             <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
@@ -426,9 +434,9 @@
                                     </div>
 
                                 </div>
-                                
+
                             </td>
-                            
+
                             <td style="text-align:left;">{{ item.description }}</td>
 
                             <td class="textAlingRight">{{ item.cantidad }}</td>
@@ -436,8 +444,8 @@
                             <td class="textAlingRight">{{ item.catInventary }}</td>
 
                             <td style="text-align:left;">{{ item.userName }}</td>
-                            
-                            
+
+
 
                             <td style="text-align:left;">
                                 <div style="width: 150px;">
@@ -449,16 +457,16 @@
                             <td style="text-align:left;">{{ item.sellerName }}</td>
 
                         </tr>
-                        
+
                     </tbody>
-                    
+
                 </table>
             </div>
 
             <app-pagination *ngIf="inventaryLoglist" [IPagination]="pagination"
                         (OPagination)="changePagination($event)">
             </app-pagination>
-            
+
         </div>
 
     </div>

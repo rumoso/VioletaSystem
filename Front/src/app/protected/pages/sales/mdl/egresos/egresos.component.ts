@@ -17,11 +17,11 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
   styleUrls: ['./egresos.component.css']
 })
 export class EgresosComponent {
-  
+
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // SECCIÓN DE VARIABLES
   //////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
   idUserLogON: number = 0;
   bShowSpinner: boolean = false;
   bPago: boolean = false;
@@ -51,35 +51,35 @@ export class EgresosComponent {
   constructor(
     private dialogRef: MatDialogRef<EgresosComponent>
     ,@Inject(MAT_DIALOG_DATA) public ODataP: any
-  
+
     , private servicesGServ: ServicesGService
     , private authServ: AuthService
-  
+
     , private salesServ: SalesService
-  
+
     , private printTicketServ: PrintTicketService
     , private formaPagoServ: FormapagoService
     , private printersServ: PrintersService
   ) { }
-  
+
   async ngOnInit() {
 
     this.authServ.checkSession();
     this.idUserLogON = await this.authServ.getIdUserSession();
-  
+
     console.log( this.ODataP )
-  
+
     this.egresosList = [];
-  
+
     this.egresoForm.idCaja = this.ODataP.idCaja;
-  
+
     if( this.ODataP.idCaja > 0 ){
 
       this.fn_getSelectPrintByIdUser( this.idUserLogON );
       this.fn_getPreEgresosCorteCaja( this.ODataP.idCaja );
 
     }
-  
+
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,13 +97,13 @@ export class EgresosComponent {
       next: ( resp: any ) => {
 
         if(resp.status == 0){
-  
+
           this.egresosList = resp.data.rows;
-  
+
         }
-  
+
         this.bShowSpinner = false;
-  
+
       },
       error: (err: any) => {
         this.bShowSpinner = false;
@@ -126,15 +126,15 @@ export class EgresosComponent {
         , 'Si', 'No')
         .afterClosed().subscribe({
           next: ( resp ) =>{
-            
+
             if(resp){
-            
+
               this.bShowSpinner = true;
 
               this.salesServ.CInsertEgresos( this.egresoForm )
                 .subscribe({
                   next: (resp: ResponseDB_CRUD) => {
-          
+
                     if( resp.status === 0 ){
                       //this.idSale = resp.insertID;
 
@@ -148,16 +148,16 @@ export class EgresosComponent {
                       this.fn_CerrarMDL();
 
                     }
-          
+
                     this.servicesGServ.showSnakbar(resp.message);
                     this.bShowSpinner = false;
-          
+
                   },
                   error: (ex) => {
-          
+
                     this.servicesGServ.showSnakbar( ex.error.message );
                     this.bShowSpinner = false;
-          
+
                   }
                 });
 
@@ -173,9 +173,7 @@ export class EgresosComponent {
 
   }
 
-  fn_disabledEgresos( idEgreso: number ){
-
-    console.log( idEgreso )
+  fn_disabledEgresos( idEgreso: any ){
 
     this.servicesGServ.showDialog('¿Estás seguro?'
                                       , 'Está a punto de deshabilitar el Egreso'
@@ -197,7 +195,7 @@ export class EgresosComponent {
               this.servicesGServ.showSnakbar( ex.error.data );
               this.bShowSpinner = false;
             }
-      
+
           })
         }
       }
@@ -208,7 +206,7 @@ export class EgresosComponent {
 
     this.printersServ.CGetSelectPrinterByIdUser( idUser )
     .subscribe({
-      
+
       next: ( resp: ResponseGet ) => {
 
         if( resp.status == 0 ){
@@ -233,7 +231,7 @@ export class EgresosComponent {
       }
 
     })
-    
+
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -247,26 +245,26 @@ export class EgresosComponent {
   fn_btnRePrinter( idEgreso: any ){
 
     if( this.selectPrinter.idPrinter > 0 ){
-    
+
       this.servicesGServ.showDialog('¿Estás seguro?'
       , 'Estás apunto de reimprimir'
       , '¿Desea continuar?'
       , 'Si', 'No')
       .afterClosed().subscribe({
         next: ( resp ) =>{
-          
+
           if(resp){
-  
+
             this.printTicketServ.printTicket("Egreso", idEgreso, this.selectPrinter.idPrinter);
-  
+
           }
-  
+
         }
-  
+
       });
-  
+
     }
-    
+
   }
 
   nextInputFocus( idInput: any, milliseconds: number ) {
@@ -278,29 +276,29 @@ export class EgresosComponent {
   fn_CerrarMDL(){
     this.dialogRef.close( false );
   }
-  
+
   ev_fn_description_keyup_enter(event: any){
-  
+
     if(event.keyCode == 13) { // PRESS ENTER
-      
+
         this.nextInputFocus( this.tbxMonto, 0 );
-  
+
     }
-  
+
   }
 
   event_fn_Amount( event: any ){
 
     if(event.keyCode == 13) { // PRESS ENTER
-  
+
       if(this.egresoForm.amount > 0){
-  
+
         this.fn_InsertEgreso();
-  
+
       }
-  
+
     }
-    
+
   }
 
   ev_fn_enableBtnSave(){

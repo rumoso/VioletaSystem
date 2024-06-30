@@ -1,5 +1,5 @@
 <mat-accordion >
-    
+
     <mat-expansion-panel (opened)="panelOpenState = true"
                          (closed)="panelOpenState = false"
                          class="divMain"
@@ -9,11 +9,11 @@
           Filtros de Cortes de Caja
         </mat-panel-title>
       </mat-expansion-panel-header>
-      
+
       <div class="row">
         <div class="col-md-12">
 
-                
+
 
             <div class="row">
                 <div class="col-md-12" style="text-align: left;">
@@ -26,17 +26,17 @@
                         <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                         <mat-date-range-picker #picker></mat-date-range-picker>
-                        
+
                         </mat-form-field>
                 </div>
             </div>
 
-            
-                
+
+
             <div class="row top10px">
                 <div class="col-md-12">
                     <div style="float: left;">
-                        
+
                         <button mat-raised-button
                         color="primary"
                         type="submit"
@@ -44,13 +44,13 @@
                         (click)="fn_getCorteCajaListWithPage()">
                         <mat-icon matPrefix class="my-icon">search</mat-icon>
                         Buscar</button>
-                        
+
                         <button mat-raised-button
                         type="button"
                         >
                         <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                        limpiar</button>                
-                        
+                        limpiar</button>
+
                     </div>
                 </div>
             </div>
@@ -68,7 +68,7 @@
 
         <div class="col-md-12">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
@@ -77,12 +77,12 @@
                 *ngIf="selectPrinter.idPrinter == 0">
                 <mat-icon matPrefix class="my-icon">print</mat-icon>
                 Seleccionar impresora</button>
-                
+
             </div>
         </div>
 
         <div class="col-md-12" style="position: relative;">
-            
+
             <img *ngIf="selectPrinter.idPrinter > 0" style="display: inline-block;" width="50" src="assets/img/icons/printIco.gif" class="marginRight10px manitaSobre" alt=""
             (click)="fn_btnCerrarPrinter()">
             <div *ngIf="selectPrinter.idPrinter > 0" style="display: inline-block;" class="badge bg-primary text-wrap manitaSobre" style="font-size: 15px;"
@@ -96,9 +96,9 @@
 
     <div class="row">
         <div class="col-md-12">
-    
-                
-            
+
+
+
 
             <div class="row top20px">
                 <div class="col-md-12">
@@ -108,6 +108,7 @@
                                 <th class="textAlingCenter padding-th">Acciones</th>
                                 <th class="textAlingCenter padding-th">Folio</th>
                                 <th class="textAlingCenter padding-th">Creado</th>
+                                <th class="textAlingLeft padding-th">Hecho por</th>
                                 <th class="textAlingLeft padding-th">Sucursal</th>
                                 <th class="textAlingLeft padding-th">Caja</th>
                                 <th class="textAlingCenter padding-th">Activo</th>
@@ -116,7 +117,7 @@
                             <tbody>
                                 <tr *ngFor="let item of cortesCajaList; let i = index">
                                     <td class="textAlingCenter">
-                                        <div style="width: 50px;">
+                                        <div style="width: 150px;">
 
                                             <span class="material-icons manitaSobre colorGreen" title="Ver"
                                             (click)="fn_ShowCorteCajaDetail(item.idCorteCaja)"
@@ -128,29 +129,37 @@
                                             (click)="fn_btnRePrinter(item.idCorteCaja)">
                                             print
                                             </span>
+
+                                            <span class="material-icons manitaSobre colorRed"
+                                                        matTooltip="TIENE PADOS CANCELADOS"
+                                                        *ngIf="item.iCountPaymentsCanceled > 0">
+                                                        backspace
+                                                    </span>
                                         </div>
                                     </td>
-                                    
+
                                     <td style="text-align:Center;">#{{ item.idCorteCaja }}</td>
 
                                     <td class="textAlingCenter">
 
                                         <div style="width: 120px;">
-        
+
                                             <div class="row">
                                                 <div class="col-md-1">
                                                     <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                                    
+
                                                 </div>
                                                 <div class="col-md-10">
                                                     <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
                                                     <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
                                                 </div>
                                             </div>
-        
+
                                         </div>
-                                        
+
                                     </td>
+
+                                    <td style="text-align:left;">{{ item.createUserName }}</td>
 
                                     <td style="text-align:left;">{{ item.sucursalName }}</td>
                                     <td style="text-align:left;">{{ item.cajaName }}</td>
@@ -160,22 +169,22 @@
                                     </td>
 
                                 </tr>
-                                
+
                             </tbody>
-                            
+
                         </table>
                     </div>
 
                     <app-pagination *ngIf="cortesCajaList" [IPagination]="pagination"
                                 (OPagination)="changePagination($event)">
                     </app-pagination>
-                    
+
                 </div>
 
             </div>
-    
+
         </div>
-    
+
     </div>
 
 </div>

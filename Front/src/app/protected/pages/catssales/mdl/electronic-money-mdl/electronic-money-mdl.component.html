@@ -20,7 +20,7 @@
     <div class="row">
 
         <div class="col-md-6">
-            
+
             <mat-form-field class="example-full-width with100">
                 <mat-label>Descripción</mat-label>
                 <textarea #tbxDescription
@@ -30,36 +30,37 @@
                 [(ngModel)]="electronicMoneyForm.description"
                 (keyup)="ev_fn_description_keyup_enter( $event )"></textarea>
             </mat-form-field>
-            
+
         </div>
 
         <div class="col-md-6">
-            
+
             <mat-form-field class="with100">
                 <mat-label>Monto</mat-label>
                 <input #tbxMonto
                 class="textAlingRight colorGreen fontSize"
-                
+
                 matInput
                 currencyMask
                 placeholder="Monto"
                 [(ngModel)]="electronicMoneyForm.amount"
                 (keyup)="ev_fn_amount_keyup_enter( $event )">
             </mat-form-field>
-            
+
         </div>
-            
+
     </div>
 
     <div class="row top10px">
         <div class="col-md-12">
             <div style="float: left;">
-                
+
                 <button mat-raised-button
                 color="primary"
                 type="submit"
                 class="marginRight10px"
-                (click)="fn_insertElectronicMoney()">
+                (click)="fn_insertElectronicMoney()"
+                [disabled]="electronicMoneyForm.description.length == 0 || electronicMoneyForm.amount == 0">
                 <mat-icon matPrefix class="my-icon">save</mat-icon>
                 Guardar</button>
 
@@ -71,7 +72,7 @@
                                 [disabled]="selectPrinter.idPrinter == 0">
                                 <mat-icon matPrefix class="my-icon">print</mat-icon>
                                 Imprimir comprobante de acomulado</button>
-                
+
                 <button mat-raised-button
                 type="button"
                 class="marginRight10px"
@@ -85,7 +86,7 @@
                 (click)="fn_CerrarMDL()">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
@@ -99,15 +100,16 @@
                         <th class="textAlingLeft">Descripción</th>
                         <th class="textAlingRight">Monto</th>
                         <th class="textAlingCenter">Fecha</th>
+                        <th class="textAlingLeft">Creado</th>
                     </thead>
 
                     <tbody>
                         <tr *ngFor="let item of electronicMoneyList; let i = index">
-                            
+
                             <td class="textAlingCenter">
                                 <div style="width: 80px;">
                                     <span class="material-icons manitaSobre colorRed"
-                                        (click)="fn_deleteElectronicMoney( item.idElectronicMoney )"
+                                        (click)="fn_deleteElectronicMoney( item.keyx )"
                                         *ngIf="item.idRelation == 0">
                                         delete_outline
                                     </span>
@@ -115,6 +117,7 @@
                             </td>
 
                             <td class="textAlingLeft">{{ item.description }}</td>
+
                             <td class="textAlingRight">{{ item.amount | currency }}</td>
                             <td class="textAlingCenter">
 
@@ -124,24 +127,25 @@
                                         <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy h:mm:ss a' }}</label>
                                     </div>
                                 </div>
-                                
+
                             </td>
+                            <td class="textAlingLeft">{{ item.createUserName }}</td>
 
                         </tr>
-                        
+
                     </tbody>
-                    
+
                 </table>
             </div>
 
             <app-pagination *ngIf="electronicMoneyList" [IPagination]="pagination"
                         (OPagination)="changePagination($event)">
             </app-pagination>
-            
+
         </div>
 
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>
