@@ -142,7 +142,7 @@ export class EgresosComponent {
                       this.egresoForm.description = '';
 
                       if(this.selectPrinter.idPrinter > 0){
-                        this.printTicketServ.printTicket("Egreso", resp.insertID, this.selectPrinter.idPrinter);
+                        this.printTicketServ.printTicket("Egreso", resp.insertID, this.selectPrinter.idPrinter, 1);
                       }
 
                       this.fn_CerrarMDL();
@@ -255,7 +255,7 @@ export class EgresosComponent {
 
           if(resp){
 
-            this.printTicketServ.printTicket("Egreso", idEgreso, this.selectPrinter.idPrinter);
+            this.printTicketServ.printTicket("Egreso", idEgreso, this.selectPrinter.idPrinter, 1);
 
           }
 

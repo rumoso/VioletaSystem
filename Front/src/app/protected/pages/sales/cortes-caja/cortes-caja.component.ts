@@ -259,7 +259,7 @@ fn_btnRePrinter( idCorteCaja: any ){
 
         if(resp){
 
-          this.printTicketServ.printTicket("CorteCaja", idCorteCaja, this.selectPrinter.idPrinter);
+          this.printTicketServ.printTicket("CorteCaja", idCorteCaja, this.selectPrinter.idPrinter, 1);
 
         }
 

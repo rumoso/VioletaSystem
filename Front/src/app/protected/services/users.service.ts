@@ -9,7 +9,7 @@ import { AuthService } from 'src/app/auth/services/auth.service';
   providedIn: 'root'
 })
 export class UsersService {
-  
+
   private baseURL: string = environment.baseUrl;
   private idSucursal: number = environment.idSucursal;
 
@@ -21,7 +21,7 @@ export class UsersService {
   ) { }
 
   CGetUsersListWithPage( pagination: Pagination ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -69,6 +69,10 @@ export class UsersService {
       search: search
     }
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetSellersCombo`, data);
+  }
+
+  CUpdateAuthorizationCode( data : any ): Observable<ResponseDB_CRUD> {
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateAuthorizationCode`, data );
   }
 
 }

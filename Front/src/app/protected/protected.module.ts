@@ -54,6 +54,7 @@ import { IngresosComponent } from './pages/sales/mdl/ingresos/ingresos.component
 import { IngresosListComponent } from './pages/sales/ingresos-list/ingresos-list.component';
 import { PagosCanceladosComponent } from './pages/reports/pagos-cancelados/pagos-cancelados.component';
 import { QuestionCancelSalePaymentsComponent } from './pages/sales/mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
+import { ChangepwdsecretwordComponent } from './pages/security/mdl/changepwdsecretword/changepwdsecretword.component';
 
 @NgModule({
     declarations: [
@@ -104,6 +105,7 @@ import { QuestionCancelSalePaymentsComponent } from './pages/sales/mdl/question-
     IngresosListComponent,
     PagosCanceladosComponent,
     QuestionCancelSalePaymentsComponent,
+    ChangepwdsecretwordComponent,
   ],
     imports: [
         CommonModule,

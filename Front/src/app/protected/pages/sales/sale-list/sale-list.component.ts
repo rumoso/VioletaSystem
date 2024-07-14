@@ -497,7 +497,7 @@ fn_ShowCorteCajaSale(){
     next: ( resp ) =>{
 
       if(resp > 0){
-        this.printTicketServ.printTicket("CorteCaja", resp, this.selectPrinter.idPrinter);
+        this.printTicketServ.printTicket("CorteCaja", resp, this.selectPrinter.idPrinter, 1);
         this.fn_cerrarCaja();
       }
 

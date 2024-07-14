@@ -145,57 +145,64 @@ export class CorteCajaComponent {
     } );
 
   }
-
+  bContinueDialog = false;
   fn_InsertCorteCaja(){
 
-    this.fn_SUMAll();
+    if(!this.bContinueDialog){
+      this.bContinueDialog = true;
 
-    this.servicesGServ.showDialog('¿Estás seguro?'
-    , 'Está a punto de guardar el corte de caja'
-    , '¿Desea continuar?'
-    , 'Si', 'No')
-    .afterClosed().subscribe({
-      next: ( resp ) =>{
 
-        if(resp){
+      this.fn_SUMAll();
 
-          this.bShowSpinner = true;
+      this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Está a punto de guardar el corte de caja'
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
 
-          const data: any = {
-            idCaja: this.idCaja,
-            selectedDate: this.selectedDate,
-            preCorteCaja: this.preCorteCaja
-          };
+          this.bContinueDialog = false;
 
-          this.salesServ.CInsertCorteCaja( data )
-            .subscribe({
-              next: (resp: ResponseDB_CRUD) => {
+          if(resp){
 
-                if( resp.status === 0 ){
-                  //this.idSale = resp.insertID;
-                  if(this.selectPrinter.idPrinter > 0){
-                    this.printTicketServ.printTicket("CorteCaja", resp.insertID, this.selectPrinter.idPrinter);
+            this.bShowSpinner = true;
+
+            const data: any = {
+              idCaja: this.idCaja,
+              selectedDate: this.selectedDate,
+              preCorteCaja: this.preCorteCaja
+            };
+
+            this.salesServ.CInsertCorteCaja( data )
+              .subscribe({
+                next: (resp: ResponseDB_CRUD) => {
+
+                  if( resp.status === 0 ){
+                    //this.idSale = resp.insertID;
+                    if(this.selectPrinter.idPrinter > 0){
+                      this.printTicketServ.printTicket("CorteCaja", resp.insertID, this.selectPrinter.idPrinter, 1);
+                    }
+
+                    this.fn_CerrarMDL( resp.insertID );
                   }
+                  this.servicesGServ.showAlertIA( resp );
+                  this.bShowSpinner = false;
 
-                  this.fn_CerrarMDL( resp.insertID );
+                },
+                error: (ex) => {
+
+                  this.servicesGServ.showSnakbar( ex.error.message );
+                  this.bShowSpinner = false;
+
                 }
-                this.servicesGServ.showAlertIA( resp );
-                this.bShowSpinner = false;
+              });
 
-              },
-              error: (ex) => {
-
-                this.servicesGServ.showSnakbar( ex.error.message );
-                this.bShowSpinner = false;
-
-              }
-            });
+          }
 
         }
 
-      }
-
-    });
+      });
+    }
 
   }
 

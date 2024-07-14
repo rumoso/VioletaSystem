@@ -104,7 +104,7 @@ constructor(
   }
 
   async ev_PrintTicket(){
-    this.printTicketServ.printTicket("DineroElectronico", this.electronicMoneyForm.idCustomer, this.selectPrinter.idPrinter, this.electronicMoneySum);
+    this.printTicketServ.printTicket("DineroElectronico", this.electronicMoneyForm.idCustomer, this.selectPrinter.idPrinter, 1, this.electronicMoneySum);
   }
 
   ////************************************************ */

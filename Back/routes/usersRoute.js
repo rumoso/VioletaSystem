@@ -11,6 +11,7 @@ const {
   , changePassword
   , disabledUser
   , cbxGetSellersCombo
+  , updateAuthorizationCode
    } = require('../controllers/usersController');
 
    
@@ -64,5 +65,10 @@ router.post('/cbxGetSellersCombo', [
 
   validarCampos
 ], cbxGetSellersCombo);
+
+router.post('/updateAuthorizationCode', [
+  check('authorizationCode','Id obligatorio').not().isEmpty(),
+  validarCampos
+], updateAuthorizationCode);
 
 module.exports = router;

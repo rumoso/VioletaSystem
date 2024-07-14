@@ -105,6 +105,9 @@
                 </div>
 
                 <div class="row">
+                  <div class="col-md-2">
+                      <mat-checkbox class="example-margin" [(ngModel)]="productForm.bImprimir">Imprimir</mat-checkbox>
+                  </div>
                     <div class="col-md-4">
                         <mat-form-field class="with100">
                             <mat-label>Código de barras</mat-label>
@@ -116,7 +119,7 @@
                     </div>
 
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <mat-form-field class="with100">
                             <mat-label>Costo: </mat-label>
                             <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
@@ -127,7 +130,7 @@
                         </mat-form-field>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <mat-form-field class="with100">
                             <mat-label>Precio: </mat-label>
                             <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
@@ -363,18 +366,30 @@
                             type="button"
                             class="marginRight10px"
                             (click)="changeRoute('productList')">Cancelar</button>
-
-                            <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="ev_PrintTicket()">
-                                <mat-icon matPrefix class="my-icon">print</mat-icon>
-                                Imprimir</button>
-
                         </div>
                     </div>
                 </div>
+
+                <div class="row top10px" *ngIf="idProduct > 0">
+                  <div class="col-md-3">
+                    <mat-form-field class="with100">
+                        <mat-label>Número de copias de código de barra</mat-label>
+                        <input id="tbxAddInv" matInput placeholder="Ingrese un número"
+                        type="number"
+                        [(ngModel)]="productForm.addInv">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-md-3">
+                      <button mat-raised-button
+                          color="primary"
+                          type="submit"
+                          class="marginRight10px top10px"
+                          (click)="ev_PrintTicketBtn()">
+                          <mat-icon matPrefix class="my-icon">print</mat-icon>
+                          Imprimir</button>
+
+                  </div>
+              </div>
 
         </div>
     </div>

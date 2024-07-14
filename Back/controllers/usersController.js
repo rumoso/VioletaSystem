@@ -213,7 +213,7 @@ const changePassword = async(req, res) => {
             ,'${pwdEncrypt}'
             )`)
 
-            var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Users', ${ idUser } )`);
+            //var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Users', ${ idUser } )`);
 
             res.json({
                 status: 0,
@@ -318,6 +318,40 @@ const cbxGetSellersCombo = async(req, res = response) => {
 
 };
 
+const updateAuthorizationCode = async(req, res) => {
+
+    const {
+        idUser,
+        authorizationCode
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call updateAuthorizationCode(
+        ${ idUser }
+        ,'${ authorizationCode }'
+        )`)
+
+        //var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Users', ${ idUser } )`);
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
 module.exports = {
     getUsersListWithPage
     , getUserByID
@@ -326,4 +360,5 @@ module.exports = {
     , changePassword
     , disabledUser
     , cbxGetSellersCombo
+    , updateAuthorizationCode
 }

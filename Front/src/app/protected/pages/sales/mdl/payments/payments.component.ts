@@ -148,7 +148,7 @@ async fn_savePayment() {
                     if( resp.status === 0 ){
 
                       var sumCambio = this.paymentList.reduce((sum: any, x: any) => sum + x.cambio, 0);
-                      this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, this.paymentList.length, '', sumCambio);
+                      this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, 1, this.paymentList.length, '', sumCambio);
                       console.log(this.idSale)
                       this.dialogRef.close( this.idSale );
 

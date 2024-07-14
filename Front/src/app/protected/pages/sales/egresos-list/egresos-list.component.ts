@@ -97,17 +97,17 @@ async ngOnInit() {
 fn_btnRePrinter( idEgreso: any ){
 
   if( this.selectPrinter.idPrinter > 0 ){
-  
+
     this.servicesGServ.showDialog('¿Estás seguro?'
     , 'Estás apunto de reimprimir'
     , '¿Desea continuar?'
     , 'Si', 'No')
     .afterClosed().subscribe({
       next: ( resp ) =>{
-        
+
         if(resp){
 
-          this.printTicketServ.printTicket("Egreso", idEgreso, this.selectPrinter.idPrinter);
+          this.printTicketServ.printTicket("Egreso", idEgreso, this.selectPrinter.idPrinter, 1);
 
         }
 
@@ -116,11 +116,11 @@ fn_btnRePrinter( idEgreso: any ){
     });
 
   }
-  
+
 }
 
 parametersForm_Clear(){
-  
+
   this.egresoForm = {
     date: '',
     description: '',
@@ -179,7 +179,7 @@ fn_getSelectPrintByIdUser( idUser: number ) {
 
   this.printersServ.CGetSelectPrinterByIdUser( idUser )
   .subscribe({
-    
+
     next: ( resp: ResponseGet ) => {
 
       if( resp.status == 0 ){
@@ -204,7 +204,7 @@ fn_getSelectPrintByIdUser( idUser: number ) {
     }
 
   })
-  
+
 }
 
 // #endregion

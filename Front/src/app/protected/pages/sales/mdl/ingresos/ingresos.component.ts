@@ -141,7 +141,7 @@ export class IngresosComponent {
                       this.ingresoForm.description = '';
 
                       if(this.selectPrinter.idPrinter > 0){
-                        this.printTicketServ.printTicket("Ingreso", resp.insertID, this.selectPrinter.idPrinter);
+                        this.printTicketServ.printTicket("Ingreso", resp.insertID, this.selectPrinter.idPrinter, 1);
                       }
 
                       this.fn_CerrarMDL();
@@ -275,7 +275,7 @@ export class IngresosComponent {
 
           if(resp){
 
-            this.printTicketServ.printTicket("Ingreso", idIngreso, this.selectPrinter.idPrinter);
+            this.printTicketServ.printTicket("Ingreso", idIngreso, this.selectPrinter.idPrinter, 1);
 
           }
 

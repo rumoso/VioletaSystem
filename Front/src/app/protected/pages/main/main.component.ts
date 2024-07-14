@@ -4,6 +4,7 @@ import { AuthService } from 'src/app/auth/services/auth.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { SoundService } from '../../services/sound.service';
+import { ChangepwdsecretwordComponent } from '../security/mdl/changepwdsecretword/changepwdsecretword.component';
 
 @Component({
   selector: 'app-main',
@@ -64,6 +65,18 @@ export class MainComponent implements OnInit {
       }
     })
 
+  }
+
+  showChangePwdModal(){
+
+    this.servicesGServ.showModalWithParams( ChangepwdsecretwordComponent, null, '1500px')
+    .afterClosed().subscribe({
+      next: ( resp: any ) =>{
+
+        //this.fn_getCustomersListWithPage();
+
+      }
+    });
   }
 
 }

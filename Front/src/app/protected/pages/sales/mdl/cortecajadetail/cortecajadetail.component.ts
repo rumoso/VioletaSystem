@@ -197,7 +197,7 @@ export class CortecajadetailComponent {
           if(resp){
 
             if(relationType != "RePayment")
-              this.printTicketServ.printTicket(relationType, idRelation, this.selectPrinter.idPrinter);
+              this.printTicketServ.printTicket(relationType, idRelation, this.selectPrinter.idPrinter, 1);
             else
               this.printTicketServ.printTicket("RePayment", idRelation.idRelation, this.selectPrinter.idPrinter, 1, idRelation.idPayment);
 

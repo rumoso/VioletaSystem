@@ -21,6 +21,7 @@ import { SuppliersService } from 'src/app/protected/services/suppliers.service';
 import { SuppliersComponent } from '../suppliers/suppliers.component';
 import { CatComponent } from '../mdl/cat/cat.component';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
+import { PrintersService } from 'src/app/protected/services/printers.service';
 
 @Component({
   selector: 'app-product',
@@ -52,6 +53,12 @@ export class ProductComponent implements OnInit {
     pageSizeOptions: [5, 10, 25, 100]
   }
   //-------------------------------
+
+  selectPrinter: any = {
+    idSucursal: 0,
+    idPrinter: 0,
+    printerName: ''
+  }
 
   ////************************************************ */
     // MÉTODOS DE PAGINACIÓN
@@ -85,6 +92,7 @@ export class ProductComponent implements OnInit {
 
     , private authServ: AuthService
     , private printTicketServ: PrintTicketService
+    , private printersServ: PrintersService
     ) { }
 
     productForm: any = {
@@ -110,12 +118,15 @@ export class ProductComponent implements OnInit {
       noEntrada: '',
       active: true,
       addInv: 1,
-      idUser: 0
+      idUser: 0,
+      bImprimir: true
     };
 
     async ngOnInit() {
       this.authServ.checkSession();
       this.idUserLogON = await this.authServ.getIdUserSession();
+
+      this.fn_getSelectPrintByIdUser( this.idUserLogON );
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
@@ -189,6 +200,7 @@ export class ProductComponent implements OnInit {
       this.productForm.originDesc = '';
       this.productForm.active = true;
       this.productForm.addInv = 1;
+      this.productForm.bImprimir = true;
 
       setTimeout (() => {
 
@@ -282,6 +294,8 @@ export class ProductComponent implements OnInit {
 
               this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
 
+              this.ev_PrintTicket();
+
               this.fn_ClearForm();
 
             }
@@ -349,6 +363,38 @@ export class ProductComponent implements OnInit {
         })
 
     }
+  }
+
+  fn_getSelectPrintByIdUser( idUser: number ) {
+
+    this.printersServ.CGetSelectPrinterByIdUser( idUser )
+    .subscribe({
+
+      next: ( resp: ResponseGet ) => {
+
+        if( resp.status == 0 ){
+
+          this.selectPrinter.idSucursal = resp.data.idSucursal;
+          this.selectPrinter.idPrinter = resp.data.idPrinter;
+          this.selectPrinter.printerName = resp.data.printerName;
+
+        }
+        else{
+
+          this.selectPrinter.idSucursal = 0;
+          this.selectPrinter.idPrinter = 0;
+          this.selectPrinter.printerName = '';
+
+        }
+
+        console.log( resp );
+      },
+      error: (ex: HttpErrorResponse) => {
+        this.servicesGServ.showSnakbar( ex.error.data );
+      }
+
+    })
+
   }
 
 
@@ -669,8 +715,15 @@ export class ProductComponent implements OnInit {
   }
 
   async ev_PrintTicket(){
-    //async printTicket( type: string, idRelation: any, idPrinter: number, iPayments: number = 0, idPayment: any = '', sumCambio: number = 0 ): Promise<any> {
-    this.printTicketServ.printTicket("codigoBarras", this.productForm.idProduct, 2, this.productForm.addInv);
+    if(this.productForm.bImprimir && this.productForm.addInv > 0){
+      this.printTicketServ.printTicket("codigoBarras", this.productForm.idProduct, this.selectPrinter.idPrinter, this.productForm.addInv);
+    }
+  }
+
+  async ev_PrintTicketBtn(){
+    if(this.productForm.addInv > 0){
+      this.printTicketServ.printTicket("codigoBarras", this.productForm.idProduct, this.selectPrinter.idPrinter, this.productForm.addInv);
+    }
   }
 
 }

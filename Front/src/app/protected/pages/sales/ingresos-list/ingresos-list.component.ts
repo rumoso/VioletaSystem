@@ -107,7 +107,7 @@ fn_btnRePrinter( idIngreso: any ){
 
         if(resp){
 
-          this.printTicketServ.printTicket("Ingreso", idIngreso, this.selectPrinter.idPrinter);
+          this.printTicketServ.printTicket("Ingreso", idIngreso, this.selectPrinter.idPrinter, 1);
 
         }
 

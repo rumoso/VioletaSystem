@@ -1232,7 +1232,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                           this.fn_getSaleByID( this.idSale );
 
                           if(this.selectPrinter.idPrinter > 0){
-                            this.printTicketServ.printTicket("Venta", resp.idSaleNew, this.selectPrinter.idPrinter);
+                            this.printTicketServ.printTicket("Venta", resp.idSaleNew, this.selectPrinter.idPrinter, 1);
                           }
 
                       }
@@ -1519,11 +1519,11 @@ ev_showInterface(){
 }
 
 async ev_PrintTicket(){
-  this.printTicketServ.printTicket("Venta", this.idSale, this.selectPrinter.idPrinter);
+  this.printTicketServ.printTicket("Venta", this.idSale, this.selectPrinter.idPrinter, 1);
 }
 
 async ev_PrintTicketConsHistoryList(){
-  this.printTicketServ.printTicket("ConsHistory", this.idSale, this.selectPrinter.idPrinter);
+  this.printTicketServ.printTicket("ConsHistory", this.idSale, this.selectPrinter.idPrinter, 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
