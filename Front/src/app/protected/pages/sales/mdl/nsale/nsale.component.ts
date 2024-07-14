@@ -754,7 +754,7 @@ fn_btnRePrinter( idPayment: any ){
 
         if(resp){
 
-          this.printTicketServ.printTicket("RePayment", this.idSale, this.selectPrinter.idPrinter, 1, idPayment);
+          this.printTicketServ.printTicket("RePayment", this.idSale, this.selectPrinter.idPrinter, 1, 1, idPayment);
 
         }
 
@@ -1697,6 +1697,11 @@ async ev_PrintTicketConsHistoryList(){
 
       if(this.salesHeaderForm.idSaleType == 5){
         setTimeout (() => {
+
+          this.salesHeaderForm.saleDetail = [];
+          this.salesHeaderForm.total = 0;
+          this.salesHeaderForm.pendingAmount = 0;
+
           var miInput = document.getElementById('tbxDescription');
           miInput?.focus();
         }, 500);
@@ -1711,7 +1716,6 @@ async ev_PrintTicketConsHistoryList(){
   cbxSalesType_Clear(){
     this.salesHeaderForm.idSaleType = 0;
     this.salesHeaderForm.saleTypeDesc = '';
-
   }
   //--------------------------------------------------------------------------
 
