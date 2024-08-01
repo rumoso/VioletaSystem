@@ -80,6 +80,19 @@ export class PrintTicketService {
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
+      if(sale.data.active == 0){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 20, text: "CANCELADA" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
       oLines = [];
       var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
       oLines.push( oLine );
@@ -183,7 +196,7 @@ export class PrintTicketService {
         oLines = [];
         var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 42 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Center", size: 5, style: "Bold", text: "CANT", iWith: 8 }
+        var oLine: any = { aling: "Center", size: 5, style: "Bold", text: "CAN", iWith: 8 }
         oLines.push( oLine );
         var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PRECIO", iWith: 25 }
         oLines.push( oLine );
@@ -400,6 +413,11 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "ATENDIÓ: " + sale.data.sellerDesc }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
         var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
@@ -465,7 +483,7 @@ export class PrintTicketService {
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
-      if(sale.data.pendingAmount < 1){
+      if(sale.data.pendingAmount < 0){
         oLines = [];
         var oLine: any = { aling: "Left", size: 7, text: " " }
         oLines.push( oLine );

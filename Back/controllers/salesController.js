@@ -323,7 +323,7 @@ const insertPayments = async(req, res) => {
             var OSQL_getSaleByID = await dbConnection.query(`call getSaleByID( '${ OPayment.idRelation }' )`)
             OSQL_getSaleByID = OSQL_getSaleByID[0]
 
-            //////console.log( OSQL_getSaleByID )
+            console.log( OSQL_getSaleByID )
             
             if(OSQL_getSaleByID){
 
