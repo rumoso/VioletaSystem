@@ -2275,6 +2275,133 @@ const getRepPagosCanceladosWithPage = async(req, res = response) => {
 
 };
 
+const getRepPagosWithPage = async(req, res = response) => {
+    
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSale = ''
+        , idPayment = ''
+        , idCorteCaja = ''
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        // var OSQL_Sum = await dbConnection.query(`call getRepVentasSumByIdSaleType(
+        //     ${idUserLogON}
+        //     , '${createDateStart.substring(0, 10)}'
+        //     , '${createDateEnd.substring(0, 10)}'
+        //     , ${idCustomer}
+        //     , ${idSaleType}
+
+        //     , ${bCancel}
+        //     , ${bPending}
+        //     , ${bPagada}
+
+        //     , '${ search }'
+        //     , ${ start }
+        //     , ${ limiter }
+
+        //     , ${ idSucursalLogON }
+        //     )`)
+
+        //console.log( OSQL_Sum )
+
+        var OSQL_Sum = await dbConnection.query(`call getRepPagosSUM(
+            ${idUserLogON}
+            , '${ createDateStart.substring(0, 10) }'
+            , '${ createDateEnd.substring(0, 10) }'
+            , ${ idCustomer }
+            , '${ idSale }'
+            , '${ idPayment }'
+            , '${ idCorteCaja }'
+
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //console.log( OSQL_Sum[0] )
+
+        var OSQL = await dbConnection.query(`call getRepPagosWithPage(
+            ${idUserLogON}
+            , '${ createDateStart.substring(0, 10) }'
+            , '${ createDateEnd.substring(0, 10) }'
+            , ${ idCustomer }
+            , '${ idSale }'
+            , '${ idPayment }'
+            , '${ idCorteCaja }'
+
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //console.log(OSQL)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message:"No se encontró información.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL,
+                    OSQL_Sum: OSQL_Sum
+                    //repVentasSumByIdSaleType: OSQL_Sum
+                }
+            });
+            
+        }
+
+        // await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        // await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
 module.exports = {
     insertSale
     , getVentasListWithPage
@@ -2325,5 +2452,7 @@ module.exports = {
     , getDatosRelacionadosByIDCorteCaja
 
     , getRepPagosCanceladosWithPage
+
+    , getRepPagosWithPage
 
 }
