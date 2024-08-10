@@ -24,6 +24,7 @@ import { SalesComponent } from "./pages/reports/sales/sales.component";
 import { DevoluInventarioComponent } from "./pages/operation/devolu-inventario/devolu-inventario.component";
 import { IngresosListComponent } from "./pages/sales/ingresos-list/ingresos-list.component";
 import { PagosCanceladosComponent } from "./pages/reports/pagos-cancelados/pagos-cancelados.component";
+import { RepPaymentsComponent } from "./pages/reports/rep-payments/rep-payments.component";
 
 const routes: Routes = [
     {
@@ -133,6 +134,10 @@ const routes: Routes = [
         {
           path: 'rep_pagoscancelados',
           component: PagosCanceladosComponent
+        },
+        {
+          path: 'rep_pagos',
+          component: RepPaymentsComponent
         },
 
       ]

@@ -52,6 +52,8 @@ const {
 
   , getRepPagosCanceladosWithPage
 
+  , getRepPagosWithPage
+
 } = require('../controllers/salesController');
 
    
@@ -298,5 +300,7 @@ router.post('/getDatosRelacionadosByIDCorteCaja', [
 ], getDatosRelacionadosByIDCorteCaja);
 
 router.post('/getRepPagosCanceladosWithPage', getRepPagosCanceladosWithPage);
+
+router.post('/getRepPagosWithPage', getRepPagosWithPage);
 
 module.exports = router;

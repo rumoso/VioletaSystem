@@ -267,7 +267,7 @@
         <div class="col-md-2">
             <h1>{{ item.sumPiezas }} PZ</h1>
         </div>
-        <div class="col-md-5" style="position: relative;">
+        <div class="col-md-5" style="position: relative;" *ngIf="rep_costosProductos">
             <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
             <h2 style="display: inline-block;">Costo Total: {{ item.sumCost | currency }}</h2>
         </div>
@@ -289,7 +289,8 @@
                 color="primary"
                 type="submit"
                 class="marginRight10px"
-                (click)="exportDataToExcel( true )">
+                (click)="exportDataToExcel( true )"
+                *ngIf="rep_costosProductos">
                 <mat-icon matPrefix class="my-icon">insert_drive_file</mat-icon>
                 EXPORTAR A EXCEL CON PRECIOS Y COSTOS</button>
 
@@ -297,9 +298,28 @@
                 color="primary"
                 type="submit"
                 class="marginRight10px"
-                (click)="exportDataToExcel( false )">
+                (click)="exportDataToExcel( false )"
+                *ngIf="rep_costosProductos">
                 <mat-icon matPrefix class="my-icon">insert_drive_file</mat-icon>
                 EXPORTAR A EXCEL SIN PRECIOS Y COSTOS</button>
+
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="exportDataToExcel( true )"
+                *ngIf="!rep_costosProductos">
+                <mat-icon matPrefix class="my-icon">insert_drive_file</mat-icon>
+                EXPORTAR A EXCEL CON PRECIOS</button>
+
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="exportDataToExcel( false )"
+                *ngIf="!rep_costosProductos">
+                <mat-icon matPrefix class="my-icon">insert_drive_file</mat-icon>
+                EXPORTAR A EXCEL SIN PRECIOS</button>
 
 
             </div>
@@ -314,13 +334,13 @@
 
                             <th class="textAlingLeft padding-th">Código de barras</th>
                             <th class="textAlingLeft padding-th">Nombre</th>
-                            <th class="textAlingRight padding-th">Costo</th>
+                            <th class="textAlingRight padding-th" *ngIf="rep_costosProductos">Costo</th>
                             <th class="textAlingRight padding-th">Precio</th>
                             <th class="textAlingRight padding-th">Apartado</th>
                             <th class="textAlingRight padding-th">Consignación</th>
                             <th class="textAlingRight padding-th">Mostrador</th>
                             <th class="textAlingRight padding-th">Gramos</th>
-                            <th class="textAlingRight padding-th">Costo T</th>
+                            <th class="textAlingRight padding-th" *ngIf="rep_costosProductos">Costo T</th>
                             <th class="textAlingRight padding-th">Precio T</th>
                             <th class="textAlingLeft padding-th">Sucursal</th>
                             <th class="textAlingLeft padding-th">Familia</th>
@@ -345,13 +365,13 @@
                                 </td>
                                 <td class="textAlingLeft">{{ item.name }}</td>
 
-                                <td class="textAlingRight">{{ item.cost | currency }}</td>
+                                <td class="textAlingRight" *ngIf="rep_costosProductos">{{ item.cost | currency }}</td>
                                 <td class="textAlingRight">{{ item.price | currency }}</td>
                                 <td class="textAlingRight">{{ item.catInventaryApart }} PZ</td>
                                 <td class="textAlingRight">{{ item.catInventaryCons }} PZ</td>
                                 <td class="textAlingRight">{{ item.catInventary }} PZ</td>
                                 <td class="textAlingRight">{{ item.gramos }}</td>
-                                <td class="textAlingRight">{{ item.costoT | currency }}</td>
+                                <td class="textAlingRight" *ngIf="rep_costosProductos">{{ item.costoT | currency }}</td>
                                 <td class="textAlingRight">{{ item.importeT | currency }}</td>
                                 <td class="textAlingLeft">{{ item.sucursalDesc }}</td>
                                 <td class="textAlingLeft">{{ item.familyDesc }}</td>

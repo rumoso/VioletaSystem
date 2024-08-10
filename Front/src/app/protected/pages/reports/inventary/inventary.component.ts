@@ -27,6 +27,8 @@ export class InventaryComponent {
   private _appMain: string = environment.appMain;
 
   idUserLogON: number = 0;
+  rep_costosProductos: boolean = false;
+
 
   constructor(
     private servicesGServ: ServicesGService
@@ -50,6 +52,9 @@ export class InventaryComponent {
 
       this.authServ.checkSession();
       this.idUserLogON = await this.authServ.getIdUserSession();
+
+      this.rep_costosProductos = this.authServ.hasPermissionAction( 'rep_costosProductos' );
+      //console.log(this.rep_costosProductos)
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
@@ -80,7 +85,7 @@ export class InventaryComponent {
   inventaryBySucursalList: any[] = [];
 
   panelOpenState: boolean = false;
-  
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -118,7 +123,7 @@ export class InventaryComponent {
   // }
 
   exportDataToExcel( bCostos: boolean ): void {
-    
+
     this.bShowSpinner = true;
 
     var Newpagination: Pagination = {
@@ -138,32 +143,63 @@ export class InventaryComponent {
 
           if( bCostos ){
 
-            const columnFormats: ColumnFormat[] = [
-              { col: 0, currencyFormat: false, textAlignment: 'left' },
-              { col: 1, currencyFormat: false, textAlignment: 'left' },
-              { col: 2, numberFormat: '#,##0', textAlignment: 'right' },
-              { col: 3, numberFormat: '#,##0', textAlignment: 'right' },
-              { col: 4, numberFormat: '#,##0', textAlignment: 'right' },
-              { col: 5, currencyFormat: true, textAlignment: 'right' },
-              { col: 6, currencyFormat: true, textAlignment: 'right' },
-            ];
+            if(this.rep_costosProductos){
 
-            var NewObj = resp.data.rows.map((originalItem: any) => {
-              return {
-                'Código de barras	': originalItem.barCode,
-                'Nombre': originalItem.name,
-                'Apartado': originalItem.catInventaryApart,
-                'Consignación': originalItem.catInventaryCons,
-                'Mostrador': originalItem.catInventary,
-                'cost': originalItem.cost,
-                'price': originalItem.price
-              };
-            });
-  
-            const currentDateTime = new Date();
-            const formattedDateTime = currentDateTime.toISOString().replace(/[:.]/g, '-');
-  
-            this.servicesGServ.exportToExcel(NewObj, `RepInventarioConCostos_${formattedDateTime}.xlsx`, columnFormats);
+              const columnFormats: ColumnFormat[] = [
+                { col: 0, currencyFormat: false, textAlignment: 'left' },
+                { col: 1, currencyFormat: false, textAlignment: 'left' },
+                { col: 2, numberFormat: '#,##0', textAlignment: 'right' },
+                { col: 3, numberFormat: '#,##0', textAlignment: 'right' },
+                { col: 4, numberFormat: '#,##0', textAlignment: 'right' },
+                { col: 5, currencyFormat: true, textAlignment: 'right' },
+                { col: 6, currencyFormat: true, textAlignment: 'right' },
+              ];
+
+              var NewObj = resp.data.rows.map((originalItem: any) => {
+                return {
+                  'Código de barras	': originalItem.barCode,
+                  'Nombre': originalItem.name,
+                  'Apartado': originalItem.catInventaryApart,
+                  'Consignación': originalItem.catInventaryCons,
+                  'Mostrador': originalItem.catInventary,
+                  'cost': originalItem.cost,
+                  'price': originalItem.price
+                };
+              });
+
+              const currentDateTime = new Date();
+              const formattedDateTime = currentDateTime.toISOString().replace(/[:.]/g, '-');
+
+              this.servicesGServ.exportToExcel(NewObj, `RepInventarioConCostos_${formattedDateTime}.xlsx`, columnFormats);
+
+            }else{
+
+              const columnFormats: ColumnFormat[] = [
+                { col: 0, currencyFormat: false, textAlignment: 'left' },
+                { col: 1, currencyFormat: false, textAlignment: 'left' },
+                { col: 2, numberFormat: '#,##0', textAlignment: 'right' },
+                { col: 3, numberFormat: '#,##0', textAlignment: 'right' },
+                { col: 4, numberFormat: '#,##0', textAlignment: 'right' },
+                { col: 5, currencyFormat: true, textAlignment: 'right' },
+              ];
+
+              var NewObj = resp.data.rows.map((originalItem: any) => {
+                return {
+                  'Código de barras	': originalItem.barCode,
+                  'Nombre': originalItem.name,
+                  'Apartado': originalItem.catInventaryApart,
+                  'Consignación': originalItem.catInventaryCons,
+                  'Mostrador': originalItem.catInventary,
+                  'price': originalItem.price
+                };
+              });
+
+              const currentDateTime = new Date();
+              const formattedDateTime = currentDateTime.toISOString().replace(/[:.]/g, '-');
+
+              this.servicesGServ.exportToExcel(NewObj, `RepInventarioConCostos_${formattedDateTime}.xlsx`, columnFormats);
+
+            }
 
           }else{
 
@@ -187,7 +223,7 @@ export class InventaryComponent {
 
             const currentDateTime = new Date();
             const formattedDateTime = currentDateTime.toISOString().replace(/[:.]/g, '-');
-  
+
             this.servicesGServ.exportToExcel(NewObj, `RepInventario_${formattedDateTime}.xlsx`, columnFormats);
 
           }
@@ -203,12 +239,12 @@ export class InventaryComponent {
         this.bShowSpinner = false;
       }
     })
-  
-    
+
+
   }
 
   fn_getInventaryListWithPage() {
-    
+
     this.catlist = [];
     this.inventaryBySucursalList = [];
 
