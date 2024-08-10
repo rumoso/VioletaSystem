@@ -795,7 +795,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
 
               var importe = precio * this.salesDetailForm.cantidad;
 
-              if(precio > this.salesDetailForm.costPlusPorcent){
+              //if(precio > this.salesDetailForm.costPlusPorcent){
 
                 var saleDetail:any = {
                   select: false,
@@ -824,9 +824,9 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
 
                 this.fnClearSalesDetailForm();
 
-              }else{
-                this.servicesGServ.showAlert('W', 'Alerta!', "No se puede aplicar tanto descuento.", false);
-              }
+              // }else{
+              //   this.servicesGServ.showAlert('W', 'Alerta!', "No se puede aplicar tanto descuento.", false);
+              // }
 
 
             }else{
