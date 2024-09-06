@@ -9,7 +9,8 @@
 
     <div class="divTitle-center" style="margin-top: 0px;"
     *ngIf="salesHeaderForm.idSale.length> 0">
-        <h4>#{{ salesHeaderForm.idSale }} {{ ( salesHeaderForm.pendingAmount == 0 ? ' - PAGADO' : '- PENDIENTE: ' + ( salesHeaderForm.pendingAmount | currency ) ) }}</h4>
+        <h4 *ngIf="salesHeaderForm.idSaleType == 6">#{{ salesHeaderForm.idSale }}</h4>
+        <h4 *ngIf="salesHeaderForm.idSaleType != 6">#{{ salesHeaderForm.idSale }} {{ ( salesHeaderForm.pendingAmount == 0 ? ' - PAGADO' : '- PENDIENTE: ' + ( salesHeaderForm.pendingAmount | currency ) ) }}</h4>
     </div>
 
     <div class="row">
@@ -71,7 +72,6 @@
                     style="width: 100%;">
                         <input #cbxCustomerCBX
                         type="text"
-                                id="cbxCustomer"
                                 style="width: 100%;"
                                 placeholder="Selecciona..."
                                 aria-label="Number"
@@ -140,8 +140,15 @@
             <div class="row">
                 <div class="col-md-12">
 
-                    <div class="row" *ngIf="salesHeaderForm.idSaleType == 5">
+                    <div class="row" *ngIf="salesHeaderForm.idSaleType == 5 || salesHeaderForm.idSaleType == 6">
 
+                      <div class="row" style="margin-top: -15px;">
+                        <div class="col-md-12">
+                            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                                Taller
+                            </div>
+                        </div>
+                      </div>
                         <div class="col-md-10">
                             <mat-form-field class="example-full-width with100">
                                 <mat-label>Descripción</mat-label>
@@ -160,13 +167,21 @@
                                 matInput currencyMask placeholder="Ingrese el precio unitario"
                                 class="textAlingRight"
                                 [(ngModel)]="salesDetailForm.precioSobre"
-                                (keyup.enter)="addSaleDetail()">
+                                (keyup.enter)="addSaleDetail(true)">
                             </mat-form-field>
                         </div>
 
                     </div>
 
                     <div class="row" *ngIf="salesHeaderForm.idSale.length == 0 && salesHeaderForm.idSaleType != 5">
+
+                      <div class="row" style="margin-top: -15px;" *ngIf="salesHeaderForm.idSaleType == 6">
+                        <div class="col-md-12">
+                            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                                Producto
+                            </div>
+                        </div>
+                      </div>
 
                         <div class="col-md-4">
                             <mat-form-field fxLayout.xs="column" class="with100">

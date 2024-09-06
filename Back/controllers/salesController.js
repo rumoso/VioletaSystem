@@ -57,7 +57,7 @@ const insertSale = async(req, res) => {
                         
                         var saleD = saleDetail[i];
 
-                        var descriptionTaller = ( idSaleType == "5" ? saleD.productDesc : '' )
+                        var descriptionTaller = ( idSaleType == "5" || idSaleType == "6" ? saleD.productDesc : '' )
     
                         var OSQL2 = await dbConnection.query(`call insertSaleDetail(
                             '${oGetDateNow}'
@@ -1428,8 +1428,6 @@ const disabledPayment = async(req, res) => {
     }
 }
 
-
-
 const getEgresosListWithPage = async(req, res = response) => {
 
     var {
@@ -1541,6 +1539,8 @@ const disableSaleDetail = async(req, res) => {
             oResponse.message = "No se realizó la acción"
         }
 
+        var OSQL_SaleByID = await dbConnection.query(`call getSaleByID( '${ oSaleDetail[0].idSale }' )`)
+
         var OSQL_disabledSaleDetail = await dbConnection.query(`call disabledSaleDetail(
             ${ idSaleDetail }
         )`,{ transaction: tran })
@@ -1551,26 +1551,30 @@ const disableSaleDetail = async(req, res) => {
             bOK = false;
         }
 
-        var OSQL_insertInventaryLog = await dbConnection.query(`call insertInventaryLog(
-            '${oGetDateNow}'
-            ,  ${ oSaleDetail[0].idProduct }
-            , '${ oSaleDetail[0].cantidad }'
-            , 'Se regresa por cancelación de venta #${ oSaleDetail[0].idSale }'
+        if(OSQL_SaleByID[0].idSaleType != 6 && oSaleDetail[0].idProduct > 0){
+            
+            var OSQL_insertInventaryLog = await dbConnection.query(`call insertInventaryLog(
+                '${oGetDateNow}'
+                ,  ${ oSaleDetail[0].idProduct }
+                , '${ oSaleDetail[0].cantidad }'
+                , 'Se regresa por cancelación de venta #${ oSaleDetail[0].idSale }'
+    
+                , 1
+                , 1
+                , ''
+                , 0
+                , 0
+                , 0
+    
+                , ${ idUserLogON }
+            )`,{ transaction: tran })
+    
+            if(OSQL_insertInventaryLog[0].out_id > 0){
+                bOK = true;
+            }else{
+                bOK = false;
+            }
 
-            , 1
-            , 1
-            , ''
-            , 0
-            , 0
-            , 0
-
-            , ${ idUserLogON }
-        )`,{ transaction: tran })
-
-        if(OSQL_insertInventaryLog[0].out_id > 0){
-            bOK = true;
-        }else{
-            bOK = false;
         }
     
         if(bOK){
@@ -1610,6 +1614,7 @@ const editSobreTaller = async(req, res) => {
         importe = 0,
         descriptionTaller = '',
         idStatusSobre,
+        fechaEntrega,
 
         idUserLogON,
         idSucursalLogON
@@ -1636,6 +1641,7 @@ const editSobreTaller = async(req, res) => {
             ,'${ importe }'
             ,'${ descriptionTaller }'
             , ${ idStatusSobre }
+            ,'${ fechaEntrega ? fechaEntrega.substring(0, 10) : '0' }'
 
             , ${ auth_idUser }
 

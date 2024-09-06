@@ -108,7 +108,7 @@ export class ProductListComponent implements OnInit {
   }
   //-------------------------------
 
-  parametersForm: FormGroup = this.fb.group({
+  parametersForm: any = {
     idUser: 0,
     idSucursal: 0,
     sucursalDesc: '',
@@ -117,21 +117,21 @@ export class ProductListComponent implements OnInit {
     barCode: '',
     name: '',
     idFamily: 0,
-    familyDesc: [''],
+    familyDesc: '',
     idGroup: 0,
-    groupDesc: [''],
+    groupDesc: '',
     idQuality: 0,
-    qualityDesc: [''],
+    qualityDesc: '',
     idOrigin: 0,
-    originDesc: ['']
-  });
+    originDesc: ''
+  };
 
   fn_getProductsListWithPage() {
 
-    this.parametersForm.get('idUser')?.setValue( this.idUserLogON );
+    this.parametersForm.idUser = this.idUserLogON;
 
     this.bShowSpinner = true;
-    this.productsServ.CGetProductsListWithPage( this.pagination, this.parametersForm.value )
+    this.productsServ.CGetProductsListWithPage( this.pagination, this.parametersForm )
     .subscribe({
       next: (resp: ResponseGet) => {
         console.log(resp)
@@ -183,22 +183,22 @@ export class ProductListComponent implements OnInit {
   }
 
   parametersForm_Clear(){
-    this.parametersForm.get('createDateStart')?.setValue( '' );
-    this.parametersForm.get('createDateEnd')?.setValue( '' );
-    this.parametersForm.get('barCode')?.setValue( '' );
-    this.parametersForm.get('name')?.setValue( '' );
-    this.parametersForm.get('description')?.setValue( '' );
-    this.parametersForm.get('idFamily')?.setValue( 0 );
-    this.parametersForm.get('familyDesc')?.setValue( '' );
-    this.parametersForm.get('idGroup')?.setValue( 0 );
-    this.parametersForm.get('groupDesc')?.setValue( '' );
-    this.parametersForm.get('idQuality')?.setValue( 0 );
-    this.parametersForm.get('qualityDesc')?.setValue( '' );
-    this.parametersForm.get('idOrigin')?.setValue( 0 );
-    this.parametersForm.get('originDesc')?.setValue( '' );
+      this.parametersForm.createDateStart =  '';
+      this.parametersForm.createDateEnd =  '';
+      this.parametersForm.barCode =  '';
+      this.parametersForm.name =  '';
+      this.parametersForm.description =  '';
+      this.parametersForm.idFamily =  0;
+      this.parametersForm.familyDesc =  '';
+      this.parametersForm.idGroup =  0;
+      this.parametersForm.groupDesc =  '';
+      this.parametersForm.idQuality =  0;
+      this.parametersForm.qualityDesc =  '';
+      this.parametersForm.idOrigin =  0;
+      this.parametersForm.originDesc =  '';
 
-    this.parametersForm.get('idSucursal')?.setValue( 0 );
-    this.parametersForm.get('sucursalDesc')?.setValue( '' );
+      this.parametersForm.idSucursal =  0;
+      this.parametersForm.sucursalDesc =  '';
 
     this.fn_getProductsListWithPage();
   }
@@ -213,7 +213,7 @@ export class ProductListComponent implements OnInit {
   cbxFamiliesList: any[] = [];
 
   cbxFamilies_Search() {
-      this.familiesServ.CCbxGetFamiliesCombo( this.parametersForm.value.familyDesc )
+      this.familiesServ.CCbxGetFamiliesCombo( this.parametersForm.familyDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -238,14 +238,14 @@ export class ProductListComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.parametersForm.get('idFamily')?.setValue( rol.idFamily )
-    this.parametersForm.get('familyDesc')?.setValue( rol.name )
+    this.parametersForm.idFamily = rol.idFamily;
+    this.parametersForm.familyDesc = rol.name;
 
   }
 
   cbxFamilies_Clear(){
-    this.parametersForm.get('idFamily')?.setValue( 0 );
-    this.parametersForm.get('familyDesc')?.setValue( '' );
+    this.parametersForm.idFamily = 0;
+    this.parametersForm.familyDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -255,7 +255,7 @@ export class ProductListComponent implements OnInit {
   cbxGroupsList: any[] = [];
 
   cbxGroups_Search() {
-      this.groupsServ.CCbxGetGroupsCombo( this.parametersForm.value.groupDesc )
+      this.groupsServ.CCbxGetGroupsCombo( this.parametersForm.groupDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -280,14 +280,14 @@ export class ProductListComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.parametersForm.get('idGroup')?.setValue( rol.idGroup )
-    this.parametersForm.get('groupDesc')?.setValue( rol.name )
+    this.parametersForm.idGroup = rol.idGroup;
+    this.parametersForm.groupDesc = rol.name;
 
   }
 
   cbxGroups_Clear(){
-    this.parametersForm.get('idGroup')?.setValue( 0 );
-    this.parametersForm.get('groupDesc')?.setValue( '' );
+    this.parametersForm.idGroup = 0;
+    this.parametersForm.groupDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -297,7 +297,7 @@ export class ProductListComponent implements OnInit {
   cbxQualityList: any[] = [];
 
   cbxQuality_Search() {
-      this.qualityServ.CCbxGetQualityCombo( this.parametersForm.value.qualityDesc )
+      this.qualityServ.CCbxGetQualityCombo( this.parametersForm.qualityDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -322,14 +322,14 @@ export class ProductListComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.parametersForm.get('idQuality')?.setValue( rol.idQuality )
-    this.parametersForm.get('qualityDesc')?.setValue( rol.name )
+    this.parametersForm.idQuality = rol.idQuality;
+    this.parametersForm.qualityDesc = rol.name;
 
   }
 
   cbxQuality_Clear(){
-    this.parametersForm.get('idQuality')?.setValue( 0 );
-    this.parametersForm.get('qualityDesc')?.setValue( '' );
+    this.parametersForm.idQuality = 0;
+    this.parametersForm.qualityDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -339,7 +339,7 @@ export class ProductListComponent implements OnInit {
   cbxOriginList: any[] = [];
 
   cbxOrigin_Search() {
-      this.originServ.CCbxGetOriginCombo( this.parametersForm.value.originDesc )
+      this.originServ.CCbxGetOriginCombo( this.parametersForm.originDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -364,14 +364,14 @@ export class ProductListComponent implements OnInit {
 
     const rol: any = event.option.value;
 
-    this.parametersForm.get('idOrigin')?.setValue( rol.idOrigin )
-    this.parametersForm.get('originDesc')?.setValue( rol.name )
+    this.parametersForm.idOrigin = rol.idOrigin;
+    this.parametersForm.originDesc = rol.name;
 
   }
 
   cbxOrigin_Clear(){
-    this.parametersForm.get('idOrigin')?.setValue( 0 );
-    this.parametersForm.get('originDesc')?.setValue( '' );
+    this.parametersForm.idOrigin = 0;
+    this.parametersForm.originDesc = '';
   }
   //--------------------------------------------------------------------------
 
@@ -381,7 +381,7 @@ export class ProductListComponent implements OnInit {
   cbxSucursales: any[] = [];
 
   cbxSucursales_Search() {
-      this.sucursalesServ.CCbxGetSucursalesCombo( this.parametersForm.value.sucursalDesc, this.idUserLogON )
+      this.sucursalesServ.CCbxGetSucursalesCombo( this.parametersForm.sucursalDesc, this.idUserLogON )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
@@ -408,14 +408,14 @@ export class ProductListComponent implements OnInit {
 
     console.log(ODataCbx)
 
-    this.parametersForm.get('idSucursal')?.setValue( ODataCbx.idSucursal )
-    this.parametersForm.get('sucursalDesc')?.setValue( ODataCbx.name )
+    this.parametersForm.idSucursal = ODataCbx.idSucursal;
+    this.parametersForm.sucursalDesc = ODataCbx.name;
 
   }
 
   cbxSucursales_Clear(){
-    this.parametersForm.get('idSucursal')?.setValue( 0 );
-    this.parametersForm.get('sucursalDesc')?.setValue( '' );
+    this.parametersForm.idSucursal = 0;
+    this.parametersForm.sucursalDesc = '';
   }
   //--------------------------------------------------------------------------
 

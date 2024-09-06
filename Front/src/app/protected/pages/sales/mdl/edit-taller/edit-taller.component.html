@@ -92,6 +92,17 @@
   </div>
 
   <div class="row top10px">
+    <div class="col-md-12" style="text-align: center;">
+        <mat-form-field class="">
+        <mat-label>Fecha de entrega:</mat-label>
+        <input class="textAlingCenter" matInput [matDatepicker]="picker" placeholder="Seleccione una fecha" [(ngModel)]="oDataSale.fechaEntrega">
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+    </div>
+  </div>
+
+  <div class="row top10px">
       <div class="col-md-12">
           <div style="float: left;">
 

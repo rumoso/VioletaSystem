@@ -36,7 +36,8 @@ export class EditTallerComponent {
     importe: '',
     descriptionTaller: '',
     idStatusSobre: 0,
-    statusSobreDesc: ''
+    statusSobreDesc: '',
+    fechaEntrega: ''
 
   }
 
@@ -100,6 +101,7 @@ export class EditTallerComponent {
             this.oDataSale.importe = resp.dataDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
             this.oDataSale.idStatusSobre = resp.data.idStatusSobre;
             this.oDataSale.statusSobreDesc = resp.data.statusSobreDesc;
+            this.oDataSale.fechaEntrega = resp.data.fechaEntrega ? resp.data.fechaEntrega + 'T10:27:51.000Z' : '';
 
           }else{
             this.servicesGServ.showSnakbar(resp.message);
@@ -145,7 +147,8 @@ export class EditTallerComponent {
                     idSale: this.ODataP.idSale,
                     importe: this.oDataSale.importe,
                     descriptionTaller: this.oDataSale.descriptionTaller,
-                    idStatusSobre: this.oDataSale.idStatusSobre
+                    idStatusSobre: this.oDataSale.idStatusSobre,
+                    fechaEntrega: this.oDataSale.fechaEntrega
                   }
 
                   this.salesServ.CEditSobreTaller( oParams )
@@ -154,6 +157,7 @@ export class EditTallerComponent {
 
                       if( resp.status === 0 ){
 
+                        this.printTicketServ.printTicket("Venta", this.ODataP.idSale, this.selectPrinter.idPrinter, 1);
                         this.fn_CerrarMDL( this.ODataP.idSale )
 
                       }

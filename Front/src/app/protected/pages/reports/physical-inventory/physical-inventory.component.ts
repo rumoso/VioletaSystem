@@ -345,9 +345,9 @@ ev_fn_barCode_keyup_enter(event: any){
 
               this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
               .afterClosed().subscribe({
-                next: ( resp ) =>{
+                next: ( auth_idUser ) =>{
 
-                  if( resp ){
+                  if( auth_idUser ){
 
                     this.bShowActionAuthorization = false;
 
@@ -356,6 +356,7 @@ ev_fn_barCode_keyup_enter(event: any){
                     var paramsAction: any = {
                       idPhysicalInventory: this.ODataP.idPhysicalInventory
                       , idStatus: idStatus
+                      , auth_idUser
                     }
 
                     this.productsServ.CChangeStatusPhysicalInventory( paramsAction )

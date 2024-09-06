@@ -71,7 +71,7 @@ export class PrintTicketService {
 
 
       oLines = [];
-      var oLine: any = { aling: "Center", size: 20, text: "NOTA" }
+      var oLine: any = { aling: "Center", size: 15, text: "NOTA: " + sale.data.saleTypeDesc }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
@@ -79,6 +79,28 @@ export class PrintTicketService {
       var oLine: any = { aling: "Left", size: 7, text: " " }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 15, text: "Folio: #" + sale.data.idSale }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      if( sale.data.fechaEntrega ){
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 15, text: "Entregado: " + sale.data.fechaEntrega }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
 
       if(sale.data.active == 0){
 
@@ -309,26 +331,47 @@ export class PrintTicketService {
 
       }
 
-      // CONSTRUYO EL FOOTER
-      const FooterSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.data.idSucursal, "footer");
-
-      oLines = [];
-      var oLine: any = { aling: "Left", size: 7, text: " " }
-      oLines.push( oLine );
-      oLinesP.push( { oLines: oLines } );
-
-      for(var i = 0; i < FooterSuc.length; i++){
+      if( sale.data.idSaleType == 6 ){
 
         oLines = [];
-
-        var oLine: any = {
-          aling: FooterSuc[i].aling
-          , size: FooterSuc[i].size
-          , text: FooterSuc[i].text
-        }
-
+        var oLine: any = { aling: "Left", size: 7, text: " " }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "EL PRECIO Y LAS CONDICIONES PUEDEN VARIAR SI SE PRESENTAN CAMBIOS EN LAS CARACTERÍSTICAS DEL PRODUCTO O SERVICIO EN UN PLAZO DE 7 DÍAS, O EN FUNCIÓN DE LA DISPONIBILIDAD. POR FAVOR, CONFIRME LA DISPONIBILIDAD Y PRECIO ANTES DE REALIZAR SU PEDIDO." }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "CONSERVE SU TICKET PARA ACLARACIONES" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }else{
+
+        // CONSTRUYO EL FOOTER
+        const FooterSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.data.idSucursal, "footer");
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        for(var i = 0; i < FooterSuc.length; i++){
+
+          oLines = [];
+
+          var oLine: any = {
+            aling: FooterSuc[i].aling
+            , size: FooterSuc[i].size
+            , text: FooterSuc[i].text
+          }
+
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+        }
+
       }
 
     }
@@ -483,7 +526,7 @@ export class PrintTicketService {
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
-      if(sale.data.pendingAmount < 0){
+      if(sale.data.pendingAmount <= 0){
         oLines = [];
         var oLine: any = { aling: "Left", size: 7, text: " " }
         oLines.push( oLine );

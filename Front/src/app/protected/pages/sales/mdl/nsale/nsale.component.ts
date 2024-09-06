@@ -575,7 +575,7 @@ export class NsaleComponent {
 
             this.fn_getPaymentsByIdSaleListWithPage( this.idSale );
 
-            if( this.salesHeaderForm.idSaleType != 4 && this.showPaymentsAtStart && this.dataStone.pendingAmount > 0 && this._idSucursal > 0 ){
+            if( this.salesHeaderForm.idSaleType != 4 && this.salesHeaderForm.idSaleType != 6 && this.showPaymentsAtStart && this.dataStone.pendingAmount > 0 && this._idSucursal > 0 ){
               this.showPaymentsAtStart = false;
               this.fn_ShowPayments();
             }
@@ -772,68 +772,68 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
         }, milliseconds);
     }
 
-    addSaleDetail(){
+    addSaleDetail(bTaller: boolean = false){
 
       if(this.ev_fnShowBtnAddSaleDetail()){
 
-        if( this.salesHeaderForm.idSaleType != 5 ){
+        if( this.salesHeaderForm.idSaleType != 5 && !bTaller){
 
-          if( this.salesHeaderForm.saleDetail.filter(( x: any ) => x.idProduct == this.salesDetailForm.idProduct).length == 0 ){
-            if(this.salesDetailForm.catInventary >= this.salesDetailForm.cantidad){
+          var totalCantidadAgregada = this.salesHeaderForm.saleDetail
+          .filter((item: any) => item.idProduct === this.salesDetailForm.idProduct)
+          .reduce((sum: any, item: any) => sum + item.cantidad, 0);
 
-              //SACO EL PREIMPORTE
-              var preImporte = this.salesDetailForm.precioUnitario * this.salesDetailForm.cantidad;
+          if( ( this.salesDetailForm.catInventary - totalCantidadAgregada ) >= this.salesDetailForm.cantidad){
 
-              //SACO EL DESCUENTO
-              // CONVIERTO EN DECIMAL LE PORCENTAJE
-              var porcentajeDescuento = ( this.salesDetailForm.descuento ? this.salesDetailForm.descuento : 0 ) / 100;
-              var precioDescuento = porcentajeDescuento * this.salesDetailForm.precioUnitario;
-              precioDescuento += this.salesDetailForm.descuentoEnPesos ? this.salesDetailForm.descuentoEnPesos : 0;
-              precioDescuento = parseFloat( precioDescuento.toFixed(2) );
+            //SACO EL PREIMPORTE
+            var preImporte = this.salesDetailForm.precioUnitario * this.salesDetailForm.cantidad;
 
-              var precio = this.salesDetailForm.precioUnitario - precioDescuento;
+            //SACO EL DESCUENTO
+            // CONVIERTO EN DECIMAL LE PORCENTAJE
+            var porcentajeDescuento = ( this.salesDetailForm.descuento ? this.salesDetailForm.descuento : 0 ) / 100;
+            var precioDescuento = porcentajeDescuento * this.salesDetailForm.precioUnitario;
+            precioDescuento += this.salesDetailForm.descuentoEnPesos ? this.salesDetailForm.descuentoEnPesos : 0;
+            precioDescuento = parseFloat( precioDescuento.toFixed(2) );
 
-              var importe = precio * this.salesDetailForm.cantidad;
+            var precio = this.salesDetailForm.precioUnitario - precioDescuento;
 
-              //if(precio > this.salesDetailForm.costPlusPorcent){
+            var importe = precio * this.salesDetailForm.cantidad;
 
-                var saleDetail:any = {
-                  select: false,
-                  barCode: this.salesDetailForm.barCode,
-                  idProduct: this.salesDetailForm.idProduct,
-                  productDesc: this.salesDetailForm.productDesc,
-                  cantidad: this.salesDetailForm.cantidad,
-                  cost: this.salesDetailForm.cost,
-                  costPlusPorcent: this.salesDetailForm.costPlusPorcent,
-                  precioUnitario: this.salesDetailForm.precioUnitario,
-                  descuento: precioDescuento,
-                  precio: precio,
-                  importe: importe
-                };
+            if(precio > this.salesDetailForm.costPlusPorcent){
 
-                this.salesHeaderForm.saleDetail.push(saleDetail);
+              var saleDetail:any = {
+                select: false,
+                barCode: this.salesDetailForm.barCode,
+                idProduct: this.salesDetailForm.idProduct,
+                productDesc: this.salesDetailForm.productDesc,
+                cantidad: this.salesDetailForm.cantidad,
+                cost: this.salesDetailForm.cost,
+                costPlusPorcent: this.salesDetailForm.costPlusPorcent,
+                precioUnitario: this.salesDetailForm.precioUnitario,
+                descuento: precioDescuento,
+                precio: precio,
+                importe: importe
+              };
 
-                if(precioDescuento > 0)
-                {
-                  this.interface.showDescuento = true;
-                }
+              this.salesHeaderForm.saleDetail.push(saleDetail);
 
-                //VOY SUMANDO LOS IMPORTES
-                this.salesHeaderForm.total = this.salesHeaderForm.saleDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
-                this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
+              if(precioDescuento > 0)
+              {
+                this.interface.showDescuento = true;
+              }
 
-                this.fnClearSalesDetailForm();
+              //VOY SUMANDO LOS IMPORTES
+              this.salesHeaderForm.total = this.salesHeaderForm.saleDetail.reduce((sum: any, x: any) => sum + x.importe, 0);
+              this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
 
-              // }else{
-              //   this.servicesGServ.showAlert('W', 'Alerta!', "No se puede aplicar tanto descuento.", false);
-              // }
-
+              this.fnClearSalesDetailForm();
 
             }else{
-               this.servicesGServ.showAlert('W', 'Alerta!', "Solo hay " + this.salesDetailForm.catInventary + " en existencia.", true);
+              this.servicesGServ.showAlert('W', 'Alerta!', "No se puede aplicar tanto descuento.", false);
             }
+
+
           }else{
-            this.servicesGServ.showAlert('W', 'Alerta!', "Este producto ya está en la lista.", true);
+              this.servicesGServ.showAlert('W', 'Alerta!', "Solo hay " + this.salesDetailForm.catInventary + " en existencia.", true);
           }
 
         }else{
@@ -1374,7 +1374,8 @@ ev_fnShowBtnAddSaleDetail(): boolean {
 
   if(
     (
-      this.salesHeaderForm.idSaleType == 5
+      ( this.salesHeaderForm.idSaleType == 5 || this.salesHeaderForm.idSaleType == 6 )
+
       && this.salesDetailForm.description.length > 0
       && this.salesDetailForm.precioSobre > 0
       && this.salesHeaderForm?.saleDetail?.length == 0
@@ -1415,6 +1416,8 @@ ev_fnShowBtnPagar(): boolean {
 
   if( this.salesHeaderForm.idCustomer > 0
     && this.salesHeaderForm.saleDetail.length > 0
+    && this.salesHeaderForm.idSaleType != 4
+    && this.salesHeaderForm.idSaleType != 6
     )
     {
       bOK = true;
@@ -1695,7 +1698,7 @@ async ev_PrintTicketConsHistoryList(){
 
       //alert(this.salesHeaderForm.idSaleType)
 
-      if(this.salesHeaderForm.idSaleType == 5){
+      if(this.salesHeaderForm.idSaleType == 5 || this.salesHeaderForm.idSaleType == 6){
         setTimeout (() => {
 
           this.salesHeaderForm.saleDetail = [];
