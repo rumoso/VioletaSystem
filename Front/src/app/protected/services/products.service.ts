@@ -116,10 +116,11 @@ export class ProductsService {
       , idGroup: parametersForm.idGroup
       , idQuality: parametersForm.idQuality
       , idOrigin: parametersForm.idOrigin
+      , iConInventario: parametersForm.iConInventario
 
-      ,search: pagination.search
-      ,start: start
-      ,limiter: limiter
+      , search: pagination.search
+      , start: start
+      , limiter: limiter
     };
 
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getInventaryListWithPage`, data);

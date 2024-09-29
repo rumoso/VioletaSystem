@@ -91,6 +91,7 @@
                         type="submit"
                         class="marginRight10px"
                         (click)="fn_saveCustomer()"
+                        *ngIf="customerForm.idCustomer != 1160"
                         [disabled]="!fn_validForm()">Guardar</button>
 
                         <button mat-raised-button

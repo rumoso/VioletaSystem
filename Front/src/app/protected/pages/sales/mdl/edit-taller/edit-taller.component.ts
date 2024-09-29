@@ -157,7 +157,7 @@ export class EditTallerComponent {
 
                       if( resp.status === 0 ){
 
-                        this.printTicketServ.printTicket("Venta", this.ODataP.idSale, this.selectPrinter.idPrinter, 1);
+                        //this.printTicketServ.printTicket("Venta", this.ODataP.idSale, this.selectPrinter.idPrinter, 1);
                         this.fn_CerrarMDL( this.ODataP.idSale )
 
                       }

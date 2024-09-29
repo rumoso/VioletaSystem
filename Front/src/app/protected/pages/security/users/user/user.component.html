@@ -310,7 +310,7 @@
 
 
 
-<div *ngIf="idUser > 0">
+<div *ngIf="idUser > 0 && hasPermissionAction('users_changePwd')">
     <div class="divMain textAlingCenter" style="padding: 30px;">
         <div class="divTitle-center">
             Cambio de contraseña
@@ -349,6 +349,17 @@
                                 <mat-icon matSuffix (click)="hidePwd2 = !hidePwd2">{{hidePwd2 ? 'visibility_off' : 'visibility'}}</mat-icon>
                             </mat-form-field>
                         </div>
+                    </div>
+
+                    <div class="alert alert-info" role="alert" style="text-align: left !important;">
+                      La contraseña debe cumplir con los siguientes requisitos:
+                      <ul>
+                        <li>Tener al menos 6 caracteres</li>
+                        <li>Incluir al menos un número</li>
+                        <li>Incluir al menos una letra mayúscula</li>
+                        <li>Incluir al menos una letra minúscula</li>
+                        <li>Incluir al menos un carácter especial (por ejemplo: -_.,$@^!%*?&)</li>
+                      </ul>
                     </div>
 
                         <div class="row top10px">

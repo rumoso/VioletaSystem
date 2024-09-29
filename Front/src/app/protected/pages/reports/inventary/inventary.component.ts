@@ -113,7 +113,8 @@ export class InventaryComponent {
     idQuality: 0,
     qualityDesc: [''],
     idOrigin: 0,
-    originDesc: ['']
+    originDesc: [''],
+    iConInventario: true
   });
 
   // fn_gerReport()
@@ -303,6 +304,7 @@ export class InventaryComponent {
 
     this.parametersForm.get('idSucursal')?.setValue( 0 );
     this.parametersForm.get('sucursalDesc')?.setValue( '' );
+    this.parametersForm.get('iConInventario')?.setValue( true );
 
     this.fn_getInventaryListWithPage();
   }

@@ -26,6 +26,7 @@ export class SalesService {
       idSeller_idUser: params.idSeller_idUser
       , idCustomer: params.idCustomer
       , idSaleType: params.idSaleType
+      , fechaEntrega: params.fechaEntrega
 
       , saleDetail: params.saleDetail
     };

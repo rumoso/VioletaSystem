@@ -94,6 +94,7 @@ export class NsaleComponent {
     total: 0,
     pendingAmount: 0,
     pagado: 0,
+    fechaEntrega: 0,
 
     saleDetail: [],
     paymentList: [],
@@ -547,6 +548,7 @@ export class NsaleComponent {
 
             this.salesHeaderForm.idSaleType = resp.data.idSaleType;
             this.salesHeaderForm.saleTypeDesc = resp.data.saleTypeDesc;
+            this.salesHeaderForm.fechaEntrega = resp.data.fechaEntrega ? resp.data.fechaEntrega + 'T10:27:51.000Z' : '';
 
             this.salesHeaderForm.pendingAmount = resp.data.pendingAmount;
             this.salesHeaderForm.pagado = resp.data.pagado;
@@ -1144,6 +1146,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
     this.salesHeaderForm.customerResp = '';
     this.salesHeaderForm.idSaleType = 0;
     this.salesHeaderForm.saleTypeDesc = '';
+    this.salesHeaderForm.fechaEntrega = '';
     this.salesHeaderForm.total = 0;
 
     this.salesHeaderForm.pendingAmount = 0;

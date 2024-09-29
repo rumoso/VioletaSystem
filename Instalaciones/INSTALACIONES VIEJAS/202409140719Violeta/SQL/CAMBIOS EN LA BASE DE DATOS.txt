@@ -1,0 +1,3 @@
+INSERT INTO `actions` (`keyx`, `idAction`, `createDate`, `idActionSection`, `name`, `nameHtml`, `description`, `active`) VALUES
+(38, 11518, '2024-09-14 11:37:39', 3, 'users_changePwd', 'Actualizar la contraseña', 'Es para poder actualizar la contraseña de cualquier usuario', 1);
+

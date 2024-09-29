@@ -92,7 +92,30 @@ export class PrintTicketService {
 
       if( sale.data.fechaEntrega ){
         oLines = [];
-        var oLine: any = { aling: "Center", size: 15, text: "Entregado: " + sale.data.fechaEntrega }
+        var oLine: any = { aling: "Center", size: 15, text: "Fecha de entrega: " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 15, text: sale.data.fechaEntrega }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      if( sale.data.statusSobreDesc == 'Entregado' ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 15, text: "ENTREGADO" }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
