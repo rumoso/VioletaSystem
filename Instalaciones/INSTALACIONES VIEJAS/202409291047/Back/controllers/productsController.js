@@ -464,7 +464,6 @@ const getInventaryBySucursal = async(req, res = response) => {
         , idGroup = 0
         , idQuality = 0
         , idOrigin = 0
-        , iConInventario = 0
 
     } = req.body;
 
@@ -483,7 +482,6 @@ const getInventaryBySucursal = async(req, res = response) => {
             ,${ idGroup }
             ,${ idQuality }
             ,${ idOrigin }
-            ,${ iConInventario }
 
             )`)
 
