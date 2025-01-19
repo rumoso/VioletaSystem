@@ -170,10 +170,19 @@ async fn_savePayment() {
             }
             else{
               this.bPago = false;
+              if(this.pendingAmount > 0){
+                setTimeout (() => {
+                  this.cbxFormasPagoC.nativeElement.focus();
+                }, 200);
+              }
             }
           }
         });
       }
+    }else{
+      setTimeout (() => {
+        this.cbxFormasPagoC.nativeElement.focus();
+      }, 200);
     }
 }
 

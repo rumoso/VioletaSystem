@@ -1,0 +1,296 @@
+<mat-accordion >
+    
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false"
+                         [expanded]="true"
+                         class="divMain"
+                         style="margin-top: 10px !important;">
+      <mat-expansion-panel-header class="autoHeight">
+        <mat-panel-title class="text-align: center">
+          Filtros
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="row">
+        <div class="col-md-12">
+
+                <br>
+                
+                <div class="row">
+                                
+                    <div class="col-md-12">
+                        <mat-label>Sucursal: </mat-label>
+                        <mat-form-field
+                        style="width: 100%;"
+                        (click)="cbxSucursales_Search()">
+                            <input type="text"
+                                    id="cbxSucursal"
+                                    style="width: 100%;"
+                                    placeholder="Selecciona..."
+                                    aria-label="Number"
+                                    matInput
+                                    [(ngModel)]="parametersForm.sucursalDesc"
+                                    [matAutocomplete]="cbxSucursal"
+                                    (input)="cbxSucursales_Search()">
+                                    <button *ngIf="parametersForm.sucursalDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSucursales_Clear()">
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                            <mat-autocomplete autoActiveFirstOption
+                                                #cbxSucursal="matAutocomplete"
+                                                (optionSelected)="cbxSucursales_SelectedOption( $event )">
+                                <mat-option *ngFor="let role of cbxSucursales" [value]="role">
+                                    {{ role.name }}
+                                </mat-option>
+                
+                                <mat-option value="" *ngIf="cbxSucursales.length == 0 && parametersForm.sucursalDesc">
+                                    No se encontró nada...
+                                </mat-option>
+                
+                            </mat-autocomplete>
+                        </mat-form-field>
+                    </div>
+
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12" style="text-align: left;">
+                        <mat-form-field class="with100">
+                            <mat-label>Fecha de creación:</mat-label>
+                            <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                                <input matStartDate [(ngModel)]="parametersForm.startDate" placeholder="Start date">
+                                <input matEndDate [(ngModel)]="parametersForm.endDate" placeholder="End date">
+                            </mat-date-range-input>
+                            <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-date-range-picker #picker></mat-date-range-picker>
+                            
+                            </mat-form-field>
+                    </div>
+                </div>
+    
+                <div class="row">
+                                
+                    <div class="col-md-9">
+                        <mat-label>Vendedor: </mat-label>
+                        <mat-form-field
+                        style="width: 100%;">
+                            <input #cbxSellerCBX
+                            type="text"
+                                    id="cbxSeller"
+                                    style="width: 100%;"
+                                    placeholder="Selecciona..."
+                                    aria-label="Number"
+                                    matInput
+                                    [(ngModel)]="parametersForm.sellerDesc"
+                                    [matAutocomplete]="cbxSeller"
+                                    
+                                    (keyup)="CBXskeyup( 1, cbxSellerCBX.value )"
+
+                                    (click)="cbxSellers_Clear()">
+                                    <button *ngIf="parametersForm.sellerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSellers_Clear()">
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                            <mat-autocomplete autoActiveFirstOption
+                                                #cbxSeller="matAutocomplete"
+                                                (optionSelected)="cbxSellers_SelectedOption( $event )">
+                                <mat-option *ngFor="let item of cbxSellers" [value]="item">
+                                    {{ item.name }}
+                                </mat-option>
+                
+                                <mat-option value="" *ngIf="parametersForm?.sellerDesc?.length > 0 && parametersForm?.sellerResp?.length > 0">
+                                    {{ parametersForm.sellerResp }}
+                                </mat-option>
+                
+                            </mat-autocomplete>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="col-md-3">
+                        
+                        <mat-label>Grupo: </mat-label>
+                            <mat-form-field
+                            style="width: 100%;"
+                            (click)="cbxGroups_Search()">
+                                <input type="text"
+                                        id="cbxGroups"
+                                        style="width: 100%;"
+                                        placeholder="Selecciona..."
+                                        aria-label="Number"
+                                        matInput
+                                        [(ngModel)]="parametersForm.groupDesc"
+                                        [matAutocomplete]="cbxGroups"
+                                        (input)="cbxGroups_Search()">
+                                        <button *ngIf="parametersForm.groupDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxGroups_Clear()">
+                                            <mat-icon>close</mat-icon>
+                                            </button>
+                                <mat-autocomplete autoActiveFirstOption
+                                                    #cbxGroups="matAutocomplete"
+                                                    (optionSelected)="cbxGroups_SelectedOption( $event )">
+                                    <mat-option *ngFor="let item of cbxGroupsList" [value]="item">
+                                        {{ item.name }}
+                                    </mat-option>
+                    
+                                    <mat-option value="" *ngIf="cbxGroupsList.length == 0 && parametersForm.groupDesc">
+                                        No se encontró nada...
+                                    </mat-option>
+                    
+                                </mat-autocomplete>
+                            </mat-form-field>
+
+                    </div>
+                    
+                </div>
+
+                <div class="row top10px">
+                    <div class="col-md-12">
+                        <div style="float: left;">
+                            
+                            <button mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            (click)="fn_CGetInfFinanciera()">
+                            <mat-icon matPrefix class="my-icon">search</mat-icon>
+                            Buscar</button>
+                            
+                            <button mat-raised-button
+                            type="button"
+                            (click)="parametersForm_Clear()">
+                            <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                            limpiar</button>                
+                            
+                        </div>
+                    </div>
+                </div>
+
+        </div>
+
+    </div>
+
+    </mat-expansion-panel>
+  </mat-accordion>
+
+<div class="divSection">
+
+    <div class="row" style="margin-top: -35px;">
+        <div class="col-md-12">
+            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
+                Información financiera
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-3" style="position: relative;">
+            <h2 style="display: inline-block;">Costo: {{ sumCostoDeLoVendido | currency }}</h2>
+        </div>
+        <div class="col-md-3" style="position: relative;">
+            <h2 style="display: inline-block;">Precio: {{ sumPriceDeLoVendido | currency }}</h2>
+        </div>
+
+        <div class="col-md-3" style="position: relative;">
+            <h2 style="display: inline-block;">Utilidad: {{ sumUtilidad | currency }}</h2>
+        </div>
+
+        <div class="col-md-3" style="position: relative;">
+            <h2 style="display: inline-block;">Margen de Utilidad: {{ margenUtilidad }}%</h2>
+        </div>
+
+    </div>
+
+    <div class="row" *ngIf="sumPriceDeLoVendido > 0">
+        <div class="col-md-6">
+            <app-pie-chart [chartData]="chartValues"></app-pie-chart>
+        </div>
+        <div class="col-md-6">
+            <app-bar-chart [chartData]="chartBarValues"></app-bar-chart>
+        </div>
+    </div>
+</div>
+
+<mat-accordion>
+
+    <mat-expansion-panel (opened)="panelPagosDetailState = true"
+                            (closed)="panelPagosDetailState = false"
+                            [expanded]="false"
+                            class="divMain"
+                            style="margin-top: 10px !important;">
+        <mat-expansion-panel-header class="autoHeight">
+        <mat-panel-title class="text-align: center">
+            Detalle de las utilidades
+        </mat-panel-title>
+        </mat-expansion-panel-header>
+        
+    <div class="" style="width: 100%; margin-top: 10px !important;" *ngIf="oData && oData.length > 0">
+    
+        <div class="row top20px">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            
+                            <th class="textAlingLeft padding-th"># Folio</th>
+                            <th class="textAlingRight padding-th">Costo</th>
+                            <th class="textAlingRight padding-th">Total</th>
+                            <th class="textAlingRight padding-th">Pagos Histórico</th>
+                            <th class="textAlingRight padding-th">Pagos en el rango</th>
+                            <th class="textAlingRight padding-th">Utilidad</th>
+                            <th class="textAlingLeft padding-th">Descripción</th>
+
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of oData">
+
+                                <td class="textAlingLeft">
+                                    <div style="width: 130px; padding: 2px;">
+                                        {{ item.idSale }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingRight">
+                                    <div style="width: 100px; padding: 2px;">
+                                        {{ item.costSaleThis | currency }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingRight">
+                                    <div style="width: 100px; padding: 2px;">
+                                        {{ item.impSaleThis | currency }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingRight">
+                                    <div style="width: 100px; padding: 2px;">
+                                        {{ item.paymentsHist | currency }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingRight">
+                                    <div style="width: 100px; padding: 2px;">
+                                        {{ item.paymentsRange | currency }}
+                                    </div>
+                                </td>
+
+                                <td class="textAlingRight">
+                                    <div style="width: 100px; padding: 2px;">
+                                        {{ item.fUtilidad | currency }}
+                                    </div>
+                                </td>
+                                
+                                <td class="textAlingLeft">{{ item.ventaDesc }}</td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            
+            </div>
+        </div>
+        
+    </div>
+
+    </mat-expansion-panel>
+</mat-accordion>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -254,7 +254,7 @@ export class PrintTicketService {
           var ODataDetail = sale.dataDetail[i];
 
           oLines = [];
-          var oLine: any = { aling: "Left", size: 7, text: ODataDetail.productDesc, iWith: 42 }
+          var oLine: any = { aling: "Left", size: 7, text: ODataDetail.barCode + '-' + ODataDetail.productDesc, iWith: 42 }
           oLines.push( oLine );
           var oLine: any = { aling: "Center", size: 7, text: ODataDetail.cantidad, iWith: 8 }
           oLines.push( oLine );

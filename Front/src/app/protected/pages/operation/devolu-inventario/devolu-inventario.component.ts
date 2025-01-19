@@ -60,6 +60,8 @@ parametersFilters: any = {
 
 };
 
+bShowActionAuthorization = false;
+
 // #endregion
 
 constructor(
@@ -187,6 +189,106 @@ this.productsServ.CGetInventarylog_devolution( this.pagination, this.parametersF
 // #endregion
 
 // #region CONEXIONES CON LE BACK
+
+  
+  fn_cancelDevolution( idHtml: string ){
+
+    let invSelectList = this.catlist.filter(function( item: any ) {
+      return ( item.select == true
+        &&
+        (
+          item.firmaVer == 0
+          || item.firmaMost == 0
+        )
+      )
+    });
+
+    if( invSelectList.length > 0 ){
+
+      if(!this.bShowActionAuthorization){
+
+        this.bShowActionAuthorization = true;
+        this.servicesGServ.disableEnableButton( idHtml, true );
+  
+        this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Está a punto de cancelar la devolución'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: ( resp ) =>{
+  
+            if(resp){
+  
+              var paramsMDL: any = {
+                actionName: 'prod_VeryDevolutionInventario'
+                , bShowAlert: false
+              }
+  
+              this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+              .afterClosed().subscribe({
+                next: ( auth_idUser ) =>{
+  
+                  if( auth_idUser ){
+  
+                    this.bShowActionAuthorization = false;
+                    this.servicesGServ.disableEnableButton( idHtml, false );
+  
+                    this.bShowSpinner = true;
+  
+                    let oParams: any = {
+                      auth_idUser: auth_idUser
+                      , invSelectList: invSelectList
+                    } 
+  
+                    this.productsServ.CCancelDevolution( oParams )
+                    .subscribe({
+                      next: (resp: any) => {
+  
+                        if( resp.status === 0 ){
+  
+                          this.fn_getInventarylog_devolution();
+  
+                        }
+  
+                        this.servicesGServ.showAlertIA( resp );
+  
+  
+                        this.bShowSpinner = false;
+  
+                      },
+                      error: (ex) => {
+  
+                        this.servicesGServ.showSnakbar( ex.error.message );
+                        this.bShowSpinner = false;
+  
+                      }
+                    });
+  
+                  }
+                  else{
+                    this.bShowActionAuthorization = false;
+                    this.servicesGServ.disableEnableButton( idHtml, false );
+                  }
+  
+                }
+              });
+  
+            }
+            else{
+              this.bShowActionAuthorization = false;
+              this.servicesGServ.disableEnableButton( idHtml, false );
+            }
+  
+          }
+        });
+  
+      }
+
+    }else{
+      this.servicesGServ.showAlert('W', 'Alerta!', "Debe seleccionar las devoluciones que quiere cancelar.", false);
+    }
+
+  }
 
 bShowActionAuthorization2 = false;
 fn_saveDevoluInventario( idHtml: string ){
@@ -317,7 +419,6 @@ fn_getProductByBarCode() {
 }
 
 
-bShowActionAuthorization = false;
 fn_updateFirmaEntradaInventario( iOption: any, idHtml: string ){
 
   let invSelectList = this.catlist.filter(function( item: any ) {

@@ -8,6 +8,8 @@ import { MaterialModule } from '../material/material.module';
 import { AlertComponent } from './alert/alert.component';
 import { DecimalNumberDirective } from './directives/decimal-number.directive';
 import { DecimalNumberNegDirective } from './directives/decimal-number-neg.directive';
+import { PieChartComponent } from './pie-chart/pie-chart.component';
+import { BarChartComponent } from './bar-chart/bar-chart.component';
 
 
 
@@ -18,13 +20,17 @@ import { DecimalNumberNegDirective } from './directives/decimal-number-neg.direc
     SpinnerComponent,
     AlertComponent,
     DecimalNumberDirective,
-    DecimalNumberNegDirective
+    DecimalNumberNegDirective,
+    PieChartComponent,
+    BarChartComponent
   ],
   exports:[
     SpinnerComponent,
     PaginationComponent,
     DecimalNumberDirective,
-    DecimalNumberNegDirective
+    DecimalNumberNegDirective,
+    PieChartComponent,
+    BarChartComponent
   ],
   imports: [
     CommonModule,

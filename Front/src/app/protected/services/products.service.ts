@@ -346,4 +346,12 @@ export class ProductsService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateFirmaDevoluInventario`, data );
   }
 
+  CCancelDevolution( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/cancelDevolution`, data );
+  }
+
 }

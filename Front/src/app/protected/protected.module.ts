@@ -56,6 +56,7 @@ import { PagosCanceladosComponent } from './pages/reports/pagos-cancelados/pagos
 import { QuestionCancelSalePaymentsComponent } from './pages/sales/mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { ChangepwdsecretwordComponent } from './pages/security/mdl/changepwdsecretword/changepwdsecretword.component';
 import { RepPaymentsComponent } from './pages/reports/rep-payments/rep-payments.component';
+import { InfFinancieraComponent } from './pages/finanzas/inf-financiera/inf-financiera.component';
 
 @NgModule({
     declarations: [
@@ -108,6 +109,7 @@ import { RepPaymentsComponent } from './pages/reports/rep-payments/rep-payments.
     QuestionCancelSalePaymentsComponent,
     ChangepwdsecretwordComponent,
     RepPaymentsComponent,
+    InfFinancieraComponent,
   ],
     imports: [
         CommonModule,

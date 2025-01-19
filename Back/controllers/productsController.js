@@ -3,7 +3,6 @@ const bcryptjs = require('bcryptjs');
 const moment = require('moment');
 
 const { createConexion, dbConnection } = require('../database/config');
-const { logRequestResponse } = require('../logs/logsController');
 
 const getProductsListWithPage = async(req, res = response) => {
 
@@ -89,8 +88,6 @@ const getProductsListWithPage = async(req, res = response) => {
         });
 
     }
-
-    //await logRequestResponse( req.body, responseData, idUser )
 
     res.json(responseData);
 
@@ -951,7 +948,7 @@ const changeStatusPhysicalInventory = async(req, res) => {
         idPhysicalInventory,
         idStatus,
 
-        auth_idUser,
+        auth_idUser = 0,
 
         idUserLogON,
         idSucursalLogON
@@ -1406,8 +1403,6 @@ const getInventarylogParaFirmar = async(req, res = response) => {
 
     }
 
-    //await logRequestResponse( req.body, responseData, idUser )
-
     res.json(responseData);
 
 };
@@ -1711,8 +1706,6 @@ const getInventarylog_devolution = async(req, res = response) => {
 
     }
 
-    //await logRequestResponse( req.body, responseData, idUser )
-
     res.json(responseData);
 
 };
@@ -1820,6 +1813,62 @@ const updateFirmaDevoluInventario = async(req, res) => {
 
 }
 
+const cancelDevolution = async(req, res) => {
+
+    const {
+        auth_idUser
+        , invSelectList
+
+        , idUserLogON
+        , idSucursalLogON
+    } = req.body;
+
+    try{
+
+        if( invSelectList.length == 0 ){
+
+            return res.json({
+                status: 1,
+                message: "Debe seleccionar las devoluciones que quiere cancelar"
+            });
+
+        }else if( invSelectList.length > 0 ){
+
+            var sMessage = '';
+
+            for(var i = 0; i < invSelectList.length; i++){
+
+                var oInvSelect = invSelectList[i];
+        
+                await dbConnection.query(`call cancelDevolution(
+                    ${ auth_idUser }
+                      , ${ oInvSelect.idInventarylog }
+
+                      , ${ idSucursalLogON }
+                      , ${ idUserLogON }
+                      )`)
+
+            }
+
+            return res.json({
+                status: 0,
+                message: 'Cancelada con éxito.'
+            });
+
+        }
+
+    }catch(error){
+
+        return res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+}
+
 
 module.exports = {
     getProductsListWithPage
@@ -1850,4 +1899,5 @@ module.exports = {
     , saveDevoluInventario
     , getInventarylog_devolution
     , updateFirmaDevoluInventario
+    , cancelDevolution
   }

@@ -36,6 +36,7 @@ const {
    , saveDevoluInventario
    , getInventarylog_devolution
    , updateFirmaDevoluInventario
+  , cancelDevolution
 
    } = require('../controllers/productsController');
 
@@ -249,6 +250,14 @@ router.post('/updateFirmaDevoluInventario', [
 
   validarCampos
 ], updateFirmaDevoluInventario);
+
+router.post('/cancelDevolution', [
+
+  check('auth_idUser','Autorizante obligatorio').not().isEmpty(),
+  check('auth_idUser','El Autorzante debe ser numérico').isNumeric(),
+
+  validarCampos
+], cancelDevolution);
 
 
 

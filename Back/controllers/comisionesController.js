@@ -660,6 +660,8 @@ const getComisionesListWithPage = async(req, res = response) => {
             , ${ limiter }
             )`)
 
+        console.log( OSQL )
+
         if(OSQL.length == 0){
 
             res.json({
