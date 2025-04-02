@@ -27,6 +27,8 @@ bShowSpinner: boolean = false;
 
 idUserLogON: number = 0;
 
+randomId: string = Math.random().toString(36).substring(2);
+
 actionForm: any = {
 
   actionName: '',
@@ -110,7 +112,7 @@ constructor(
 
               },
               error: (ex) => {
-                
+
                 this.servicesGServ.showSnakbar( "Problemas con el servicio" );
                 this.bShowSpinner = false;
 

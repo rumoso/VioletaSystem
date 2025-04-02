@@ -1388,6 +1388,107 @@ export class PrintTicketService {
       oLinesP.push( { oLines: oLines } );
 
     }
+    else if(type == "calification"){
+
+      const sale = await this.salesServ.CGetSaleByIDPromise( idRelation );
+
+      console.log(sale);
+
+      // CONSTRUYO EL HEADER
+      const HeaderSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.data.idSucursal, "Header");
+
+      var oLines: any = [];
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 15, text: "NOTA: " + sale.data.saleTypeDesc }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 15, text: "Folio: #" + sale.data.idSale }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      // AGREGO LA INFORMACIÓN DEL CLIENTE
+      const OCustomerData = await this.customersServ.CGetCustomerByIDPromise( sale.data.idCustomer );
+
+      if( OCustomerData != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "CLIENTE: " + OCustomerData.lastName + " " + OCustomerData.name }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "DIRECCIÓN: " + OCustomerData.address }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "TELEFONO: " + OCustomerData.tel }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      // AGREGO LA INFORMACIÓN DELA OPERACIÓN
+      if( sale != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "OPERACIÓN: Venta de " + sale.data.saleTypeDesc }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "Folio: #" + sale.data.idSale }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "FECHA: " + sale.data.createDateString }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "ATENDIÓ: " + sale.data.sellerDesc }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "De manera honesta, me gustaría que calificara mi servicio. Su opinión es muy importante para nosotros. ¡Gracias!" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+
+      oLines = [];
+      var oLine: any = { bImage: true  }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+    }
+
+
 
     if(idPrinter > 0){
 

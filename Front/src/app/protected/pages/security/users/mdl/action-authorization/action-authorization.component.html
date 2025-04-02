@@ -10,10 +10,16 @@
                 placeholder="Ingrese el código de autorización"
                 type="password"
                 [(ngModel)]="actionForm.authorizationCode"
-                (keyup)="event_fn_Enter( $event )">
+                (keyup)="event_fn_Enter( $event )"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+                aria-autocomplete="none"
+                inputmode="none"
+                name="random_{{ randomId }}">
             </mat-form-field>
         </div>
-            
+
     </div>
 
     <div class="row top10px">
@@ -33,11 +39,11 @@
                 (click)="fn_CerrarMDL( 0 )">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -80,11 +80,11 @@
             <div class="col-md-2">
                 <h1>{{ oPhysicalInventoryHeader.faltantePz }} PZ</h1>
             </div>
-            <div class="col-md-5" style="position: relative;">
+            <div class="col-md-5" style="position: relative;" *ngIf="showCostPrice">
                 <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
                 <h2 style="display: inline-block;">Costo Total: {{ oPhysicalInventoryHeader.faltanteCostMXN | currency }}</h2>
             </div>
-            <div class="col-md-5" style="position: relative;">
+            <div class="col-md-5" style="position: relative;" *ngIf="showCostPrice">
                 <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
                 <h2 style="display: inline-block;">Importe Total: {{ oPhysicalInventoryHeader.faltantePriceMXN | currency }}</h2>
             </div>
@@ -130,7 +130,7 @@
     </div> -->
 
     <div *ngIf="oPhysicalInventoryHeader.idStatus == 1" class="row top20px">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <mat-form-field fxLayout.xs="column" class="with100">
                 <mat-label>Código de barras</mat-label>
                 <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
@@ -140,7 +140,17 @@
                 </mat-form-field>
         </div>
 
-        <div class="col-md-8">
+        <div class="col-md-2">
+            <mat-form-field fxLayout.xs="column" class="with100">
+                <mat-label>Cantidad</mat-label>
+                <input class="textAlingCenter" matInput placeholder="Ingrese una cantidad"
+                [(ngModel)]="productData.cantidad"
+                (keyup.enter)="ev_fn_barCode_keyup_enter($event)"
+                >
+                </mat-form-field>
+        </div>
+
+        <div class="col-md-7">
             <mat-form-field class="with100">
                 <mat-label>Descripción</mat-label>
                 <input matInput placeholder=""

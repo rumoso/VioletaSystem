@@ -54,9 +54,12 @@ export class PhysicalInventoryComponent {
 
     idProduct: 0,
     barCode: '',
-    description: ''
+    description: '',
+    cantidad: 1
 
   }
+
+  showCostPrice: boolean = false;
 
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
@@ -92,6 +95,8 @@ export class PhysicalInventoryComponent {
 
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
+
+    this.showCostPrice = this.authServ.hasPermissionAction('invF_showCostPrice');
 
     if( this.ODataP.idPhysicalInventory.length > 0 ){
 
@@ -276,8 +281,14 @@ ev_onMostradorChange(item: any, cantidad: number){
 ev_fn_barCode_keyup_enter(event: any){
   if(event.keyCode == 13) { // PRESS ENTER
 
-    if( this.productData.barCode.length > 0){
+    if( this.productData.barCode.length > 0 && this.productData.cantidad > 0){
       this.fn_verifyProductInPhysicalInventoryDetail();
+      setTimeout (() => {
+        if(this.oPhysicalInventoryHeader.idStatus == 1){
+          this.productData.cantidad = 1;
+          this.barCode.nativeElement.focus();
+        }
+      }, 1000);
     }
 
   }
@@ -443,7 +454,8 @@ ev_fn_barCode_keyup_enter(event: any){
 
       var OParams: any = {
         idPhysicalInventory: this.ODataP.idPhysicalInventory,
-        barCode: this.productData.barCode
+        barCode: this.productData.barCode,
+        cantidad: this.productData.cantidad
       }
 
       this.productsServ.CVerifyPhysicalInventoryDetail( OParams )

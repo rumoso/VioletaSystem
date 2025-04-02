@@ -193,11 +193,11 @@
             <mat-icon style="margin-right: 5px;" matPrefix class="material-icons manitaSobre colorRed inlineObj">error</mat-icon>
             <h1 class="inlineObj">Faltantes: {{ item.faltantePz }} PZ</h1>
         </div>
-        <div class="col-md-4" style="position: relative;">
+        <div class="col-md-4" style="position: relative;" *ngIf="showCostPrice">
             <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
             <h2 style="display: inline-block;">Costo Total: {{ item.faltanteCostMXN | currency }}</h2>
         </div>
-        <div class="col-md-4" style="position: relative;">
+        <div class="col-md-4" style="position: relative;" *ngIf="showCostPrice">
             <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
             <h2 style="display: inline-block;">Importe Total: {{ item.faltantePriceMXN | currency }}</h2>
         </div>
@@ -208,11 +208,11 @@
             <mat-icon style="margin-right: 5px;" matPrefix class="material-icons manitaSobre colorBlue inlineObj">error</mat-icon>
             <h1 class="inlineObj">Sobrantes: {{ item.sobrantePz }} PZ</h1>
         </div>
-        <div class="col-md-4" style="position: relative;">
+        <div class="col-md-4" style="position: relative;" *ngIf="showCostPrice">
             <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
             <h2 style="display: inline-block;">Costo Total: {{ item.sobranteCostMXN | currency }}</h2>
         </div>
-        <div class="col-md-4" style="position: relative;">
+        <div class="col-md-4" style="position: relative;" *ngIf="showCostPrice">
             <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
             <h2 style="display: inline-block;">Importe Total: {{ item.sobrantePriceMXN | currency }}</h2>
         </div>
@@ -247,12 +247,18 @@
                                             edit
                                         </span>
 
-                                        <span class="material-icons manitaSobre colorRed"
+                                        <!-- <span class="material-icons manitaSobre colorRed"
                                         matTooltip="Eliminar inventario físico"
 
 
                                             *ngIf="item.active">
                                             delete_outline
+                                        </span> -->
+
+                                        <span class="material-icons manitaSobre colorRed"
+                                        matTooltip="Inventario físico real"
+                                            *ngIf="item.bBlock == 1">
+                                            block
                                         </span>
 
                                     </div>

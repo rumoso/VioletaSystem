@@ -967,6 +967,10 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                           next: (resp: ResponseDB_CRUD) => {
 
                             if( resp.status === 0 ){
+
+                              if(!(this.idSale > 0))
+                                this.ev_PrintTicketEncuesta(resp.insertID);
+
                               this.idSale = resp.insertID;
                               this.salesHeaderForm.idSale = resp.insertID;
 
@@ -1016,6 +1020,10 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                     next: (resp: ResponseDB_CRUD) => {
 
                       if( resp.status === 0 ){
+
+                        if(!(this.idSale > 0))
+                          this.ev_PrintTicketEncuesta(resp.insertID);
+
                         this.idSale = resp.insertID;
                         this.salesHeaderForm.idSale = resp.insertID;
 
@@ -1101,6 +1109,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
                   next: (resp: ResponseDB_CRUD) => {
 
                     if( resp.status === 0 ){
+
                       this.salesHeaderForm.idSale = resp.insertID;
 
                       this.salesHeaderForm.pendingAmount = this.salesHeaderForm.total;
@@ -1526,6 +1535,10 @@ ev_showInterface(){
 
 async ev_PrintTicket(){
   this.printTicketServ.printTicket("Venta", this.idSale, this.selectPrinter.idPrinter, 1);
+}
+
+async ev_PrintTicketEncuesta(idSale: any){
+  this.printTicketServ.printTicket("calification", idSale, this.selectPrinter.idPrinter, 1);
 }
 
 async ev_PrintTicketConsHistoryList(){

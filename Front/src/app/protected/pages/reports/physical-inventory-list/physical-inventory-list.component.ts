@@ -60,6 +60,8 @@ export class PhysicalInventoryListComponent {
     groupDesc: '',
   };
 
+  showCostPrice: boolean = false;
+
 // #endregion
 
   constructor(
@@ -82,6 +84,8 @@ export class PhysicalInventoryListComponent {
 
       this.authServ.checkSession();
       this.idUserLogON = await this.authServ.getIdUserSession();
+
+      this.showCostPrice = this.authServ.hasPermissionAction('invF_showCostPrice');
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
