@@ -162,6 +162,7 @@ fn_getIngresosListWithPage() {
       if(resp.status == 0){
 
         this.oData = resp.data.rows;
+        this.pagination.length = resp.data.count;
 
       }
 
