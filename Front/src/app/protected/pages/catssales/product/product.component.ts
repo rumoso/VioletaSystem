@@ -22,6 +22,7 @@ import { SuppliersComponent } from '../suppliers/suppliers.component';
 import { CatComponent } from '../mdl/cat/cat.component';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { PrintersService } from 'src/app/protected/services/printers.service';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-product',
@@ -74,7 +75,10 @@ export class ProductComponent implements OnInit {
     ////************************************************ */
 
   constructor(
-    private servicesGServ: ServicesGService
+    private dialogRef: MatDialogRef<ProductComponent>
+    ,@Inject(MAT_DIALOG_DATA) public OParamsData: any
+
+    , private servicesGServ: ServicesGService
     , private productsServ: ProductsService
     , private fb: FormBuilder
     , private router: Router
@@ -131,54 +135,62 @@ export class ProductComponent implements OnInit {
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
 
-      if( !this.router.url.includes('editProduct') ){
-        return;
+      if( this.OParamsData.id > 0 ){
+
+        this.idProduct = this.OParamsData.id;
+        this.productForm.idProduct = this.OParamsData.id;
+
+        this.bShowSpinner = true;
+
+        this.activatedRoute.params
+          .pipe(
+            switchMap( ({ id }) => this.productsServ.CGetProductByID( this.idProduct ) )
+          )
+          .subscribe( ( resp: any ) => {
+            console.log(resp)
+             if(resp.status == 0){
+
+              this.idProduct = resp.data.idProduct;
+
+              this.productForm = {
+                idProduct: resp.data.idProduct,
+                idSucursal: resp.data.idSucursal,
+                sucursalDesc: resp.data.sucursalDesc,
+                createDate: resp.data.createDate,
+                barCode: resp.data.barCode,
+                name: resp.data.name,
+                gramos: resp.data.gramos,
+                cost: resp.data.cost,
+                price: resp.data.price,
+                idFamily: resp.data.idFamily,
+                familyDesc: resp.data.familyDesc,
+                idGroup: resp.data.idGroup,
+                groupDesc: resp.data.groupDesc,
+                idQuality: resp.data.idQuality,
+                qualityDesc: resp.data.qualityDesc,
+                idOrigin: resp.data.idOrigin,
+                originDesc: resp.data.originDesc,
+                idSupplier: resp.data.idSupplier,
+                supplierDesc: resp.data.supplierDesc,
+                active: resp.data.active,
+                addInv: 1,
+                idUser: this.idUserLogON
+               };
+
+
+               this.fn_getInventarylogByIdProductWithPage();
+             }else{
+              this.servicesGServ.showSnakbar(resp.message);
+             }
+             this.bShowSpinner = false;
+          } )
+
       }
 
-      this.bShowSpinner = true;
+    }
 
-      this.activatedRoute.params
-        .pipe(
-          switchMap( ({ id }) => this.productsServ.CGetProductByID( id ) )
-        )
-        .subscribe( ( resp: any ) => {
-          console.log(resp)
-           if(resp.status == 0){
-
-            this.idProduct = resp.data.idProduct;
-
-            this.productForm = {
-              idProduct: resp.data.idProduct,
-              idSucursal: resp.data.idSucursal,
-              sucursalDesc: resp.data.sucursalDesc,
-              createDate: resp.data.createDate,
-              barCode: resp.data.barCode,
-              name: resp.data.name,
-              gramos: resp.data.gramos,
-              cost: resp.data.cost,
-              price: resp.data.price,
-              idFamily: resp.data.idFamily,
-              familyDesc: resp.data.familyDesc,
-              idGroup: resp.data.idGroup,
-              groupDesc: resp.data.groupDesc,
-              idQuality: resp.data.idQuality,
-              qualityDesc: resp.data.qualityDesc,
-              idOrigin: resp.data.idOrigin,
-              originDesc: resp.data.originDesc,
-              idSupplier: resp.data.idSupplier,
-              supplierDesc: resp.data.supplierDesc,
-              active: resp.data.active,
-              addInv: 1,
-              idUser: this.idUserLogON
-             };
-
-
-             this.fn_getInventarylogByIdProductWithPage();
-           }else{
-            this.servicesGServ.showSnakbar(resp.message);
-           }
-           this.bShowSpinner = false;
-        } )
+    close(){
+      this.dialogRef.close( true );
     }
 
     fn_ClearForm(){

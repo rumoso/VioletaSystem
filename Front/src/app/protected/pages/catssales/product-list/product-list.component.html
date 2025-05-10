@@ -67,7 +67,7 @@
                     </div>
                 </div>
 
-                <div class="row top20px">
+                <div class="row">
                     <div class="col-md-4">
                         <mat-form-field fxLayout.xs="column" class="with100">
                             <mat-label>Código de barras</mat-label>
@@ -87,7 +87,7 @@
 
                 </div>
 
-                <div class="row top20px" text>
+                <div class="row" text>
 
                     <div class="col-md-3">
 
@@ -258,12 +258,12 @@
     </mat-expansion-panel>
   </mat-accordion>
 
-<div class="divMain" style="width: 100%; margin-top: 50px !important;">
+<div class="divMain" style="width: 100%;">
     <div class="row">
         <div class="col-md-1">
             <div class="divSearch">
                 <span class="material-icons manitaSobre colorGreen"
-                (click)="changeRoute('product')">
+                (click)="showCat(0)">
                 add_circle_outline
                 </span>
 
@@ -279,7 +279,7 @@
             </mat-form-field>
       </div>
 
-      <div class="col-md-6">
+      <div class="col-md-5">
           <mat-form-field class="with100">
               <mat-label>Nombre</mat-label>
               <input matInput placeholder="Ingrese un nombre"
@@ -287,9 +287,18 @@
               (keyup.enter)="fn_getProductsListWithPage()">
             </mat-form-field>
       </div>
+
+      <div class="col-md-1 top10px">
+        <button mat-raised-button
+        type="button"
+        (click)="parametersSecound_Clear()">
+        <mat-icon matPrefix class="my-icon">clear</mat-icon>
+        limpiar</button>
+      </div>
+
     </div>
 
-    <div class="row top20px">
+    <div class="row">
             <div class="col-md-12">
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -311,7 +320,7 @@
                                     <div style="width: 100px;">
                                         <span class="material-icons manitaSobre colorGreen"
                                         matTooltip="Editar Producto"
-                                        (click)="edit( item.idProduct )">
+                                        (click)="showCat( item.idProduct )">
                                             edit
                                         </span>
 

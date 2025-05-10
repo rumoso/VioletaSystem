@@ -15,6 +15,7 @@ import { SucursalesService } from 'src/app/protected/services/sucursales.service
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { InventarylogComponent } from '../mdl/inventarylog/inventarylog.component';
+import { ProductComponent } from '../product/product.component';
 
 @Component({
   selector: 'app-product-list',
@@ -55,6 +56,22 @@ export class ProductListComponent implements OnInit {
 
       this.fn_getProductsListWithPage();
     }
+
+    showCat( id: number ){
+
+        var OParamsIN: any = {
+          id: id
+        }
+
+        this.servicesGServ.showModalWithParams( ProductComponent, OParamsIN, '1500px')
+        .afterClosed().subscribe({
+          next: ( resp: any ) =>{
+
+            this.fn_getProductsListWithPage();
+
+          }
+        });
+      }
 
     ////************************************************ */
     // MÉTODOS DE PAGINACIÓN
@@ -200,6 +217,12 @@ export class ProductListComponent implements OnInit {
       this.parametersForm.idSucursal =  0;
       this.parametersForm.sucursalDesc =  '';
 
+    this.fn_getProductsListWithPage();
+  }
+
+  parametersSecound_Clear(){
+    this.parametersForm.barCode =  '';
+    this.parametersForm.name =  '';
     this.fn_getProductsListWithPage();
   }
 

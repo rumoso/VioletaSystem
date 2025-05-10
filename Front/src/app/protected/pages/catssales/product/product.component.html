@@ -1,19 +1,26 @@
-<div class="divMain textAlingCenter" style="padding: 30px;">
-    <div class="divTitle-center">
+<div class="" style="padding: 30px;padding-top: 60px;">
+
+	<button mat-icon-button
+            style="position: absolute; top: 10px; right: 10px;"
+            (click)="close()">
+        <mat-icon>close</mat-icon>
+    </button>
+
+    <h1 class="top50pxMenos">
         {{
             ( idProduct )
                 ? 'Editar'
                 : 'Nuevo'
         }}
         {{title}}
-    </div>
+    </h1>
 
-    <div class="row">
+    <div class="row top30pxMenos">
         <div class="col-md-12">
 
                 <br>
 
-                <div class="row top20px">
+                <div class="row">
 
                     <div class="col-md-12">
                         <mat-label>Sucursal: </mat-label>
@@ -143,7 +150,7 @@
 
                 </div>
 
-                <div class="row top20px">
+                <div class="row">
 
                     <div class="col-md-6">
                         <mat-form-field class="with100">
@@ -166,7 +173,7 @@
 
                 </div>
 
-                <div class="row top20px" text>
+                <div class="row">
 
                     <div class="col-md-3">
 
@@ -365,7 +372,7 @@
                             <button mat-raised-button
                             type="button"
                             class="marginRight10px"
-                            (click)="changeRoute('productList')">Cancelar</button>
+                            (click)="close()">Cancelar</button>
                         </div>
                     </div>
                 </div>
@@ -394,13 +401,10 @@
         </div>
     </div>
 
-</div>
-
-<div class="divMain" style="padding: 30px;" *ngIf="idProduct > 0">
-
-    <div class="divTitle-center">
+    <h1 class="">
+        <mat-icon matPrefix class="my-icon">history</mat-icon>
         Movimientos en el inventario
-    </div>
+    </h1>
 
     <div class="row top10px">
         <div class="col-md-12">

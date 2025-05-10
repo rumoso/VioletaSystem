@@ -156,6 +156,46 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     margin-top: 30px !important;
 }
 
+.top05pxMenos {
+  margin-top: -5px !important;
+}
+
+.top10pxMenos {
+  margin-top: -10px !important;
+}
+
+.top15pxMenos {
+  margin-top: -15px !important;
+}
+
+.top20pxMenos {
+  margin-top: -20px !important;
+}
+
+.top25pxMenos {
+  margin-top: -25px !important;
+}
+
+.top30pxMenos {
+  margin-top: -30px !important;
+}
+
+.top40pxMenos {
+  margin-top: -40px !important;
+}
+
+.top50pxMenos {
+  margin-top: -50px !important;
+}
+
+.top60pxMenos {
+  margin-top: -60px !important;
+}
+
+.top70pxMenos {
+  margin-top: -70px !important;
+}
+
 .manitaSobre {
     cursor: pointer;
 }
@@ -190,8 +230,8 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     width:100%;
     background-color:rgba(0, 0, 0, 0.286);
     z-index:    10;
-    top:        0; 
-    left:       0; 
+    top:        0;
+    left:       0;
     position:   fixed;
   }
 
@@ -271,7 +311,7 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     position: absolute;
     z-index: 1000;
     overflow: auto;
-    pointer-events: auto !important;  
+    pointer-events: auto !important;
   }
 
 .divSection {
@@ -287,11 +327,11 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 @media (max-width: 700px) {
     /* Estilos que se aplicarán cuando el ancho de la pantalla sea menor a 700px */
-  
+
     .top10px700 {
       margin-top: 10px;
     }
-  
+
     /* Puedes agregar más estilos específicos para pantallas pequeñas aquí */
   }
 
@@ -315,7 +355,7 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
       transform: scale(1);
     }
   }
-  
+
   .elemento-animado {
     animation: escala-continua 2s infinite; /* 2s es la duración, infinite indica que la animación se repite indefinidamente */
   }
