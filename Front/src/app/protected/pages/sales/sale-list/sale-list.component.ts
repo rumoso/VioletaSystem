@@ -442,7 +442,7 @@ fn_ShowSale( idSale: number ){
     selectPrinter: this.selectPrinter
   }
 
-  this.servicesGServ.showModalWithParams( NsaleComponent, paramsMDL, '2000px')
+  this.servicesGServ.showModalWithParamsv2( NsaleComponent, paramsMDL, { width: '100vw', height: '100vh', maxWidth: '100vw', panelClass: 'full-screen-modal' })
   .afterClosed().subscribe({
     next: ( resp ) =>{
 

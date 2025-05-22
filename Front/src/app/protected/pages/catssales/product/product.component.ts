@@ -185,6 +185,10 @@ export class ProductComponent implements OnInit {
              this.bShowSpinner = false;
           } )
 
+      }else{
+        setTimeout (() => {
+          this.ev_fn_nextInput_keyup_enter( 'cbxSucursalM' );
+        }, 500);
       }
 
     }
@@ -216,19 +220,16 @@ export class ProductComponent implements OnInit {
 
       setTimeout (() => {
 
-        this.ev_fn_nextInput_keyup_enter( 'barCode' );
+        this.ev_fn_nextInput_keyup_enter( 'barCodeM' );
 
       }, 3000);
 
     }
 
     ev_fn_nextInput_keyup_enter( idInput: any ){
-      //console.log(150)
       setTimeout (() => {
-        // idInput.nativeElement.focus();
         var miElemento = document.getElementById( idInput )!.focus();
       }, 100);
-
     }
 
     changeRoute( route: string ): void {
@@ -309,6 +310,10 @@ export class ProductComponent implements OnInit {
               this.ev_PrintTicket();
 
               this.fn_ClearForm();
+
+              setTimeout (() => {
+                this.ev_fn_nextInput_keyup_enter( 'barCodeM' );
+              }, 3500);
 
             }
             else{
@@ -447,7 +452,7 @@ export class ProductComponent implements OnInit {
       this.productForm.idFamily = rol.idFamily;
       this.productForm.familyDesc = rol.name;
 
-      this.ev_fn_nextInput_keyup_enter( 'cbxQuality' );
+      this.ev_fn_nextInput_keyup_enter( 'cbxQualityM' );
 
     }, 1);
 
@@ -494,7 +499,7 @@ export class ProductComponent implements OnInit {
       this.productForm.idGroup = rol.idGroup;
       this.productForm.groupDesc = rol.name;
 
-      this.ev_fn_nextInput_keyup_enter( 'cbxFamilies' );
+      this.ev_fn_nextInput_keyup_enter( 'cbxFamiliesM' );
 
     }, 1);
 
@@ -541,7 +546,7 @@ export class ProductComponent implements OnInit {
       this.productForm.idQuality = rol.idQuality;
       this.productForm.qualityDesc = rol.name;
 
-      this.ev_fn_nextInput_keyup_enter( 'cbxOrigin' );
+      this.ev_fn_nextInput_keyup_enter( 'cbxOriginM' );
 
     }, 1);
 
@@ -588,7 +593,7 @@ export class ProductComponent implements OnInit {
       this.productForm.idOrigin = rol.idOrigin;
       this.productForm.originDesc = rol.name;
 
-      this.ev_fn_nextInput_keyup_enter( 'tbxAddInv' );
+      this.ev_fn_nextInput_keyup_enter( 'tbxAddInvM' );
 
     }, 1);
 
@@ -635,7 +640,7 @@ export class ProductComponent implements OnInit {
       this.productForm.idSucursal = ODataCbx.idSucursal;
       this.productForm.sucursalDesc = ODataCbx.name;
 
-      this.ev_fn_nextInput_keyup_enter( 'cbxSupplier' );
+      this.ev_fn_nextInput_keyup_enter( 'cbxSupplierM' );
 
     }, 1);
 
@@ -685,7 +690,7 @@ export class ProductComponent implements OnInit {
       }
 
       //this.ev_fn_nextInput_keyup_enter( 'barCode' );
-      this.ev_fn_nextInput_keyup_enter( 'tbxNoEntrada' );
+      this.ev_fn_nextInput_keyup_enter( 'tbxNoEntradaM' );
 
     }, 1);
 

@@ -46,6 +46,23 @@ export class SalesService {
     var bPending = params.bPending;
     var bPagada = params.bPagada;
 
+    // Validar si los filtros están vacíos
+    const isEmpty = (
+      (!params.search || params.search.trim() === '') &&
+      (!params.idCustomer || params.idCustomer === '' || params.idCustomer == 0) &&
+      (!params.idSaleType || params.idSaleType === '' || params.idSaleType == 0) &&
+      (!params.bCancel && !params.bPending && !params.bPagada)
+    );
+
+    // Si están vacíos, asignar fecha de hoy en formato ddMMyyyy
+    if (isEmpty) {
+      const today = new Date();
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const fechaHoy = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+      params.createDateStart = fechaHoy;
+      params.createDateEnd = fechaHoy;
+    }
+
     const data: any = {
       createDateStart: params.createDateStart
       , createDateEnd: params.createDateEnd

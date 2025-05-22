@@ -28,7 +28,7 @@
                         style="width: 100%;"
                         (click)="cbxSucursales_Clear(); cbxSucursales_Search();">
                             <input type="text"
-                                    id="cbxSucursal"
+                                    id="cbxSucursalM"
                                     style="width: 100%;"
                                     placeholder="Selecciona..."
                                     aria-label="Number"
@@ -72,7 +72,7 @@
                         style="width: 100%;"
                         (click)="cbxSupplier_Clear(); cbxSupplier_Search();">
                             <input type="text"
-                                    id="cbxSupplier"
+                                    id="cbxSupplierM"
                                     style="width: 100%;"
                                     placeholder="Selecciona..."
                                     aria-label="Number"
@@ -103,9 +103,9 @@
                     <div class="col-md-4 top30px">
                         <mat-form-field class="with100">
                             <mat-label># Entrada</mat-label>
-                            <input id="tbxNoEntrada" matInput placeholder="Ingrese número de entrada"
+                            <input id="tbxNoEntradaM" matInput placeholder="Ingrese número de entrada"
                             [(ngModel)]="productForm.noEntrada"
-                            (keyup.enter)="ev_fn_nextInput_keyup_enter('barCode')">
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('barCodeM')">
                         </mat-form-field>
                     </div>
 
@@ -119,9 +119,9 @@
                         <mat-form-field class="with100">
                             <mat-label>Código de barras</mat-label>
                             <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
-                            <input id="barCode" matInput placeholder="Ingrese un Código de barras"
+                            <input id="barCodeM" matInput placeholder="Ingrese un Código de barras"
                             [(ngModel)]="productForm.barCode"
-                            (keyup.enter)="fn_getProductByBarCode(); ev_fn_nextInput_keyup_enter('tbxCost')">
+                            (keyup.enter)="fn_getProductByBarCode(); ev_fn_nextInput_keyup_enter('tbxCostM')">
                         </mat-form-field>
                     </div>
 
@@ -130,10 +130,10 @@
                         <mat-form-field class="with100">
                             <mat-label>Costo: </mat-label>
                             <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
-                            <input id="tbxCost" matInput placeholder="Ingrese un costo"
+                            <input id="tbxCostM" matInput placeholder="Ingrese un costo"
                             type="number"
                             [(ngModel)]="productForm.cost"
-                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxPrice')">
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxPriceM')">
                         </mat-form-field>
                     </div>
 
@@ -141,10 +141,10 @@
                         <mat-form-field class="with100">
                             <mat-label>Precio: </mat-label>
                             <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
-                            <input id="tbxPrice" matInput placeholder="Ingrese un precio"
+                            <input id="tbxPriceM" matInput placeholder="Ingrese un precio"
                             type="number"
                             [(ngModel)]="productForm.price"
-                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxName')">
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxNameM')">
                         </mat-form-field>
                     </div>
 
@@ -155,19 +155,19 @@
                     <div class="col-md-6">
                         <mat-form-field class="with100">
                             <mat-label>Nombre</mat-label>
-                            <input id="tbxName" matInput placeholder="Ingrese un nombre"
+                            <input id="tbxNameM" matInput placeholder="Ingrese un nombre"
                             [(ngModel)]="productForm.name"
-                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxGramos')">
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxGramosM')">
                         </mat-form-field>
                     </div>
 
                     <div class="col-md-6">
                         <mat-form-field class="with100">
                             <mat-label>Gramos</mat-label>
-                            <input id="tbxGramos" matInput placeholder="Ingrese los gramos"
+                            <input id="tbxGramosM" matInput placeholder="Ingrese los gramos"
                             type="number"
                             [(ngModel)]="productForm.gramos"
-                            (keyup.enter)="ev_fn_nextInput_keyup_enter('cbxGroups')">
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('cbxGroupsM')">
                         </mat-form-field>
                     </div>
 
@@ -188,7 +188,7 @@
                             (click)="cbxGroups_Clear(); cbxGroups_Search();">
                                 <input #cbxGroupsCBX
                                         type="text"
-                                        id="cbxGroups"
+                                        id="cbxGroupsM"
                                         style="width: 100%;"
                                         placeholder="Selecciona..."
                                         aria-label="Number"
@@ -230,7 +230,7 @@
                             (click)="cbxFamilies_Clear(); cbxFamilies_Search();">
                                 <input #cbxFamiliesCBX
                                         type="text"
-                                        id="cbxFamilies"
+                                        id="cbxFamiliesM"
                                         style="width: 100%;"
                                         placeholder="Selecciona..."
                                         aria-label="Number"
@@ -271,7 +271,7 @@
                             (click)="cbxQuality_Clear(); cbxQuality_Search()">
                                 <input #cbxQualityCBX
                                         type="text"
-                                        id="cbxQuality"
+                                        id="cbxQualityM"
                                         style="width: 100%;"
                                         placeholder="Selecciona..."
                                         aria-label="Number"
@@ -312,7 +312,7 @@
                             (click)="cbxOrigin_Clear(); cbxOrigin_Search();">
                                 <input #cbxOriginCBX
                                         type="text"
-                                        id="cbxOrigin"
+                                        id="cbxOriginM"
                                         style="width: 100%;"
                                         placeholder="Selecciona..."
                                         aria-label="Number"
@@ -350,10 +350,10 @@
                     <div class="col-md-3" *ngIf="idProduct == 0">
                         <mat-form-field class="with100">
                             <mat-label>Agregar al inventario</mat-label>
-                            <input id="tbxAddInv" matInput placeholder="Ingrese una cantidad"
+                            <input id="tbxAddInvM" matInput placeholder="Ingrese una cantidad"
                             type="number"
                             [(ngModel)]="productForm.addInv"
-                            (keyup.enter)="ev_fn_nextInput_keyup_enter('btnSave')">
+                            (keyup.enter)="ev_fn_nextInput_keyup_enter('btnSaveM')">
                         </mat-form-field>
                     </div>
                 </div>
@@ -361,7 +361,7 @@
                 <div class="row top10px">
                     <div class="col-md-12">
                         <div style="float: left;">
-                            <button id="btnSave"
+                            <button id="btnSaveM"
                             mat-raised-button
                             color="primary"
                             type="submit"
@@ -401,7 +401,7 @@
         </div>
     </div>
 
-    <h1 class="">
+    <h1 class="top10px">
         <mat-icon matPrefix class="my-icon">history</mat-icon>
         Movimientos en el inventario
     </h1>
@@ -431,7 +431,9 @@
                         <th class="textAlingCenter padding-th">Cantidad</th>
                         <th class="textAlingCenter padding-th">Acomulado</th>
                         <th class="textAlingCenter padding-th">Inventario</th>
-                        <th class="textAlingCenter padding-th">usuario</th>
+                        <th class="textAlingLeft padding-th">Creador</th>
+                        <th class="textAlingLeft padding-th">Verificó</th>
+                        <th class="textAlingLeft padding-th">Responsable en motrador</th>
                     </thead>
 
                     <tbody>
@@ -462,18 +464,9 @@
                             <td class="textAlingRight">{{ item.acumulado }}</td>
                             <td class="textAlingRight">{{ item.catInventary }}</td>
 
-                            <td style="text-align:left;">{{ item.userName }}</td>
-
-
-
-                            <td style="text-align:left;">
-                                <div style="width: 150px;">
-                                    {{ item.ventaDesc }}
-                                </div>
-                            </td>
-
-                            <td style="text-align:left;">{{ item.customerName }}</td>
-                            <td style="text-align:left;">{{ item.sellerName }}</td>
+                            <td class="textAlingLeft">{{ item.userName }}</td>
+                            <td class="textAlingLeft">{{ item.verificacionUserName }}</td>
+                            <td class="textAlingLeft">{{ item.mostradorUserName }}</td>
 
                         </tr>
 

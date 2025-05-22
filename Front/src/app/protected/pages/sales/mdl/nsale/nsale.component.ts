@@ -218,6 +218,15 @@ export class NsaleComponent {
 
     }
 
+    fn_EditDetalle( item: any, index: number ) {
+      this.salesDetailForm.barCode = item.barCode;
+      this.fn_getProductByBarCode();
+
+      this.nextInputFocus( this.tbxCantidad, 500);
+
+      this.event_fnClick_DeleteProductFromList( index );
+    }
+
     ////************************************************ */
     // MÉTODOS DE PAGINACIÓN
     changePagination(pag: Pagination) {
@@ -794,7 +803,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
             var porcentajeDescuento = ( this.salesDetailForm.descuento ? this.salesDetailForm.descuento : 0 ) / 100;
             var precioDescuento = porcentajeDescuento * this.salesDetailForm.precioUnitario;
             precioDescuento += this.salesDetailForm.descuentoEnPesos ? this.salesDetailForm.descuentoEnPesos : 0;
-            precioDescuento = parseFloat( precioDescuento.toFixed(2) );
+            precioDescuento = Math.floor( parseFloat( precioDescuento.toFixed(2) ) );
 
             var precio = this.salesDetailForm.precioUnitario - precioDescuento;
 

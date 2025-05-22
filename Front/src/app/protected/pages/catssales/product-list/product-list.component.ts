@@ -63,7 +63,7 @@ export class ProductListComponent implements OnInit {
           id: id
         }
 
-        this.servicesGServ.showModalWithParams( ProductComponent, OParamsIN, '1500px')
+        this.servicesGServ.showModalWithParamsv2( ProductComponent, OParamsIN, { width: '100vw', height: '100vh', maxWidth: '100vw', panelClass: 'full-screen-modal' })
         .afterClosed().subscribe({
           next: ( resp: any ) =>{
 

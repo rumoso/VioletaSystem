@@ -363,3 +363,70 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   .autoHeight {
     height: auto !important;
   }
+
+.table td {
+  border: 1px solid #ddd;
+  /* Color del borde */
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100% !important;
+}
+
+.table th {
+  border: 1px solid #ddd;
+  /* Color del borde */
+  padding: 8px !important;
+  /* Espaciado interno */
+  background-color: #c6c6c6;
+  /* Color del encabezado */
+  color: black;
+}
+
+tr:hover {
+  background-color: #f2f2f2;
+  /* Color al pasar el mouse */
+}
+
+.table {
+  border-collapse: collapse !important;
+  /* Evita espacios adicionales en los bordes */
+}
+
+.table td,
+.table th {
+  padding: 4px 8px !important;
+  /* Reduce el espacio interno de las celdas */
+  line-height: 1 !important;
+  /* Minimiza el espacio entre líneas */
+  vertical-align: middle !important;
+  /* Centra el contenido verticalmente */
+  height: auto !important;
+  /* Ajusta la altura al contenido */
+
+}
+
+.table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.actionIcon {
+  font-size: 18px;
+}
+
+.invFaltante {
+  color: red !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+}
+
+
+.full-screen-modal .mat-dialog-container {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+}

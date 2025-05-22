@@ -465,6 +465,13 @@
                                                             delete_outline
                                                         </span>
 
+                                                        <span class="material-icons manitaSobre colorGreen"
+                                                        (click)="fn_EditDetalle( item, i )"
+                                                        matTooltip="Editar sobre de taller"
+                                                        *ngIf="idSale.length == 0">
+                                                        edit
+                                                        </span>
+
                                                     </div>
                                                 </td>
 
@@ -532,7 +539,7 @@
                             <div class="col-md-4">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <mat-form-field class="with100 top20px">
+                                        <mat-form-field class="with100">
                                             <mat-label>TOTAL</mat-label>
                                             <input #total
                                             class="textAlingRight colorGreen fontSize"
@@ -565,7 +572,7 @@
                                 </div>
                             </div>
 
-                            <div class="table-responsive">
+                            <div class="">
                                 <table class="table table-hover">
                                     <thead>
                                         <th class="textAlingLeft padding-th">Número #</th>
