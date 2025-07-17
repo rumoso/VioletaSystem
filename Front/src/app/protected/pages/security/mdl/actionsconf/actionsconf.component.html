@@ -2,13 +2,13 @@
 <div class="" style="padding: 30px;">
 
     <div class="row">
-                                    
+
         <div class="col-md-12">
-            
+
             <h1>{{ ODataP.description }}</h1>
 
         </div>
-            
+
     </div>
 
     <div class="row top10px">
@@ -27,7 +27,7 @@
                 (click)="fn_CerrarMDL()">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
@@ -51,11 +51,12 @@
                         [value]="permiso.idAction"
                         [(ngModel)]="permiso.bPermissionAction"
                         [matTooltip]="permiso.description"
+                        [disabled]="!(permiso.nSpecial == 0 || bAdminOrCeo)"
                         matTooltipPosition="above">{{ permiso.nameHtml }}</mat-checkbox>
                       </div>
                     </div>
                   </div>
-              
+
                   <!-- Añade un salto de línea después de cada segunda columna -->
                   <div class="clearfix" *ngIf="i % 2 === 1"></div>
                 </ng-container>
@@ -80,7 +81,7 @@
                 (click)="fn_CerrarMDL()">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>

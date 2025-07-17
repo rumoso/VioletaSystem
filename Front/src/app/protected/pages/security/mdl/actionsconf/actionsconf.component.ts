@@ -22,9 +22,11 @@ export class ActionsconfComponent {
 
   seccionesYPermisos: any = [];
 
+  bAdminOrCeo: boolean = false; // Variable para determinar si es admin o CEO
+
 // #endregion
 
-  
+
 
   constructor(
     private dialogRef: MatDialogRef<ActionsconfComponent>
@@ -34,9 +36,11 @@ export class ActionsconfComponent {
     , private authService: AuthService
     ) { }
 
-    ngOnInit(): void {
+    async ngOnInit() {
       this.authService.checkSession();
-      
+      var oUser = await this.authService.getUserSession();
+      this.bAdminOrCeo = (oUser.roles.includes('1') || oUser.roles.includes('2')); // Verifica si es admin o CEO
+
       this.fn_getAllActionsByPermission();
     }
 
@@ -77,7 +81,7 @@ export class ActionsconfComponent {
       .afterClosed().subscribe({
         next: ( resp: any ) =>{
           if(resp){
-            
+
             this.bShowSpinner = true;
 
             var oParam: any = {
@@ -89,7 +93,7 @@ export class ActionsconfComponent {
             this.actionsServ.CInsertActionsPermisionsByIdRelation( oParam )
               .subscribe({
                 next: (resp: ResponseDB_CRUD) => {
-                  
+
                   this.servicesGServ.showAlertIA( resp );
                   this.bShowSpinner = false;
 
@@ -111,7 +115,7 @@ export class ActionsconfComponent {
 // #region MÉTODOS DEL FRONT
 
   getSelectedPermission() {
-    
+
 
     // Puedes usar permisosSeleccionados según tus necesidades
     console.log('Permisos seleccionados:', this.seccionesYPermisos);
@@ -125,6 +129,6 @@ export class ActionsconfComponent {
 
 // #endregion
 
-    
+
 
 }

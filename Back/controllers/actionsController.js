@@ -183,7 +183,8 @@ const getAllActionsByPermission = async(req, res = response)=>{
                         'actionName': oActionsBySectionList[n].name,
                         'nameHtml': oActionsBySectionList[n].nameHtml,
                         'description': oActionsBySectionList[n].description,
-                        'bPermissionAction': oActionsBySectionList[n].bPermissionAction == 1 ? true : false
+                        'bPermissionAction': oActionsBySectionList[n].bPermissionAction == 1 ? true : false,
+                        'nSpecial': oActionsBySectionList[n].nSpecial
                     };
 
                     //console.log( oObj )

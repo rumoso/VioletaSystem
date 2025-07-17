@@ -48,11 +48,11 @@ export class AuthService {
         let u: any = JSON.parse(localStorage.getItem('user')!.toString());
         return u;
       }
-  
-      return undefined;    
+
+      return undefined;
     }
 
-    
+
 
   logout( bRedirect: boolean ) {
     localStorage.removeItem('user');
@@ -98,6 +98,15 @@ export class AuthService {
     return 0;
   }
 
+  async getUserSession() {
+      if( localStorage.getItem('user') ) {
+        let u: any = await JSON.parse(localStorage.getItem('user')!.toString());
+        return u;
+      }
+
+      return undefined;
+  }
+
   async CGetActionsPermissionPromise( idUser: number ): Promise<any> {
     var data: any = {
       idUser: idUser
@@ -135,7 +144,7 @@ export class AuthService {
 
     data.idUserLogON = this.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
-    
+
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getMenuForPermissions`, data);
 
   }
