@@ -115,60 +115,59 @@ export class IngresosComponent {
 
   fn_InsertIngreso(){
 
-    if(!this.bInsertEgreso){
+    if(this.bInsertEgreso){
+      return;
+    }
+    this.bInsertEgreso = true;
 
-      this.bInsertEgreso = true;
+    this.servicesGServ.showDialog('¿Estás seguro?'
+    , 'Está a punto de guardar el Ingreso'
+    , '¿Desea continuar?'
+    , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: ( resp ) =>{
 
-        this.servicesGServ.showDialog('¿Estás seguro?'
-        , 'Está a punto de guardar el Ingreso'
-        , '¿Desea continuar?'
-        , 'Si', 'No')
-        .afterClosed().subscribe({
-          next: ( resp ) =>{
+        if(resp){
 
-            if(resp){
+          this.bShowSpinner = true;
 
-              this.bShowSpinner = true;
+          this.salesServ.CInsertIngresos( this.ingresoForm )
+            .subscribe({
+              next: (resp: ResponseDB_CRUD) => {
 
-              this.salesServ.CInsertIngresos( this.ingresoForm )
-                .subscribe({
-                  next: (resp: ResponseDB_CRUD) => {
+                if( resp.status === 0 ){
+                  //this.idSale = resp.insertID;
 
-                    if( resp.status === 0 ){
-                      //this.idSale = resp.insertID;
+                  this.ingresoForm.amount = 0;
+                  this.ingresoForm.description = '';
 
-                      this.ingresoForm.amount = 0;
-                      this.ingresoForm.description = '';
-
-                      if(this.selectPrinter.idPrinter > 0){
-                        this.printTicketServ.printTicket("Ingreso", resp.insertID, this.selectPrinter.idPrinter, 1);
-                      }
-
-                      this.fn_CerrarMDL();
-
-                    }
-
-                    this.servicesGServ.showSnakbar(resp.message);
-                    this.bShowSpinner = false;
-
-                  },
-                  error: (ex) => {
-
-                    this.servicesGServ.showSnakbar( ex.error.message );
-                    this.bShowSpinner = false;
-
+                  if(this.selectPrinter.idPrinter > 0){
+                    this.printTicketServ.printTicket("Ingreso", resp.insertID, this.selectPrinter.idPrinter, 1);
                   }
-                });
 
-            }else{
-              this.bInsertEgreso = false;
-            }
+                  this.fn_CerrarMDL();
 
+                }
+
+                this.servicesGServ.showSnakbar(resp.message);
+                this.bShowSpinner = false;
+
+              },
+              error: (ex) => {
+
+                this.servicesGServ.showSnakbar( ex.error.message );
+                this.bShowSpinner = false;
+
+              }
+            });
+
+        }else{
+          this.bInsertEgreso = false;
         }
 
-      });
+      }
 
-    }
+    });
 
   }
 

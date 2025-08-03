@@ -22,6 +22,7 @@ export class DevoluInventarioComponent {
 private _appMain: string = environment.appMain;
 
 @ViewChild('tbxJustify') tbxJustify!: ElementRef;
+@ViewChild('tbxCantidad') tbxCantidad!: ElementRef;
 
 idUserLogON: number = 0;
 
@@ -48,6 +49,7 @@ parametersForm: any = {
   barCode: '',
   idProduct: 0,
   productDesc: '',
+  cantidad: 1,
   catInventary: 0,
 
   justify: ''
@@ -60,7 +62,6 @@ parametersFilters: any = {
 
 };
 
-bShowActionAuthorization = false;
 
 // #endregion
 
@@ -102,6 +103,16 @@ ev_fn_barCode_keyup_enter(event: any){
     // else if(this.salesHeaderForm.saleDetail.length > 0 && this.salesDetailForm.barCode.length == 0){
     //   this.fn_ShowPaymentCreateSale( this.salesHeaderForm.idSaleType != 3 && this.salesHeaderForm.idSaleType != 4 && this.selectCajas.idCaja > 0);
     // }
+
+  }
+}
+
+ev_fn_cbxCantidad_keyup_enter(event: any){
+  if(event.keyCode == 13) { // PRESS ENTER
+
+    if( this.parametersForm.cantidad > 0 ){
+      this.nextInputFocus( this.tbxJustify, 500);
+    }
 
   }
 }
@@ -179,6 +190,7 @@ this.productsServ.CGetInventarylog_devolution( this.pagination, this.parametersF
   parametersForm_Clear(){
     this.parametersForm.barCode = '';
     this.parametersForm.idProduct = 0;
+    this.parametersForm.cantidad = 1;
     this.parametersForm.productDesc = '';
     this.parametersForm.catInventary = 0;
     this.parametersForm.justify = '';
@@ -190,8 +202,12 @@ this.productsServ.CGetInventarylog_devolution( this.pagination, this.parametersF
 
 // #region CONEXIONES CON LE BACK
 
-  
+  bShowActionAuthorization = false;
   fn_cancelDevolution( idHtml: string ){
+
+    if(this.bShowActionAuthorization){
+      return;
+    }
 
     let invSelectList = this.catlist.filter(function( item: any ) {
       return ( item.select == true
@@ -205,84 +221,80 @@ this.productsServ.CGetInventarylog_devolution( this.pagination, this.parametersF
 
     if( invSelectList.length > 0 ){
 
-      if(!this.bShowActionAuthorization){
+      this.bShowActionAuthorization = true;
+      this.servicesGServ.disableEnableButton( idHtml, true );
 
-        this.bShowActionAuthorization = true;
-        this.servicesGServ.disableEnableButton( idHtml, true );
-  
-        this.servicesGServ.showDialog('¿Estás seguro?'
-        , 'Está a punto de cancelar la devolución'
-        , '¿Desea continuar?'
-        , 'Si', 'No')
-        .afterClosed().subscribe({
-          next: ( resp ) =>{
-  
-            if(resp){
-  
-              var paramsMDL: any = {
-                actionName: 'prod_VeryDevolutionInventario'
-                , bShowAlert: false
-              }
-  
-              this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
-              .afterClosed().subscribe({
-                next: ( auth_idUser ) =>{
-  
-                  if( auth_idUser ){
-  
-                    this.bShowActionAuthorization = false;
-                    this.servicesGServ.disableEnableButton( idHtml, false );
-  
-                    this.bShowSpinner = true;
-  
-                    let oParams: any = {
-                      auth_idUser: auth_idUser
-                      , invSelectList: invSelectList
-                    } 
-  
-                    this.productsServ.CCancelDevolution( oParams )
-                    .subscribe({
-                      next: (resp: any) => {
-  
-                        if( resp.status === 0 ){
-  
-                          this.fn_getInventarylog_devolution();
-  
-                        }
-  
-                        this.servicesGServ.showAlertIA( resp );
-  
-  
-                        this.bShowSpinner = false;
-  
-                      },
-                      error: (ex) => {
-  
-                        this.servicesGServ.showSnakbar( ex.error.message );
-                        this.bShowSpinner = false;
-  
+      this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Está a punto de cancelar la devolución'
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+
+          if(resp){
+
+            var paramsMDL: any = {
+              actionName: 'prod_VeryDevolutionInventario'
+              , bShowAlert: false
+            }
+
+            this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+            .afterClosed().subscribe({
+              next: ( auth_idUser ) =>{
+
+                if( auth_idUser ){
+
+                  this.bShowActionAuthorization = false;
+                  this.servicesGServ.disableEnableButton( idHtml, false );
+
+                  this.bShowSpinner = true;
+
+                  let oParams: any = {
+                    auth_idUser: auth_idUser
+                    , invSelectList: invSelectList
+                  }
+
+                  this.productsServ.CCancelDevolution( oParams )
+                  .subscribe({
+                    next: (resp: any) => {
+
+                      if( resp.status === 0 ){
+
+                        this.fn_getInventarylog_devolution();
+
                       }
-                    });
-  
-                  }
-                  else{
-                    this.bShowActionAuthorization = false;
-                    this.servicesGServ.disableEnableButton( idHtml, false );
-                  }
-  
+
+                      this.servicesGServ.showAlertIA( resp );
+
+
+                      this.bShowSpinner = false;
+
+                    },
+                    error: (ex) => {
+
+                      this.servicesGServ.showSnakbar( ex.error.message );
+                      this.bShowSpinner = false;
+
+                    }
+                  });
+
                 }
-              });
-  
-            }
-            else{
-              this.bShowActionAuthorization = false;
-              this.servicesGServ.disableEnableButton( idHtml, false );
-            }
-  
+                else{
+                  this.bShowActionAuthorization = false;
+                  this.servicesGServ.disableEnableButton( idHtml, false );
+                }
+
+              }
+            });
+
           }
-        });
-  
-      }
+          else{
+            this.bShowActionAuthorization = false;
+            this.servicesGServ.disableEnableButton( idHtml, false );
+          }
+
+        }
+      });
 
     }else{
       this.servicesGServ.showAlert('W', 'Alerta!', "Debe seleccionar las devoluciones que quiere cancelar.", false);
@@ -293,82 +305,82 @@ this.productsServ.CGetInventarylog_devolution( this.pagination, this.parametersF
 bShowActionAuthorization2 = false;
 fn_saveDevoluInventario( idHtml: string ){
 
-  if(!this.bShowActionAuthorization2){
+  if(this.bShowActionAuthorization2){
+    return;
+  }
 
-    this.bShowActionAuthorization2 = true;
-    this.servicesGServ.disableEnableButton( idHtml, true );
+  this.bShowActionAuthorization2 = true;
+  this.servicesGServ.disableEnableButton( idHtml, true );
 
-    this.servicesGServ.showDialog('¿Estás seguro?'
-    , 'Está a punto de hacer una devolución'
-    , '¿Desea continuar?'
-    , 'Si', 'No')
-    .afterClosed().subscribe({
-      next: ( resp ) =>{
+  this.servicesGServ.showDialog('¿Estás seguro?'
+  , 'Está a punto de hacer una devolución'
+  , '¿Desea continuar?'
+  , 'Si', 'No')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
 
-        if(resp){
+      if(resp){
 
-          var paramsMDL: any = {
-            actionName: 'prod_DevolutionInventario'
-            , bShowAlert: false
-          }
+        var paramsMDL: any = {
+          actionName: 'prod_DevolutionInventario'
+          , bShowAlert: false
+        }
 
-          this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
-          .afterClosed().subscribe({
-            next: ( auth_idUser ) =>{
+        this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+        .afterClosed().subscribe({
+          next: ( auth_idUser ) =>{
 
-              if( auth_idUser ){
+            if( auth_idUser ){
 
-                this.bShowActionAuthorization2 = false;
-                this.servicesGServ.disableEnableButton( idHtml, false );
+              this.bShowActionAuthorization2 = false;
+              this.servicesGServ.disableEnableButton( idHtml, false );
 
-                this.bShowSpinner = true;
+              this.bShowSpinner = true;
 
-                this.parametersForm.auth_idUser = auth_idUser;
+              this.parametersForm.auth_idUser = auth_idUser;
 
-                this.productsServ.CSaveDevoluInventario( this.parametersForm )
-                .subscribe({
-                  next: (resp: any) => {
+              this.productsServ.CSaveDevoluInventario( this.parametersForm )
+              .subscribe({
+                next: (resp: any) => {
 
-                    if( resp.status === 0 ){
+                  if( resp.status === 0 ){
 
-                      this.fn_getInventarylog_devolution();
-                      this.parametersForm.justify = '';
-
-                    }
-
-                    this.servicesGServ.showAlertIA( resp );
-
-
-                    this.bShowSpinner = false;
-
-                  },
-                  error: (ex) => {
-
-                    this.servicesGServ.showSnakbar( ex.error.message );
-                    this.bShowSpinner = false;
+                    this.fn_getInventarylog_devolution();
+                    this.parametersForm.justify = '';
 
                   }
-                });
 
-              }
-              else{
-                this.bShowActionAuthorization2 = false;
-                this.servicesGServ.disableEnableButton( idHtml, false );
-              }
+                  this.servicesGServ.showAlertIA( resp );
+
+
+                  this.bShowSpinner = false;
+
+                },
+                error: (ex) => {
+
+                  this.servicesGServ.showSnakbar( ex.error.message );
+                  this.bShowSpinner = false;
+
+                }
+              });
 
             }
-          });
+            else{
+              this.bShowActionAuthorization2 = false;
+              this.servicesGServ.disableEnableButton( idHtml, false );
+            }
 
-        }
-        else{
-          this.bShowActionAuthorization2 = false;
-          this.servicesGServ.disableEnableButton( idHtml, false );
-        }
+          }
+        });
 
       }
-    });
+      else{
+        this.bShowActionAuthorization2 = false;
+        this.servicesGServ.disableEnableButton( idHtml, false );
+      }
 
-  }
+    }
+  });
 
 }
 
@@ -387,16 +399,18 @@ fn_getProductByBarCode() {
 
             this.parametersForm.idProduct = resp.data.idProduct ;
             this.parametersForm.productDesc = resp.data.name;
+            this.parametersForm.cantidad = 1;
 
             this.parametersForm.catInventary = resp.data.catInventary;
 
-            this.nextInputFocus( this.tbxJustify, 500);
+            this.nextInputFocus( this.tbxCantidad, 500);
 
           }else{
 
             this.parametersForm.barCode = '';
             this.parametersForm.idProduct = 0;
             this.parametersForm.productDesc = '';
+            this.parametersForm.cantidad = 1;
 
             this.parametersForm.catInventary = 0;
 
@@ -421,6 +435,12 @@ fn_getProductByBarCode() {
 
 fn_updateFirmaEntradaInventario( iOption: any, idHtml: string ){
 
+  if(this.bShowActionAuthorization){
+    return;
+  }
+
+  this.bShowActionAuthorization = true;
+
   let invSelectList = this.catlist.filter(function( item: any ) {
     return ( item.select == true
       &&
@@ -431,85 +451,78 @@ fn_updateFirmaEntradaInventario( iOption: any, idHtml: string ){
     )
   });
 
-  console.log( invSelectList )
+  this.servicesGServ.disableEnableButton( idHtml, true );
 
-  if(!this.bShowActionAuthorization){
+  this.servicesGServ.showDialog('¿Estás seguro?'
+  , 'Está a punto de verificar la devolución'
+  , '¿Desea continuar?'
+  , 'Si', 'No')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
 
-    this.bShowActionAuthorization = true;
-    this.servicesGServ.disableEnableButton( idHtml, true );
+      if(resp){
 
-    this.servicesGServ.showDialog('¿Estás seguro?'
-    , 'Está a punto de verificar la devolución'
-    , '¿Desea continuar?'
-    , 'Si', 'No')
-    .afterClosed().subscribe({
-      next: ( resp ) =>{
+        var paramsMDL: any = {
+          actionName: 'prod_VeryDevolutionInventario'
+          , bShowAlert: false
+        }
 
-        if(resp){
+        this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+        .afterClosed().subscribe({
+          next: ( auth_idUser ) =>{
 
-          var paramsMDL: any = {
-            actionName: 'prod_VeryDevolutionInventario'
-            , bShowAlert: false
-          }
+            if( auth_idUser ){
 
-          this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
-          .afterClosed().subscribe({
-            next: ( auth_idUser ) =>{
+              this.bShowActionAuthorization = false;
+              this.servicesGServ.disableEnableButton( idHtml, false );
 
-              if( auth_idUser ){
+              this.bShowSpinner = true;
 
-                this.bShowActionAuthorization = false;
-                this.servicesGServ.disableEnableButton( idHtml, false );
+              this.parametersForm.iOption = iOption;
+              this.parametersForm.auth_idUser = auth_idUser;
+              this.parametersForm.invSelectList = invSelectList;
 
-                this.bShowSpinner = true;
+              this.productsServ.CUpdateFirmaDevoluInventario( this.parametersForm )
+              .subscribe({
+                next: (resp: any) => {
 
-                this.parametersForm.iOption = iOption;
-                this.parametersForm.auth_idUser = auth_idUser;
-                this.parametersForm.invSelectList = invSelectList;
+                  if( resp.status === 0 ){
 
-                this.productsServ.CUpdateFirmaDevoluInventario( this.parametersForm )
-                .subscribe({
-                  next: (resp: any) => {
-
-                    if( resp.status === 0 ){
-
-                      this.fn_getInventarylog_devolution();
-
-                    }
-
-                    this.servicesGServ.showAlertIA( resp );
-
-
-                    this.bShowSpinner = false;
-
-                  },
-                  error: (ex) => {
-
-                    this.servicesGServ.showSnakbar( ex.error.message );
-                    this.bShowSpinner = false;
+                    this.fn_getInventarylog_devolution();
 
                   }
-                });
 
-              }
-              else{
-                this.bShowActionAuthorization = false;
-                this.servicesGServ.disableEnableButton( idHtml, false );
-              }
+                  this.servicesGServ.showAlertIA( resp );
+
+
+                  this.bShowSpinner = false;
+
+                },
+                error: (ex) => {
+
+                  this.servicesGServ.showSnakbar( ex.error.message );
+                  this.bShowSpinner = false;
+
+                }
+              });
 
             }
-          });
+            else{
+              this.bShowActionAuthorization = false;
+              this.servicesGServ.disableEnableButton( idHtml, false );
+            }
 
-        }
-        else{
-          this.bShowActionAuthorization = false;
-          this.servicesGServ.disableEnableButton( idHtml, false );
-        }
+          }
+        });
 
       }
-    });
+      else{
+        this.bShowActionAuthorization = false;
+        this.servicesGServ.disableEnableButton( idHtml, false );
+      }
 
-  }
+    }
+  });
 
 }
 
@@ -574,8 +587,9 @@ cbxProducts_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 
     this.parametersForm.idProduct = ODataCbx.idProduct;
     this.parametersForm.productDesc = ODataCbx.barCode + ' - ' + ODataCbx.name;
+    this.parametersForm.cantidad = 1;
 
-    this.nextInputFocus( this.tbxJustify, 500);
+    this.nextInputFocus( this.tbxCantidad, 500);
 
   }, 1);
 
@@ -584,6 +598,7 @@ cbxProducts_SelectedOption( event: MatAutocompleteSelectedEvent ) {
 cbxProducts_Clear(){
   this.parametersForm.idProduct = 0;
   this.parametersForm.productDesc = '';
+  this.parametersForm.cantidad = 1;
 }
 //--------------------------------------------------------------------------
 

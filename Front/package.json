@@ -22,6 +22,8 @@
     "@angular/router": "^16.0.0",
     "chart.js": "^4.4.7",
     "file-saver": "^2.0.5",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "ng2-currency-mask": "^13.0.3",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

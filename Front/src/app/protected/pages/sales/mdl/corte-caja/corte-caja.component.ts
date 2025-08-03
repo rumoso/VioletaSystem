@@ -148,62 +148,61 @@ export class CorteCajaComponent {
   bContinueDialog = false;
   fn_InsertCorteCaja(){
 
-    if(!this.bContinueDialog){
-      this.bContinueDialog = true;
+    if(this.bContinueDialog){
+      return;
+    }
 
+    this.bContinueDialog = true;
+    this.fn_SUMAll();
 
-      this.fn_SUMAll();
+    this.servicesGServ.showDialog('¿Estás seguro?'
+    , 'Está a punto de guardar el corte de caja'
+    , '¿Desea continuar?'
+    , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: ( resp ) =>{
 
-      this.servicesGServ.showDialog('¿Estás seguro?'
-      , 'Está a punto de guardar el corte de caja'
-      , '¿Desea continuar?'
-      , 'Si', 'No')
-      .afterClosed().subscribe({
-        next: ( resp ) =>{
+        this.bContinueDialog = false;
 
-          this.bContinueDialog = false;
+        if(resp){
 
-          if(resp){
+          this.bShowSpinner = true;
 
-            this.bShowSpinner = true;
+          const data: any = {
+            idCaja: this.idCaja,
+            selectedDate: this.selectedDate,
+            preCorteCaja: this.preCorteCaja
+          };
 
-            const data: any = {
-              idCaja: this.idCaja,
-              selectedDate: this.selectedDate,
-              preCorteCaja: this.preCorteCaja
-            };
+          this.salesServ.CInsertCorteCaja( data )
+            .subscribe({
+              next: (resp: ResponseDB_CRUD) => {
 
-            this.salesServ.CInsertCorteCaja( data )
-              .subscribe({
-                next: (resp: ResponseDB_CRUD) => {
-
-                  if( resp.status === 0 ){
-                    //this.idSale = resp.insertID;
-                    if(this.selectPrinter.idPrinter > 0){
-                      this.printTicketServ.printTicket("CorteCaja", resp.insertID, this.selectPrinter.idPrinter, 1);
-                    }
-
-                    this.fn_CerrarMDL( resp.insertID );
+                if( resp.status === 0 ){
+                  //this.idSale = resp.insertID;
+                  if(this.selectPrinter.idPrinter > 0){
+                    this.printTicketServ.printTicket("CorteCaja", resp.insertID, this.selectPrinter.idPrinter, 1);
                   }
-                  this.servicesGServ.showAlertIA( resp );
-                  this.bShowSpinner = false;
 
-                },
-                error: (ex) => {
-
-                  this.servicesGServ.showSnakbar( ex.error.message );
-                  this.bShowSpinner = false;
-
+                  this.fn_CerrarMDL( resp.insertID );
                 }
-              });
+                this.servicesGServ.showAlertIA( resp );
+                this.bShowSpinner = false;
 
-          }
+              },
+              error: (ex) => {
+
+                this.servicesGServ.showSnakbar( ex.error.message );
+                this.bShowSpinner = false;
+
+              }
+            });
 
         }
 
-      });
-    }
+      }
 
+    });
   }
 
   fn_getSelectPrintByIdUser( idUser: number ) {

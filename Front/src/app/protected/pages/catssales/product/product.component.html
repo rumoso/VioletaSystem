@@ -428,6 +428,7 @@
                     <thead>
                         <th class="textAlingCenter padding-th">Fecha</th>
                         <th class="textAlingLeft padding-th">Descripción</th>
+                        <th class="textAlingLeft padding-th">Estatus</th>
                         <th class="textAlingCenter padding-th">Cantidad</th>
                         <th class="textAlingCenter padding-th">Acomulado</th>
                         <th class="textAlingCenter padding-th">Inventario</th>
@@ -459,6 +460,20 @@
                             </td>
 
                             <td style="text-align:left;">{{ item.description }}</td>
+                            <td class="textAlingLeft">
+                              <div style="width: 120px;">
+                                <div class="row">
+                                    <div class="col-md-1">
+                                        <mat-icon *ngIf="item.firmaVer == 1 && item.firmaMost == 1" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorGreen">check_circle</mat-icon>
+                                        <mat-icon *ngIf="item.firmaVer == 0 || item.firmaMost == 0" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorBlue">error</mat-icon>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <label style="margin-left: 10px;">{{ ( item.firmaVer == 0 || item.firmaMost == 0 ) ? 'Pendiente' : 'Verificado' }}</label>
+                                    </div>
+                                </div>
+                              </div>
+
+                            </td>
 
                             <td class="textAlingRight">{{ item.cantidad }}</td>
                             <td class="textAlingRight">{{ item.acumulado }}</td>

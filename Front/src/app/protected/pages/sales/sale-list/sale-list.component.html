@@ -1,12 +1,7 @@
 <div class="divMain" style="width: 100%; margin-top: 10px !important;">
-
     <div class="row">
         <div class="col-md-12">
-
-
-
             <div class="row">
-
                 <div class="col-md-6">
                     <mat-form-field fxLayout.xs="column" class="with100">
                         <mat-label>Folio</mat-label>
@@ -20,18 +15,17 @@
 
                 <div class="col-md-6" style="text-align: left;">
                     <mat-form-field class="with100">
-                        <mat-label>Fecha de creación:</mat-label>
-                        <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
-                            <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date">
-                            <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date">
-                        </mat-date-range-input>
-                        <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-date-range-picker #picker></mat-date-range-picker>
+                      <mat-label>Fecha de creación:</mat-label>
+                      <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                          <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date">
+                          <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date">
+                      </mat-date-range-input>
+                      <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
+                      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                      <mat-date-range-picker #picker></mat-date-range-picker>
 
-                        </mat-form-field>
+                    </mat-form-field>
                 </div>
-
             </div>
 
             <div class="row">
@@ -266,7 +260,7 @@
                                             <span class="material-icons manitaSobre colorRed"
                                             matTooltip="Cancelar"
                                             (click)="fn_disabledSale( item )"
-                                            *ngIf="item.active">
+                                            *ngIf="item.active && hasPermissionAction('ventas_Cancelar') && ( item.idSaleType != 5 || hasPermissionAction('ventas_CancelarTaller') )">
                                                 delete_outline
                                             </span>
 

@@ -543,144 +543,144 @@ fn_ShowIngresos(){
 bShowActionAuthorization: boolean = false;
 fn_disabledSale( data: any ){
 
-  if(!this.bShowActionAuthorization){
+  if(this.bShowActionAuthorization){
+    return;
+  }
 
-    this.bShowActionAuthorization = true;
+  this.bShowActionAuthorization = true;
 
-    this.servicesGServ.showDialog('¿Estás seguro?'
-    , 'Está apunto de cancelar la venta #' + data.idSale
-    , '¿Desea continuar?'
-    , 'Si', 'No' )
-    .afterClosed().subscribe({
-      next: ( resp ) =>{
+  this.servicesGServ.showDialog('¿Estás seguro?'
+  , 'Está apunto de cancelar la venta #' + data.idSale
+  , '¿Desea continuar?'
+  , 'Si', 'No' )
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
 
-        if(resp){
+      if(resp){
 
-          this.bShowActionAuthorization = false;
+        this.bShowActionAuthorization = false;
 
-          if( data.pagosYaEnCorte > 0 ){
+        if( data.pagosYaEnCorte > 0 ){
 
-            var paramsQuestionMDL: any = {
-              pagosYaEnCorte: data.pagosYaEnCorte
-            }
+          var paramsQuestionMDL: any = {
+            pagosYaEnCorte: data.pagosYaEnCorte
+          }
 
-            this.servicesGServ.showModalWithParams( QuestionCancelSalePaymentsComponent, paramsQuestionMDL, '600px')
-              .afterClosed().subscribe({
-                next: ( sOption ) =>{
+          this.servicesGServ.showModalWithParams( QuestionCancelSalePaymentsComponent, paramsQuestionMDL, '600px')
+            .afterClosed().subscribe({
+              next: ( sOption ) =>{
 
-                  if(sOption){
+                if(sOption){
 
-                    var paramsMDL: any = {
-                      actionName: 'ventas_Cancelar'
-                      , bShowAlert: false
-                    }
+                  var paramsMDL: any = {
+                    actionName: ( data.idSaleType == 5 ? 'ventas_CancelarTaller' : 'ventas_Cancelar' )
+                    , bShowAlert: false
+                  }
 
-                    this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
-                    .afterClosed().subscribe({
-                      next: ( auth_idUser ) =>{
+                  this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+                  .afterClosed().subscribe({
+                    next: ( auth_idUser ) =>{
 
-                        if( auth_idUser ){
+                      if( auth_idUser ){
 
-                          this.bShowActionAuthorization = false;
+                        this.bShowActionAuthorization = false;
 
-                          this.bShowSpinner = true;
+                        this.bShowSpinner = true;
 
-                          var oParams: any = {
-                            sOption: sOption,
-                            idSale: data.idSale,
-                            auth_idUser: auth_idUser
+                        var oParams: any = {
+                          sOption: sOption,
+                          idSale: data.idSale,
+                          auth_idUser: auth_idUser
+                        }
+
+                        this.salesServ.CDisabledSale( oParams )
+                        .subscribe({
+                          next: async (resp: ResponseDB_CRUD) => {
+
+                            this.servicesGServ.showAlertIA( resp );
+                            this.bShowSpinner = false;
+
+                            this.fn_getVentasListWithPage();
+
+                          },
+                          error: (ex) => {
+
+                            this.servicesGServ.showSnakbar( ex.error.message );
+                            this.bShowSpinner = false;
+
                           }
 
-                          this.salesServ.CDisabledSale( oParams )
-                          .subscribe({
-                            next: async (resp: ResponseDB_CRUD) => {
-
-                              this.servicesGServ.showAlertIA( resp );
-                              this.bShowSpinner = false;
-
-                              this.fn_getVentasListWithPage();
-
-                            },
-                            error: (ex) => {
-
-                              this.servicesGServ.showSnakbar( ex.error.message );
-                              this.bShowSpinner = false;
-
-                            }
-
-                          });
-
-                        }
-                        else{
-                          this.bShowActionAuthorization = false;
-                        }
+                        });
 
                       }
-                    });
-
-                  }
-                }
-              });
-
-          }else{
-
-            var paramsMDL: any = {
-              actionName: 'ventas_Cancelar'
-              , bShowAlert: false
-            }
-
-            this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
-            .afterClosed().subscribe({
-              next: ( auth_idUser ) =>{
-
-                if( auth_idUser ){
-
-                  this.bShowActionAuthorization = false;
-
-                  this.bShowSpinner = true;
-
-                  var oParams: any = {
-                    idSale: data.idSale,
-                    auth_idUser: auth_idUser
-                  }
-
-                  this.salesServ.CDisabledSale( oParams )
-                  .subscribe({
-                    next: async (resp: ResponseDB_CRUD) => {
-
-                      this.servicesGServ.showAlertIA( resp );
-                      this.bShowSpinner = false;
-
-                      this.fn_getVentasListWithPage();
-
-                    },
-                    error: (ex) => {
-
-                      this.servicesGServ.showSnakbar( ex.error.message );
-                      this.bShowSpinner = false;
+                      else{
+                        this.bShowActionAuthorization = false;
+                      }
 
                     }
-
                   });
 
                 }
-                else{
-                  this.bShowActionAuthorization = false;
-                }
-
               }
             });
 
+        }else{
+
+          var paramsMDL: any = {
+            actionName: ( data.idSaleType == 5 ? 'ventas_CancelarTaller' : 'ventas_Cancelar' )
+            , bShowAlert: false
           }
 
-        }else{
-          this.bShowActionAuthorization = false;
+          this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+          .afterClosed().subscribe({
+            next: ( auth_idUser ) =>{
+
+              if( auth_idUser ){
+
+                this.bShowActionAuthorization = false;
+
+                this.bShowSpinner = true;
+
+                var oParams: any = {
+                  idSale: data.idSale,
+                  auth_idUser: auth_idUser
+                }
+
+                this.salesServ.CDisabledSale( oParams )
+                .subscribe({
+                  next: async (resp: ResponseDB_CRUD) => {
+
+                    this.servicesGServ.showAlertIA( resp );
+                    this.bShowSpinner = false;
+
+                    this.fn_getVentasListWithPage();
+
+                  },
+                  error: (ex) => {
+
+                    this.servicesGServ.showSnakbar( ex.error.message );
+                    this.bShowSpinner = false;
+
+                  }
+
+                });
+
+              }
+              else{
+                this.bShowActionAuthorization = false;
+              }
+
+            }
+          });
+
         }
+
+      }else{
+        this.bShowActionAuthorization = false;
       }
+    }
 
-    });
-
-  }
+  });
 
 }
 

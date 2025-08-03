@@ -8,7 +8,7 @@ import { DDialog } from 'src/app/interfaces/general.interfaces';
   styleUrls: ['./confirm.component.css']
 })
 export class ConfirmComponent implements OnInit {
-  
+
   constructor(
     private dialogRef: MatDialogRef<ConfirmComponent>
     ,@Inject(MAT_DIALOG_DATA) public data: DDialog
@@ -17,12 +17,16 @@ export class ConfirmComponent implements OnInit {
   ngOnInit(): void {
   }
 
+  bClicked: boolean = false;
   delete(){
+    if(this.bClicked) return;
+
+    this.bClicked = true;
     this.dialogRef.close(true);
   }
 
   close(){
     this.dialogRef.close();
   }
-  
+
 }

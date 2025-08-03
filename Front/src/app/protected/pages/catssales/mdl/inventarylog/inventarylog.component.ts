@@ -73,7 +73,7 @@ constructor(
     this._adapter.setLocale(this._locale);
 
     this.inventaryLogForm.idProduct = this.ODataP.idProduct;
-    
+
     this.nextInputFocus( this.tbxNoEntrada, 500 );
 
   }
@@ -92,6 +92,10 @@ constructor(
 bInsertInventaryLog: boolean = false;
 bShowActionAuthorization: boolean = false;
 fn_insertInventaryLog() {
+
+  if(this.bInsertInventaryLog){
+    return;
+  }
 
   if( this.inventaryLogForm.idProduct > 0 && this.inventaryLogForm.cantidad != 0 ){
 
@@ -117,7 +121,7 @@ fn_insertInventaryLog() {
             this.productsServ.CInsertInventaryLog( this.inventaryLogForm )
               .subscribe({
               next: (resp: ResponseDB_CRUD) => {
-  
+
                 if( resp.status === 0 ){
                   this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
                   this.fn_CerrarMDL();
@@ -125,17 +129,17 @@ fn_insertInventaryLog() {
                 else{
                   this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
                 }
-  
+
                 this.bShowSpinner = false;
-  
+
                 this.event_clear();
-  
+
               },
               error: (ex) => {
-                
+
                 this.servicesGServ.showSnakbar( "Problemas con el servicio" );
                 this.bShowSpinner = false;
-  
+
               }
             })
 
@@ -145,11 +149,11 @@ fn_insertInventaryLog() {
               actionName: 'prod_SalidaInventario'
               , bShowAlert: false
             }
-          
+
             this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
             .afterClosed().subscribe({
               next: ( resp ) =>{
-          
+
                 if( resp ){
 
                   this.bShowActionAuthorization = false;
@@ -161,7 +165,7 @@ fn_insertInventaryLog() {
                   this.productsServ.CInsertInventaryLog( this.inventaryLogForm )
                     .subscribe({
                     next: (resp: ResponseDB_CRUD) => {
-        
+
                       if( resp.status === 0 ){
                         this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
                         this.fn_CerrarMDL();
@@ -169,17 +173,17 @@ fn_insertInventaryLog() {
                       else{
                         this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
                       }
-        
+
                       this.bShowSpinner = false;
-        
+
                       this.event_clear();
-        
+
                     },
                     error: (ex) => {
-                      
+
                       this.servicesGServ.showSnakbar( "Problemas con el servicio" );
                       this.bShowSpinner = false;
-        
+
                     }
                   })
 
@@ -230,9 +234,9 @@ event_clear(){
 }
 
 ev_fn_noEntrada_keyup_enter(event: any){
-  
+
   if(event.keyCode == 13) { // PRESS ENTER
-    
+
     this.nextInputFocus( this.tbxDescription, 0 );
 
   }
@@ -240,9 +244,9 @@ ev_fn_noEntrada_keyup_enter(event: any){
 }
 
 ev_fn_description_keyup_enter(event: any){
-  
+
   if(event.keyCode == 13) { // PRESS ENTER
-    
+
     if( this.inventaryLogForm.description.length > 0 ){
       this.nextInputFocus( this.tbxCantidad, 0 );
     }
@@ -252,9 +256,9 @@ ev_fn_description_keyup_enter(event: any){
 }
 
 ev_fn_amount_keyup_enter(event: any){
-  
+
   if(event.keyCode == 13) { // PRESS ENTER
-    
+
     if( this.inventaryLogForm.cantidad != 0 ){
       this.fn_insertInventaryLog();
     }

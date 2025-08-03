@@ -1530,6 +1530,7 @@ const saveDevoluInventario = async(req, res) => {
 
         idProduct = 0,
         productDesc = '',
+        cantidad = 1,
         justify = '',
 
         idUserLogON,
@@ -1558,7 +1559,7 @@ const saveDevoluInventario = async(req, res) => {
         var OSQL2 = await dbConnection.query(`call insertInventaryLog(
             '${oGetDateNow}'
             ,  ${ idProduct }
-            , '-1'
+            , '${ cantidad * -1 }'
             , 'Devolución: ${ justify }'
             , 0
             , 1

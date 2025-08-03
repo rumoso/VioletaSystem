@@ -19,7 +19,7 @@
               </mat-form-field>
             </div>
 
-            <div class="col-md-8">
+            <div class="col-md-6">
               <mat-form-field
               style="width: 100%;"
               (click)="cbxProducts_Search()">
@@ -53,6 +53,18 @@
               </mat-form-field>
             </div>
 
+            <div class="col-md-2">
+              <mat-form-field class="with100">
+                  <mat-label>Cantidad</mat-label>
+                  <input #tbxCantidad
+                  matInput
+                  placeholder="Ingrese la cantidad"
+                  type="number"
+                  class="textAlingRight"
+                  [(ngModel)]="parametersForm.cantidad"
+                  (keyup.enter)="ev_fn_cbxCantidad_keyup_enter($event)">
+              </mat-form-field>
+            </div>
           </div>
 
           <div class="row">

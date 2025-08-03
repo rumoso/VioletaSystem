@@ -113,63 +113,60 @@ export class EgresosComponent {
   }
 
   bInsertEgreso: boolean = false;
-
   fn_InsertEgreso(){
+    if(this.bInsertEgreso){
+      return;
+    }
+    this.bInsertEgreso = true;
 
-    if(!this.bInsertEgreso){
+    this.servicesGServ.showDialog('¿Estás seguro?'
+    , 'Está a punto de guardar el Egreso'
+    , '¿Desea continuar?'
+    , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: ( resp ) =>{
 
-      this.bInsertEgreso = true;
+        if(resp){
 
-        this.servicesGServ.showDialog('¿Estás seguro?'
-        , 'Está a punto de guardar el Egreso'
-        , '¿Desea continuar?'
-        , 'Si', 'No')
-        .afterClosed().subscribe({
-          next: ( resp ) =>{
+          this.bShowSpinner = true;
 
-            if(resp){
+          this.salesServ.CInsertEgresos( this.egresoForm )
+            .subscribe({
+              next: (resp: ResponseDB_CRUD) => {
 
-              this.bShowSpinner = true;
+                if( resp.status === 0 ){
+                  //this.idSale = resp.insertID;
 
-              this.salesServ.CInsertEgresos( this.egresoForm )
-                .subscribe({
-                  next: (resp: ResponseDB_CRUD) => {
+                  this.egresoForm.amount = 0;
+                  this.egresoForm.description = '';
 
-                    if( resp.status === 0 ){
-                      //this.idSale = resp.insertID;
-
-                      this.egresoForm.amount = 0;
-                      this.egresoForm.description = '';
-
-                      if(this.selectPrinter.idPrinter > 0){
-                        this.printTicketServ.printTicket("Egreso", resp.insertID, this.selectPrinter.idPrinter, 1);
-                      }
-
-                      this.fn_CerrarMDL();
-
-                    }
-
-                    this.servicesGServ.showSnakbar(resp.message);
-                    this.bShowSpinner = false;
-
-                  },
-                  error: (ex) => {
-
-                    this.servicesGServ.showSnakbar( ex.error.message );
-                    this.bShowSpinner = false;
-
+                  if(this.selectPrinter.idPrinter > 0){
+                    this.printTicketServ.printTicket("Egreso", resp.insertID, this.selectPrinter.idPrinter, 1);
                   }
-                });
 
-            }else{
-              this.bInsertEgreso = false;
-            }
+                  this.fn_CerrarMDL();
 
+                }
+
+                this.servicesGServ.showSnakbar(resp.message);
+                this.bShowSpinner = false;
+
+              },
+              error: (ex) => {
+
+                this.servicesGServ.showSnakbar( ex.error.message );
+                this.bShowSpinner = false;
+
+              }
+            });
+
+        }else{
+          this.bInsertEgreso = false;
         }
 
-      });
+      }
 
-    }
+    });
 
   }
 

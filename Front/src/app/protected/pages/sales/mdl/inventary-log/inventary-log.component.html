@@ -1,0 +1,102 @@
+<div class="divMain" style="width: 100%; margin-top: -5px !important;">
+    <div class="row">
+        <div class="col-md-4">
+          <mat-form-field fxLayout.xs="column" class="with100">
+              <mat-label>Código de barras</mat-label>
+              <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
+              <input matInput id="barCode" placeholder="Ingrese un Código de barras"
+              [(ngModel)]="parametersForm.barCode"
+              (keyup.enter)="fn_getProductByBarCode()">
+            </mat-form-field>
+      </div>
+
+      <div class="col-md-5">
+          <mat-form-field class="with100">
+              <mat-label>Nombre</mat-label>
+              <input matInput placeholder="Ingrese un nombre"
+              [(ngModel)]="parametersForm.productDesc" readonly>
+            </mat-form-field>
+      </div>
+
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter padding-th">Fecha</th>
+                        <th class="textAlingLeft padding-th">Descripción</th>
+                        <th class="textAlingLeft padding-th">Estatus</th>
+                        <th class="textAlingCenter padding-th">Cantidad</th>
+                        <th class="textAlingCenter padding-th">Acomulado</th>
+                        <th class="textAlingCenter padding-th">Inventario</th>
+                        <th class="textAlingLeft padding-th">Creador</th>
+                        <th class="textAlingLeft padding-th">Verificó</th>
+                        <th class="textAlingLeft padding-th">Responsable en motrador</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of inventaryLoglist; let i = index">
+
+                            <td class="textAlingCenter">
+
+                                <div style="width: 120px;">
+
+                                    <div class="row">
+                                        <div class="col-md-1">
+                                            <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+
+                                        </div>
+                                        <div class="col-md-10">
+                                            <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
+                                            <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+                            <td style="text-align:left;">{{ item.description }}</td>
+                            <td class="textAlingLeft">
+                              <div style="width: 120px;">
+                                <div class="row">
+                                    <div class="col-md-1">
+                                        <mat-icon *ngIf="item.firmaVer == 1 && item.firmaMost == 1" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorGreen">check_circle</mat-icon>
+                                        <mat-icon *ngIf="item.firmaVer == 0 || item.firmaMost == 0" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorBlue">error</mat-icon>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <label style="margin-left: 10px;">{{ ( item.firmaVer == 0 || item.firmaMost == 0 ) ? 'Pendiente' : 'Verificado' }}</label>
+                                    </div>
+                                </div>
+                              </div>
+
+                            </td>
+
+                            <td class="textAlingRight">{{ item.cantidad }}</td>
+                            <td class="textAlingRight">{{ item.acumulado }}</td>
+                            <td class="textAlingRight">{{ item.catInventary }}</td>
+
+                            <td class="textAlingLeft">{{ item.userName }}</td>
+                            <td class="textAlingLeft">{{ item.verificacionUserName }}</td>
+                            <td class="textAlingLeft">{{ item.mostradorUserName }}</td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+            </div>
+
+            <app-pagination *ngIf="inventaryLoglist" [IPagination]="pagination"
+                        (OPagination)="changePagination($event)">
+            </app-pagination>
+
+        </div>
+
+    </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

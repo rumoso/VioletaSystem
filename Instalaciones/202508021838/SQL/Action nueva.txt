@@ -1,0 +1,5 @@
+INSERT INTO `actions` (`idAction`, `createDate`, `idActionSection`, `name`, `nameHtml`, `description`, `active`, `nSpecial`)
+VALUES ('11521', '2025-02-08', '1', 'ventas_CancelarTaller', 'Cancelar Ventas de taller', 'Con este permiso puedes cancelar ventas de taller', '1', '1');
+
+INSERT INTO `menus` (`createDate`, `idMenuPadre`, `lugar`, `name`, `description`, `linkList`, `imgDash`, `imgDashSize`, `idAplication`, `active`)
+VALUES ('2025-08-03', '1', '6', 'Rastreo de productos', 'Se puede rastrear el movimiento de inventario del producto', 'inventaryLog', 'assets/img/icons/anillo.png', '80', '1', '1');

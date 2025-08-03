@@ -9,6 +9,7 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { ColumnFormat } from 'src/app/protected/interfaces/global.interfaces';
+import { PrinterPDFService } from 'src/app/protected/services/printer-pdf.service';
 
 @Component({
   selector: 'app-verificacion-entradas',
@@ -64,6 +65,7 @@ export class VerificacionEntradasComponent {
     , @Inject(MAT_DATE_LOCALE) private _locale: string
 
     , private authServ: AuthService
+    , private printerServ: PrinterPDFService
     ) { }
 
     async ngOnInit() {
@@ -94,7 +96,6 @@ exportDataToExcel( bCostos: boolean ): void {
   this.productsServ.CGetInventarylogParaFirmar( Newpagination, this.parametersForm )
   .subscribe({
     next: (resp: ResponseGet) => {
-      console.log(resp)
 
       if(resp.status == 0){
 
@@ -133,6 +134,38 @@ exportDataToExcel( bCostos: boolean ): void {
 
 
 }
+
+  exportDataToPDF(): void {
+
+    this.bShowSpinner = true;
+
+    var Newpagination: Pagination = {
+      search:'',
+      length: 10000000,
+      pageSize: 10000000,
+      pageIndex: 0,
+      pageSizeOptions: [5, 10, 25, 100]
+    }
+
+    this.productsServ.CGetInventarylogParaFirmar( Newpagination, this.parametersForm )
+    .subscribe({
+      next: (resp: ResponseGet) => {
+
+        if(resp.status == 0){
+          this.printerServ.generarPDFVerificacionEntradas( this.parametersForm, resp.data.rows );
+        }
+        this.bShowSpinner = false;
+
+      },
+      error: (ex: HttpErrorResponse) => {
+        console.log( ex )
+        this.servicesGServ.showSnakbar( ex.error.data );
+        this.bShowSpinner = false;
+      }
+    })
+
+
+  }
 
     ////************************************************ */
     // MÉTODOS DE PAGINACIÓN

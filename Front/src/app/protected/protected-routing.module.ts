@@ -26,6 +26,7 @@ import { IngresosListComponent } from "./pages/sales/ingresos-list/ingresos-list
 import { PagosCanceladosComponent } from "./pages/reports/pagos-cancelados/pagos-cancelados.component";
 import { RepPaymentsComponent } from "./pages/reports/rep-payments/rep-payments.component";
 import { InfFinancieraComponent } from "./pages/finanzas/inf-financiera/inf-financiera.component";
+import { InventaryLogComponent } from "./pages/sales/mdl/inventary-log/inventary-log.component";
 
 const routes: Routes = [
     {
@@ -143,6 +144,10 @@ const routes: Routes = [
         {
           path: 'inffinanciera',
           component: InfFinancieraComponent
+        },
+        {
+          path: 'inventaryLog',
+          component: InventaryLogComponent
         },
 
       ]
