@@ -10,6 +10,11 @@ const {
 
     , getAllActionsByPermission
     , insertActionsPermisionsByIdRelation
+    , insertUpdateActionSection
+    , getCatActionSectionListWithPage
+
+    , getActionsBySectionPagindo
+    , insertUpdateAction
   } = require('../controllers/actionsController');
 
    
@@ -51,5 +56,36 @@ router.post('/insertActionsPermisionsByIdRelation', [
 
   validarCampos
 ], insertActionsPermisionsByIdRelation);
+
+router.post('/insertUpdateActionSection', [
+
+  check('sectionName','Nombre obligatoría').not().isEmpty(),
+  
+  check('iLugar','Lugar obligatoría').not().isEmpty(),
+  check('iLugar','El lugar debe ser numérico').isNumeric(),
+  
+  validarCampos
+], insertUpdateActionSection);
+
+router.post('/getCatActionSectionListWithPage', getCatActionSectionListWithPage);
+
+router.post('/getActionsBySectionPagindo', [
+
+  check('idActionSection','id obligatorio').not().isEmpty(),
+  check('idActionSection','id lugar debe ser numérico').isNumeric(),
+  
+  validarCampos
+], getActionsBySectionPagindo);
+
+router.post('/insertUpdateAction', [
+
+  check('name','Nombre obligatoría').not().isEmpty(),
+  check('nameHtml','nameHtml obligatoría').not().isEmpty(),
+  
+  check('idActionSection','id obligatorio').not().isEmpty(),
+  check('idActionSection','id lugar debe ser numérico').isNumeric(),
+  
+  validarCampos
+], insertUpdateAction);
 
 module.exports = router;

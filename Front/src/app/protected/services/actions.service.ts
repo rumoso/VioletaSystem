@@ -14,14 +14,14 @@ export class ActionsService {
   private idSucursal: number = environment.idSucursal;
 
   _api: string = 'api/actions';
-  
+
   constructor(
     private http: HttpClient
     , private authServ: AuthService
   ) { }
 
   CGetActionListWithPage( pagination: Pagination ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -64,7 +64,7 @@ export class ActionsService {
   }
 
   CGetActionByUserListWithPage( idUser: number, pagination: Pagination ): Observable<ResponseGet> {
-    
+
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
 
@@ -99,7 +99,7 @@ export class ActionsService {
 
     data.idUserLogON = this.authServ.getIdUserSession();
     data.idSucursalLogON = this.idSucursal;
-    
+
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getAllActionsByPermission`, data);
 
   }
@@ -111,5 +111,47 @@ export class ActionsService {
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertActionsPermisionsByIdRelation`, data );
   }
-  
+
+  CInsertUpdateActionSection( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertUpdateActionSection`, data );
+  }
+
+  CGetCatActionSectionListWithPage( pagination: Pagination ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    let data: any = [];
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getCatActionSectionListWithPage`, data);
+
+  }
+
+  CGetActionsBySectionPagindo( pagination: Pagination, data: any ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    data.search = pagination.search;
+    data.start = start;
+    data.limiter = limiter;
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    console.log(data)
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getActionsBySectionPagindo`, data);
+
+  }
+
+  CInsertUpdateAction( data : any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertUpdateAction`, data );
+  }
+
 }

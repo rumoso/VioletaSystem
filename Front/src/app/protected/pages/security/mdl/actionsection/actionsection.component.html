@@ -1,0 +1,111 @@
+<div class="" style="padding: 30px;padding-top: 60px;">
+    <div class="divTitle-center">
+        {{title}}
+    </div>
+
+    <button mat-icon-button
+        style="position: absolute; top: 10px; right: 10px;"
+        (click)="fn_CerrarMDL(0)">
+    <mat-icon>close</mat-icon>
+    </button>
+
+    <div class="row top20px">
+
+        <div class="col-md-8">
+            <mat-form-field class="with100">
+                <mat-label>Nombre de la sección</mat-label>
+                <input matInput
+                        type="text"
+                        [(ngModel)]="oCatForm.sectionName">
+            </mat-form-field>
+        </div>
+
+        <div class="col-md-3">
+
+            <mat-form-field class="with100">
+                <mat-label>Lugar de acomodo</mat-label>
+                <input matInput
+                        type="number"
+                        [(ngModel)]="oCatForm.iLugar">
+            </mat-form-field>
+
+        </div>
+
+        <div class="col-md-1">
+            <mat-checkbox class="example-margin" [(ngModel)]="oCatForm.active">Activo</mat-checkbox>
+        </div>
+
+    </div>
+
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div style="float: left;">
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px"
+                (click)="fn_insertUpdateActionSection()"
+                [disabled]="!fn_validForm()">Guardar</button>
+
+                <button mat-raised-button
+                type="button"
+                (click)="fn_clear()">Limpiar</button>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="row top20px">
+        <div class="col-md-12">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <th class="textAlingCenter">Action</th>
+                        <th class="textAlingLeft">Nombre de la sección</th>
+                        <th class="textAlingCenter">Lugar de acomodo</th>
+                        <th class="textAlingCenter">Activo</th>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let item of oCatList; let i = index">
+
+                            <td class="textAlingCenter">
+                                <div style="width: 100px;">
+                                    <span class="material-icons manitaSobre colorGreen"
+                                    matTooltip="Editar"
+                                    (click)="fn_editData( item )">
+                                        edit
+                                    </span>
+                                    <span class="material-icons manitaSobre colorGreen"
+                                    matTooltip="Editar"
+                                    (click)="showActions( item.idActionSection )">
+                                    https
+                                    </span>
+
+                                </div>
+                            </td>
+
+                            <td class="textAlingLeft">{{ item.sectionName }}</td>
+                            <td class="textAlingCenter">{{ item.iLugar }}</td>
+                            <td class="textAlingCenter">
+                                <mat-checkbox class="example-margin" [(ngModel)]="item.active" disabled></mat-checkbox>
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+            </div>
+
+            <app-pagination *ngIf="oCatList" [IPagination]="pagination"
+                        (OPagination)="changePagination($event)">
+            </app-pagination>
+
+        </div>
+
+    </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

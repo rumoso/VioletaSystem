@@ -58,6 +58,8 @@ import { ChangepwdsecretwordComponent } from './pages/security/mdl/changepwdsecr
 import { RepPaymentsComponent } from './pages/reports/rep-payments/rep-payments.component';
 import { InfFinancieraComponent } from './pages/finanzas/inf-financiera/inf-financiera.component';
 import { InventaryLogComponent } from './pages/sales/mdl/inventary-log/inventary-log.component';
+import { ActionsectionComponent } from './pages/security/mdl/actionsection/actionsection.component';
+import { ActionComponent } from './pages/security/mdl/action/action.component';
 
 @NgModule({
     declarations: [
@@ -112,6 +114,8 @@ import { InventaryLogComponent } from './pages/sales/mdl/inventary-log/inventary
     RepPaymentsComponent,
     InfFinancieraComponent,
     InventaryLogComponent,
+    ActionsectionComponent,
+    ActionComponent,
   ],
     imports: [
         CommonModule,

@@ -180,7 +180,8 @@
 
                         <mat-label>Grupo: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
-                            (click)="showCat( 'Groups' )">
+                            (click)="showCat( 'Groups' )"
+                            *ngIf="prod_EditGrupos">
                             add_circle_outline
                         </span>
                             <mat-form-field
@@ -222,7 +223,8 @@
 
                         <mat-label>Familia: </mat-label>
                         <span class="material-icons manitaSobre colorGreen"
-                            (click)="showCat( 'Families' )">
+                            (click)="showCat( 'Families' )"
+                            *ngIf="prod_EditFamilias">
                             add_circle_outline
                         </span>
                             <mat-form-field

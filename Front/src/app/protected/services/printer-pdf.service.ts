@@ -60,12 +60,13 @@ export class PrinterPDFService {
   autoTable(doc, {
     startY: line,
     head: [[
-      '# Entrada', 'Código de barras', 'Nombre', 'Cantidad', 'Registrado por', 'Creado', 'Verificado', 'Mostrador', 'Activo'
+      '# Entrada', 'Código de barras', 'Nombre', 'Costo', 'Cantidad', 'Registrado por', 'Creado', 'Verificado', 'Mostrador', 'Activo'
     ]],
     body: listaVerificaciones.map((row: any) => [
       row.noEntrada,
       row.barCode,
       row.productName,
+      `$${Number( row.cost ).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
       row.cantidad,
       row.userName,
       row.createDate ? new Date(row.createDate).toLocaleDateString('es-MX') : '',

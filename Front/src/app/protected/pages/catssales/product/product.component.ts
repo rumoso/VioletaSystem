@@ -43,6 +43,10 @@ export class ProductComponent implements OnInit {
 
   inventaryLoglist: any[] = [];
 
+  prod_EditGrupos: boolean = false;
+  prod_EditFamilias: boolean = false;
+  prod_ModAutorizado: boolean = false;
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -123,12 +127,18 @@ export class ProductComponent implements OnInit {
       active: true,
       addInv: 1,
       idUser: 0,
-      bImprimir: true
+      bImprimir: true,
+      bAutorizado: false
     };
 
     async ngOnInit() {
       this.authServ.checkSession();
       this.idUserLogON = await this.authServ.getIdUserSession();
+
+      var oActions = await this.authServ.CGetActionsPermissionPromise( this.idUserLogON );
+      this.prod_EditGrupos = oActions.some( ( action: any ) => action.name === 'prod_EditGrupos');
+      this.prod_EditFamilias = oActions.some( ( action: any ) => action.name === 'prod_EditFamilias');
+      this.prod_ModAutorizado = oActions.some( ( action: any ) => action.name === 'prod_ModAutorizado');
 
       this.fn_getSelectPrintByIdUser( this.idUserLogON );
 
@@ -174,7 +184,8 @@ export class ProductComponent implements OnInit {
                 supplierDesc: resp.data.supplierDesc,
                 active: resp.data.active,
                 addInv: 1,
-                idUser: this.idUserLogON
+                idUser: this.idUserLogON,
+                bAutorizado: resp.data.bAutorizado
                };
 
 
@@ -217,6 +228,7 @@ export class ProductComponent implements OnInit {
       this.productForm.active = true;
       this.productForm.addInv = 1;
       this.productForm.bImprimir = true;
+      this.productForm.bAutorizado = false;
 
       setTimeout (() => {
 
@@ -261,7 +273,8 @@ export class ProductComponent implements OnInit {
       && this.productForm.barCode.length > 0
       && this.productForm.name.length > 0
       && this.productForm.cost >= 0
-      && this.productForm.price > 0){
+      && this.productForm.price > 0
+      && ( !this.productForm.bAutorizado || this.prod_ModAutorizado ) ){
         bOK = true;
       }
 

@@ -43,10 +43,17 @@
                     <div class="row">
                       <div class="col-md-12">
                         <div class="badge bg-primary text-wrap" style="font-size: 15px;">{{ seccionYPermisos.sectionName }}</div>
+                        <span class="material-icons manitaSobre colorGreen"
+                          (click)="showActionSection()">
+                          add_circle_outline
+                        </span>
                       </div>
                     </div>
                     <div class="row" *ngFor="let permiso of seccionYPermisos.actions">
-                      <div class="col-md-12">
+                      <div class="col-md-12" *ngIf="bAdminOrCeo">
+                        <span class="material-icons manitaSobre colorGreen" *ngIf="permiso.nSpecial != 0">
+                          lock
+                        </span>
                         <mat-checkbox class="example-margin"
                         [value]="permiso.idAction"
                         [(ngModel)]="permiso.bPermissionAction"

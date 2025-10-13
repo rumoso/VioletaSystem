@@ -1,7 +1,8 @@
 const { response } = require('express');
 const bcryptjs = require('bcryptjs');
+const moment = require('moment');
 
-const { dbConnection } = require('../database/config');
+const { dbConnection, dbSPConnection } = require('../database/config');
 
 const getActionListWithPage = async(req, res = response) => {
 
@@ -62,8 +63,9 @@ const getActionListWithPage = async(req, res = response) => {
 const insertAction = async(req, res) => {
    
   const {
-    name,
-    description
+    name
+    , description
+    , nSpecial = 0
 
     , idUserLogON
     , idSucursalLogON
@@ -75,11 +77,12 @@ const insertAction = async(req, res) => {
   try{
 
       var OSQL = await dbConnection.query(`call insertAction(
-          '${name}'
-          ,'${description}'
+            '${name}'
+            ,'${description}'
+            , ${ nSpecial }
 
-          , ${ idUserLogON }
-          )`)
+            , ${ idUserLogON }
+            )`)
 
         if(OSQL.length == 0){
   
@@ -220,82 +223,72 @@ const getAllActionsByPermission = async(req, res = response)=>{
 
 const insertActionsPermisionsByIdRelation = async(req, res) => {
    
-    const {
+    var {
         relationType
         , idRelation
         , seccionesYPermisos
 
         , idUserLogON
-        , idSucursalLogON
-
     } = req.body;
 
-    //console.log(req.body)
-
-    const tran = await dbConnection.transaction();
-    var bOK = true;
+    const connection = await dbSPConnection.getConnection();
+    await connection.beginTransaction();
 
     try{
 
-        var oClear = await dbConnection.query(`call clearActionsConfByIdRelation( '${ relationType }', ${ idRelation } )`,{ transaction: tran });
+        const jsonList = seccionesYPermisos
+        .flatMap(section => section.actions)
+        .map(action => ({
+            idAction: action.idAction,
+            bPermissionAction: action.bPermissionAction ? 1 : 0
+        }));
 
-        //console.log( oClear )
-
-        if(oClear[0].bOK > 0){
-
-            bOK = true;
-
-            for(var i = 0; i < seccionesYPermisos.length; i++){
-                for(var n = 0; n < seccionesYPermisos[i].actions.length; n++){
-                    //console.log( seccionesYPermisos[i].actions[n] )
-    
-                    if( seccionesYPermisos[i].actions[n].bPermissionAction ){
-
-                        var OSQLInsert = await dbConnection.query(`call insertActionByIdRelation(
-                            '${ relationType }'
-                            , ${ idRelation }
-                            , ${ seccionesYPermisos[i].actions[n].idAction }
-    
-                            , ${ idUserLogON }
-                        )`,{ transaction: tran })
-        
-                        if(OSQLInsert[0].out_id > 0){
-                            bOK = true;
-                        }else{
-                            bOK = false;
-                            break;
-                        }
-
-                    }
-    
-                }
-            }
-
-        }else{
-            bOK = false;
-        }
-
-        if(bOK){
-                    
-            await tran.commit();
-
-            res.json({
-                status: 0,
-                message: "Permisos guardados con éxito.",
-            });
-
-        }else{
-            
-            await tran.rollback();
-
+        if( jsonList.length == 0 ){
             res.json({
                 status: 1,
                 message: "No se guardaron los permisos."
             });
+        }else{
+
+            const jsonString = JSON.stringify(jsonList, null, 2);
+
+            console.log( `CALL insertUpdateActionsConf(
+                '${ relationType }'
+                , ${ idRelation }
+                , '${ jsonString }'
+                , ${ idUserLogON }
+                )` )
+                    
+            var oSQL = await connection.query(`CALL insertUpdateActionsConf(
+                '${ relationType }'
+                , ${ idRelation }
+                , '${ jsonString }'
+                , ${ idUserLogON }
+                )`);
+
+            var oSQL = oSQL[0][0];
+            console.log( oSQL )
+
+            if(oSQL[0].out_id == 0){
+                await connection.rollback();
+                connection.release();
+                return res.json({
+                    status: 2,
+                    message: 'No pudieron guardar los permisos'
+                });
+            }else if(oSQL[0].out_id > 0){
+                await connection.commit();
+                connection.release();
+                res.json({
+                    status: 0,
+                    message: "Permisos guardados con éxito.",
+                });
+            }
         }
 
     }catch(error){
-
+        await connection.rollback();
+        connection.release();
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
@@ -304,6 +297,204 @@ const insertActionsPermisionsByIdRelation = async(req, res) => {
     }
 }
 
+const insertUpdateActionSection = async(req, res) => {
+   
+    const {
+        idActionSection = 0
+        , sectionName
+        , iLugar
+        , active = false
+
+        , idUserLogON
+        , idSucursalLogON
+
+    } = req.body;
+
+    try
+    {
+
+        var OSQL = await dbConnection.query(`call insertUpdateActionSection(
+        ${ idActionSection }
+        ,'${ sectionName }'
+        , ${ iLugar }
+        , ${ active }
+
+        )`)
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message,
+            insertID: OSQL[0].out_id
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const getCatActionSectionListWithPage = async(req, res = response) => {
+
+    const {
+        search = ''
+        , limiter = 10
+        , start = 0
+       
+    } = req.body;
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getCatActionSectionListWithPage(
+            '${ search }'
+            ,${ start }
+            ,${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            });
+            
+        }
+        
+    }catch(error){
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const getActionsBySectionPagindo = async(req, res = response) => {
+
+    const {
+        idActionSection = 0
+        , search = ''
+        , limiter = 10
+        , start = 0
+       
+    } = req.body;
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getActionsBySectionPagindo(
+            ${ idActionSection }
+            ,'${ search }'
+            ,${ start }
+            ,${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            });
+            
+        }
+        
+    }catch(error){
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const insertUpdateAction = async(req, res) => {
+   
+    const {
+        idActionSection = 0
+        , idAction = 0
+        , name = ''
+        , nameHtml = ''
+        , description = ''
+        , active = false
+        , nSpecial = 0
+
+        , idUserLogON
+
+    } = req.body;
+
+    try
+    {
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        var OSQL = await dbConnection.query(`call insertUpdateAction(
+        '${ oGetDateNow }'
+        ,${ idActionSection }
+        ,${ idAction }
+        ,'${ name }'
+        ,'${ nameHtml }'
+        ,'${ description }'
+        , ${ active }
+        , ${ nSpecial }
+
+        )`)
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message,
+            insertID: OSQL[0].out_id
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
 
 module.exports = {
     getActionListWithPage
@@ -312,4 +503,9 @@ module.exports = {
 
     , getAllActionsByPermission
     , insertActionsPermisionsByIdRelation
+    , insertUpdateActionSection
+    , getCatActionSectionListWithPage
+
+    , getActionsBySectionPagindo
+    , insertUpdateAction
   }
