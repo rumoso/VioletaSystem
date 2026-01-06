@@ -371,10 +371,19 @@
                             (click)="fn_saveProduct()"
                             [disabled]="!fn_validForm()">Guardar</button>
 
+
                             <button mat-raised-button
                             type="button"
                             class="marginRight10px"
                             (click)="close()">Cancelar</button>
+
+                            <button id="btnSaveM"
+                            mat-raised-button
+                            color="primary"
+                            type="submit"
+                            class="marginRight10px"
+                            *ngIf="prod_UpdatePrice"
+                            (click)="fn_updateProductPrice()">Actualizar precio</button>
                         </div>
                     </div>
                 </div>

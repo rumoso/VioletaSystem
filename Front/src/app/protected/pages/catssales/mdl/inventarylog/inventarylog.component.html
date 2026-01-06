@@ -13,7 +13,7 @@
     <div class="row">
 
         <div class="col-md-4">
-            
+
             <mat-form-field class="example-full-width with100">
                 <mat-label># Entrada</mat-label>
                 <input #tbxNoEntrada
@@ -23,11 +23,11 @@
                 [(ngModel)]="inventaryLogForm.noEntrada"
                 (keyup)="ev_fn_noEntrada_keyup_enter( $event )">
             </mat-form-field>
-            
+
         </div>
 
         <div class="col-md-6">
-            
+
             <mat-form-field class="example-full-width with100">
                 <mat-label>Descripción</mat-label>
                 <input #tbxDescription
@@ -37,11 +37,11 @@
                 [(ngModel)]="inventaryLogForm.description"
                 (keyup)="ev_fn_description_keyup_enter( $event )">
             </mat-form-field>
-            
+
         </div>
 
         <div class="col-md-2">
-            
+
             <mat-form-field class="with100">
                 <mat-label>Cantidad</mat-label>
                 <input #tbxCantidad
@@ -52,9 +52,19 @@
                 [(ngModel)]="inventaryLogForm.cantidad"
                 (keyup)="ev_fn_amount_keyup_enter( $event )">
             </mat-form-field>
-            
+
         </div>
-            
+
+        <div class="col-md-3">
+            <mat-form-field class="with100">
+                <mat-label>Nuevo Precio:</mat-label>
+                <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
+                <input id="tbxPriceM" matInput placeholder="Ingrese un precio"
+                type="number"
+                [(ngModel)]="inventaryLogForm.newPrice">
+            </mat-form-field>
+        </div>
+
     </div>
 
     <div class="row top10px">
@@ -67,7 +77,7 @@
                 (click)="fn_insertInventaryLog()">
                 <mat-icon matPrefix class="my-icon">save</mat-icon>
                 Guardar</button>
-                
+
                 <button mat-raised-button
                 type="button"
                 class="marginRight10px"
@@ -81,11 +91,11 @@
                 (click)="fn_CerrarMDL()">
                 <mat-icon matPrefix class="my-icon">close</mat-icon>
                 Cerrar</button>
-                
+
             </div>
         </div>
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

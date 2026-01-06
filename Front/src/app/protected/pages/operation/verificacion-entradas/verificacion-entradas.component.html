@@ -173,6 +173,8 @@
                             <th class="textAlingLeft padding-th"># Entrada</th>
                             <th class="textAlingLeft padding-th">Código de barras</th>
                             <th class="textAlingLeft padding-th">Nombre</th>
+                            <th class="textAlingRight padding-th">Costo</th>
+                            <th class="textAlingRight padding-th">Nuevo Precio</th>
                             <th class="textAlingRight padding-th">Cantidad</th>
                             <th class="textAlingLeft padding-th">Registrado por</th>
                             <th class="textAlingCenter padding-th">Creado</th>
@@ -216,6 +218,8 @@
                               </td>
                               <td class="textAlingLeft">{{ item.productName }}</td>
 
+                              <td class="textAlingRight">{{ item.cost | currency }}</td>
+                              <td class="textAlingRight">{{ item.newPrice | currency }}</td>
                               <td class="textAlingRight">{{ item.cantidad }} piezas</td>
                               <td class="textAlingLeft">{{ item.userName }}</td>
                               <td class="textAlingCenter">{{ item.createDate | date:'dd-MM-yyyy' }}</td>

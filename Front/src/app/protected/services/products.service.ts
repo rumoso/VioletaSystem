@@ -354,4 +354,8 @@ export class ProductsService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/cancelDevolution`, data );
   }
 
+  updateProductPrice( data : any ): Observable<ResponseDB_CRUD> {
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateProductPrice`, data );
+  }
+
 }

@@ -46,6 +46,7 @@ export class ProductComponent implements OnInit {
   prod_EditGrupos: boolean = false;
   prod_EditFamilias: boolean = false;
   prod_ModAutorizado: boolean = false;
+  prod_UpdatePrice: boolean = false;
 
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
@@ -139,6 +140,7 @@ export class ProductComponent implements OnInit {
       this.prod_EditGrupos = oActions.some( ( action: any ) => action.name === 'prod_EditGrupos');
       this.prod_EditFamilias = oActions.some( ( action: any ) => action.name === 'prod_EditFamilias');
       this.prod_ModAutorizado = oActions.some( ( action: any ) => action.name === 'prod_ModAutorizado');
+      this.prod_UpdatePrice = oActions.some( ( action: any ) => action.name === 'prod_UpdatePrice');
 
       this.fn_getSelectPrintByIdUser( this.idUserLogON );
 
@@ -279,6 +281,46 @@ export class ProductComponent implements OnInit {
       }
 
       return bOK;
+    }
+
+    fn_updateProductPrice() {
+
+      var oParams = {
+        idProduct: this.idProduct,
+        price: this.productForm.price
+      }
+
+      if(this.idProduct > 0){
+        this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Se actualizará el precio del producto'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+          .afterClosed().subscribe({
+          next: ( resp: any ) =>{
+            if(resp){
+              this.bShowSpinner = true;
+              this.productsServ.updateProductPrice( oParams )
+                .subscribe({
+                  next: (resp: ResponseDB_CRUD) => {
+                    if( resp.status === 0 ){
+                      this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
+                    }
+                    else{
+                      this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
+                    }
+                    this.bShowSpinner = false;
+                  },
+                  error: (ex) => {
+                    this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+                    this.bShowSpinner = false;
+                  }
+                })
+            }
+          }
+        });
+
+
+      }
     }
 
     fn_saveProduct() {
