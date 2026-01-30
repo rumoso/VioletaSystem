@@ -39,7 +39,8 @@ inventaryLogForm: any = {
   description: '',
   noEntrada: '',
   idUserAutorizante: 0,
-  newPrice: 0
+  newPrice: 0,
+  newCost: 0
 
 };
 

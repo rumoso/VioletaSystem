@@ -57,14 +57,23 @@
 
         <div class="col-md-3">
             <mat-form-field class="with100">
+                <mat-label>Nuevo Costo:</mat-label>
+                <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
+                <input id="tbxCostM" matInput placeholder="Ingrese un costo"
+                type="number"
+                [(ngModel)]="inventaryLogForm.newCost">
+            </mat-form-field>
+        </div>
+        <div class="col-md-3">
+            <mat-form-field class="with100">
                 <mat-label>Nuevo Precio:</mat-label>
                 <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
                 <input id="tbxPriceM" matInput placeholder="Ingrese un precio"
                 type="number"
-                [(ngModel)]="inventaryLogForm.newPrice">
+                [(ngModel)]="inventaryLogForm.newPrice"
+                (keyup)="ev_fn_amount_keyup_enter( $event )">
             </mat-form-field>
         </div>
-
     </div>
 
     <div class="row top10px">

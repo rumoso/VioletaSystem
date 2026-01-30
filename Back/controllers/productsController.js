@@ -2,7 +2,7 @@ const { response } = require('express');
 const bcryptjs = require('bcryptjs');
 const moment = require('moment');
 
-const { createConexion, dbConnection } = require('../database/config');
+const { createConexion, dbConnection, dbSPConnection } = require('../database/config');
 
 const getProductsListWithPage = async(req, res = response) => {
 
@@ -627,6 +627,7 @@ const insertInventaryLog = async(req, res) => {
 
         , idUserAutorizante = 0
 
+        , newCost = 0
         , newPrice = 0
 
         , idUserLogON
@@ -658,6 +659,7 @@ const insertInventaryLog = async(req, res) => {
             , 0
             , 0
             , ${ idUserAutorizante }
+            , ${ newCost }
             , ${ newPrice }
 
             , ${ idUserLogON }
@@ -1431,7 +1433,8 @@ const updateFirmaEntradaInventario = async(req, res) => {
 
     //console.log(req.body)
 
-    const tran = await dbConnection.transaction();
+    const connection = await dbSPConnection.getConnection();
+    await connection.beginTransaction();
 
     var bOK = true;
 
@@ -1439,7 +1442,7 @@ const updateFirmaEntradaInventario = async(req, res) => {
 
         if( invSelectList.length == 0 ){
 
-            var OSQL = await dbConnection.query(`call updateFirmaEntradaInventario(
+            var oSQL = await connection.query(`call updateFirmaEntradaInventario(
                 '${ iOption }'
                 , ${ idProduct }
                 ,'${ startDate.substring(0, 10) }'
@@ -1449,24 +1452,24 @@ const updateFirmaEntradaInventario = async(req, res) => {
                 
                 , ${ idUserLogON }
                 )`)
-        
-            if(OSQL.length == 0){
-    
+            oSQL = oSQL[0][0][0];
+
+            if (oSQL.out_id > 0) {
+                await connection.commit();
+                connection.release();
+                res.json({
+                    status: 0,
+                    message: oSQL.message,
+                });
+            } else {
+                await connection.rollback();
+                connection.release();
                 res.json({
                     status: 1,
-                    message: "No se pudo realizar la acción."
+                    message: oSQL.message,
                 });
-    
             }
-            else{
-    
-                res.json({
-                    status: OSQL[0].out_id > 0 ? 0 : 1,
-                    message: OSQL[0].message
-                });
-    
-            }
-
+        
         }else if( invSelectList.length > 0 ){
 
             var sMessage = '';
@@ -1475,17 +1478,19 @@ const updateFirmaEntradaInventario = async(req, res) => {
 
                 var oInvSelect = invSelectList[i];
         
-                var OSQL2 = await dbConnection.query(`call updateFirmaEntradaInventarioByidInventarylog(
+                var OSQL2 = await connection.query(`call updateFirmaEntradaInventarioByidInventarylog(
                     '${ iOption }'
                       , ${ oInvSelect.idInventarylog }
                       , ${ auth_idUser }
 
                       , ${ idUserLogON }
-                      )`,{ transaction: tran })
+                      )`)
+                OSQL2 = OSQL2[0][0][0];
+                console.log(OSQL2)
 
-                  if(bOK && OSQL2[0].out_id > 0){
+                  if(bOK && OSQL2.out_id > 0){
                       bOK = true;
-                      sMessage = OSQL2[0].message;
+                      sMessage = OSQL2.message;
                   }else{
                       bOK = false;
                       break;
@@ -1494,26 +1499,21 @@ const updateFirmaEntradaInventario = async(req, res) => {
             }
 
             if(bOK){
-                await tran.commit();
-
+                await connection.commit();
+                connection.release();
                 res.json({
                     status: 0,
                     message: sMessage
                 });
-
             }else{
-
-                await tran.rollback();
-
+                await connection.rollback();
+                connection.release();
                 res.json({
                     status: 1,
                     message: "No se pudo realizar la acción."
                 });
-                
             }
-
         }
-
     }catch(error){
 
         res.json({
@@ -1569,6 +1569,7 @@ const saveDevoluInventario = async(req, res) => {
             , ''
             , 0
             , ${ auth_idUser }
+            , 0
             , 0
             , 0
             , ${ idUserLogON }

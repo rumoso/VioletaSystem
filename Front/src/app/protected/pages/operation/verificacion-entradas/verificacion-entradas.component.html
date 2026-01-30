@@ -173,8 +173,10 @@
                             <th class="textAlingLeft padding-th"># Entrada</th>
                             <th class="textAlingLeft padding-th">Código de barras</th>
                             <th class="textAlingLeft padding-th">Nombre</th>
-                            <th class="textAlingRight padding-th">Costo</th>
-                            <th class="textAlingRight padding-th">Nuevo Precio</th>
+                            <th class="textAlingRight padding-th">Costo Anterior</th>
+                            <th class="textAlingRight padding-th">Costo Actualizado</th>
+                            <th class="textAlingRight padding-th">Precio Anterior</th>
+                            <th class="textAlingRight padding-th">Precio Actualizado</th>
                             <th class="textAlingRight padding-th">Cantidad</th>
                             <th class="textAlingLeft padding-th">Registrado por</th>
                             <th class="textAlingCenter padding-th">Creado</th>
@@ -219,6 +221,8 @@
                               <td class="textAlingLeft">{{ item.productName }}</td>
 
                               <td class="textAlingRight">{{ item.cost | currency }}</td>
+                              <td class="textAlingRight">{{ item.newCost | currency }}</td>
+                              <td class="textAlingRight">{{ item.price | currency }}</td>
                               <td class="textAlingRight">{{ item.newPrice | currency }}</td>
                               <td class="textAlingRight">{{ item.cantidad }} piezas</td>
                               <td class="textAlingLeft">{{ item.userName }}</td>
