@@ -3,7 +3,7 @@ const { check } = require('express-validator')
 
 const { validarCampos } = require('../middlewares/validar-campos')
 
-const { 
+const {
   insertSale
   , getVentasListWithPage
   , getSaleByID
@@ -54,9 +54,29 @@ const {
 
   , getRepPagosWithPage
 
+  , addRefaccionTaller
+  , deleteRefaccionTaller
+  , addServicioExternoTaller
+  , deleteServicioExternoTaller
+  , addMetalAgranel
+  , deleteMetalAgranel
+  , getTallerMetalesAgranel
+  , addMetalCliente
+  , deleteMetalCliente
+  , getTallerMetalesCliente
+  , uploadMetalClienteImage
+  , getMetalClienteImages
+  , deleteMetalClienteImage
+  , saveTallerHeader
+  , getTallerByID
+  , getTallerPaginado
+  , getTallerRefaccciones
+  , getTallerServiciosExternos
+  , cbxGetServiciosExternosCombo
+
 } = require('../controllers/salesController');
 
-   
+
 const router = Router();
 
 router.post('/insertSale', [
@@ -302,5 +322,129 @@ router.post('/getDatosRelacionadosByIDCorteCaja', [
 router.post('/getRepPagosCanceladosWithPage', getRepPagosCanceladosWithPage);
 
 router.post('/getRepPagosWithPage', getRepPagosWithPage);
+
+router.post('/addRefaccionTaller', [
+
+  check('refaccion','Refacción obligatoria').not().isEmpty(),
+
+  validarCampos
+], addRefaccionTaller);
+
+router.post('/deleteRefaccionTaller', [
+
+  check('idRefaccion','id de Refacción obligatorio').not().isEmpty(),
+  check('idRefaccion','id de Refacción debe ser numérico').isNumeric(),
+
+  validarCampos
+], deleteRefaccionTaller);
+
+router.post('/addServicioExternoTaller', [
+
+  check('servicioExterno','Servicio Externo obligatorio').not().isEmpty(),
+
+  validarCampos
+], addServicioExternoTaller);
+
+router.post('/deleteServicioExternoTaller', [
+
+  check('idServicioExternoDetalle','id de Servicio Externo obligatorio').not().isEmpty(),
+  check('idServicioExternoDetalle','id de Servicio Externo debe ser numérico').isNumeric(),
+
+  validarCampos
+], deleteServicioExternoTaller);
+
+router.post('/saveTallerHeader', [
+
+  check('idSeller_idUser','Vendedor obligatorio').not().isEmpty(),
+  check('idSeller_idUser','El Vendedor debe ser numérico').isNumeric(),
+
+  check('idCustomer','Cliente obligatorio').not().isEmpty(),
+  check('idCustomer','El Cliente debe ser numérico').isNumeric(),
+
+  check('descripcion','Descripción obligatoria').not().isEmpty(),
+
+  validarCampos
+], saveTallerHeader);
+
+router.post('/getTallerServiciosExternos', [
+
+  check('idTaller','id del Taller obligatorio').not().isEmpty(),
+
+  validarCampos
+], getTallerServiciosExternos);
+
+router.post('/getTallerByID', [
+
+  check('idTaller','id de la Venta obligatorio').not().isEmpty(),
+
+  validarCampos
+], getTallerByID);
+
+router.post('/addMetalAgranel', [
+  check('metalAgranel','Metal Agranel obligatorio').not().isEmpty(),
+
+  validarCampos
+], addMetalAgranel);
+
+router.post('/deleteMetalAgranel', [
+
+  check('idMetalAgranel','id de Metal Agranel obligatorio').not().isEmpty(),
+  check('idMetalAgranel','id de Metal Agranel debe ser numérico').isNumeric(),
+
+  validarCampos
+], deleteMetalAgranel);
+
+router.post('/getTallerMetalesAgranel', [
+
+  check('idTaller','id del Taller obligatorio').not().isEmpty(),
+
+  validarCampos
+], getTallerMetalesAgranel);
+
+router.post('/addMetalCliente', [
+  check('metalCliente','Metal del Cliente obligatorio').not().isEmpty(),
+  validarCampos
+], addMetalCliente);
+
+router.post('/deleteMetalCliente', [
+
+  check('idMetalCliente','id de Metal Cliente obligatorio').not().isEmpty(),
+  check('idMetalCliente','id de Metal Cliente debe ser numérico').isNumeric(),
+
+  validarCampos
+], deleteMetalCliente);
+
+router.post('/getTallerMetalesCliente', [
+
+  check('idTaller','id del Taller obligatorio').not().isEmpty(),
+
+  validarCampos
+], getTallerMetalesCliente);
+
+router.post('/uploadMetalClienteImage', uploadMetalClienteImage);
+
+router.post('/getMetalClienteImages', [
+
+  check('idMetalCliente','id de Metal Cliente obligatorio').not().isEmpty(),
+
+  validarCampos
+], getMetalClienteImages);
+
+router.post('/deleteMetalClienteImage', [
+
+  check('keyX','id de imagen obligatorio').not().isEmpty(),
+  check('keyX','id de imagen debe ser numérico').isNumeric(),
+
+  validarCampos
+], deleteMetalClienteImage);
+
+router.post('/getTallerPaginado', getTallerPaginado);
+
+router.post('/getTallerRefaccciones', getTallerRefaccciones);
+
+router.post('/cbxGetServiciosExternosCombo', [
+
+  validarCampos
+], cbxGetServiciosExternosCombo);
 
 module.exports = router;

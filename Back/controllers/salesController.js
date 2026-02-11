@@ -2419,6 +2419,831 @@ const getRepPagosWithPage = async(req, res = response) => {
 
 };
 
+const addRefaccionTaller = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        refaccion,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
+
+    try {
+
+        // Ahora insertar la refacción como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idRefaccion = refaccion.idRefaccion || 0;
+            var idProduct = refaccion.idProduct || 0;
+            var productDesc = refaccion.productDesc || '';
+            var cantidad = refaccion.cantidad || 1;
+            var precio = refaccion.precio || 0;
+            var costo = refaccion.costo || 0;
+            var tipoRefaccion = refaccion.tipo || 'porDefinir';
+
+            var OSQL_InsertRefaccion = await dbConnection.query(`call insertUpdateTallerRefacciones(
+                ${ idRefaccion }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , ${ idProduct }
+                , '${ productDesc }'
+                , '${ cantidad }'
+                , '${ costo }'
+                , '${ precio }'
+                , ${ idUserLogON }
+            )`);
+
+            res.json({
+                status: OSQL_InsertRefaccion[0].out_id > 0 ? 0 : 1,
+                message: OSQL_InsertRefaccion[0].message,
+            });
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteRefaccionTaller = async(req, res = response) => {
+
+    const {
+        idRefaccion,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        var OSQL = await dbConnection.query(`call deleteRefaccionTaller(
+            ${ idRefaccion }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`);
+        console.log(OSQL)
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const addServicioExternoTaller = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        servicioExterno,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
+
+    try {
+
+        // Ahora insertar el servicio externo como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idServicioExternoDetalle = servicioExterno.idServicioExternoDetalle || 0;
+            var idServicioExterno = servicioExterno.idServicioExterno || 0;
+            var nombre = servicioExterno.nombre || '';
+            var cantidad = servicioExterno.cantidad || 1;
+            var precio = servicioExterno.precio || 0;
+            var costo = servicioExterno.costo || 0;
+
+            var OSQL_InsertServicioExterno = await dbConnection.query(`call insertUpdateTallerServiciosExternos(
+                ${ idServicioExternoDetalle }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , ${ idServicioExterno }
+                , '${ cantidad }'
+                , '${ costo }'
+                , '${ precio }'
+                , ${ idUserLogON }
+            )`);
+
+            res.json({
+                status: OSQL_InsertServicioExterno[0].out_id > 0 ? 0 : 1,
+                message: OSQL_InsertServicioExterno[0].message
+            });
+        }
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteServicioExternoTaller = async(req, res = response) => {
+
+    const {
+        idServicioExternoDetalle,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        var OSQL = await dbConnection.query(`call deleteServicioExternoTaller(
+            ${ idServicioExternoDetalle }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`);
+        console.log(OSQL)
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const saveTallerHeader = async(req, res) => {
+
+    var {
+        idTaller = 0,
+        idSale = '',
+        idSeller_idUser = 0,
+        idCustomer = 0,
+        descripcion = '',
+        fechaIngreso = '',
+        fechaPrometidaEntrega = '',
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        var oSQLInsert = await dbConnection.query(`call insertUpdateSaleTaller(
+            '${oGetDateNow}'
+            , '${idSale}'
+            , ${idSucursalLogON}
+            , ${idSeller_idUser}
+            , ${idCustomer}
+            , '${fechaIngreso ? fechaIngreso.substring(0, 10) : ''}'
+            , '${fechaPrometidaEntrega ? fechaPrometidaEntrega.substring(0, 10) : ''}'
+            , '${descripcion}'
+
+            , ${idUserLogON}
+        )`);
+
+        if (oSQLInsert.length > 0) {
+            idSale = oSQLInsert[0].idSale;
+            idTaller = oSQLInsert[0].idTaller;
+            res.json({
+                status: 0,
+                message: "Taller creado con éxito.",
+                data: {
+                    idSale: idSale,
+                    idTaller: idTaller
+                }
+            });
+        } else {
+            res.json({
+                status: 1,
+                message: "No se pudo crear el taller."
+            });
+        }
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerByID = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    ////console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getTallerByID( '${ idTaller }' )`)
+  
+        if(OSQL.length == 0){
+      
+            res.json({
+                status: 1,
+                message: "No se encontró la venta.",
+                data: null
+            });
+    
+        }
+        else{
+
+            var oRefacciones = await dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`)
+            var oServiciosExternos = await dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`)
+            var oMetalesAgranel = await dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`)
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: {
+                    oTaller: OSQL[0],
+                    refaccionesDetail: oRefacciones,
+                    serviciosExternos: oServiciosExternos,
+                    metalesAgranel: oMetalesAgranel
+                }
+                
+                //dataPayments: OSQL3
+            });
+    
+        }
+
+    }catch(error){
+            
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  
+};
+
+const getTallerPaginado = async(req, res = response) => {
+
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSale = ''
+
+        , bCancel = false
+        , bPending = false
+        , bPagada = false
+
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        if (bPending && bPagada)
+        {
+            bPending = false;
+            bPagada = false;
+        }
+
+        var OSQL = await dbConnection.query(`call getTallerPaginado(
+            '${ createDateStart.substring(0, 10) }'
+            , '${ createDateEnd.substring(0, 10) }'
+            , ${ idCustomer }
+            , '${ idSale }'
+
+            , ${ bCancel }
+            , ${ bPending }
+            , ${ bPagada }
+
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            , ${ idUserLogON }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                count: iRows,
+                rows: OSQL
+                }
+            });
+            
+        }
+
+        //await dbConnection.close();
+        
+    }catch(error){
+
+        //await dbConnection.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerRefaccciones = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oRefacciones = await dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                refaccionesDetail: oRefacciones
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const getTallerServiciosExternos = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oServiciosExternos = await dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                serviciosExternosDetail: oServiciosExternos
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const cbxGetServiciosExternosCombo = async(req, res = response) => {
+
+    const {
+        search = ''
+    } = req.body;
+  
+    try{
+
+        var OSQL = await dbConnection.query(`call cbxGetServiciosExternosCombo( '${search}' )`)
+
+        if(OSQL.length == 0){
+        
+                res.json({
+                    status: 2,
+                    message: "No se encontró información.",
+                    data: null
+                });
+        
+            }
+            else{
+        
+                res.json({
+                    status: 0,
+                    message: "Ejecutado correctamente.",
+                    data: OSQL
+                });
+        
+            }
+
+    }catch(error){
+        
+        res.json({
+            status: 3,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  
+};
+
+const addMetalAgranel = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        metalAgranel,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
+
+    try {
+
+        // Ahora insertar el metal agranel como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idMetalAgranel = metalAgranel.idMetalAgranel || 0;
+            var tipo = metalAgranel.tipo || 'oro';
+            var gramos = metalAgranel.gramos || 0;
+            var kilates = metalAgranel.kilates || 8;
+            var valorMetal = metalAgranel.valorMetal || 0;
+
+            var OSQL_InsertMetalAgranel = await dbConnection.query(`call insertUpdateTallerMetalAgranel(
+                ${ idMetalAgranel }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , '${ tipo }'
+                , ${ gramos }
+                , ${ kilates }
+                , ${ valorMetal }
+                , ${ idUserLogON }
+            )`);
+
+            res.json({
+                status: OSQL_InsertMetalAgranel[0].out_id > 0 ? 0 : 1,
+                message: OSQL_InsertMetalAgranel[0].message
+            });
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteMetalAgranel = async(req, res = response) => {
+
+    const {
+        idMetalAgranel,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        var OSQL = await dbConnection.query(`call deleteMetalAgranel(
+            ${ idMetalAgranel }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`);
+        console.log(OSQL)
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerMetalesAgranel = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oMetalesAgranel = await dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                metalesAgranelDetail: oMetalesAgranel
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const addMetalCliente = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        metalCliente,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
+
+    try {
+
+        // Ahora insertar el metal cliente como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idMetalCliente = metalCliente.idMetalCliente || 0;
+            var tipo = metalCliente.tipo || 'oro';
+            var gramos = metalCliente.gramos || 0;
+            var kilates = metalCliente.kilates || 8;
+            var valorMetal = metalCliente.valorMetal || 0;
+
+            var OSQL_InsertMetalCliente = await dbConnection.query(`call insertUpdateTallerMetalCliente(
+                ${ idMetalCliente }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , '${ tipo }'
+                , ${ gramos }
+                , ${ kilates }
+                , ${ valorMetal }
+                , ${ idUserLogON }
+            )`);
+
+            if (OSQL_InsertMetalCliente[0].out_id > 0) {
+                bOK = true;
+            } else {
+                bOK = false;
+            }
+
+            if (bOK) {
+                res.json({
+                    status: 0,
+                    message: "Activo Cliente agregado con éxito.",
+                    data: {
+                        idSale: idSale,
+                        idTaller: idTaller
+                    }
+                });
+            } else {
+                res.json({
+                    status: 1,
+                    message: "No se registró el activo cliente."
+                });
+            }
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteMetalCliente = async(req, res = response) => {
+
+    const {
+        idMetalCliente,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        var OSQL = await dbConnection.query(`call deleteMetalCliente(
+            ${ idMetalCliente }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`);
+        console.log(OSQL)
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].out_id > 0 ? 'Activo Cliente eliminado con éxito' : 'No se pudo eliminar el activo cliente'
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerMetalesCliente = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oMetalesCliente = await dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                metalesClienteDetail: oMetalesCliente
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const uploadMetalClienteImage = async(req, res = response) => {
+
+    const {
+        idMetalCliente,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        if (!req.file) {
+            return res.json({
+                status: 2,
+                message: "No se seleccionó archivo"
+            });
+        }
+
+        const nombreImagenOriginal = req.file.originalname;
+        const nombreImagenNew = `${idMetalCliente}_${Date.now()}.${req.file.originalname.split('.').pop()}`;
+        const urlImg = `/uploads/taller/metales/${nombreImagenNew}`;
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        // Guardar registro en BD
+        const OSQL = await dbConnection.query(`call insertMetalClienteImg(
+            ${ idMetalCliente }
+            , '${ oGetDateNow }'
+            , '${ nombreImagenOriginal.replace(/'/g, "''") }'
+            , '${ nombreImagenNew }'
+            , '${ urlImg }'
+        )`);
+
+        if (OSQL[0].out_id > 0) {
+            res.json({
+                status: 0,
+                message: "Imagen subida con éxito",
+                data: {
+                    keyX: OSQL[0].out_id,
+                    urlImg: urlImg,
+                    nombreImgNew: nombreImagenNew
+                }
+            });
+        } else {
+            res.json({
+                status: 1,
+                message: "No se pudo guardar la imagen en la base de datos"
+            });
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getMetalClienteImages = async(req, res = response) => {
+
+    const {
+        idMetalCliente
+    } = req.body;
+  
+    try{
+        var oImagesCliente = await dbConnection.query(`call getMetalClienteImgs( '${ idMetalCliente }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                imagesDetail: oImagesCliente
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const deleteMetalClienteImage = async(req, res = response) => {
+
+    const {
+        keyX,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        var OSQL = await dbConnection.query(`call deleteMetalClienteImg(
+            ${ keyX }
+        )`);
+        
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
 module.exports = {
     insertSale
     , getVentasListWithPage
@@ -2471,5 +3296,25 @@ module.exports = {
     , getRepPagosCanceladosWithPage
 
     , getRepPagosWithPage
+
+    , addRefaccionTaller
+    , deleteRefaccionTaller
+    , addServicioExternoTaller
+    , deleteServicioExternoTaller
+    , saveTallerHeader
+    , getTallerByID
+    , getTallerPaginado
+    , getTallerRefaccciones
+    , getTallerServiciosExternos
+    , cbxGetServiciosExternosCombo
+    , addMetalAgranel
+    , deleteMetalAgranel
+    , getTallerMetalesAgranel
+    , addMetalCliente
+    , deleteMetalCliente
+    , getTallerMetalesCliente
+    , uploadMetalClienteImage
+    , getMetalClienteImages
+    , deleteMetalClienteImage
 
 }

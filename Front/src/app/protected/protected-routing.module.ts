@@ -27,6 +27,7 @@ import { PagosCanceladosComponent } from "./pages/reports/pagos-cancelados/pagos
 import { RepPaymentsComponent } from "./pages/reports/rep-payments/rep-payments.component";
 import { InfFinancieraComponent } from "./pages/finanzas/inf-financiera/inf-financiera.component";
 import { InventaryLogComponent } from "./pages/sales/mdl/inventary-log/inventary-log.component";
+import { TallerListComponent } from "./pages/sales/taller-list/taller-list.component";
 
 const routes: Routes = [
     {
@@ -148,6 +149,10 @@ const routes: Routes = [
         {
           path: 'inventaryLog',
           component: InventaryLogComponent
+        },
+        {
+          path: 'tallerList',
+          component: TallerListComponent
         },
 
       ]

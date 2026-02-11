@@ -60,6 +60,8 @@ import { InfFinancieraComponent } from './pages/finanzas/inf-financiera/inf-fina
 import { InventaryLogComponent } from './pages/sales/mdl/inventary-log/inventary-log.component';
 import { ActionsectionComponent } from './pages/security/mdl/actionsection/actionsection.component';
 import { ActionComponent } from './pages/security/mdl/action/action.component';
+import { TallerListComponent } from "./pages/sales/taller-list/taller-list.component";
+import { TallerComponent } from './pages/sales/mdl/taller/taller.component';
 
 @NgModule({
     declarations: [
@@ -73,6 +75,7 @@ import { ActionComponent } from './pages/security/mdl/action/action.component';
     CustomerComponent,
     FxrateComponent,
     SaleListComponent,
+    TallerListComponent,
     NsaleComponent,
     PaymentsComponent,
     ElectronicMoneyMDLComponent,
@@ -116,6 +119,7 @@ import { ActionComponent } from './pages/security/mdl/action/action.component';
     InventaryLogComponent,
     ActionsectionComponent,
     ActionComponent,
+    TallerComponent,
   ],
     imports: [
         CommonModule,

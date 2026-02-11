@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const { dbConnection } = require('../database/config');
 
 class Server{
@@ -62,6 +65,44 @@ class Server{
 
         //Directorio público
         this.app.use(express.static('public'));
+
+        // Configurar multer para metal cliente images
+        const uploadDir = path.join(__dirname, '../uploads/taller/metales');
+        
+        // Crear directorio si no existe
+        if (!fs.existsSync(uploadDir)){
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        // Configurar almacenamiento en disco
+        const storage = multer.diskStorage({
+            destination: function (req, file, cb) {
+                cb(null, uploadDir);
+            },
+            filename: function (req, file, cb) {
+                const ext = path.extname(file.originalname);
+                cb(null, file.fieldname + '-' + Date.now() + ext);
+            }
+        });
+
+        // Configurar multer con validaciones
+        const uploadMetalClienteImage = multer({ 
+            storage: storage,
+            limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+            fileFilter: (req, file, cb) => {
+                if (file.mimetype.startsWith('image/')) {
+                    cb(null, true);
+                } else {
+                    cb(new Error('Solo se permiten archivos de imagen'));
+                }
+            }
+        }).single('file');
+
+        // Guardar en this para uso en rutas
+        this.uploadMetalClienteImage = uploadMetalClienteImage;
+
+        // Servir archivos estáticos desde uploads
+        this.app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
         // Add headers before the routes are defined
         // this.app.use(function (req, res, next) {

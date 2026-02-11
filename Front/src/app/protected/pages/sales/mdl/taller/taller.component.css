@@ -1,0 +1,502 @@
+.divMain {
+    padding: 20px;
+    background: #f5f5f5;
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.with100 {
+    width: 100%;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+.col-md-3 {
+    flex: 0 0 25%;
+    max-width: 25%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+.col-md-4 {
+    flex: 0 0 33.333%;
+    max-width: 33.333%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+.col-md-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+.col-md-8 {
+    flex: 0 0 66.666%;
+    max-width: 66.666%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+.col-md-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+.top10px {
+    margin-top: 10px;
+}
+
+.top15px {
+    margin-top: 15px;
+}
+
+.top20px {
+    margin-top: 20px;
+}
+
+.top30px {
+    margin-top: 30px;
+}
+
+.marginRight10px {
+    margin-right: 10px;
+}
+
+mat-form-field {
+    width: 100%;
+}
+
+textarea {
+    font-family: 'Arial', sans-serif;
+    resize: vertical;
+}
+
+button {
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+button:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.my-icon {
+    margin-right: 8px;
+}
+
+/* ESTILOS DE REFACCIONES */
+.card-refacciones {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.header-refacciones {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-refacciones h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.total-refacciones {
+    font-size: 16px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+}
+
+.body-refacciones {
+    padding: 20px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 20px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #666;
+}
+
+.radio-option mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.form-producto,
+.form-por-definir {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #667eea;
+}
+
+.total-display {
+    padding: 10px 15px;
+    background: #e8f5e9;
+    border-radius: 6px;
+    text-align: center;
+    color: #2e7d32;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+}
+
+.btn-agregar {
+    width: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+}
+
+.btn-agregar mat-icon {
+    margin-right: 8px;
+}
+
+/* TABLA DE REFACCIONES */
+.table-refacciones {
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.table thead {
+    background: #f5f5f5;
+}
+
+.header-table {
+    background: #eeeeee;
+}
+
+.header-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    transition: background-color 0.3s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.row-refaccion td {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+.col-descripcion {
+    width: 40%;
+    font-weight: 500;
+}
+
+.col-cantidad,
+.col-costo,
+.col-total {
+    width: 15%;
+}
+
+.col-acciones {
+    width: 10%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.icon-delete {
+    color: #d32f2f;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.icon-delete:hover {
+    transform: scale(1.2);
+}
+
+/* ESTADO VACÍO */
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border: 2px dashed #ddd;
+}
+
+.empty-state mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #ddd;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    margin: 10px 0 0 0;
+    font-size: 16px;
+}
+
+/* SECCIÓN DE IMÁGENES - METAL CLIENTE */
+.images-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.images-section h4 {
+    color: #333;
+    font-weight: 600;
+    margin: 0;
+}
+
+.btn-upload {
+    margin-left: 10px;
+}
+
+/* PREVIEW DE IMAGEN */
+.image-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.image-preview img {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* CARRUSEL DE IMÁGENES */
+.carousel-section {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.carousel-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+}
+
+.carousel-btn {
+    flex-shrink: 0;
+}
+
+.carousel-btn.prev,
+.carousel-btn.next {
+    background: #667eea;
+    color: white;
+}
+
+.carousel-btn.prev:hover,
+.carousel-btn.next:hover {
+    background: #764ba2;
+}
+
+.carousel-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.carousel-image img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+}
+
+.carousel-info {
+    margin-top: 15px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* MINIATURAS */
+.thumbnails-section {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 15px;
+}
+
+.thumbnails-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.thumbnail-item {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.thumbnail-item:hover {
+    transform: scale(1.05);
+}
+
+.thumbnail-item img {
+    display: block;
+    border-radius: 3px;
+    background: white;
+    padding: 2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.thumbnail-item button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    padding: 4px;
+    display: none;
+    min-width: auto;
+    min-height: auto;
+}
+
+.thumbnail-item:hover button {
+    display: flex;
+}
+
+.thumbnail-item button:hover {
+    background: #ffebee;
+    border-color: #d32f2f;
+}
+
+.thumbnail-item button mat-icon {
+    color: #d32f2f;
+}
+
+/* ESTADO VACÍO DE IMÁGENES */
+.empty-state.images-empty {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border: 2px dashed #ddd;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .col-md-3,
+    .col-md-4,
+    .col-md-6,
+    .col-md-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .col-descripcion,
+    .col-cantidad,
+    .col-costo,
+    .col-total,
+    .col-acciones {
+        width: auto;
+    }
+
+    .header-refacciones h3 {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .total-refacciones {
+        width: 100%;
+        text-align: center;
+    }
+
+    .radio-group {
+        flex-direction: column;
+    }
+
+    .carousel-container {
+        flex-direction: column;
+    }
+
+    .carousel-image {
+        width: 100%;
+        min-height: 250px;
+    }
+
+    .thumbnails-container {
+        justify-content: flex-start;
+    }
+
+    .carousel-btn {
+        width: 40px;
+        height: 40px;
+    }
+}

@@ -606,4 +606,214 @@ export class SalesService {
 
   }
 
+  CAddRefaccionTaller( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/addRefaccionTaller`, data );
+
+  }
+
+  CDeleteRefaccionTaller( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteRefaccionTaller`, data );
+
+  }
+
+  CGetTallerByID( data: any ): Observable<ResponseGet> {
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerByID`, data);
+  }
+
+  getTallerPaginado( pagination: Pagination, params: any ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    // Validar si los filtros están vacíos
+    const isEmpty = (
+      (!params.idSale || params.idSale.trim() === '') &&
+      (!params.idCustomer || params.idCustomer === '' || params.idCustomer == 0) &&
+      (!params.bCancel && !params.bPending && !params.bPagada) &&
+      (!params.createDateStart || params.createDateStart === '') &&
+      (!params.createDateEnd || params.createDateEnd === '')
+    );
+
+    // Si están vacíos, asignar fecha de hoy en formato ddMMyyyy
+    if (isEmpty) {
+      const today = new Date();
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const fechaFin = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(today.getDate() - 3);
+      const fechaInicio = `${threeDaysAgo.getFullYear()}-${pad(threeDaysAgo.getMonth() + 1)}-${pad(threeDaysAgo.getDate())}`;
+
+      params.createDateStart = fechaInicio;
+      params.createDateEnd = fechaFin;
+    }
+
+    const data: any = {
+      createDateStart: params.createDateStart
+      , createDateEnd: params.createDateEnd
+      , idCustomer: params.idCustomer
+      , idSale: params.idSale
+
+      , bCancel: params.bCancel
+      , bPending: params.bPending
+      , bPagada: params.bPagada
+
+      ,start: start
+      ,limiter: limiter
+
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerPaginado`, data );
+
+  }
+
+  getTallerRefaccciones( data: any ): Observable<ResponseGet> {
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerRefaccciones`, data);
+  }
+
+  CCbxGetServiciosExternosCombo( search: string ): Observable<ResponseGet> {
+    const data: any = {
+      search: search
+    };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetServiciosExternosCombo`, data);
+  }
+
+  CAddServicioExternoTaller( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/addServicioExternoTaller`, data );
+
+  }
+
+  CSaveTallerHeader( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/saveTallerHeader`, data );
+
+  }
+
+  getTallerServiciosExternos( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerServiciosExternos`, data);
+
+  }
+
+  CDeleteServicioExternoTaller( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteServicioExternoTaller`, data );
+
+  }
+
+  CAddMetalAgranel( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/addMetalAgranel`, data );
+
+  }
+
+  CDeleteMetalAgranel( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteMetalAgranel`, data );
+
+  }
+
+  getTallerMetalesAgranel( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerMetalesAgranel`, data);
+
+  }
+
+  CAddMetalCliente( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/addMetalCliente`, data );
+
+  }
+
+  CDeleteMetalCliente( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteMetalCliente`, data );
+
+  }
+
+  getTallerMetalesCliente( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerMetalesCliente`, data);
+
+  }
+
+  uploadMetalClienteImage(file: File, idMetalCliente: number): Observable<ResponseGet> {
+
+    var idUserLogON = this.authServ.getIdUserSession();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('idMetalCliente', idMetalCliente.toString());
+    formData.append('idUserLogON', idUserLogON.toString());
+    formData.append('idSucursalLogON', this.idSucursal.toString());
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/uploadMetalClienteImage`, formData);
+
+  }
+
+  getMetalClienteImages( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getMetalClienteImages`, data);
+
+  }
+
+  deleteMetalClienteImage( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteMetalClienteImage`, data);
+
+  }
+
 }

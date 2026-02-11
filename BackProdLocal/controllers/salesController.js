@@ -1,5 +1,6 @@
 const { response } = require('express');
 const bcryptjs = require('bcryptjs');
+const moment = require('moment');
 
 const { createConexion, dbConnection } = require('../database/config');
 
@@ -644,6 +645,121 @@ const getPreCorteCaja = async(req, res = response) => {
 
   
 
+
+
+// METAL CLIENTE IMAGES
+const uploadMetalClienteImage = async(req, res = response) => {
+
+    const {
+        idMetalCliente,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        if (!req.file) {
+            return res.json({
+                status: 2,
+                message: "No se seleccionó archivo"
+            });
+        }
+
+        const nombreImagenOriginal = req.file.originalname;
+        const nombreImagenNew = `${idMetalCliente}_${Date.now()}.${req.file.originalname.split('.').pop()}`;
+        const urlImg = `/uploads/taller/metales/${nombreImagenNew}`;
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        // Guardar registro en BD
+        const OSQL = await dbConnection.query(`call insertMetalClienteImg(
+            ${ idMetalCliente }
+            , '${ oGetDateNow }'
+            , '${ nombreImagenOriginal.replace(/'/g, "''") }'
+            , '${ nombreImagenNew }'
+            , '${ urlImg }'
+        )`);
+
+        if (OSQL[0].out_id > 0) {
+            res.json({
+                status: 0,
+                message: "Imagen subida con éxito",
+                data: {
+                    keyX: OSQL[0].out_id,
+                    urlImg: urlImg,
+                    nombreImgNew: nombreImagenNew
+                }
+            });
+        } else {
+            res.json({
+                status: 1,
+                message: "No se pudo guardar la imagen en la base de datos"
+            });
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getMetalClienteImages = async(req, res = response) => {
+
+    const {
+        idMetalCliente
+    } = req.body;
+  
+    try{
+        var oImagesCliente = await dbConnection.query(`call getMetalClienteImgs( '${ idMetalCliente }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                imagesDetail: oImagesCliente
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const deleteMetalClienteImage = async(req, res = response) => {
+
+    const {
+        keyX,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        var OSQL = await dbConnection.query(`call deleteMetalClienteImg(
+            ${ keyX }
+        )`);
+        
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
 module.exports = {
     insertSale
     , getVentasListWithPage
@@ -653,8 +769,10 @@ module.exports = {
     , insertSaleByConsignation
     , regresarProductoDeConsignacion
 
-    , getPreCorteCaja
-
+    , getPreCorteCaja    
+    , uploadMetalClienteImage
+    , getMetalClienteImages
+    , deleteMetalClienteImage
   }
 
 

@@ -14,7 +14,9 @@ const {
 
    , getPreCorteCaja
 
-
+   , uploadMetalClienteImage
+   , getMetalClienteImages
+   , deleteMetalClienteImage
    } = require('../controllers/salesController');
 
    
@@ -103,6 +105,21 @@ router.post('/getPreCorteCaja', [
 
   validarCampos
 ], getPreCorteCaja);
+
+// TALLER - METAL CLIENTE IMAGES
+router.post('/uploadMetalClienteImage', uploadMetalClienteImage);
+
+router.post('/getMetalClienteImages', [
+  check('idMetalCliente','id Metal Cliente obligatorio').not().isEmpty(),
+  check('idMetalCliente','El id Metal Cliente debe ser numérico').isNumeric(),
+  validarCampos
+], getMetalClienteImages);
+
+router.post('/deleteMetalClienteImage', [
+  check('keyX','Key obligatorio').not().isEmpty(),
+  check('keyX','El Key debe ser numérico').isNumeric(),
+  validarCampos
+], deleteMetalClienteImage);
 
 
 module.exports = router;
