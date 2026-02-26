@@ -1,10 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatSelect } from '@angular/material/select';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { SalesService } from 'src/app/protected/services/sales.service';
+import { FxrateService } from 'src/app/protected/services/fxrate.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { Subject, debounceTime } from 'rxjs';
@@ -12,6 +14,12 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { CustomersService } from 'src/app/protected/services/customers.service';
 import { ProductsService } from 'src/app/protected/services/products.service';
+import { environment } from 'src/environments/environment';
+import { MetalClienteImagesComponent } from './metal-cliente-images.component';
+import { TallerHeaderImagesComponent } from './taller-header-images.component';
+import { ServiciosExternosModalComponent } from './servicios-externos-modal/servicios-externos-modal.component';
+import { SeleccionarProductoModalComponent } from './seleccionar-producto-modal.component';
+import { PaymentsComponent } from '../payments/payments.component';
 
 @Component({
   selector: 'app-taller',
@@ -28,6 +36,28 @@ export class TallerComponent implements OnInit {
 
   @ViewChild('cbxSellerCBX') cbxSellerCBX!: ElementRef;
   @ViewChild('cbxCustomerCBX') cbxCustomerCBX!: ElementRef;
+  @ViewChild('descripcionInput') descripcionInput!: ElementRef;
+  @ViewChild('refaccionCantidadInput') refaccionCantidadInput!: ElementRef;
+  @ViewChild('refaccionPorDefinirDescInput') refaccionPorDefinirDescInput!: ElementRef;
+  @ViewChild('refaccionPorDefinirCantidadInput') refaccionPorDefinirCantidadInput!: ElementRef;
+  @ViewChild('refaccionPorDefinirCostoInput') refaccionPorDefinirCostoInput!: ElementRef;
+  @ViewChild('refaccionPorDefinirPrecioInput') refaccionPorDefinirPrecioInput!: ElementRef;
+  @ViewChild('metalAgranelGramosInput') metalAgranelGramosInput!: ElementRef;
+  @ViewChild('metalAgranelKilatesSelect', { read: ElementRef }) metalAgranelKilatesSelect!: ElementRef;
+  @ViewChild('metalAgranelKilatesSelectRef') metalAgranelKilatesSelectRef!: MatSelect;
+  @ViewChild('metalAgranelValorMetalInput') metalAgranelValorMetalInput!: ElementRef;
+  @ViewChild('metalClienteGramosInput') metalClienteGramosInput!: ElementRef;
+  @ViewChild('metalClienteKilatesSelect', { read: ElementRef }) metalClienteKilatesSelect!: ElementRef;
+  @ViewChild('metalClienteKilatesSelectRef') metalClienteKilatesSelectRef!: MatSelect;
+  @ViewChild('metalClienteValorMetalInput') metalClienteValorMetalInput!: ElementRef;
+  @ViewChild('cbxServiciosExternosCBX') cbxServiciosExternosCBX!: ElementRef;
+  @ViewChild('servicioExternoCantidadInput') servicioExternoCantidadInput!: ElementRef;
+  @ViewChild('servicioExternoCostoInput', { read: ElementRef }) servicioExternoCostoInput!: ElementRef;
+  @ViewChild('servicioExternoPrecioInput', { read: ElementRef }) servicioExternoPrecioInput!: ElementRef;
+  @ViewChild('manoObraCantidadInput') manoObraCantidadInput!: ElementRef;
+  @ViewChild('manoObraPrecioInput') manoObraPrecioInput!: ElementRef;
+  @ViewChild('cbxProductss') cbxProductss!: ElementRef;
+  @ViewChild('cbxTecnicosCBX') cbxTecnicosCBX!: ElementRef;
 
   private timeCBXskeyup: Subject<any> = new Subject<any>();
 
@@ -43,9 +73,11 @@ export class TallerComponent implements OnInit {
     descripcion: '',
     fechaIngreso: new Date(),
     fechaPrometidaEntrega: '',
-    fechaEntregada: '',
+    fechaEntrega: '',
     status: '',
-    idTallerStatus: 0
+    idTallerStatus: 0,
+    manoObraPrecio: '',
+    headerImagesCount: 0
   };
 
   // VARIABLES DE REFACCIONES
@@ -57,9 +89,9 @@ export class TallerComponent implements OnInit {
     idRefaccion: 0,
     idProduct: 0,
     productDesc: '',
-    cantidad: 1,
-    precio: 0,
-    costo: 0
+    cantidad: '',
+    precio: '',
+    costo: ''
   };
 
   refaccionesList: any[] = [];
@@ -70,9 +102,9 @@ export class TallerComponent implements OnInit {
     idServicioExternoDetalle: 0,
     idServicioExterno: 0,
     servicioExternoDesc: '',
-    cantidad: 1,
-    precio: 0,
-    costo: 0
+    cantidad: '',
+    precio: '',
+    costo: ''
   };
   serviciosExternosList: any[] = [];
   totalServiciosExternos: number = 0;
@@ -83,9 +115,9 @@ export class TallerComponent implements OnInit {
   metalAgranelForm: any = {
     idMetalAgranel: 0,
     tipo: 'oro',
-    gramos: 0,
-    kilates: 8,
-    valorMetal: 0
+    gramos: '',
+    kilates: 0,
+    valorMetal: ''
   };
 
   kilatajes_oro: number[] = [8, 10, 12, 14, 16, 18, 20, 22, 24];
@@ -103,9 +135,9 @@ export class TallerComponent implements OnInit {
   metalClienteForm: any = {
     idMetalCliente: 0,
     tipo: 'oro',
-    gramos: 0,
-    kilates: 8,
-    valorMetal: 0
+    gramos: '',
+    kilates: 0,
+    valorMetal: ''
   };
 
   kilatajes_oro_cliente: number[] = [8, 10, 12, 14, 16, 18, 20, 22, 24];
@@ -113,19 +145,34 @@ export class TallerComponent implements OnInit {
   metalClienteList: any[] = [];
   totalMetalCliente: number = 0;
 
-  // VARIABLES DE IMÁGENES METAL CLIENTE
-  selectedFile: File | null = null;
-  imagePreview: string | null = null;
-  metalClienteImages: any[] = [];
-  currentImageIndex: number = 0;
-
   get kilatajes_cliente(): number[] {
     return this.metalClienteTipo === 'plata' ? this.kilatajes_plata_cliente : this.kilatajes_oro_cliente;
   }
 
   // VARIABLES DE MANO DE OBRA
+  manoObraForm: any = {
+    idManoObra: 0,
+    idTecnico: 0,
+    tecnicoDesc: '',
+    precio: ''
+  };
   manoObraList: any[] = [];
   totalManoObra: number = 0;
+  totalTaller: number = 0;
+  cbxTecnicos: any[] = [];
+
+  selectCajas: any = {
+    idSucursal: 0,
+    idCaja: 0,
+    cajaDesc: '',
+    idPrinter: 0
+  }
+
+  selectPrinter: any = {
+    idSucursal: 0,
+    idPrinter: 0,
+    printerName: ''
+  }
 
   //#endregion
 
@@ -138,10 +185,12 @@ export class TallerComponent implements OnInit {
 
     , private authServ: AuthService
     , private salesServ: SalesService
+    , private fxrateServ: FxrateService
     , private servicesGServ: ServicesGService
     , private userServ: UsersService
     , private customersServ: CustomersService
     , private productsServ: ProductsService
+    , private dialog: MatDialog
 
   ) { }
 
@@ -180,15 +229,61 @@ export class TallerComponent implements OnInit {
         this.cbxSellers_Search();
       }else if(value.sOption == 'cbxServiciosExternos'){
         this.cbxServiciosExternos_Search();
+      }else if(value.sOption == 'cbxTecnicos'){
+        this.cbxTecnicos_Search();
       }
 
     })
 
     if (this.ODataP && this.ODataP.idTaller > 0) {
       this.fn_getTallerData(this.ODataP.idTaller);
+    } else {
+      // Si es un taller nuevo, poner foco en el vendedor después de que se renderice el DOM
+      setTimeout(() => {
+        if (this.cbxSellerCBX && this.cbxSellerCBX.nativeElement) {
+          this.cbxSellerCBX.nativeElement.focus();
+        }
+      }, 200);
     }
 
+    this.selectCajas = this.ODataP.selectCajas;
+    this.selectPrinter = this.ODataP.selectPrinter;
+
   }
+
+  fn_ShowPayments(){
+      if(this.selectCajas.idCaja > 0){
+
+        let OParams: any = {
+          idCaja: this.ODataP.selectCajas.idCaja,
+          idCustomer: this.tallerForm.idCustomer,
+          idSale: this.tallerForm.idSale,
+          relationType: 'V',
+          idSeller_idUser: this.tallerForm.idSeller_idUser,
+          idSaleType: 2, //this.dataStone.idSaleType,
+          saleTypeDesc: this.tallerForm.saleTypeDesc,
+          total: this.totalTaller,
+          pendingAmount: this.totalTaller,//this.tallerForm.pendingAmount,
+
+          selectCajas: this.ODataP.selectCajas
+        }
+
+          this.servicesGServ.showModalWithParams( PaymentsComponent, OParams, '1500px')
+          .afterClosed().subscribe({
+            next: ( resp ) =>{
+
+              // if( resp.length > 0 ){
+
+              //   this.fn_NuevaVenta();
+
+              //   this.fn_getSaleByID( resp );
+
+              // }
+            }
+        });
+
+      }
+    }
 
   //#region CONEXIONES AL BACK
 
@@ -313,23 +408,28 @@ export class TallerComponent implements OnInit {
             descripcion: data.descripcion || '',
             fechaIngreso: data.fechaIngreso + 'T10:27:51.000Z' || '',
             fechaPrometidaEntrega: data.fechaPrometida + 'T10:27:51.000Z' || '',
-            fechaEntregada: data.fechaEntregada || '',
+            fechaEntrega: data.fechaEntrega || '',
             idCustomer: data.idCustomer || 0,
             customerDesc: data.customerDesc || '',
             idSeller_idUser: data.idSeller_idUser || 0,
             sellerDesc: data.sellerDesc || '',
             idTallerStatus: data.idTallerStatus || 0,
+            manoObraPrecio: data.manoObraPrecio || ''
           };
 
           this.refaccionesList = resp.data.refaccionesDetail || [];
           this.serviciosExternosList = resp.data.serviciosExternos || [];
           this.metalAgranelList = resp.data.metalesAgranel || [];
           this.metalClienteList = resp.data.metalesCliente || [];
+          this.manoObraList = resp.data.oManoObra || [];
 
           this.fn_calcularTotalRefacciones();
           this.fn_calcularTotalServiciosExternos();
           this.fn_calcularTotalMetalAgranel();
           this.fn_calcularTotalMetalCliente();
+          this.fn_calcularTotalManoObra();
+          this.fn_calcularTotalTaller();
+          this.fn_loadTallerHeaderImagesCount(idTaller);
         }
       },
       error: (ex: HttpErrorResponse) => {
@@ -386,6 +486,17 @@ export class TallerComponent implements OnInit {
     this.refaccionTipo = tipo;
     this.refaccionForm.tipo = tipo;
     this.fn_resetRefaccionForm();
+
+    // Focus on product combo when selecting "Producto"
+    if (tipo === 'producto') {
+      this.fn_focusProductCombo();
+    }
+    // Toggle switch to "Por Definir" - focus on description
+    else if (tipo === 'porDefinir') {
+      setTimeout(() => {
+        this.refaccionPorDefinirDescInput?.nativeElement?.focus();
+      }, 50);
+    }
   }
 
   fn_resetRefaccionForm() {
@@ -394,10 +505,30 @@ export class TallerComponent implements OnInit {
       idRefaccion: 0,
       idProduct: 0,
       productDesc: '',
-      cantidad: 1,
-      precio: 0,
-      costo: 0
+      cantidad: '',
+      precio: '',
+      costo: ''
     };
+  }
+
+  fn_focusNextRefaccion(campo: string) {
+    setTimeout(() => {
+      if (campo === 'cantidad') {
+        this.refaccionPorDefinirCantidadInput?.nativeElement?.focus();
+      } else if (campo === 'costo') {
+        this.refaccionPorDefinirCostoInput?.nativeElement?.focus();
+      } else if (campo === 'precio') {
+        this.refaccionPorDefinirPrecioInput?.nativeElement?.focus();
+      }
+    }, 50);
+  }
+
+  fn_focusProductCombo() {
+    setTimeout(() => {
+      if (this.cbxProductss?.nativeElement) {
+        this.cbxProductss.nativeElement.focus();
+      }
+    }, 50);
   }
 
   fn_onProductoChange() {
@@ -429,10 +560,6 @@ export class TallerComponent implements OnInit {
         this.servicesGServ.showSnakbar('La cantidad debe ser mayor a 0');
         return;
       }
-      if (this.refaccionForm.costo <= 0) {
-        this.servicesGServ.showSnakbar('El costo debe ser mayor a 0');
-        return;
-      }
     }
 
     // Preparar objeto para enviar al backend
@@ -459,6 +586,15 @@ export class TallerComponent implements OnInit {
           if (resp.status === 0) {
             this.getTallerRefaccciones( this.tallerForm.idTaller );
             this.fn_resetRefaccionForm();
+
+            // Focus según el tipo de refacción
+            if (this.refaccionTipo === 'producto') {
+              this.fn_focusProductCombo();
+            } else if (this.refaccionTipo === 'porDefinir') {
+              setTimeout(() => {
+                this.refaccionPorDefinirDescInput?.nativeElement?.focus();
+              }, 50);
+            }
           }
           this.bShowSpinner = false;
         },
@@ -507,11 +643,229 @@ export class TallerComponent implements OnInit {
         });
   }
 
+  fn_changeProductoFromPorDefinir(item: any) {
+    // Abrir modal para seleccionar un producto
+    const dialogRef = this.dialog.open(SeleccionarProductoModalComponent, {
+      width: '600px',
+      maxHeight: '90vh',
+      data: {
+        productosList: this.productosList,
+        refaccionActual: item
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result && result.idProduct > 0) {
+        // Usuario seleccionó un producto
+        this.bShowSpinner = true;
+
+        const oParams: any = {
+          idTaller: this.tallerForm.idTaller,
+          idSale: this.tallerForm.idSale,
+          refaccion: {
+            tipo: 'producto',
+            idRefaccion: item.idRefaccion,
+            idProduct: result.idProduct,
+            productDesc: result.name,
+            cantidad: item.cantidad,
+            precio: result.price,
+            costo: result.cost,
+            total: item.cantidad * result.price
+          }
+        };
+
+        this.salesServ.CAddRefaccionTaller(oParams)
+          .subscribe({
+            next: (resp: ResponseGet) => {
+              if (resp.status === 0) {
+                this.servicesGServ.showSnakbar('Refacción actualizada correctamente');
+                this.getTallerRefaccciones(this.tallerForm.idTaller);
+              } else {
+                this.servicesGServ.showSnakbar('Error al actualizar refacción');
+              }
+              this.bShowSpinner = false;
+            },
+            error: (ex: HttpErrorResponse) => {
+              this.servicesGServ.showSnakbar(ex.error.message || 'Error al actualizar refacción');
+              this.bShowSpinner = false;
+            }
+          });
+      }
+    });
+  }
+
   fn_calcularTotalRefacciones() {
     this.totalRefacciones = this.refaccionesList.reduce((total, ref) => total + parseFloat( ref.total ), 0);
+    this.fn_calcularTotalTaller();
   }
 
   //#endregion MÉTODOS DE REFACCIONES
+
+  //#region MÉTODOS DE MANO DE OBRA
+
+  fn_agregarManoObra() {
+    // Validaciones
+    if (this.manoObraForm.idTecnico === 0) {
+      this.servicesGServ.showSnakbar('Debe seleccionar un técnico');
+      return;
+    }
+
+    if (this.manoObraForm.precio <= 0) {
+      this.servicesGServ.showSnakbar('El precio debe ser mayor a 0');
+      return;
+    }
+
+    // Preparar objeto para enviar al backend
+    const oParams: any = {
+      idTaller: this.tallerForm.idTaller,
+      idSale: this.tallerForm.idSale,
+      manoObra: {
+        idManoObra: this.manoObraForm.idManoObra,
+        idTecnico: this.manoObraForm.idTecnico,
+        tecnicoDesc: this.manoObraForm.tecnicoDesc,
+        precio: this.manoObraForm.precio
+      }
+    };
+
+    this.bShowSpinner = true;
+    this.salesServ.CAddManoObraTaller(oParams)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.servicesGServ.showAlertIA(resp, false);
+          if (resp.status === 0) {
+            // Recargar la lista de mano de obra
+            this.getTallerManoObra(this.tallerForm.idTaller);
+            this.fn_resetManoObraForm();
+          }
+          this.bShowSpinner = false;
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar(ex.error.message || 'Error al guardar mano de obra');
+          this.bShowSpinner = false;
+        }
+      });
+  }
+
+  fn_eliminarManoObra(item: any) {
+    this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Está a punto de eliminar una mano de obra'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: async( resp ) =>{
+            if(resp){
+
+              this.bShowSpinner = true;
+
+              const oParams: any = {
+                idManoObra: item.idManoObra,
+                idUser: this.idUserLogON
+              };
+
+              this.salesServ.CDeleteManoObraTaller(oParams)
+                .subscribe({
+                  next: (resp: ResponseDB_CRUD) => {
+                    if (resp.status === 0) {
+                      this.getTallerManoObra( this.tallerForm.idTaller );
+                      this.fn_calcularTotalManoObra();
+                    }
+                    this.servicesGServ.showAlertIA( resp );
+                    this.bShowSpinner = false;
+                  },
+                  error: (ex: HttpErrorResponse) => {
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al eliminar mano de obra');
+                    this.bShowSpinner = false;
+                  }
+                });
+
+            }
+          }
+        });
+  }
+
+  fn_calcularTotalManoObra() {
+    this.totalManoObra = this.manoObraList.reduce((total, mo) => total + parseFloat( mo.precio ), 0);
+    this.fn_calcularTotalTaller();
+  }
+
+  fn_calcularTotalTaller() {
+    let manoObraTotal = this.totalManoObra;
+
+    // Si no hay técnicos agregados, sumar el precio de mano de obra general
+    if (this.manoObraList.length === 0 && this.tallerForm.manoObraPrecio > 0) {
+      manoObraTotal += parseFloat(this.tallerForm.manoObraPrecio);
+    }
+
+    this.totalTaller = this.totalRefacciones + this.totalServiciosExternos + this.totalMetalAgranel + manoObraTotal;
+  }
+
+  fn_resetManoObraForm() {
+    this.manoObraForm = {
+      idManoObra: 0,
+      idTecnico: 0,
+      tecnicoDesc: '',
+      precio: ''
+    };
+  }
+
+  fn_saveManoObraPrecio() {
+    if (this.tallerForm.idTaller === 0 || this.tallerForm.idSale === '') {
+      return; // No guardar si no hay taller cargado
+    }
+
+    const oParams: any = {
+      idTaller: this.tallerForm.idTaller,
+      manoObraPrecio: this.tallerForm.manoObraPrecio,
+
+      idUserLogON: this.idUserLogON,
+      idSucursalLogON: 0
+    };
+
+    this.salesServ.CUpdateManoObraPrecio(oParams)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          if (resp.status === 0) {
+            this.servicesGServ.showSnakbar('Mano de Obra actualizada correctamente');
+            // Pasar el foco al combo de técnicos después de guardar
+            this.nextInputFocus(this.cbxTecnicosCBX, 100);
+            // Recalcular total del taller
+            this.fn_calcularTotalTaller();
+          } else {
+            this.servicesGServ.showSnakbar('Error al actualizar mano de obra');
+          }
+        },
+        error: (ex) => {
+          this.servicesGServ.showSnakbar('Error al guardar mano de obra');
+        }
+      });
+  }
+
+  getTallerManoObra(idTaller: number) {
+    var oParams: any = {
+      idTaller: idTaller
+    };
+    this.salesServ.CGetTallerManoObra(oParams)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.manoObraList = resp.status === 0 ? resp.data : [];
+          this.fn_calcularTotalManoObra();
+        },
+        error: (ex) => {
+          this.servicesGServ.showSnakbar('Error al cargar mano de obra');
+        }
+      });
+  }
+
+  editManoObraGrid( item: any ){
+    this.manoObraForm = {
+      idManoObra: item.idManoObra,
+      idTecnico: item.idUserTecnico,
+      tecnicoDesc: item.tecnicoDesc,
+      precio: parseFloat(item.precio)
+    };
+  }
+
+  //#endregion MÉTODOS DE MANO DE OBRA
 
   //#region MÉTODOS DE SERVICIOS EXTERNOS
 
@@ -556,6 +910,8 @@ export class TallerComponent implements OnInit {
             // Recargar la lista de servicios externos
             this.getTallerServiciosExternos(this.tallerForm.idTaller);
             this.fn_resetServicioExternoForm();
+            // Devolver el foco al combobox de servicios externos después de agregar
+            this.nextInputFocus(this.cbxServiciosExternosCBX, 100);
           }
           this.bShowSpinner = false;
         },
@@ -605,6 +961,7 @@ export class TallerComponent implements OnInit {
 
   fn_calcularTotalServiciosExternos() {
     this.totalServiciosExternos = this.serviciosExternosList.reduce((total, serv) => total + parseFloat( serv.total ), 0);
+    this.fn_calcularTotalTaller();
   }
 
   fn_resetServicioExternoForm() {
@@ -612,10 +969,25 @@ export class TallerComponent implements OnInit {
       idServicioExternoDetalle: 0,
       idServicioExterno: 0,
       servicioExternoDesc: '',
-      cantidad: 1,
-      precio: 0,
-      costo: 0
+      cantidad: '',
+      precio: '',
+      costo: ''
     };
+  }
+
+  abrirModalServiciosExternos(): void {
+    const dialogRef = this.dialog.open(ServiciosExternosModalComponent, {
+      width: '900px',
+      maxHeight: '90vh',
+      panelClass: 'custom-dialog-container'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      // Recargar la lista de servicios externos después de cerrar el modal
+      if (this.tallerForm.idTaller > 0) {
+        this.getTallerServiciosExternos(this.tallerForm.idTaller);
+      }
+    });
   }
 
   //#endregion MÉTODOS DE SERVICIOS EXTERNOS
@@ -626,16 +998,16 @@ export class TallerComponent implements OnInit {
     this.metalTipo = tipo;
     this.metalAgranelForm.tipo = tipo;
     this.fn_resetMetalAgranelForm();
+    this.nextInputFocus( this.metalAgranelGramosInput, 100);
   }
 
   fn_resetMetalAgranelForm() {
-    const defaultKilates = this.metalTipo === 'plata' ? 1000 : 8;
     this.metalAgranelForm = {
       idMetalAgranel: 0,
       tipo: this.metalTipo,
-      gramos: 0,
-      kilates: defaultKilates,
-      valorMetal: 0
+      gramos: '',
+      kilates: 0,
+      valorMetal: ''
     };
   }
 
@@ -674,12 +1046,40 @@ export class TallerComponent implements OnInit {
             // Recargar la lista de metales
             this.getTallerMetalesAgranel(this.tallerForm.idTaller);
             this.fn_resetMetalAgranelForm();
+            this.nextInputFocus(this.metalAgranelGramosInput, 100);
           }
           this.bShowSpinner = false;
         },
         error: (ex: HttpErrorResponse) => {
           this.servicesGServ.showSnakbar(ex.error.message || 'Error al guardar metal');
           this.bShowSpinner = false;
+        }
+      });
+  }
+
+  fn_calculateMetalValue() {
+    // Validar que haya gramos ingresados
+    if (!this.metalAgranelForm.gramos || this.metalAgranelForm.gramos <= 0 || !this.metalAgranelForm.kilates) {
+      this.metalAgranelForm.valorMetal = '';
+      return;
+    }
+
+    // Obtener el precio del kilataje
+    this.fxrateServ.CGetPriceByKilataje(this.metalAgranelForm.kilates)
+      .subscribe({
+        next: (resp: any) => {
+          if (resp.status === 0 && resp.data) {
+            // Calcular: gramos * precio
+            const pricePerGram = resp.data.price;
+            this.metalAgranelForm.valorMetal = this.metalAgranelForm.gramos * pricePerGram;
+          } else {
+            this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
+            this.metalAgranelForm.valorMetal = '';
+          }
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar('Error al obtener el precio: ' + (ex.error.message || 'Error desconocido'));
+          this.metalAgranelForm.valorMetal = '';
         }
       });
   }
@@ -723,6 +1123,7 @@ export class TallerComponent implements OnInit {
 
   fn_calcularTotalMetalAgranel() {
     this.totalMetalAgranel = this.metalAgranelList.reduce((total, metal) => total + (parseFloat(metal.valorMetal) || 0), 0);
+    this.fn_calcularTotalTaller();
   }
 
   editMetalAgranelGrid( item: any ){
@@ -744,17 +1145,44 @@ export class TallerComponent implements OnInit {
     this.metalClienteTipo = tipo;
     this.metalClienteForm.tipo = tipo;
     this.fn_resetMetalClienteForm();
+    this.nextInputFocus( this.metalClienteGramosInput, 100);
   }
 
   fn_resetMetalClienteForm() {
-    const defaultKilates = this.metalClienteTipo === 'plata' ? 1000 : 8;
     this.metalClienteForm = {
       idMetalCliente: 0,
       tipo: this.metalClienteTipo,
-      gramos: 0,
-      kilates: defaultKilates,
-      valorMetal: 0
+      gramos: '',
+      kilates: 0,
+      valorMetal: ''
     };
+  }
+
+  fn_calculateMetalClienteValue() {
+    // Validar que haya gramos ingresados
+    if (!this.metalClienteForm.gramos || this.metalClienteForm.gramos <= 0 || !this.metalClienteForm.kilates) {
+      this.metalClienteForm.valorMetal = '';
+      return;
+    }
+
+    // Obtener el precio del kilataje
+    this.fxrateServ.CGetPriceByKilataje(this.metalClienteForm.kilates)
+      .subscribe({
+        next: (resp: any) => {
+          if (resp.status === 0 && resp.data) {
+            // Calcular: gramos * precio
+            const pricePerGram = resp.data.price;
+            this.metalClienteForm.valorMetal = this.metalClienteForm.gramos * pricePerGram;
+          } else {
+            this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
+            this.metalClienteForm.valorMetal = '';
+          }
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar('Error al obtener el precio: ' + (ex.error.message || 'Error desconocido'));
+          this.metalClienteForm.valorMetal = '';
+        }
+      });
   }
 
   fn_agregarMetalCliente() {
@@ -792,6 +1220,7 @@ export class TallerComponent implements OnInit {
             // Recargar la lista de metales
             this.getTallerMetalesCliente(this.tallerForm.idTaller);
             this.fn_resetMetalClienteForm();
+            this.nextInputFocus(this.metalClienteGramosInput, 100);
           }
           this.bShowSpinner = false;
         },
@@ -841,6 +1270,7 @@ export class TallerComponent implements OnInit {
 
   fn_calcularTotalMetalCliente() {
     this.totalMetalCliente = this.metalClienteList.reduce((total, metal) => total + (parseFloat(metal.valorMetal) || 0), 0);
+    this.fn_calcularTotalTaller();
   }
 
   editMetalClienteGrid( item: any ){
@@ -854,129 +1284,209 @@ export class TallerComponent implements OnInit {
     };
   }
 
-  //#endregion MÉTODOS DE ACTIVO DEL CLIENTE
-
-  //#region MÉTODOS DE IMÁGENES METAL CLIENTE
-
-  onFileSelected(event: any): void {
-    const file: File = event.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-      
-      // Crear preview
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.imagePreview = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  uploadMetalClienteImage(): void {
-    if (!this.selectedFile) {
-      this.servicesGServ.showSnakbar('Debe seleccionar una imagen');
-      return;
+  openMetalClienteImagesDialog(item: any) {
+    let OParams: any = {
+      idMetalCliente: item.idMetalCliente
     }
 
-    if (this.metalClienteForm.idMetalCliente === 0) {
-      this.servicesGServ.showSnakbar('Debe crear el metal primero');
-      return;
-    }
-
-    this.bShowSpinner = true;
-    this.salesServ.uploadMetalClienteImage(this.selectedFile, this.metalClienteForm.idMetalCliente)
-      .subscribe({
-        next: (resp: ResponseGet) => {
-          this.servicesGServ.showAlertIA(resp, false);
-          if (resp.status === 0) {
-            this.getMetalClienteImages(this.metalClienteForm.idMetalCliente);
-            this.selectedFile = null;
-            this.imagePreview = null;
-            // Limpiar input file
-            const fileInput = document.getElementById('metalClienteImageInput') as HTMLInputElement;
-            if (fileInput) {
-              fileInput.value = '';
-            }
-          }
-          this.bShowSpinner = false;
-        },
-        error: (ex: HttpErrorResponse) => {
-          this.servicesGServ.showSnakbar(ex.error.message || 'Error al subir imagen');
-          this.bShowSpinner = false;
+      this.servicesGServ.showModalWithParams( MetalClienteImagesComponent, OParams, '900px')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+          this.getTallerMetalesCliente( this.tallerForm.idTaller );
         }
-      });
+    });
   }
 
-  getMetalClienteImages(idMetalCliente: number): void {
-    this.bShowSpinner = true;
+  openTallerHeaderImagesDialog() {
+    let OParams: any = {
+      idTaller: this.tallerForm.idTaller
+    }
+
+      this.servicesGServ.showModalWithParams( TallerHeaderImagesComponent, OParams, '900px')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+          // Recargar el conteo de imágenes después de cerrar el diálogo
+          this.fn_loadTallerHeaderImagesCount(this.tallerForm.idTaller);
+        }
+    });
+  }
+
+  fn_loadTallerHeaderImagesCount(idTaller: number) {
     const oParams: any = {
-      idMetalCliente: idMetalCliente
+      idTaller: idTaller
     };
     this.salesServ.getMetalClienteImages(oParams)
       .subscribe({
         next: (resp: ResponseGet) => {
-          this.bShowSpinner = false;
           if (resp.status === 0) {
-            this.metalClienteImages = resp.data.imagesDetail || [];
-            this.currentImageIndex = 0;
+            const imagesArray = resp.data.imagesDetail || [];
+            this.tallerForm.headerImagesCount = imagesArray.length;
           }
         },
         error: (ex: HttpErrorResponse) => {
-          this.servicesGServ.showSnakbar(ex.error.message || 'Error al cargar imágenes');
-          this.bShowSpinner = false;
+          // Silenciosamente ignorar errores en el conteo
+          this.tallerForm.headerImagesCount = 0;
         }
       });
   }
 
-  nextImage(): void {
-    if (this.metalClienteImages.length > 0) {
-      this.currentImageIndex = (this.currentImageIndex + 1) % this.metalClienteImages.length;
-    }
-  }
-
-  prevImage(): void {
-    if (this.metalClienteImages.length > 0) {
-      this.currentImageIndex = (this.currentImageIndex - 1 + this.metalClienteImages.length) % this.metalClienteImages.length;
-    }
-  }
-
-  deleteMetalClienteImage(keyX: number): void {
+  fn_createTallerOrder() {
     this.servicesGServ.showDialog('¿Estás seguro?'
-        , 'Está a punto de eliminar esta imagen'
+        , 'Está a punto de convertir este taller en un pedido'
         , '¿Desea continuar?'
         , 'Si', 'No')
         .afterClosed().subscribe({
-          next: async( resp ) =>{
-            if(resp){
-
+          next: (resp) => {
+            if (resp) {
               this.bShowSpinner = true;
 
+              // Calcular el total del taller
+              this.fn_calcularTotalTaller();
+
               const oParams: any = {
-                keyX: keyX,
+                idTaller: this.tallerForm.idTaller,
+                idTallerStatus: 2,
+                precioTotal: this.totalTaller,
                 idUser: this.idUserLogON
               };
 
-              this.salesServ.deleteMetalClienteImage(oParams)
+              this.salesServ.CUpdateTallerStatus(oParams)
                 .subscribe({
-                  next: (resp: ResponseDB_CRUD) => {
-                    if (resp.status === 0) {
-                      this.getMetalClienteImages(this.metalClienteForm.idMetalCliente);
+                  next: (respUpdate: ResponseDB_CRUD) => {
+                    if (respUpdate.status === 0) {
+                      this.servicesGServ.showSnakbar('Pedido de taller creado correctamente');
+                      this.tallerForm.idTallerStatus = 2;
+                    } else {
+                      this.servicesGServ.showSnakbar('Error al crear el pedido de taller');
                     }
-                    this.servicesGServ.showAlertIA( resp );
                     this.bShowSpinner = false;
                   },
                   error: (ex: HttpErrorResponse) => {
-                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al eliminar imagen');
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al crear pedido de taller');
                     this.bShowSpinner = false;
                   }
                 });
-
             }
           }
         });
   }
 
-  //#endregion MÉTODOS DE IMÁGENES METAL CLIENTE
+  fn_assignTallerOrder() {
+    this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Está a punto de asignar este pedido de taller'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: (resp) => {
+            if (resp) {
+              this.bShowSpinner = true;
+
+              const oParams: any = {
+                idTaller: this.tallerForm.idTaller,
+                idTallerStatus: 3,
+                precioTotal: this.totalTaller,
+                idUser: this.idUserLogON
+              };
+
+              this.salesServ.CUpdateTallerStatus(oParams)
+                .subscribe({
+                  next: (respUpdate: ResponseDB_CRUD) => {
+                    if (respUpdate.status === 0) {
+                      this.servicesGServ.showSnakbar('Pedido de taller asignado correctamente');
+                      this.tallerForm.idTallerStatus = 3;
+                    } else {
+                      this.servicesGServ.showSnakbar('Error al asignar el pedido de taller');
+                    }
+                    this.bShowSpinner = false;
+                  },
+                  error: (ex: HttpErrorResponse) => {
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al asignar pedido de taller');
+                    this.bShowSpinner = false;
+                  }
+                });
+            }
+          }
+        });
+  }
+
+  fn_finalizeTallerOrder() {
+    this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Está a punto de finalizar este pedido de taller'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: (resp) => {
+            if (resp) {
+              this.bShowSpinner = true;
+
+              const oParams: any = {
+                idTaller: this.tallerForm.idTaller,
+                idTallerStatus: 4,
+                precioTotal: this.totalTaller,
+                idUser: this.idUserLogON
+              };
+
+              this.salesServ.CUpdateTallerStatus(oParams)
+                .subscribe({
+                  next: (respUpdate: ResponseDB_CRUD) => {
+                    if (respUpdate.status === 0) {
+                      this.servicesGServ.showSnakbar('Pedido de taller finalizado correctamente');
+                      this.tallerForm.idTallerStatus = 4;
+                    } else {
+                      this.servicesGServ.showSnakbar('Error al finalizar el pedido de taller');
+                    }
+                    this.bShowSpinner = false;
+                  },
+                  error: (ex: HttpErrorResponse) => {
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al finalizar pedido de taller');
+                    this.bShowSpinner = false;
+                  }
+                });
+            }
+          }
+        });
+  }
+
+  fn_deliverTallerOrder() {
+    this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Está a punto de marcar este pedido como entregado'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: (resp) => {
+            if (resp) {
+              this.bShowSpinner = true;
+
+              const oParams: any = {
+                idTaller: this.tallerForm.idTaller,
+                idTallerStatus: 5,
+                precioTotal: this.totalTaller,
+                idUser: this.idUserLogON
+              };
+
+              this.salesServ.CUpdateTallerStatus(oParams)
+                .subscribe({
+                  next: (respUpdate: any) => {
+                    if (respUpdate.status === 0) {
+                      this.servicesGServ.showSnakbar('Pedido de taller entregado correctamente');
+                      this.tallerForm.idTallerStatus = 5;
+                      this.tallerForm.fechaEntrega = respUpdate.data.fechaEntrega;
+                    } else {
+                      this.servicesGServ.showSnakbar('Error al entregar el pedido de taller');
+                    }
+                    this.bShowSpinner = false;
+                  },
+                  error: (ex: HttpErrorResponse) => {
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al entregar pedido de taller');
+                    this.bShowSpinner = false;
+                  }
+                });
+            }
+          }
+        });
+  }
+
+  //#endregion MÉTODOS DE ACTIVO DEL CLIENTE
 
   //#region MÉTODOS DEL FRONT
 
@@ -1054,15 +1564,16 @@ export class TallerComponent implements OnInit {
         this.refaccionForm.productDesc = ODataCbx.name;
         this.refaccionForm.costo = ODataCbx.cost;
         this.refaccionForm.precio = ODataCbx.price;
-      }, 1);
+        this.nextInputFocus( this.refaccionCantidadInput, 100);
+      }, 100);
 
     }
 
     cbxProducts_Clear(){
       this.refaccionForm.idProduct = 0;
       this.refaccionForm.productDesc = '';
-      this.refaccionForm.costo = 0;
-      this.refaccionForm.precio = 0;
+      this.refaccionForm.costo = '';
+      this.refaccionForm.precio = '';
     }
     //--------------------------------------------------------------------------
 
@@ -1114,6 +1625,9 @@ export class TallerComponent implements OnInit {
       this.tallerForm.idCustomer =  ODataCbx.idCustomer;
       this.tallerForm.customerDesc = ODataCbx.name;
 
+      // Pasar el foco a la descripción después de seleccionar cliente
+      this.nextInputFocus(this.descripcionInput, 100);
+
     }, 1);
 
   }
@@ -1159,6 +1673,9 @@ export class TallerComponent implements OnInit {
       this.tallerForm.sellerDesc = ODataCbx.name;
       this.tallerForm.sellerResp = '';
 
+      // Pasar el foco al cliente después de seleccionar vendedor
+      this.nextInputFocus(this.cbxCustomerCBX, 100);
+
     }, 1);
 
   }
@@ -1202,12 +1719,84 @@ export class TallerComponent implements OnInit {
       const ODataCbx: any = event.option.value;
       this.servicioExternoForm.idServicioExterno = ODataCbx.id;
       this.servicioExternoForm.servicioExternoDesc = ODataCbx.name;
-    }, 1);
+      this.nextInputFocus( this.servicioExternoCantidadInput, 100);
+    }, 100);
   }
 
   cbxServiciosExternos_Clear() {
     this.servicioExternoForm.idServicioExterno = 0;
     this.servicioExternoForm.servicioExternoDesc = '';
+  }
+
+  fn_focusServicioExternoCosto() {
+    this.nextInputFocus(this.servicioExternoCostoInput, 100);
+  }
+
+  fn_focusServicioExternoPrecio() {
+    this.nextInputFocus(this.servicioExternoPrecioInput, 100);
+  }
+
+  fn_focusMetalAgranelKilates() {
+    this.nextInputFocus(this.metalAgranelKilatesSelect, 100);
+    setTimeout(() => {
+      this.metalAgranelKilatesSelectRef?.open();
+    }, 150);
+  }
+
+  fn_focusMetalAgranelValor() {
+    this.nextInputFocus(this.metalAgranelValorMetalInput, 100);
+  }
+
+  fn_focusMetalClienteKilates() {
+    this.nextInputFocus(this.metalClienteKilatesSelect, 100);
+    setTimeout(() => {
+      this.metalClienteKilatesSelectRef?.open();
+    }, 150);
+  }
+
+  fn_focusMetalClienteValor() {
+    this.nextInputFocus(this.metalClienteValorMetalInput, 100);
+  }
+
+  fn_onMetalAgranelKilatesChange() {
+    this.fn_calculateMetalValue();
+    this.fn_focusMetalAgranelValor();
+  }
+
+  fn_onMetalClienteKilatesChange() {
+    this.fn_calculateMetalClienteValue();
+    this.fn_focusMetalClienteValor();
+  }
+
+  //--------------------------------------------------------------------------
+
+  // MÉTODOS PARA COMBO DE TÉCNICOS
+
+  cbxTecnicos_Search() {
+    this.userServ.CCbxGetTecnicosCombo(this.manoObraForm.tecnicoDesc)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.cbxTecnicos = resp.status === 0 ? resp.data : [];
+        },
+        error: (ex) => {
+          this.servicesGServ.showSnakbar("Problemas al cargar técnicos");
+        }
+      });
+  }
+
+  cbxTecnicos_SelectedOption(event: MatAutocompleteSelectedEvent) {
+    this.cbxTecnicos_Clear();
+    setTimeout(() => {
+      const ODataCbx: any = event.option.value;
+      this.manoObraForm.idTecnico = ODataCbx.id;
+      this.manoObraForm.tecnicoDesc = ODataCbx.nombre;
+      this.nextInputFocus( this.manoObraCantidadInput, 100);
+    }, 100);
+  }
+
+  cbxTecnicos_Clear() {
+    this.manoObraForm.idTecnico = 0;
+    this.manoObraForm.tecnicoDesc = '';
   }
 
   //--------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -38,6 +39,7 @@ import { CurrencyMaskModule } from "ng2-currency-mask";
   exports: [
     MatAutocompleteModule,
     MatButtonModule,
+    MatBadgeModule,
     MatCardModule,
     MatCheckboxModule,
     MatDatepickerModule,

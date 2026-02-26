@@ -39,6 +39,7 @@ export class NsaleComponent {
   @ViewChild('cbxCustomerCBX') cbxCustomerCBX!: ElementRef;
   @ViewChild('cbxSaleTypeCBX') cbxSaleTypeCBX!: ElementRef;
   @ViewChild('barCode') barCode!: ElementRef;
+  @ViewChild('cbxProductss') cbxProductss!: ElementRef;
   @ViewChild('tbxCantidad') tbxCantidad!: ElementRef;
   @ViewChild('cbxDescuentoEnPorcentaje') cbxDescuentoEnPorcentaje!: ElementRef;
   @ViewChild('cbxDescuentoEnPesos') cbxDescuentoEnPesos!: ElementRef;
@@ -901,7 +902,7 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
       this.salesDetailForm.description = '';
       this.salesDetailForm.precioSobre = 0;
 
-      this.nextInputFocus( this.barCode , 0);
+      this.nextInputFocus( this.cbxProductss , 0);
 
       this.isPrecioUnitarioEditable = false;
     }
@@ -1464,7 +1465,7 @@ ev_fn_cbxCantidad_keyup_enter(event: any){
   if(event.keyCode == 13) { // PRESS ENTER
 
     if( this.salesDetailForm.cantidad > 0 ){
-      this.nextInputFocus( this.cbxDescuentoEnPorcentaje, 0);
+      this.addSaleDetail();
     }
 
   }
@@ -1667,12 +1668,11 @@ async ev_PrintTicketConsHistoryList(){
       this.salesDetailForm.precioUnitario = ODataCbx.price;
       this.salesDetailForm.catInventary = ODataCbx.catInventary;
 
-      this.nextInputFocus( this.tbxCantidad, 500);
-
       this.isPrecioUnitarioEditable = false;
 
+      this.nextInputFocus( this.tbxCantidad, 100);
 
-    }, 1);
+    }, 100);
 
   }
 
@@ -1734,7 +1734,7 @@ async ev_PrintTicketConsHistoryList(){
           miInput?.focus();
         }, 500);
       }else{
-        this.nextInputFocus( this.barCode, 500);
+        this.nextInputFocus( this.cbxProductss, 500);
       }
 
     }, 1);

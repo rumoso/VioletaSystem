@@ -14,97 +14,113 @@
     </div>
 
     <div class="row">
-
-        <div class="col-md-6">
-            
-            <mat-label>Referencia: </mat-label>
-            <mat-form-field class="with100">
-            <mat-label>Selecciona una opción</mat-label>
-            <mat-select [(ngModel)]="fxRateForm.referencia">
-                <mat-option value="Dólares">Dólares</mat-option>
-                <mat-option value="Gramo">Gramo</mat-option>
-                <mat-option value="Plata">Plata</mat-option>
-            </mat-select>
-            </mat-form-field>
-            
-        </div>
-
-        <div class="col-md-6">
-            
-            <mat-form-field class="with100 top20px">
-                <mat-label>Tipo de cambio</mat-label>
-                <input #tbxPaga
-                class="textAlingRight colorGreen fontSize"
-                
-                matInput
-                currencyMask
-                placeholder="Tipo de cambio"
-                [(ngModel)]="fxRateForm.fxRate"
-                >
-            </mat-form-field>
-            
-        </div>
-            
-    </div>
-
-    <div class="row top10px">
         <div class="col-md-12">
             <div style="float: left;">
                 <button mat-raised-button
                 color="primary"
                 type="submit"
                 class="marginRight10px"
-                (click)="fn_insertFxRate()">Guardar</button>
-                
+                [disabled]="!hasChanges"
+                (click)="fn_saveFxRateChanges()">Guardar Cambios</button>
+
                 <button mat-raised-button
+                color="accent"
                 type="button"
-                (click)="event_clear()">Limpiar</button>                
-                
+                (click)="fn_openAddReferenceModal()">Agregar Referencia</button>
             </div>
         </div>
     </div>
 
-    <div class="row top20px">
+    <div class="row top10px">
+        <div class="col-md-12">
+            <mat-form-field class="filter-field" appearance="outline">
+                <mat-label>Filtrar por referencia</mat-label>
+                <input matInput
+                    [(ngModel)]="filterText"
+                    placeholder="Ingresa el nombre de la referencia"
+                    type="text">
+                <button matSuffix mat-icon-button *ngIf="filterText" (click)="filterText = ''" aria-label="Limpiar filtro">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </mat-form-field>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-md-12">
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
+                        <th class="textAlingCenter" *ngIf="fn_hasReferencesWithoutRates()">Acciones</th>
                         <th class="textAlingLeft">Referencia</th>
-                        <th class="textAlingRight">Tipo De Cambio</th>
-                        <th class="textAlingCenter">Fecha</th>
+                        <th class="textAlingRight">Costo</th>
+                        <th class="textAlingRight">Venta</th>
+                        <th class="textAlingCenter">Última Fecha de Modificación</th>
                     </thead>
 
                     <tbody>
-                        <tr *ngFor="let item of fxRatelist; let i = index">
-                            
+                        <tr *ngFor="let item of fn_getFilteredData(); let i = index">
+
+                            <td class="textAlingCenter" *ngIf="fn_hasReferencesWithoutRates()">
+                                <div *ngIf="fn_canEditOrDelete(item)" class="action-buttons">
+                                    <button mat-icon-button
+                                            color="primary"
+                                            (click)="fn_editReference(item)"
+                                            matTooltip="Editar referencia">
+                                        <mat-icon>edit</mat-icon>
+                                    </button>
+                                    <button mat-icon-button
+                                            color="warn"
+                                            (click)="fn_deleteReference(item.idFxRateType, item.referencia)"
+                                            matTooltip="Eliminar referencia">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </div>
+                            </td>
+
                             <td class="textAlingLeft">{{ item.referencia }}</td>
-                            <td class="textAlingRight">{{ item.fxRate | currency }}</td>
+                            <td class="textAlingRight">
+                                <input class="table-input"
+                                    type="number"
+                                    step="0.01"
+                                    #costInput
+                                    [(ngModel)]="item.fxRateCost"
+                                    (ngModelChange)="fn_detectChanges()"
+                                    (keydown.enter)="fn_moveFocusToVenta(i, $event)"
+                                    placeholder="0.00">
+                            </td>
+                            <td class="textAlingRight">
+                                <input class="table-input"
+                                    type="number"
+                                    step="0.01"
+                                    #ventaInput
+                                    [(ngModel)]="item.fxRate"
+                                    (ngModelChange)="fn_detectChanges()"
+                                    (keydown.enter)="fn_moveFocusToNextCosto(i, $event)"
+                                    placeholder="0.00">
+                            </td>
                             <td class="textAlingCenter">
 
                                 <div class="row">
                                     <div class="col-md-12">
                                         <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                        <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy h:mm:ss a' }}</label>
+                                        <label style="margin-left: 10px;">{{ item.createDate ? (item.createDate | date:'dd-MM-yyyy h:mm:ss a') : '-' }}</label>
                                     </div>
                                 </div>
-                                
+
                             </td>
 
                         </tr>
-                        
+
                     </tbody>
-                    
+
                 </table>
             </div>
 
-            <app-pagination *ngIf="fxRatelist" [IPagination]="pagination"
-                        (OPagination)="changePagination($event)">
-            </app-pagination>
-            
         </div>
 
     </div>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -104,6 +104,7 @@ const insertUser = async(req, res) => {
         pwd = '',
         authorizationCode = '',
         comision = 0,
+        destajo = 0,
         active,
 
         idUserLogON,
@@ -125,6 +126,7 @@ const insertUser = async(req, res) => {
         ,'${ pwdEncrypt }'
         , '${ authorizationCode }'
         , '${ comision }'
+        , '${ destajo }'
         , ${ active }
 
         , ${ idUserLogON }
@@ -156,6 +158,7 @@ const updateUser = async(req, res) => {
         pwd = '',
         authorizationCode = '',
         comision = 0,
+        destajo = 0,
         active
     } = req.body;
 
@@ -169,6 +172,7 @@ const updateUser = async(req, res) => {
         ,'${ userName }'
         ,'${ authorizationCode }'
         ,'${ comision }'
+        , '${ destajo }'
         , ${ active }
         )`)
 
@@ -184,7 +188,7 @@ const updateUser = async(req, res) => {
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
-            data: error.message
+            data: error
         });
 
     }
@@ -318,6 +322,61 @@ const cbxGetSellersCombo = async(req, res = response) => {
 
 };
 
+const cbxGetTecnicosCombo = async(req, res = response) => {
+
+    const {
+        search = ''
+    } = req.body;
+
+    try{
+
+        const OSQL = await dbConnection.query(`
+            SELECT DISTINCT
+                u.idUser as id,
+                u.name as nombre,
+                u.userName
+            FROM users u
+            INNER JOIN rolesconfig rc ON u.idUser = rc.idUser
+            INNER JOIN roles r ON rc.idRol = r.idRol
+            WHERE r.name = 'Técnico'
+            AND (u.name LIKE :search OR u.userName LIKE :search)
+            ORDER BY u.name ASC
+        `, {
+            replacements: { search: `%${search}%` },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 3,
+                message: "No se encontró información.",
+                data: null
+            });
+
+        }
+        else{
+
+            res.json({
+                status:  0,
+                message:"Ejecutado correctamente.",
+                data: OSQL
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
 const updateAuthorizationCode = async(req, res) => {
 
     const {
@@ -360,5 +419,6 @@ module.exports = {
     , changePassword
     , disabledUser
     , cbxGetSellersCombo
+    , cbxGetTecnicosCombo
     , updateAuthorizationCode
 }

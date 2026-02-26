@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { dbConnection } = require('../database/config');
 
 class Server{
@@ -33,6 +34,7 @@ class Server{
             suppliers:'/api/suppliers',
             comisiones:'/api/comisiones',
             finanzas:'/api/finanzas',
+            serviciosExternos:'/api/serviciosExternos',
 
         }
 
@@ -70,6 +72,9 @@ class Server{
 
         //Directorio público
         this.app.use(express.static('public'));
+
+        //Directorio de uploads - para servir imágenes
+        this.app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
         // Add headers before the routes are defined
         // this.app.use(function (req, res, next) {
@@ -118,6 +123,7 @@ class Server{
         this.app.use(this.paths.suppliers, require('../routes/suppliersRoute'));
         this.app.use(this.paths.comisiones, require('../routes/comisionesRoute'));
         this.app.use(this.paths.finanzas, require('../routes/finanzasRoute'));
+        this.app.use(this.paths.serviciosExternos, require('../routes/serviciosExternosRoute'));
     }
 
     listen(){

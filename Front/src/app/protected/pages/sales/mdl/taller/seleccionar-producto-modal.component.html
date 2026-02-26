@@ -1,0 +1,52 @@
+<div class="modal-container">
+  <h2 mat-dialog-title>Seleccionar Producto</h2>
+
+  <div mat-dialog-content class="dialog-content">
+    <!-- BÚSQUEDA CON COMBOBOX -->
+    <div class="search-section top20px">
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Selecciona un Producto</mat-label>
+        <input matInput
+               [(ngModel)]="productDesc"
+               [matAutocomplete]="cbxProductosAuto"
+               (keyup)="comboBoxKeyUp('cbxProduct', productDesc, $event)"
+               placeholder="Buscar producto...">
+        <button *ngIf="productDesc" matSuffix mat-icon-button aria-label="Clear" (click)="productDesc = ''; cbxProductos = []">
+          <mat-icon>close</mat-icon>
+        </button>
+        <mat-autocomplete autoActiveFirstOption #cbxProductosAuto="matAutocomplete" (optionSelected)="cbxProducts_SelectedOption($event)">
+          <mat-option *ngFor="let producto of cbxProductos" [value]="producto">
+            {{ producto.name }}
+          </mat-option>
+          <mat-option value="" *ngIf="cbxProductos.length === 0 && productDesc">
+            No se encontró nada...
+          </mat-option>
+        </mat-autocomplete>
+      </mat-form-field>
+    </div>
+
+    <!-- PRODUCTO SELECCIONADO -->
+    <div *ngIf="selectedProducto" class="selected-product top30px">
+      <mat-card>
+        <mat-card-content>
+          <div class="product-detail">
+            <div class="detail-row">
+              <strong>Producto:</strong> {{ selectedProducto.name }}
+            </div>
+            <div class="detail-row">
+              <strong>Precio:</strong> {{ selectedProducto.price | currency }}
+            </div>
+            <div class="detail-row">
+              <strong>Costo:</strong> {{ selectedProducto.cost | currency }}
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-button (click)="fn_cancel()">Cancelar</button>
+    <button mat-raised-button color="primary" [disabled]="!selectedProducto" (click)="fn_selectProducto()">Seleccionar</button>
+  </div>
+</div>

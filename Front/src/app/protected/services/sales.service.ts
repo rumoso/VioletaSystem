@@ -713,6 +713,15 @@ export class SalesService {
 
   }
 
+  CUpdateTallerStatus( data: any ): Observable<any> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/updateTallerStatus`, data );
+
+  }
+
   getTallerServiciosExternos( data: any ): Observable<ResponseGet> {
 
     data.idUserLogON = this.authServ.getIdUserSession();
@@ -813,6 +822,124 @@ export class SalesService {
     data.idSucursalLogON = this.idSucursal;
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteMetalClienteImage`, data);
+  }
+
+  uploadTallerHeaderImage(file: File, idTaller: number): Observable<ResponseGet> {
+
+    var idUserLogON = this.authServ.getIdUserSession();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('idTaller', idTaller.toString());
+    formData.append('idUserLogON', idUserLogON.toString());
+    formData.append('idSucursalLogON', this.idSucursal.toString());
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/uploadTallerHeaderImage`, formData);
+
+  }
+
+  // MÉTODOS DE MANO DE OBRA
+
+  CAddManoObraTaller( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/addManoObraTaller`, data );
+
+  }
+
+  CGetTallerManoObra( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerManoObra`, data);
+
+  }
+
+  CDeleteManoObraTaller( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteManoObraTaller`, data );
+
+  }
+
+  CUpdateManoObraPrecio( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/updateManoObraPrecio`, data );
+
+  }
+
+  // MÉTODOS DE SERVICIOS EXTERNOS (CRUD)
+
+  CGetServiciosExternosListWithPage( pagination: Pagination, search: string = '' ): Observable<ResponseGet> {
+
+    let start = pagination.pageIndex * pagination.pageSize;
+    let limiter = pagination.pageSize;
+
+    const data: any = {
+      search: search,
+      start: start,
+      limiter: limiter
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/api/serviciosExternos/getServiciosExternosListWithPage`, data );
+
+  }
+
+  CGetServicioExternoByID( idServicioExterno: number ): Observable<ResponseGet> {
+
+    const data: any = {
+      idServicioExterno: idServicioExterno
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/api/serviciosExternos/getServicioExternoByID`, data );
+
+  }
+
+  CInsertUpdateServicioExterno( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/api/serviciosExternos/insertUpdateServicioExterno`, data );
+
+  }
+
+  CDeleteServicioExterno( idServicioExterno: number ): Observable<ResponseDB_CRUD> {
+
+    const data: any = {
+      idServicioExterno: idServicioExterno
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/api/serviciosExternos/deleteServicioExterno`, data );
+
+  }
+
+  CCbxGetServiciosExternos( search: string = '' ): Observable<ResponseGet> {
+
+    const data: any = {
+      search: search
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/api/serviciosExternos/cbxGetServiciosExternos`, data );
 
   }
 

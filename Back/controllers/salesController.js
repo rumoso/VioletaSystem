@@ -2,8 +2,11 @@ const { response } = require('express');
 const bcryptjs = require('bcryptjs');
 const moment = require('moment');
 const { Sequelize } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 
 const { dbConnection } = require('../database/config');
+const { Console } = require('console');
 
 const insertSale = async(req, res) => {
 
@@ -330,8 +333,11 @@ const insertPayments = async(req, res) => {
             var OSQL_getSaleByID = await dbConnection.query(`call getSaleByID( '${ OPayment.idRelation }' )`)
             OSQL_getSaleByID = OSQL_getSaleByID[0]
 
-            console.log( OSQL_getSaleByID )
-            
+            if(OSQL_getSaleByID.idSaleType == 5){
+                OSQL_getSaleByID = await dbConnection.query(`call getTallerByIdSale( '${ OPayment.idRelation }' )`)
+                OSQL_getSaleByID = OSQL_getSaleByID[0]
+            }
+
             if(OSQL_getSaleByID){
 
                 if(OSQL_getSaleByID.pendingAmount >= OPayment.paga){
@@ -2657,6 +2663,66 @@ const saveTallerHeader = async(req, res) => {
 
 };
 
+const updateTallerStatus = async(req, res) => {
+
+    var {
+        idTaller = 0,
+        idTallerStatus = 0,
+        precioTotal = 0,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        // Construir la consulta dinámicamente
+        let updateQuery = `
+            UPDATE taller 
+            SET idTallerStatus = ${idTallerStatus}`;
+        
+        // Solo actualizar precioTotal cuando se pasa a status 2
+        if (idTallerStatus === 2) {
+            updateQuery += `, precioTotal = ${precioTotal}`;
+        }
+        
+        // Actualizar fechaEntrega cuando se pasa a status 5
+        if (idTallerStatus === 5) {
+            updateQuery += `, fechaEntrega = '${ oGetDateNow }'`;
+        }
+        
+        updateQuery += ` WHERE idTaller = ${idTaller}`;
+
+        var oSQLUpdate = await dbConnection.query(updateQuery);
+
+        if (oSQLUpdate[0].affectedRows > 0) {
+            res.json({
+                status: 0,
+                message: "Estado del taller actualizado correctamente.",
+                data: {
+                    idTaller: idTaller,
+                    idTallerStatus: idTallerStatus,
+                    precioTotal: precioTotal,
+                    fechaEntrega: idTallerStatus === 5 ? oGetDateNow : null
+                }
+            });
+        } else {
+            res.json({
+                status: 1,
+                message: "No se pudo actualizar el estado del taller."
+            });
+        }
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
 const getTallerByID = async(req, res = response) => {
 
     const {
@@ -2683,6 +2749,27 @@ const getTallerByID = async(req, res = response) => {
             var oRefacciones = await dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`)
             var oServiciosExternos = await dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`)
             var oMetalesAgranel = await dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`)
+            var oMetalesCliente = await dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`)
+
+            var oManoObra = await dbConnection.query(`
+            SELECT 
+                tmo.idManoObra,
+                tmo.createDate,
+                tmo.idTaller,
+                tmo.idSale,
+                tmo.idUserTecnico,
+                u.name as tecnicoDesc,
+                u.userName,
+                tmo.precio,
+                tmo.idCreateUser
+            FROM taller_mano_obra tmo
+            LEFT JOIN users u ON tmo.idUserTecnico = u.idUser
+            WHERE tmo.idTaller = :idTaller
+            ORDER BY tmo.createDate DESC
+        `, {
+            replacements: { idTaller: idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
 
             res.json({
                 status: 0,
@@ -2691,7 +2778,9 @@ const getTallerByID = async(req, res = response) => {
                     oTaller: OSQL[0],
                     refaccionesDetail: oRefacciones,
                     serviciosExternos: oServiciosExternos,
-                    metalesAgranel: oMetalesAgranel
+                    metalesAgranel: oMetalesAgranel,
+                    metalesCliente: oMetalesCliente,
+                    oManoObra: oManoObra
                 }
                 
                 //dataPayments: OSQL3
@@ -3083,6 +3172,27 @@ const deleteMetalCliente = async(req, res = response) => {
 
     try {
 
+        // Get all images associated with this metal
+        const oImagesCliente = await dbConnection.query(`call getMetalClienteImgs( '${ idMetalCliente }' )`);
+
+        // Delete physical files from server
+        if (oImagesCliente && oImagesCliente.length > 0) {
+            oImagesCliente.forEach((img) => {
+                const filePath = path.join(__dirname, '../uploads/taller/metales', img.nombreImgNew);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+
+        // Delete image records from database
+        if (oImagesCliente && oImagesCliente.length > 0) {
+            for (const img of oImagesCliente) {
+                await dbConnection.query(`call deleteMetalClienteImg(${ img.keyX })`);
+            }
+        }
+
+        // Delete the metal client record
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
         var OSQL = await dbConnection.query(`call deleteMetalCliente(
@@ -3090,11 +3200,10 @@ const deleteMetalCliente = async(req, res = response) => {
             , '${ oGetDateNow }'
             , ${ idUserLogON }
         )`);
-        console.log(OSQL)
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,
-            message: OSQL[0].out_id > 0 ? 'Activo Cliente eliminado con éxito' : 'No se pudo eliminar el activo cliente'
+            message: OSQL[0].out_id > 0 ? 'Activo Cliente y sus imágenes eliminados con éxito' : 'No se pudo eliminar el activo cliente'
         });
 
     } catch (error) {
@@ -3135,7 +3244,8 @@ const getTallerMetalesCliente = async(req, res = response) => {
 const uploadMetalClienteImage = async(req, res = response) => {
 
     const {
-        idMetalCliente,
+        idMetalCliente = 0,
+        idTaller = 0,
         idUserLogON,
         idSucursalLogON
     } = req.body;
@@ -3149,26 +3259,56 @@ const uploadMetalClienteImage = async(req, res = response) => {
             });
         }
 
+        // Validar que al menos uno esté presente
+        if (idMetalCliente === 0 && idTaller === 0) {
+            return res.json({
+                status: 2,
+                message: "Debe proporcionar idMetalCliente o idTaller"
+            });
+        }
+
         const nombreImagenOriginal = req.file.originalname;
-        const nombreImagenNew = `${idMetalCliente}_${Date.now()}.${req.file.originalname.split('.').pop()}`;
-        const urlImg = `/uploads/taller/metales/${nombreImagenNew}`;
+        const nombreImagenNew = req.file.filename;
+        
+        // Determinar ruta según el tipo de imagen
+        let urlImg = '';
+        if (idMetalCliente > 0) {
+            // Imagen de metal cliente
+            urlImg = `/uploads/taller/metales/${nombreImagenNew}`;
+        } else if (idTaller > 0) {
+            // Imagen de header del taller
+            urlImg = `/uploads/taller/header/${nombreImagenNew}`;
+        }
+
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
-        // Guardar registro en BD
-        const OSQL = await dbConnection.query(`call insertMetalClienteImg(
-            ${ idMetalCliente }
-            , '${ oGetDateNow }'
-            , '${ nombreImagenOriginal.replace(/'/g, "''") }'
-            , '${ nombreImagenNew }'
-            , '${ urlImg }'
-        )`);
+        // Guardar registro en BD - adaptado para ambos casos
+        const OSQL = await dbConnection.query(`
+            INSERT INTO taller_metal_cliente_img 
+            (idMetalCliente, idTaller, createDate, nombreImgOriginal, nombreImgNew, urlImg)
+            VALUES (:idMetalCliente, :idTaller, :createDate, :nombreImgOriginal, :nombreImgNew, :urlImg)
+        `, {
+            replacements: {
+                idMetalCliente: idMetalCliente > 0 ? idMetalCliente : 0,
+                idTaller: idTaller > 0 ? idTaller : 0,
+                createDate: oGetDateNow,
+                nombreImgOriginal: nombreImagenOriginal,
+                nombreImgNew: nombreImagenNew,
+                urlImg: urlImg
+            },
+            type: dbConnection.QueryTypes.INSERT
+        });
 
-        if (OSQL[0].out_id > 0) {
+        // Obtener el ID insertado
+        const lastIdResult = await dbConnection.query(`SELECT LAST_INSERT_ID() as lastId`);
+        const newId = lastIdResult[0][0].lastId;
+
+        if (newId && newId > 0) {
             res.json({
                 status: 0,
                 message: "Imagen subida con éxito",
                 data: {
-                    keyX: OSQL[0].out_id,
+                    keyX: newId,
                     urlImg: urlImg,
                     nombreImgNew: nombreImagenNew
                 }
@@ -3193,11 +3333,42 @@ const uploadMetalClienteImage = async(req, res = response) => {
 const getMetalClienteImages = async(req, res = response) => {
 
     const {
-        idMetalCliente
+        idMetalCliente = 0,
+        idTaller = 0
     } = req.body;
   
     try{
-        var oImagesCliente = await dbConnection.query(`call getMetalClienteImgs( '${ idMetalCliente }' )`)
+        let query = '';
+        let replacements = {};
+
+        // Determinar qué imágenes recuperar
+        if (idMetalCliente > 0) {
+            // Imágenes del metal cliente
+            query = `
+                SELECT * FROM taller_metal_cliente_img
+                WHERE idMetalCliente = :idMetalCliente AND idTaller = 0
+                ORDER BY createDate DESC
+            `;
+            replacements = { idMetalCliente: idMetalCliente };
+        } else if (idTaller > 0) {
+            // Imágenes del header del taller
+            query = `
+                SELECT * FROM taller_metal_cliente_img
+                WHERE idTaller = :idTaller AND idMetalCliente = 0
+                ORDER BY createDate DESC
+            `;
+            replacements = { idTaller: idTaller };
+        } else {
+            return res.json({
+                status: 2,
+                message: "Debe proporcionar idMetalCliente o idTaller"
+            });
+        }
+
+        const oImagesCliente = await dbConnection.query(query, {
+            replacements: replacements,
+            type: dbConnection.QueryTypes.SELECT
+        });
         
         res.json({
             status: 0,
@@ -3225,13 +3396,50 @@ const deleteMetalClienteImage = async(req, res = response) => {
 
     try {
 
-        var OSQL = await dbConnection.query(`call deleteMetalClienteImg(
-            ${ keyX }
-        )`);
-        
+        // Primero obtener info de la imagen para saber qué archivo eliminar
+        const imgInfo = await dbConnection.query(`
+            SELECT keyX, nombreImgNew, idMetalCliente, idTaller 
+            FROM taller_metal_cliente_img
+            WHERE keyX = :keyX
+        `, {
+            replacements: { keyX: keyX },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if (!imgInfo || imgInfo.length === 0) {
+            return res.json({
+                status: 1,
+                message: "La imagen no existe"
+            });
+        }
+
+        const { nombreImgNew, idMetalCliente, idTaller } = imgInfo[0];
+
+        // Determinar la ruta del archivo según el tipo
+        let filePath = '';
+        if (idMetalCliente > 0) {
+            filePath = path.join(__dirname, '../uploads/taller/metales', nombreImgNew);
+        } else if (idTaller > 0) {
+            filePath = path.join(__dirname, '../uploads/taller/header', nombreImgNew);
+        }
+
+        // Eliminar archivo físico del servidor
+        if (filePath && fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        // Eliminar registro de la base de datos
+        await dbConnection.query(`
+            DELETE FROM taller_metal_cliente_img
+            WHERE keyX = :keyX
+        `, {
+            replacements: { keyX: keyX },
+            type: dbConnection.QueryTypes.DELETE
+        });
+
         res.json({
-            status: OSQL[0].out_id > 0 ? 0 : 1,
-            message: OSQL[0].message
+            status: 0,
+            message: "Imagen eliminada con éxito"
         });
 
     } catch (error) {
@@ -3242,6 +3450,356 @@ const deleteMetalClienteImage = async(req, res = response) => {
         });
     }
 
+};
+
+// FUNCIONES DE MANO DE OBRA
+
+const addManoObraTaller = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        manoObra,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idManoObra = manoObra.idManoObra || 0;
+            var idTecnico = manoObra.idTecnico || 0;
+            var precio = manoObra.precio || 0;
+
+            if (idManoObra > 0) {
+                // UPDATE: Primero guarda el registro actual en el log
+                await dbConnection.query(`
+                    INSERT INTO taller_mano_obra_log 
+                    (idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, tipoLog, logDate, idCreateUserLog)
+                    SELECT idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, 'UPDATE', :logDate, :idCreateUserLog
+                    FROM taller_mano_obra
+                    WHERE idManoObra = :idManoObra
+                `, {
+                    replacements: { 
+                        idManoObra: idManoObra,
+                        logDate: oGetDateNow,
+                        idCreateUserLog: idUserLogON
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction: transaction
+                });
+
+                // UPDATE el registro
+                const resultUpdate = await dbConnection.query(`
+                    UPDATE taller_mano_obra 
+                    SET idUserTecnico = :idTecnico, precio = :precio
+                    WHERE idManoObra = :idManoObra
+                `, {
+                    replacements: { 
+                        idTecnico: idTecnico,
+                        precio: precio,
+                        idManoObra: idManoObra
+                    },
+                    type: dbConnection.QueryTypes.UPDATE,
+                    transaction: transaction
+                });
+
+                // Validar que se actualizó correctamente
+                if (!resultUpdate || resultUpdate[1] === 0) {
+                    await transaction.rollback();
+                    res.json({
+                        status: 1,
+                        message: "No se pudo actualizar la mano de obra"
+                    });
+                    return;
+                }
+
+                await transaction.commit();
+
+                res.json({
+                    status: 0,
+                    message: "Mano de obra actualizada con éxito",
+                    insertID: idManoObra
+                });
+
+            } else {
+                // INSERT nuevo registro
+                // Validar que el técnico no esté ya agregado en este taller
+                const tecnicoExistente = await dbConnection.query(`
+                    SELECT idManoObra FROM taller_mano_obra
+                    WHERE idTaller = :idTaller AND idUserTecnico = :idTecnico
+                    LIMIT 1
+                `, {
+                    replacements: { 
+                        idTaller: idTaller,
+                        idTecnico: idTecnico
+                    },
+                    type: dbConnection.QueryTypes.SELECT,
+                    transaction: transaction
+                });
+
+                if (tecnicoExistente && tecnicoExistente.length > 0) {
+                    await transaction.rollback();
+                    res.json({
+                        status: 1,
+                        message: "Este técnico ya está agregado en el taller"
+                    });
+                    return;
+                }
+
+                // Insertar nuevo registro
+                await dbConnection.query(`
+                    INSERT INTO taller_mano_obra 
+                    (createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser)
+                    VALUES (:createDate, :idTaller, :idSale, :idTecnico, :precio, :idCreateUser)
+                `, {
+                    replacements: { 
+                        createDate: oGetDateNow,
+                        idTaller: idTaller,
+                        idSale: idSale,
+                        idTecnico: idTecnico,
+                        precio: precio,
+                        idCreateUser: idUserLogON
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction: transaction
+                });
+
+                // Obtener el último ID insertado
+                const lastIdResult = await dbConnection.query(`SELECT LAST_INSERT_ID() as lastId`, {
+                    transaction: transaction
+                });
+                const newId = lastIdResult[0][0].lastId;
+
+                // Validar que se obtuvo un ID válido
+                if (!newId || newId <= 0) {
+                    await transaction.rollback();
+                    res.json({
+                        status: 1,
+                        message: "No se pudo obtener el ID del registro insertado"
+                    });
+                    return;
+                }
+
+                await transaction.commit();
+
+                res.json({
+                    status: 0,
+                    message: "Mano de obra agregada con éxito",
+                    insertID: newId
+                });
+            }
+        } else {
+            res.json({
+                status: 1,
+                message: "Parámetros inválidos"
+            });
+        }
+    } catch (error) {
+        await transaction.rollback();
+        console.log(error)
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteManoObraTaller = async(req, res = response) => {
+
+    const {
+        idManoObra,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        // Inicialmente, verificar que el registro existe
+        const recordExists = await dbConnection.query(`
+            SELECT idManoObra FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+            LIMIT 1
+        `, {
+            replacements: { idManoObra: idManoObra },
+            type: dbConnection.QueryTypes.SELECT,
+            transaction: transaction
+        });
+
+        if (!recordExists || recordExists.length === 0) {
+            await transaction.rollback();
+            res.json({
+                status: 1,
+                message: "El registro de mano de obra no existe"
+            });
+            return;
+        }
+
+        // Guarda el registro en el log con tipo 'DELETE'
+        await dbConnection.query(`
+            INSERT INTO taller_mano_obra_log 
+            (idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, tipoLog, logDate, idCreateUserLog)
+            SELECT idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, 'DELETE', :logDate, :idCreateUserLog
+            FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+        `, {
+            replacements: { 
+                idManoObra: idManoObra,
+                logDate: oGetDateNow,
+                idCreateUserLog: idUserLogON
+            },
+            type: dbConnection.QueryTypes.INSERT,
+            transaction: transaction
+        });
+
+        // Elimina el registro
+        await dbConnection.query(`
+            DELETE FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+        `, {
+            replacements: { idManoObra: idManoObra },
+            type: dbConnection.QueryTypes.DELETE,
+            transaction: transaction
+        });
+
+        // Verifica que se eliminó correctamente
+        const recordAfterDelete = await dbConnection.query(`
+            SELECT idManoObra FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+            LIMIT 1
+        `, {
+            replacements: { idManoObra: idManoObra },
+            type: dbConnection.QueryTypes.SELECT,
+            transaction: transaction
+        });
+
+        if (recordAfterDelete && recordAfterDelete.length > 0) {
+            await transaction.rollback();
+            res.json({
+                status: 1,
+                message: "No se pudo eliminar completamente la mano de obra"
+            });
+            return;
+        }
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: "Mano de obra eliminada con éxito",
+            out_id: idManoObra
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        console.log("Error en deleteManoObraTaller:", error);
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerManoObra = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        const oManoObra = await dbConnection.query(`
+            SELECT 
+                tmo.idManoObra,
+                tmo.createDate,
+                tmo.idTaller,
+                tmo.idSale,
+                tmo.idUserTecnico,
+                u.name as tecnicoDesc,
+                u.userName,
+                tmo.precio,
+                tmo.idCreateUser
+            FROM taller_mano_obra tmo
+            LEFT JOIN users u ON tmo.idUserTecnico = u.idUser
+            WHERE tmo.idTaller = :idTaller
+            ORDER BY tmo.createDate DESC
+        `, {
+            replacements: { idTaller: idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: oManoObra
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const updateManoObraPrecio = async(req, res) => {
+
+    const {
+        idTaller,
+        manoObraPrecio,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+        if (idTaller <= 0) {
+            res.json({
+                status: 1,
+                message: "ID de taller inválido"
+            });
+            return;
+        }
+
+        // Usar SQL directo para actualizar el campo manoObraPrecio en la tabla sale_taller
+        const result = await dbConnection.query(`
+            UPDATE taller 
+            SET manoObraPrecio = :manoObraPrecio 
+            WHERE idTaller = :idTaller
+        `, {
+            replacements: { manoObraPrecio: manoObraPrecio || 0, idTaller: idTaller },
+            type: dbConnection.QueryTypes.UPDATE
+        });
+
+        // result retorna un array [undefined, rowsAffected]
+        if (result && result[1] > 0) {
+            res.json({
+                status: 0,
+                message: "Mano de obra actualizada correctamente"
+            });
+        } else {
+            res.json({
+                status: 0,
+                message: "Mano de obra actualizada correctamente"
+            });
+        }
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
 };
 
 module.exports = {
@@ -3302,6 +3860,7 @@ module.exports = {
     , addServicioExternoTaller
     , deleteServicioExternoTaller
     , saveTallerHeader
+    , updateTallerStatus
     , getTallerByID
     , getTallerPaginado
     , getTallerRefaccciones
@@ -3316,5 +3875,9 @@ module.exports = {
     , uploadMetalClienteImage
     , getMetalClienteImages
     , deleteMetalClienteImage
+    , addManoObraTaller
+    , deleteManoObraTaller
+    , getTallerManoObra
+    , updateManoObraPrecio
 
 }

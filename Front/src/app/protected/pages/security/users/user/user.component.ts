@@ -23,7 +23,7 @@ import { ActionsService } from 'src/app/protected/services/actions.service';
   styleUrls: ['./user.component.css']
 })
 export class UserComponent implements OnInit {
-  
+
   private _appMain: string = environment.appMain;
 
   hidePwd: boolean = true;
@@ -61,6 +61,7 @@ export class UserComponent implements OnInit {
     pwd: '',
     authorizationCode: '',
     comision: 0,
+    destajo: 0,
     active: true
   };
 
@@ -97,7 +98,7 @@ export class UserComponent implements OnInit {
   });
 
   ActionsByUserList: any[] = [];
-  
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -129,7 +130,7 @@ export class UserComponent implements OnInit {
       .subscribe( ( resp: any ) => {
         console.log(resp)
          if(resp.status == 0){
-            
+
             this.idUser = resp.data.idUser;
 
             this.userForm.idUser = resp.data.idUser;
@@ -144,6 +145,7 @@ export class UserComponent implements OnInit {
              pwd: '',
              authorizationCode: resp.data.authorizationCode,
              comision: resp.data.comision,
+             destajo: resp.data.destajo,
              active: resp.data.active
            };
 
@@ -160,13 +162,13 @@ export class UserComponent implements OnInit {
 
   fn_validFormPrincipal(){
     var bOK = false
-  
+
     if( this.userForm.name.length > 0
       && this.userForm.userName.length > 0
       ){
       bOK = true;
     }
-  
+
     return bOK;
   }
 
@@ -182,11 +184,18 @@ export class UserComponent implements OnInit {
 
     this.bShowSpinner = true;
 
+    // Validar que destajo no sea mayor a 100
+    if(this.userForm.destajo > 100){
+      this.servicesGServ.showSnakbar( "El destago no puede ser mayor a 100%" );
+      this.bShowSpinner = false;
+      return;
+    }
+
     if(this.idUser > 0){
       this.usersServ.CUpdateUser( this.userForm )
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
-            
+
             this.servicesGServ.showAlertIA( resp );
             this.bShowSpinner = false;
 
@@ -204,7 +213,7 @@ export class UserComponent implements OnInit {
         next: (resp: ResponseDB_CRUD) => {
 
           if( resp.status === 0 ){
-            
+
             this.idUser = resp.insertID;
 
             this.userForm.idUser = resp.insertID;
@@ -234,7 +243,7 @@ export class UserComponent implements OnInit {
     this.rolesServ.CGetRolesByIdUser( this.idUser )
     .subscribe({
       next: ( resp: ResponseGet ) => {
-        
+
         if(resp.status === 0){
           this.rolesByUserList = resp.data;
         }else{
@@ -261,13 +270,13 @@ export class UserComponent implements OnInit {
           .afterClosed().subscribe({
             next: ( resp: any ) =>{
               if(resp){
-                
+
                 this.bShowSpinner = true;
 
                 this.rolesServ.CInsertRolByIdUser( this.addRoleForm.value )
                   .subscribe({
                     next: (resp: ResponseDB_CRUD) => {
-                      
+
                       this.servicesGServ.showAlertIA( resp );
                       this.bShowSpinner = false;
 
@@ -290,7 +299,7 @@ export class UserComponent implements OnInit {
     }
 
     fn_deleteRolByIdUser( idRol: number ){
-      
+
       this.servicesGServ.showDialog('¿Estás seguro?'
                                         , 'Está a punto de borrar la asignación del rol'
                                         , '¿Desea continuar?'
@@ -315,7 +324,7 @@ export class UserComponent implements OnInit {
                 this.servicesGServ.showSnakbar( ex.error.data );
                 this.bShowSpinner = false;
               }
-        
+
             })
 
           }
@@ -333,37 +342,37 @@ export class UserComponent implements OnInit {
             .afterClosed().subscribe({
               next: ( resp: any ) =>{
                 if(resp){
-                  
+
                   this.bShowSpinner = true;
-  
+
                   this.sucursalesServ.CInsertSucursalByIdUser( this.addSucursalForm.value )
                     .subscribe({
                       next: (resp: ResponseDB_CRUD) => {
-                        
+
                         this.bShowSpinner = false;
-  
+
                         this.addSucursalForm.get('idSucursal')?.setValue( 0 );
                         this.addSucursalForm.get('sucursalDesc')?.setValue( '' );
-  
+
                         this.fn_getSucursalesByIdUser();
 
                         this.servicesGServ.showAlertIA( resp );
-  
+
                       },
                       error: (ex) => {
                         this.servicesGServ.showSnakbar( "Problemas con el servicio" );
                         this.bShowSpinner = false;
                       }
                     })
-  
+
                 }
               }
             });
-  
+
       }
-  
+
       fn_deleteSucursalByIdUser( idSucursal: number ){
-        
+
         this.servicesGServ.showDialog('¿Estás seguro?'
                                           , 'Está a punto de borrar la asignación de la sucursal'
                                           , '¿Desea continuar?'
@@ -371,32 +380,32 @@ export class UserComponent implements OnInit {
         .afterClosed().subscribe({
           next: ( resp: any ) =>{
             if(resp){
-  
+
               this.bShowSpinner = true;
               this.sucursalesServ.CDeleteSucursalByIdUser( this.idUser, idSucursal)
               .subscribe({
                 next: (resp: ResponseDB_CRUD) => {
-  
+
                   if( resp.status === 0 ){
                     this.fn_getSucursalesByIdUser();
                   }
-  
+
                   this.servicesGServ.showAlertIA( resp );
                   this.bShowSpinner = false;
-  
+
                 },
                 error: (ex: HttpErrorResponse) => {
                   console.log( ex )
                   this.servicesGServ.showSnakbar( ex.error.data );
                   this.bShowSpinner = false;
                 }
-          
+
               })
-  
+
             }
           }
         });
-  
+
       }
 
       fn_getSucursalesByIdUser(){
@@ -404,24 +413,24 @@ export class UserComponent implements OnInit {
         this.sucursalesServ.CGetSucursalesByIdUser( this.idUser )
         .subscribe({
           next: ( resp: ResponseGet ) => {
-            
+
             if(resp.status === 0){
               this.sucursalesByUserList = resp.data;
             }else{
               this.sucursalesByUserList = [];
             }
-    
+
           },
           error: ( ex ) => {
             this.servicesGServ.showSnakbar( "Problemas con el servicio" );
           }
-    
+
         })
-    
+
       }
 
     fn_changePassword(){
-      
+
       this.servicesGServ.showDialog('¿Estás seguro?'
                                         , 'Está a punto de cambiar la contraseña'
                                         , '¿Desea continuar?'
@@ -449,7 +458,7 @@ export class UserComponent implements OnInit {
                 this.servicesGServ.showSnakbar( ex.error.data );
                 this.bShowSpinner = false;
               }
-        
+
             })
 
           }
@@ -463,15 +472,15 @@ export class UserComponent implements OnInit {
       this.servicesGServ.showModalWithParams( ActionsComponent, null, '1500px')
       .afterClosed().subscribe({
         next: ( resp: any ) =>{
-  
+
           //this.fn_getCustomersListWithPage();
-          
+
         }
       });
     }
 
-  
-  
+
+
 
   //--------------------------------------------------------------------------
   // MÉTODOS PARA COMBO DE ÁREAS
@@ -559,6 +568,6 @@ export class UserComponent implements OnInit {
   }
   //--------------------------------------------------------------------------
 
-  
-  
+
+
 }

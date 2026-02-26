@@ -1,0 +1,53 @@
+.table-input {
+  width: 100%;
+  max-width: 150px;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: right;
+  box-sizing: border-box;
+  height: 28px;
+  font-family: Arial, sans-serif;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 4px rgba(25, 118, 210, 0.3);
+}
+
+.table-input::placeholder {
+  color: #999;
+  font-weight: normal;
+}
+
+table.table tbody td {
+  padding: 4px 8px !important;
+  height: auto !important;
+  vertical-align: middle !important;
+  font-size: 12px;
+}
+
+table.table tbody tr {
+  height: auto !important;
+}
+
+.filter-field {
+  width: 100%;
+  max-width: 400px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-buttons button {
+  padding: 2px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+}

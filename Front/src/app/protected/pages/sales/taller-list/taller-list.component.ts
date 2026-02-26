@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
+import { Router } from '@angular/router';
 import { Subject, debounceTime } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
@@ -10,10 +11,6 @@ import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { NsaleComponent } from '../mdl/nsale/nsale.component';
-import { CajasService } from 'src/app/protected/services/cajas.service';
-import { SelectCajaComponent } from '../mdl/select-caja/select-caja.component';
-import { CorteCajaComponent } from '../mdl/corte-caja/corte-caja.component';
-import { EgresosComponent } from '../mdl/egresos/egresos.component';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { SelectPrintComponent } from '../mdl/select-print/select-print.component';
 import { PrintersService } from 'src/app/protected/services/printers.service';
@@ -21,9 +18,10 @@ import { PrintTicketService } from 'src/app/protected/services/print-ticket.serv
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { SalestypeService } from 'src/app/protected/services/salestype.service';
 import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
-import { IngresosComponent } from '../mdl/ingresos/ingresos.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { TallerComponent } from '../mdl/taller/taller.component';
+import { CajasService } from 'src/app/protected/services/cajas.service';
+import { SelectCajaComponent } from '../mdl/select-caja/select-caja.component';
 
 @Component({
   selector: 'app-taller-list',
@@ -86,17 +84,17 @@ export class TallerListComponent {
 
   };
 
+  selectPrinter: any = {
+    idSucursal: 0,
+    idPrinter: 0,
+    printerName: ''
+  }
+
   selectCajas: any = {
     idSucursal: 0,
     idCaja: 0,
     cajaDesc: '',
     idPrinter: 0
-  }
-
-  selectPrinter: any = {
-    idSucursal: 0,
-    idPrinter: 0,
-    printerName: ''
   }
 
 
@@ -114,10 +112,11 @@ constructor(
   , private authServ: AuthService
   , private customersServ: CustomersService
   , private salesServ: SalesService
-  , private cajasServ: CajasService
   , private printersServ: PrintersService
   , private printTicketServ: PrintTicketService
   , private salesTypeServ: SalestypeService
+  , private cajasServ: CajasService
+  , private router: Router
 
   ) { }
 
@@ -148,17 +147,19 @@ constructor(
     // }, 1000);
 
     this.fn_getVentasListWithPage();
-
-    this.fn_getSelectCajaByIdUser( this.idUserLogON );
     this.fn_getSelectPrintByIdUser( this.idUserLogON );
+    this.fn_getSelectCajaByIdUser( this.idUserLogON );
 
   }
 
   fn_ShowEditTaller( idSale: any ){
 
       let OParams: any = {
-        idSale: idSale
+        idSale: idSale,
+        selectPrinter: this.selectPrinter,
+        selectCajas: this.selectCajas
       }
+      console.log('Edit Taller Params:', OParams);
 
         this.servicesGServ.showModalWithParams( EditTallerComponent, OParams, '1500px')
         .afterClosed().subscribe({
@@ -232,6 +233,89 @@ fn_getVentasListWithPage() {
 
 }
 
+
+
+fn_getSelectPrintByIdUser( idUser: number ) {
+
+  this.printersServ.CGetSelectPrinterByIdUser( idUser )
+  .subscribe({
+
+    next: ( resp: ResponseGet ) => {
+
+      if( resp.status == 0 ){
+
+        this.selectPrinter.idSucursal = resp.data.idSucursal;
+        this.selectPrinter.idPrinter = resp.data.idPrinter;
+        this.selectPrinter.printerName = resp.data.printerName;
+
+      }
+      else{
+
+        this.selectPrinter.idSucursal = 0;
+        this.selectPrinter.idPrinter = 0;
+        this.selectPrinter.printerName = '';
+
+      }
+
+      console.log( resp );
+    },
+    error: (ex: HttpErrorResponse) => {
+      this.servicesGServ.showSnakbar( ex.error.data );
+    }
+
+  })
+
+}
+
+
+
+
+
+fn_btnCerrarPrinter(){
+
+  if( this.selectPrinter.idPrinter > 0 ){
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+    , 'Está a punto de deseleccionar la impresora'
+    , '¿Desea continuar?'
+    , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: ( resp ) =>{
+
+        if(resp){
+
+          this.selectPrinter.idUser = this.idUserLogON;
+
+          this.printersServ.CDeleteSelectPrinter( this.selectPrinter )
+          .subscribe({
+            next: async (resp: ResponseDB_CRUD) => {
+
+              if( resp.status === 0 ){
+                this.fn_getSelectPrintByIdUser( this.idUserLogON );
+              }
+
+              this.servicesGServ.showAlertIA( resp );
+              this.bShowSpinner = false;
+
+            },
+            error: (ex) => {
+
+              this.servicesGServ.showSnakbar( ex.error.message );
+              this.bShowSpinner = false;
+
+            }
+          });
+
+        }
+
+      }
+
+    });
+
+  }
+
+}
+
 fn_getSelectCajaByIdUser( idUser: number ) {
 
   this.cajasServ.CGetSelectCajaByIdUser( idUser )
@@ -257,38 +341,6 @@ fn_getSelectCajaByIdUser( idUser: number ) {
         this.selectCajas.idCaja = 0;
         this.selectCajas.cajaDesc = '';
         this.selectCajas.idPrinter = 0;
-
-      }
-
-      console.log( resp );
-    },
-    error: (ex: HttpErrorResponse) => {
-      this.servicesGServ.showSnakbar( ex.error.data );
-    }
-
-  })
-
-}
-
-fn_getSelectPrintByIdUser( idUser: number ) {
-
-  this.printersServ.CGetSelectPrinterByIdUser( idUser )
-  .subscribe({
-
-    next: ( resp: ResponseGet ) => {
-
-      if( resp.status == 0 ){
-
-        this.selectPrinter.idSucursal = resp.data.idSucursal;
-        this.selectPrinter.idPrinter = resp.data.idPrinter;
-        this.selectPrinter.printerName = resp.data.printerName;
-
-      }
-      else{
-
-        this.selectPrinter.idSucursal = 0;
-        this.selectPrinter.idPrinter = 0;
-        this.selectPrinter.printerName = '';
 
       }
 
@@ -354,52 +406,6 @@ fn_btnCerrarCaja(){
 
 }
 
-fn_btnCerrarPrinter(){
-
-  if( this.selectCajas.idCaja == 0 && this.selectPrinter.idPrinter > 0 ){
-
-    this.servicesGServ.showDialog('¿Estás seguro?'
-    , 'Está a punto de deseleccionar la impresora'
-    , '¿Desea continuar?'
-    , 'Si', 'No')
-    .afterClosed().subscribe({
-      next: ( resp ) =>{
-
-        if(resp){
-
-          this.selectPrinter.idUser = this.idUserLogON;
-
-          this.printersServ.CDeleteSelectPrinter( this.selectPrinter )
-          .subscribe({
-            next: async (resp: ResponseDB_CRUD) => {
-
-              if( resp.status === 0 ){
-                this.fn_getSelectCajaByIdUser( this.idUserLogON );
-                this.fn_getSelectPrintByIdUser( this.idUserLogON );
-              }
-
-              this.servicesGServ.showAlertIA( resp );
-              this.bShowSpinner = false;
-
-            },
-            error: (ex) => {
-
-              this.servicesGServ.showSnakbar( ex.error.message );
-              this.bShowSpinner = false;
-
-            }
-          });
-
-        }
-
-      }
-
-    });
-
-  }
-
-}
-
 fn_CDisabledSale( idSale: number, auth_idUser: number ){
 
   var oParams: any = {
@@ -439,8 +445,8 @@ fn_ShowSale( idTaller: number ){
 
   var paramsMDL: any = {
     idTaller: idTaller,
-    selectCajas: this.selectCajas,
-    selectPrinter: this.selectPrinter
+    selectPrinter: this.selectPrinter,
+    selectCajas: this.selectCajas
   }
 
   this.servicesGServ.showModalWithParamsv2( TallerComponent, paramsMDL, { width: '100vw', height: '100vh', maxWidth: '100vw', panelClass: 'full-screen-modal' })
@@ -448,6 +454,25 @@ fn_ShowSale( idTaller: number ){
     next: ( resp ) =>{
 
       this.fn_getVentasListWithPage();
+    }
+  });
+
+}
+
+
+
+fn_ShowSelectPrint(){
+
+  var paramsMDL: any = {
+    idUser: this.idUserLogON
+  }
+
+  this.servicesGServ.showModalWithParams( SelectPrintComponent, paramsMDL, '2000px')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
+
+      this.fn_getSelectPrintByIdUser( this.idUserLogON );
+
     }
   });
 
@@ -470,76 +495,10 @@ fn_ShowSelectCaja(){
 
 }
 
-fn_ShowSelectPrint(){
-
-  var paramsMDL: any = {
-    idUser: this.idUserLogON
-  }
-
-  this.servicesGServ.showModalWithParams( SelectPrintComponent, paramsMDL, '2000px')
-  .afterClosed().subscribe({
-    next: ( resp ) =>{
-
-      this.fn_getSelectPrintByIdUser( this.idUserLogON );
-
-    }
-  });
-
-}
-
-fn_ShowCorteCajaSale(){
-
-  var paramsMDL: any = {
-    idCaja: this.selectCajas.idCaja
-  }
-
-  this.servicesGServ.showModalWithParams( CorteCajaComponent, paramsMDL, '800px')
-  .afterClosed().subscribe({
-    next: ( resp ) =>{
-
-      if(resp > 0){
-        this.printTicketServ.printTicket("CorteCaja", resp, this.selectPrinter.idPrinter, 1);
-        this.fn_cerrarCaja();
-      }
-
-      this.fn_getVentasListWithPage();
-    }
-  });
 
 
-}
 
-fn_ShowEgresos(){
 
-  var paramsMDL: any = {
-    idCaja: this.selectCajas.idCaja
-  }
-
-  this.servicesGServ.showModalWithParams( EgresosComponent, paramsMDL, '2000px')
-  .afterClosed().subscribe({
-    next: ( resp ) =>{
-
-      this.fn_getVentasListWithPage();
-    }
-  });
-
-}
-
-fn_ShowIngresos(){
-
-  var paramsMDL: any = {
-    idCaja: this.selectCajas.idCaja
-  }
-
-  this.servicesGServ.showModalWithParams( IngresosComponent, paramsMDL, '2000px')
-  .afterClosed().subscribe({
-    next: ( resp ) =>{
-
-      this.fn_getVentasListWithPage();
-    }
-  });
-
-}
 
 bShowActionAuthorization: boolean = false;
 fn_disabledSale( data: any ){
@@ -843,7 +802,15 @@ fn_ClearFilters(){
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// FIN SECCIÓN DE COMBOS
+// NAVEGACIÓN
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+goToSaleList(){
+  this.router.navigate(['/VioletaSistem/saleList']);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// FIN SECCIÓN DE NAVEGACIÓN
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 }

@@ -162,16 +162,19 @@ CREATE PROCEDURE getTallerMetalesCliente(
 BEGIN
 
     SELECT
-        idMetalCliente,
-        createDate,
-        idTaller,
-        idSale,
-        tipo,
-        gramos,
-        kilates,
-        valorMetal
-    FROM taller_metal_cliente
-    WHERE idTaller = p_idTaller
-	ORDER BY createDate DESC;
+        tmc.idMetalCliente,
+        tmc.createDate,
+        tmc.idTaller,
+        tmc.idSale,
+        tmc.tipo,
+        tmc.gramos,
+        tmc.kilates,
+        tmc.valorMetal,
+        COUNT(tmci.keyX) AS imageCount
+    FROM taller_metal_cliente tmc
+    LEFT JOIN taller_metal_cliente_img tmci ON tmc.idMetalCliente = tmci.idMetalCliente
+    WHERE tmc.idTaller = p_idTaller
+	GROUP BY tmc.idMetalCliente, tmc.createDate, tmc.idTaller, tmc.idSale, tmc.tipo, tmc.gramos, tmc.kilates, tmc.valorMetal
+	ORDER BY tmc.createDate DESC;
 
 END;

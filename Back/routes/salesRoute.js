@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { check } = require('express-validator')
 
 const { validarCampos } = require('../middlewares/validar-campos')
+const { uploadMetalCliente, uploadTallerHeader } = require('../middlewares/multer-config')
 
 const {
   insertSale
@@ -67,7 +68,12 @@ const {
   , uploadMetalClienteImage
   , getMetalClienteImages
   , deleteMetalClienteImage
+  , addManoObraTaller
+  , deleteManoObraTaller
+  , getTallerManoObra
+  , updateManoObraPrecio
   , saveTallerHeader
+  , updateTallerStatus
   , getTallerByID
   , getTallerPaginado
   , getTallerRefaccciones
@@ -353,6 +359,37 @@ router.post('/deleteServicioExternoTaller', [
   validarCampos
 ], deleteServicioExternoTaller);
 
+router.post('/addManoObraTaller', [
+
+  check('manoObra','Mano de Obra obligatoria').not().isEmpty(),
+
+  validarCampos
+], addManoObraTaller);
+
+router.post('/deleteManoObraTaller', [
+
+  check('idManoObra','id de Mano de Obra obligatorio').not().isEmpty(),
+  check('idManoObra','id de Mano de Obra debe ser numérico').isNumeric(),
+
+  validarCampos
+], deleteManoObraTaller);
+
+router.post('/getTallerManoObra', [
+
+  check('idTaller','idTaller es obligatorio').not().isEmpty(),
+  check('idTaller','idTaller debe ser numérico').isNumeric(),
+
+  validarCampos
+], getTallerManoObra);
+
+router.post('/updateManoObraPrecio', [
+
+  check('idTaller','idTaller es obligatorio').not().isEmpty(),
+  check('idTaller','idTaller debe ser numérico').isNumeric(),
+
+  validarCampos
+], updateManoObraPrecio);
+
 router.post('/saveTallerHeader', [
 
   check('idSeller_idUser','Vendedor obligatorio').not().isEmpty(),
@@ -365,6 +402,17 @@ router.post('/saveTallerHeader', [
 
   validarCampos
 ], saveTallerHeader);
+
+router.post('/updateTallerStatus', [
+
+  check('idTaller','Taller obligatorio').not().isEmpty(),
+  check('idTaller','El Taller debe ser numérico').isNumeric(),
+
+  check('idTallerStatus','Estado de Taller obligatorio').not().isEmpty(),
+  check('idTallerStatus','El Estado de Taller debe ser numérico').isNumeric(),
+
+  validarCampos
+], updateTallerStatus);
 
 router.post('/getTallerServiciosExternos', [
 
@@ -421,14 +469,12 @@ router.post('/getTallerMetalesCliente', [
   validarCampos
 ], getTallerMetalesCliente);
 
-router.post('/uploadMetalClienteImage', uploadMetalClienteImage);
+router.post('/uploadMetalClienteImage', uploadMetalCliente.single('file'), uploadMetalClienteImage);
 
-router.post('/getMetalClienteImages', [
+router.post('/uploadTallerHeaderImage', uploadTallerHeader.single('file'), uploadMetalClienteImage);
 
-  check('idMetalCliente','id de Metal Cliente obligatorio').not().isEmpty(),
-
-  validarCampos
-], getMetalClienteImages);
+router.post('/getMetalClienteImages', []
+, getMetalClienteImages);
 
 router.post('/deleteMetalClienteImage', [
 

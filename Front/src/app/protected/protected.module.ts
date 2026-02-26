@@ -16,6 +16,7 @@ import { ProductComponent } from './pages/catssales/product/product.component';
 import { CustomerListComponent } from './pages/catssales/customer-list/customer-list.component';
 import { CustomerComponent } from './pages/catssales/customer/customer.component';
 import { FxrateComponent } from './pages/settings/fxrate/fxrate.component';
+import { AddFxRateTypeDialogComponent } from './pages/settings/fxrate/add-fxrate-type-dialog.component';
 import { SaleListComponent } from './pages/sales/sale-list/sale-list.component';
 import { NsaleComponent } from './pages/sales/mdl/nsale/nsale.component';
 import { PaymentsComponent } from './pages/sales/mdl/payments/payments.component';
@@ -62,6 +63,11 @@ import { ActionsectionComponent } from './pages/security/mdl/actionsection/actio
 import { ActionComponent } from './pages/security/mdl/action/action.component';
 import { TallerListComponent } from "./pages/sales/taller-list/taller-list.component";
 import { TallerComponent } from './pages/sales/mdl/taller/taller.component';
+import { MetalClienteImagesComponent } from './pages/sales/mdl/taller/metal-cliente-images.component';
+import { TallerHeaderImagesComponent } from './pages/sales/mdl/taller/taller-header-images.component';
+import { ServiciosExternosModalComponent } from './pages/sales/mdl/taller/servicios-externos-modal/servicios-externos-modal.component';
+import { ServicioExternoFormModalComponent } from './pages/sales/mdl/taller/servicio-externo-form-modal/servicio-externo-form-modal.component';
+import { SeleccionarProductoModalComponent } from './pages/sales/mdl/taller/seleccionar-producto-modal.component';
 
 @NgModule({
     declarations: [
@@ -120,6 +126,12 @@ import { TallerComponent } from './pages/sales/mdl/taller/taller.component';
     ActionsectionComponent,
     ActionComponent,
     TallerComponent,
+    MetalClienteImagesComponent,
+    TallerHeaderImagesComponent,
+    ServiciosExternosModalComponent,
+    ServicioExternoFormModalComponent,
+    SeleccionarProductoModalComponent,
+    AddFxRateTypeDialogComponent,
   ],
     imports: [
         CommonModule,

@@ -1,0 +1,94 @@
+<div style="padding: 20px; width: 900px; max-height: 800px; overflow-y: auto;">
+  <div class="row">
+    <div class="col-md-12">
+      <h2>Fotos del Metal del Cliente</h2>
+      <button mat-icon-button
+              style="position: absolute; top: 10px; right: 10px;"
+              (click)="fn_cancel()">
+          <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- INPUT DE ARCHIVO -->
+  <div class="row top30px">
+    <div class="col-md-6">
+      <input type="file"
+             id="metalClienteImageInput"
+             accept="image/*"
+             (change)="onFileSelected($event)"
+             style="margin-bottom: 10px;">
+    </div>
+    <div class="col-md-6">
+      <button mat-raised-button color="primary" (click)="uploadMetalClienteImage()" class="btn-upload">
+        <mat-icon>cloud_upload</mat-icon>Subir Foto
+      </button>
+    </div>
+  </div>
+
+  <!-- PREVIEW DE IMAGEN SELECCIONADA -->
+  <div *ngIf="imagePreview" class="image-preview top15px">
+    <img [src]="imagePreview" style="max-width: 200px; max-height: 200px; border-radius: 5px;">
+  </div>
+
+  <!-- CARRUSEL DE IMÁGENES -->
+  <div *ngIf="metalClienteImages.length > 0" class="carousel-section top30px">
+    <div class="carousel-container">
+      <button mat-icon-button (click)="prevImage()" class="carousel-btn prev">
+        <mat-icon>navigate_before</mat-icon>
+      </button>
+
+      <div class="carousel-image">
+        <img [src]="metalClienteImages[currentImageIndex]?.urlImg"
+             alt="Metal Cliente Image"
+             style="max-width: 100%; max-height: 400px; border-radius: 5px;">
+      </div>
+
+      <button mat-icon-button (click)="nextImage()" class="carousel-btn next">
+        <mat-icon>navigate_next</mat-icon>
+      </button>
+    </div>
+
+    <!-- INDICADOR DE IMAGEN ACTUAL -->
+    <div class="carousel-info">
+      <p style="text-align: center; margin-top: 10px;">
+        Imagen {{ currentImageIndex + 1 }} de {{ metalClienteImages.length }}
+      </p>
+    </div>
+
+    <!-- MINIATURAS Y OPCIONES -->
+    <div class="thumbnails-section top15px">
+      <div class="thumbnails-container">
+        <div *ngFor="let img of metalClienteImages; let idx = index" class="thumbnail-item">
+          <img [src]="img.urlImg"
+               (click)="currentImageIndex = idx"
+               [style.border]="currentImageIndex === idx ? '3px solid #007bff' : '1px solid #ddd'"
+               style="max-width: 60px; max-height: 60px; cursor: pointer; border-radius: 3px;">
+          <button mat-icon-button
+                  (click)="deleteMetalClienteImage(img.keyX)"
+                  matTooltip="Eliminar"
+                  style="position: absolute; top: -10px; right: -10px;">
+            <mat-icon class="icon-delete" style="font-size: 16px;">delete_outline</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAJE CUANDO NO HAY IMÁGENES -->
+  <div *ngIf="metalClienteImages.length === 0" class="empty-state top30px">
+    <mat-icon>image_not_supported</mat-icon>
+    <p>No hay fotos de este metal aún</p>
+  </div>
+
+  <!-- Botón Cerrar -->
+  <div class="row top30px">
+    <div class="col-md-12" style="text-align: right;">
+      <button mat-raised-button (click)="fn_cancel()">
+        <mat-icon matPrefix>close</mat-icon>Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

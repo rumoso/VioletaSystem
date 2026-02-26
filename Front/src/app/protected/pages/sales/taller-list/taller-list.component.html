@@ -151,46 +151,7 @@
                 Nuevo taller</button>
 
                 <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px top10px700"
-                (click)="fn_ShowCorteCajaSale()"
-                [disabled]="_idSucursal == 0"
-                *ngIf="selectCajas.idCaja > 0 && hasPermissionAction('ventas_crearCorteCaja')">
-                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                Corte de Caja</button>
 
-                <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px top10px700"
-                (click)="fn_ShowEgresos()"
-                [disabled]="_idSucursal == 0"
-                *ngIf="selectCajas.idCaja > 0 && hasPermissionAction('ventas_crearEgresos')">
-                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                Egresos</button>
-
-                <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px top10px700"
-                (click)="fn_ShowIngresos()"
-                [disabled]="_idSucursal == 0"
-                *ngIf="selectCajas.idCaja > 0 && hasPermissionAction('ventas_crearEgresos')">
-                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                Ingresos</button>
-
-                <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px top10px700"
-                (click)="fn_ShowSelectCaja()"
-                [disabled]="_idSucursal == 0"
-                *ngIf="selectCajas.idCaja == 0 && hasPermissionAction('ventas_abrirCaja')">
-                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                Seleccionar caja</button>
-
-                <button mat-raised-button
                 color="primary"
                 type="submit"
                 class="marginRight10px top10px700"
@@ -199,21 +160,38 @@
                 <mat-icon matPrefix class="my-icon">print</mat-icon>
                 Seleccionar impresora</button>
 
+                <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="marginRight10px top10px700"
+                (click)="fn_ShowSelectCaja()"
+                *ngIf="selectCajas.idCaja == 0">
+                <mat-icon matPrefix class="my-icon">local_atm</mat-icon>
+                Seleccionar caja</button>
+
+                <button mat-raised-button
+                color="accent"
+                type="button"
+                (click)="goToSaleList()"
+                class="marginLeft10px">
+                <mat-icon matPrefix class="my-icon">shopping_cart</mat-icon>
+                IR A VENTAS</button>
+
             </div>
         </div>
 
         <div class="col-md-5" style="position: relative;">
-            <img *ngIf="selectCajas.idCaja > 0" style="display: inline-block;" width="50" src="assets/img/icons/cajaRegistradora.gif" class="marginRight10px manitaSobre" alt=""
-            (click)="fn_btnCerrarCaja()">
-            <div *ngIf="selectCajas.idCaja > 0" style="display: inline-block;" class="badge bg-primary text-wrap manitaSobre" style="font-size: 15px;"
-                (click)="fn_btnCerrarCaja()">
-                {{ selectCajas.cajaDesc }}
-            </div>
             <img *ngIf="selectPrinter.idPrinter > 0" style="display: inline-block;" width="50" src="assets/img/icons/printIco.gif" class="marginRight10px manitaSobre" alt=""
             (click)="fn_btnCerrarPrinter()">
             <div *ngIf="selectPrinter.idPrinter > 0" style="display: inline-block;" class="badge bg-primary text-wrap manitaSobre" style="font-size: 15px;"
                 (click)="fn_btnCerrarPrinter()">
                 {{ selectPrinter.printerName }}
+            </div>
+            <img *ngIf="selectCajas.idCaja > 0" style="display: inline-block;" width="50" src="assets/img/icons/cajaRegistradora.gif" class="marginRight10px manitaSobre" alt=""
+            (click)="fn_btnCerrarCaja()">
+            <div *ngIf="selectCajas.idCaja > 0" style="display: inline-block;" class="badge bg-primary text-wrap manitaSobre" style="font-size: 15px;"
+                (click)="fn_btnCerrarCaja()">
+                {{ selectCajas.cajaDesc }}
             </div>
         </div>
 
@@ -229,7 +207,7 @@
                             <thead>
                                 <th class="textAlingCenter padding-th">Acciones</th>
                                 <th class="textAlingLeft padding-th">Folio</th>
-                                <th class="textAlingLeft padding-th">Tipo de venta</th>
+                                <th class="textAlingLeft padding-th">Estatus</th>
                                 <th class="textAlingRight padding-th">Total</th>
                                 <th class="textAlingRight padding-th">Pagado</th>
                                 <th class="textAlingRight padding-th">Pendiente</th>
@@ -279,13 +257,7 @@
                                             #{{ item.idSale }}
                                         </div>
                                     </td>
-
-                                    <td style="text-align:left;">
-                                      <div style="width: 120px;">
-                                        {{ item.saleTypeDesc }}
-                                      </div>
-                                    </td>
-
+                                    <td style="text-align: left;">{{ item.statusName }}</td>
                                     <td style="text-align: right;">{{ item.total | currency }}</td>
                                     <td style="text-align: right;">{{ item.abonado | currency }}</td>
                                     <td style="text-align: right;" [ngClass]="{'colorRed elemento-animado': item.pendingAmount > 0}">{{ ( item.pendingAmount ) | currency }}</td>
@@ -311,12 +283,12 @@
 
                                     <td style="text-align:left;">
                                         <div style="width: 150px;">
-                                            {{ item.ventaDesc }}
+                                            {{ item.descripcion }}
                                         </div>
                                     </td>
 
-                                    <td style="text-align:left;">{{ item.customerName }}</td>
-                                    <td style="text-align:left;">{{ item.sellerName }}</td>
+                                    <td style="text-align:left;">{{ item.customerDesc }}</td>
+                                    <td style="text-align:left;">{{ item.sellerDesc }}</td>
 
                                 </tr>
 

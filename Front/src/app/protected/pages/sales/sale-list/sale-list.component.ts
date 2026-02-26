@@ -23,6 +23,7 @@ import { SalestypeService } from 'src/app/protected/services/salestype.service';
 import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
 import { IngresosComponent } from '../mdl/ingresos/ingresos.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-sale-list',
@@ -117,6 +118,7 @@ constructor(
   , private printersServ: PrintersService
   , private printTicketServ: PrintTicketService
   , private salesTypeServ: SalestypeService
+  , private router: Router
 
   ) { }
 
@@ -839,7 +841,9 @@ fn_ClearFilters(){
   //--------------------------------------------------------------------------
 
 
-
+goToSaleList(){
+  this.router.navigate(['/VioletaSistem/tallerList']);
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE COMBOS

@@ -71,6 +71,13 @@ export class UsersService {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetSellersCombo`, data);
   }
 
+  CCbxGetTecnicosCombo( search: string ): Observable<ResponseGet> {
+    var data = {
+      search: search
+    }
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetTecnicosCombo`, data);
+  }
+
   CUpdateAuthorizationCode( data : any ): Observable<ResponseDB_CRUD> {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateAuthorizationCode`, data );
   }
