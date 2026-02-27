@@ -3,6 +3,7 @@ const bcryptjs = require('bcryptjs');
 const moment = require('moment');
 
 const { createConexion, dbConnection, dbSPConnection } = require('../database/config');
+const Product = require('../models/Product');
 
 const getProductsListWithPage = async(req, res = response) => {
 
@@ -1921,6 +1922,74 @@ const updateProductPrice = async(req, res) => {
 }
 
 
+const insertProductSequelize = async(req, res) => {
+
+    const {
+        idSucursal,
+        idFamily,
+        idGroup,
+        idQuality,
+        idOrigin,
+        idSupplier = 0,
+        barCode,
+        name,
+        gramos,
+        cost = 0,
+        price = 0,
+        active,
+        addInv = 0,
+        noEntrada = '',
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const tran = await dbConnection.transaction();
+
+    try {
+
+        const newProduct = await Product.create({
+            createDate:  oGetDateNow,
+            idSucursal,
+            idFamily,
+            idGroup,
+            idQuality,
+            idOrigin,
+            idSupplier,
+            barCode,
+            name,
+            gramos,
+            cost,
+            price,
+            active:      active ? 1 : 0,
+            addInv,
+            noEntrada,
+            idUserLogON
+        }, { transaction: tran });
+
+        await tran.commit();
+
+        res.json({
+            status:   0,
+            message:  'Producto registrado con éxito.',
+            insertID: newProduct.idProduct
+        });
+
+    } catch (error) {
+
+        await tran.rollback();
+
+        res.json({
+            status:  2,
+            message: 'Sucedió un error inesperado',
+            data:    error.message
+        });
+
+    }
+
+};
+
 module.exports = {
     getProductsListWithPage
     , getProductByID
@@ -1952,4 +2021,5 @@ module.exports = {
     , updateFirmaDevoluInventario
     , cancelDevolution
     , updateProductPrice
+    , insertProductSequelize
   }

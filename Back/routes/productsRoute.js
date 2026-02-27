@@ -38,6 +38,7 @@ const {
     , updateFirmaDevoluInventario
     , cancelDevolution
     , updateProductPrice
+    , insertProductSequelize
 
    } = require('../controllers/productsController');
 
@@ -53,6 +54,36 @@ router.post('/getProductByID', [
   check('idProduct','Id debe ser numérico').isNumeric(),
   validarCampos
 ], getProductByID);
+
+router.post('/insertProductSequelize', [
+
+  check('idSucursal', 'idSucursal obligatorio').not().isEmpty(),
+  check('idSucursal', 'idSucursal debe ser numérico').isNumeric(),
+
+  check('idFamily', 'idFamily obligatorio').not().isEmpty(),
+  check('idFamily', 'idFamily debe ser numérico').isNumeric(),
+
+  check('idGroup', 'idGroup obligatorio').not().isEmpty(),
+  check('idGroup', 'idGroup debe ser numérico').isNumeric(),
+
+  check('idQuality', 'idQuality obligatorio').not().isEmpty(),
+  check('idQuality', 'idQuality debe ser numérico').isNumeric(),
+
+  check('idOrigin', 'idOrigin obligatorio').not().isEmpty(),
+  check('idOrigin', 'idOrigin debe ser numérico').isNumeric(),
+
+  check('barCode', 'Código de barra obligatorio').not().isEmpty(),
+
+  check('name', 'Nombre obligatorio').not().isEmpty(),
+
+  check('cost', 'cost debe ser numérico').isNumeric(),
+  check('price', 'price debe ser numérico').isNumeric(),
+
+  check('idUserLogON', 'idUserLogON obligatorio').not().isEmpty(),
+  check('idUserLogON', 'idUserLogON debe ser numérico').isNumeric(),
+
+  validarCampos
+], insertProductSequelize);
 
 router.post('/insertProduct', [
 
