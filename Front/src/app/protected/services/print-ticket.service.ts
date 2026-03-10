@@ -409,7 +409,7 @@ export class PrintTicketService {
     }
     else if(type == "Payments" || type == "RePayment"){
 
-      const sale = await this.salesServ.CGetSaleByIDPromise( idRelation );
+      var sale = await this.salesServ.CGetSaleByIDPromise( idRelation );
 
       console.log(sale);
 
@@ -1528,6 +1528,594 @@ export class PrintTicketService {
     // }
 
 
+
+    if(idPrinter > 0){
+
+      var oPrinterData = await this.printersServ.CGetPrinterByIDPromise( idPrinter );
+
+      if( oPrinterData.status == 0 && oLinesP.length > 0 ){
+
+        let oPrinter: any = {
+          printerName: oPrinterData.data.printerName,
+          maxMargen: oPrinterData.data.maxMargen,
+          sBarCode: sBarCode
+        };
+
+        let printParameters: any = {
+          oPrinter: oPrinter,
+          oLinesP: oLinesP
+        }
+
+        console.log(printParameters);
+
+        for( var pri = 0; pri < iCopy; pri++ ){
+          bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
+        }
+
+        return new Promise((resolve, reject) => {
+          resolve( bOK )
+        });
+
+      }
+
+    }
+
+
+  }
+
+  async printTicketTaller( type: string, idRelation: any, idPrinter: number, iCopy: number, bShowTotales: boolean = false, bFirma: boolean = false ): Promise<any> {
+
+    var bOK = false;
+    var sBarCode = '';
+
+    let USDollar = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+
+    var oLinesP: any = [];
+
+    if(type == "TallerHeader"){
+
+      let sale = await this.salesServ.CGetTallerByIDPromise( idRelation );
+      sale = sale.data.oTaller;
+
+      console.log(sale);
+
+      // CONSTRUYO EL HEADER
+      const HeaderSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.idSucursal, "Header");
+
+      var oLines: any = [];
+
+      oLines = [];
+      var oLine: any = { bImage: true, base64Image: this.base64VioletaIcon, iHeight: this.iHeightLogo, ticketWidth: this.ticketWidth }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 15, text: "Folio: #" + sale.idSale }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      if( sale.fechaEntrega ){
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 15, text: "Fecha de entrega: " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 15, text: sale.fechaEntrega }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      for(var i = 0; i < HeaderSuc.length; i++){
+
+        oLines = [];
+
+        var oLine: any = {
+          aling: HeaderSuc[i].aling
+          , size: HeaderSuc[i].size
+          , text: HeaderSuc[i].text
+        }
+
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      // AGREGO LA INFORMACIÓN DEL CLIENTE
+      const OCustomerData = await this.customersServ.CGetCustomerByIDPromise( sale.idCustomer );
+
+      if( OCustomerData != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "CLIENTE: " + OCustomerData.lastName + " " + OCustomerData.name }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "DIRECCIÓN: " + OCustomerData.address }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "TELEFONO: " + OCustomerData.tel }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      // AGREGO LA INFORMACIÓN DELA OPERACIÓN
+      if( sale != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "OPERACIÓN: Venta de Taller" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "Folio: #" + sale.idSale }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "FECHA: " + sale.createDateString }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "ATENDIÓ: " + sale.sellerDesc }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 100 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: sale.descripcion, iWith: 100 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      if( bShowTotales ){
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "SUBTOTAL:", iWith: 75 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sale.saleTotal ), iWith: 25 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "IVA:", iWith: 75 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( 0 ), iWith: 25 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 75 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sale.saleTotal ), iWith: 25 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      //SI ES DE CONSIGNACIÓN, DEBE FIRMAR EL CLIENTE
+      if(bFirma){
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "---------------------------------------------------- " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "NOMBRE Y FIRMA DE QUIEN RECIBE" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "---------------------------------------------------- " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "NOMBRE Y FIRMA DE QUIEN ENTREGA" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }else{
+        // CONSTRUYO EL FOOTER
+        const FooterSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.idSucursal, "footer");
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        for(var i = 0; i < FooterSuc.length; i++){
+
+          oLines = [];
+
+          var oLine: any = {
+            aling: FooterSuc[i].aling
+            , size: FooterSuc[i].size
+            , text: FooterSuc[i].text
+          }
+
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+        }
+      }
+    }
+
+    if(idPrinter > 0){
+
+      var oPrinterData = await this.printersServ.CGetPrinterByIDPromise( idPrinter );
+
+      if( oPrinterData.status == 0 && oLinesP.length > 0 ){
+
+        let oPrinter: any = {
+          printerName: oPrinterData.data.printerName,
+          maxMargen: oPrinterData.data.maxMargen,
+          sBarCode: sBarCode
+        };
+
+        let printParameters: any = {
+          oPrinter: oPrinter,
+          oLinesP: oLinesP
+        }
+
+        console.log(printParameters);
+
+        for( var pri = 0; pri < iCopy; pri++ ){
+          bOK = await this.CPrintTicketAwait( oPrinterData.data._api, printParameters );
+        }
+
+        return new Promise((resolve, reject) => {
+          resolve( bOK )
+        });
+
+      }
+
+    }
+
+
+  }
+
+  async printTicketTallerPago( type: string, idRelation: any, idPrinter: number, iCopy: number, iPayments: number = 0, idPayment: any = '', sumCambio: number = 0 ): Promise<any> {
+
+    var bOK = false;
+    var sBarCode = '';
+
+    let USDollar = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+
+    var oLinesP: any = [];
+
+    if(type == "Payments" || type == "RePayment"){
+
+      let oSale = await this.salesServ.CGetTallerByIDPromise( idRelation );
+      let sale = oSale.data.oTaller;
+
+      let oPayments = oSale.data.oPagos;
+
+      console.log(sale);
+
+      // CONSTRUYO EL HEADER
+      const HeaderSuc = await this.sucursalesServ.CGetPrintTicketSuc( sale.idSucursal, "Header");
+
+      var oLines: any = [];
+
+      oLines = [];
+      var oLine: any = { bImage: true, base64Image: this.base64VioletaIcon, iHeight: this.iHeightLogo, ticketWidth: this.ticketWidth }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 20, text: "PAGO" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      for(var i = 0; i < HeaderSuc.length; i++){
+
+        oLines = [];
+
+        var oLine: any = {
+          aling: HeaderSuc[i].aling
+          , size: HeaderSuc[i].size
+          , text: HeaderSuc[i].text
+        }
+
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      // AGREGO LA INFORMACIÓN DEL CLIENTE
+      const OCustomerData = await this.customersServ.CGetCustomerByIDPromise( sale.idCustomer );
+
+      if( OCustomerData != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "CLIENTE: " + OCustomerData.lastName + " " + OCustomerData.name }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "DIRECCIÓN: " + OCustomerData.address }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "TELEFONO: " + OCustomerData.tel }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      // AGREGO LA INFORMACIÓN DELA OPERACIÓN
+      if( sale != null ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: "OPERACIÓN: Pago al taller #" + sale.idSale }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "FECHA: " + oPayments[0].createDateString }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: "ATENDIÓ: " + sale.sellerDesc }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "# PAGO", iWith: 25 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Center", size: 5, style: "Bold", text: "FORMA DE PAGO", iWith: 45 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PAGO", iWith: 30 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      var dataPayments = [];
+
+      if(type == "RePayment"){
+        dataPayments = oPayments.filter( ( item: any ) => item.idPayment === idPayment);
+      }
+      else{
+        dataPayments = oPayments;
+      }
+
+      for(var i = 0; i < iPayments; i++){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 7, text: dataPayments[i].idPayment, iWith: 20 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Center", size: 7, text: ( dataPayments[i].fxRate > 0 ?
+          dataPayments[i].formaPagoDesc + '(' + USDollar.format( dataPayments[i].pagoF ) + ')'
+          : dataPayments[i].formaPagoDesc ), iWith: 50 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, text: USDollar.format( dataPayments[i].pago ), iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "PAGADO:", iWith: 75 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sale.pagado ), iWith: 25 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "PENDIENTE:", iWith: 75 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sale.pendingAmount ), iWith: 25 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "CAMBIO:", iWith: 75 }
+      oLines.push( oLine );
+      var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sumCambio ), iWith: 25 }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      if(sale.pendingAmount <= 0){
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 20, text: "PAGADO" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 7, text: "GRACIAS POR SU PAGO" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 7, text: "CONSERVE SU TICKET PARA ACLARACIONES" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+    }
 
     if(idPrinter > 0){
 

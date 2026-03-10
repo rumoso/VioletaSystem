@@ -75,10 +75,14 @@ const {
   , saveTallerHeader
   , updateTallerStatus
   , getTallerByID
+  , getTallerByIDSeq
+  , insertUpdateTallerFirma
+  , getTallerFirmasHistorial
   , getTallerPaginado
   , getTallerRefaccciones
   , getTallerServiciosExternos
   , cbxGetServiciosExternosCombo
+  , getTallerStatusCat
 
 } = require('../controllers/salesController');
 
@@ -428,6 +432,27 @@ router.post('/getTallerByID', [
   validarCampos
 ], getTallerByID);
 
+router.post('/getTallerByIDSeq', [
+
+  check('idTaller','id de la Venta obligatorio').not().isEmpty(),
+
+  validarCampos
+], getTallerByIDSeq);
+
+router.post('/insertUpdateTallerFirma', [
+
+  check('idTaller','idTaller es obligatorio').not().isEmpty(),
+  check('idTaller','idTaller debe ser numérico').isNumeric(),
+
+  validarCampos
+], insertUpdateTallerFirma);
+
+router.post('/getTallerFirmasHistorial', [
+  check('idTaller','idTaller es obligatorio').not().isEmpty(),
+  check('idTaller','idTaller debe ser numérico').isNumeric(),
+  validarCampos
+], getTallerFirmasHistorial);
+
 router.post('/addMetalAgranel', [
   check('metalAgranel','Metal Agranel obligatorio').not().isEmpty(),
 
@@ -485,6 +510,7 @@ router.post('/deleteMetalClienteImage', [
 ], deleteMetalClienteImage);
 
 router.post('/getTallerPaginado', getTallerPaginado);
+router.post('/getTallerStatusCat', getTallerStatusCat);
 
 router.post('/getTallerRefaccciones', getTallerRefaccciones);
 

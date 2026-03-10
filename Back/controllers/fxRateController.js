@@ -119,11 +119,13 @@ const getFxRateTypesWithLatestRates = async(req, res = response) => {
     // Obtener los tipos de cambio activos
     const fxRateTypes = await FxRateType.findAll({
       where: { active: 1 },
+      attributes: ['idFxRateType', 'nombre', 'descripcion', 'base', 'medicion', 'idFxRateTypeOrigin'],
       order: [['idFxRateType', 'ASC']]
     });
 
     // Para cada tipo, obtener el último registro de fxRate
     const result = [];
+    const fxRateTypeMap = new Map(fxRateTypes.map((x) => [x.idFxRateType, x.nombre]));
 
     for (const tipo of fxRateTypes) {
       const latestRate = await FxRate.findOne({
@@ -132,7 +134,7 @@ const getFxRateTypesWithLatestRates = async(req, res = response) => {
           referencia: tipo.nombre
         },
         order: [['createDate', 'DESC']],
-        attributes: ['idFxRate', 'createDate', 'referencia', 'fxRate', 'fxRateCost']
+        attributes: ['idFxRate', 'createDate', 'referencia', 'fxRate', 'fxRateCost', 'porcentUtility']
       });
 
       // Siempre incluir la referencia, aunque no tenga registros en fxRate
@@ -140,9 +142,14 @@ const getFxRateTypesWithLatestRates = async(req, res = response) => {
         idFxRateType: tipo.idFxRateType,
         nombre: tipo.nombre,
         descripcion: tipo.descripcion,
+        base: tipo.base !== undefined ? tipo.base : null,
+        medicion: tipo.medicion !== undefined ? tipo.medicion : null,
+        idFxRateTypeOrigin: tipo.idFxRateTypeOrigin || null,
+        originName: tipo.idFxRateTypeOrigin ? (fxRateTypeMap.get(tipo.idFxRateTypeOrigin) || '') : '',
         referencia: tipo.nombre,
         fxRate: latestRate ? latestRate.fxRate : null,
         fxRateCost: latestRate ? latestRate.fxRateCost : null,
+        porcentUtility: latestRate ? latestRate.porcentUtility : null,
         createDate: latestRate ? latestRate.createDate : null
       });
     }
@@ -182,6 +189,10 @@ const saveFxRateChanges = async(req, res = response) => {
     // Guardar cada cambio como un nuevo registro
     for (const change of changes) {
       try {
+        const parsedFxRate = parseFloat(change.fxRate);
+        const parsedFxRateCost = parseFloat(change.fxRateCost);
+        const parsedPorcentUtility = parseFloat(change.porcentUtility);
+
         // Obtener el siguiente idFxRate disponible
         const maxIdResult = await dbConnection.query(
           'SELECT COALESCE(MAX(idFxRate), 0) + 1 as nextId FROM fxRate',
@@ -194,8 +205,9 @@ const saveFxRateChanges = async(req, res = response) => {
           idFxRate: nextId,
           createDate: oGetDateNow,
           referencia: change.referencia,
-          fxRate: parseFloat(change.fxRate),
-          fxRateCost: parseFloat(change.fxRateCost),
+          fxRate: Number.isFinite(parsedFxRate) ? parsedFxRate : 0,
+          fxRateCost: Number.isFinite(parsedFxRateCost) ? parsedFxRateCost : 0,
+          porcentUtility: Number.isFinite(parsedPorcentUtility) ? parsedPorcentUtility : 0,
           active: 1,
           idFxRateType: change.idFxRateType || null
         });
@@ -239,7 +251,7 @@ const saveFxRateChanges = async(req, res = response) => {
 const createFxRateType = async(req, res = response) => {
   try {
     const FxRateType = require('../models/FxRateType');
-    const { nombre, descripcion } = req.body;
+    const { nombre, descripcion, idFxRateTypeOrigin = null, base = null, medicion = null } = req.body;
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     if (!nombre || nombre.trim().length === 0) {
@@ -265,6 +277,9 @@ const createFxRateType = async(req, res = response) => {
     const newFxRateType = await FxRateType.create({
       nombre: nombre.trim(),
       descripcion: descripcion && descripcion.trim() ? descripcion.trim() : '',
+      base: base !== null && base !== undefined && base !== '' ? parseFloat(base) : null,
+      medicion: medicion !== null && medicion !== undefined && medicion !== '' ? parseFloat(medicion) : null,
+      idFxRateTypeOrigin: idFxRateTypeOrigin || null,
       createDate: oGetDateNow,
       active: 1
     });
@@ -332,7 +347,7 @@ const updateFxRateType = async(req, res = response) => {
     const FxRateType = require('../models/FxRateType');
 
     const { idFxRateType } = req.params;
-    const { nombre, descripcion } = req.body;
+    const { nombre, descripcion, idFxRateTypeOrigin = null, base = null, medicion = null } = req.body;
 
     if (!idFxRateType) {
       return res.json({
@@ -376,7 +391,10 @@ const updateFxRateType = async(req, res = response) => {
     await FxRateType.update(
       {
         nombre: nombre.trim(),
-        descripcion: descripcion && descripcion.trim() ? descripcion.trim() : ''
+        descripcion: descripcion && descripcion.trim() ? descripcion.trim() : '',
+        base: base !== null && base !== undefined && base !== '' ? parseFloat(base) : null,
+        medicion: medicion !== null && medicion !== undefined && medicion !== '' ? parseFloat(medicion) : null,
+        idFxRateTypeOrigin: idFxRateTypeOrigin || null
       },
       { where: { idFxRateType: idFxRateType } }
     );
@@ -390,6 +408,51 @@ const updateFxRateType = async(req, res = response) => {
     res.json({
       status: 2,
       message: "Sucedió un error inesperado",
+      data: error.message
+    });
+  }
+};
+
+const searchFxRateTypes = async(req, res = response) => {
+  try {
+    const FxRateType = require('../models/FxRateType');
+    const { Op } = require('sequelize');
+
+    const {
+      search = '',
+      excludeIdFxRateType = 0
+    } = req.query;
+
+    const whereClause = {
+      active: 1,
+      nombre: {
+        [Op.like]: `%${search}%`
+      }
+    };
+
+    if (parseInt(excludeIdFxRateType) > 0) {
+      whereClause.idFxRateType = {
+        [Op.ne]: parseInt(excludeIdFxRateType)
+      };
+    }
+
+    const rows = await FxRateType.findAll({
+      where: whereClause,
+      attributes: ['idFxRateType', 'nombre', 'descripcion', 'idFxRateTypeOrigin'],
+      order: [['nombre', 'ASC']],
+      limit: 20
+    });
+
+    res.json({
+      status: 0,
+      message: 'Ejecutado correctamente.',
+      data: rows
+    });
+
+  } catch (error) {
+    res.json({
+      status: 2,
+      message: 'Sucedió un error inesperado',
       data: error.message
     });
   }
@@ -415,7 +478,7 @@ const getPriceByKilataje = async(req, res = response) => {
         referencia: `${kilates} Kilates`
       },
       order: [['createDate', 'DESC']],
-      attributes: ['fxRate', 'fxRateCost', 'createDate']
+      attributes: ['fxRate', 'fxRateCost', 'porcentUtility', 'createDate']
     });
 
     if (!fxRateRecord) {
@@ -431,6 +494,7 @@ const getPriceByKilataje = async(req, res = response) => {
       data: {
         price: fxRateRecord.fxRate,
         costPrice: fxRateRecord.fxRateCost,
+        porcentUtility: fxRateRecord.porcentUtility,
         lastUpdate: fxRateRecord.createDate
       }
     });
@@ -453,4 +517,5 @@ module.exports = {
     , deleteFxRateType
     , updateFxRateType
     , getPriceByKilataje
+  , searchFxRateTypes
   }

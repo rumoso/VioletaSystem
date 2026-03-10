@@ -27,6 +27,18 @@ const FxRateType = dbConnection.define('fxrate_type', {
     type: DataTypes.STRING(500),
     allowNull: true
   },
+  idFxRateTypeOrigin: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  base: {
+    type: DataTypes.DECIMAL(18, 2),
+    allowNull: true
+  },
+  medicion: {
+    type: DataTypes.DECIMAL(18, 2),
+    allowNull: true
+  },
   active: {
     type: DataTypes.SMALLINT,
     allowNull: true

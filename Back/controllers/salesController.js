@@ -2425,6 +2425,34 @@ const getRepPagosWithPage = async(req, res = response) => {
 
 };
 
+// ── Recalcula precioTotal en `taller` y total en `sales` tras cada operación ─
+const _fn_recalcularTotalSaleTaller = async (idSale, idTaller) => {
+    try {
+        const [totalResult] = await dbConnection.query(`
+            SELECT ROUND(
+                  IFNULL((SELECT SUM(R.precio  * R.cantidad)  FROM taller_refacciones       R  WHERE R.idTaller  = :idTaller), 0)
+                + IFNULL((SELECT SUM(SE.precio * SE.cantidad) FROM taller_servicios_externos SE WHERE SE.idTaller = :idTaller), 0)
+                + IFNULL((SELECT SUM(MA.valorMetal)           FROM taller_metal_agranel      MA WHERE MA.idTaller = :idTaller), 0)
+                + CASE
+                    WHEN (SELECT COUNT(*) FROM taller_mano_obra TMO WHERE TMO.idTaller = :idTaller) > 0
+                    THEN IFNULL((SELECT SUM(TMO2.precio) FROM taller_mano_obra TMO2 WHERE TMO2.idTaller = :idTaller), 0)
+                    ELSE IFNULL((SELECT manoObraPrecio FROM taller WHERE idTaller = :idTaller), 0)
+                  END
+            , 2) AS nuevoTotal
+        `, { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT });
+
+        const nuevoTotal = totalResult?.nuevoTotal ?? 0;
+
+        await dbConnection.query(
+            `UPDATE taller SET precioTotal = :nuevoTotal WHERE idTaller = :idTaller`,
+            { replacements: { nuevoTotal, idTaller }, type: dbConnection.QueryTypes.UPDATE }
+        );
+        return nuevoTotal;
+    } catch (err) {
+        console.error('_fn_recalcularTotalSaleTaller error:', err.message);
+    }
+};
+
 const addRefaccionTaller = async(req, res) => {
 
     var {
@@ -2466,10 +2494,12 @@ const addRefaccionTaller = async(req, res) => {
                 , ${ idUserLogON }
             )`);
 
-            res.json({
-                status: OSQL_InsertRefaccion[0].out_id > 0 ? 0 : 1,
-                message: OSQL_InsertRefaccion[0].message,
-            });
+            if (OSQL_InsertRefaccion[0].out_id > 0) {
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+                res.json({ status: 0, message: OSQL_InsertRefaccion[0].message });
+            } else {
+                res.json({ status: 1, message: OSQL_InsertRefaccion[0].message });
+            }
         }
 
     } catch (error) {
@@ -2494,12 +2524,21 @@ const deleteRefaccionTaller = async(req, res = response) => {
 
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
+        const oRefInfo = await dbConnection.query(
+            `SELECT idTaller, idSale FROM taller_refacciones WHERE idRefaccion = :idRefaccion LIMIT 1`,
+            { replacements: { idRefaccion }, type: dbConnection.QueryTypes.SELECT }
+        );
+
         var OSQL = await dbConnection.query(`call deleteRefaccionTaller(
             ${ idRefaccion }
             , '${ oGetDateNow }'
             , ${ idUserLogON }
         )`);
         console.log(OSQL)
+
+        if (OSQL[0].out_id > 0 && oRefInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oRefInfo[0].idSale, oRefInfo[0].idTaller);
+        }
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -2555,10 +2594,12 @@ const addServicioExternoTaller = async(req, res) => {
                 , ${ idUserLogON }
             )`);
 
-            res.json({
-                status: OSQL_InsertServicioExterno[0].out_id > 0 ? 0 : 1,
-                message: OSQL_InsertServicioExterno[0].message
-            });
+            if (OSQL_InsertServicioExterno[0].out_id > 0) {
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+                res.json({ status: 0, message: OSQL_InsertServicioExterno[0].message });
+            } else {
+                res.json({ status: 1, message: OSQL_InsertServicioExterno[0].message });
+            }
         }
     } catch (error) {
         res.json({
@@ -2582,12 +2623,21 @@ const deleteServicioExternoTaller = async(req, res = response) => {
 
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
+        const oServInfo = await dbConnection.query(
+            `SELECT idTaller, idSale FROM taller_servicios_externos WHERE idServicioExternoDetalle = :idServicioExternoDetalle LIMIT 1`,
+            { replacements: { idServicioExternoDetalle }, type: dbConnection.QueryTypes.SELECT }
+        );
+
         var OSQL = await dbConnection.query(`call deleteServicioExternoTaller(
             ${ idServicioExternoDetalle }
             , '${ oGetDateNow }'
             , ${ idUserLogON }
         )`);
         console.log(OSQL)
+
+        if (OSQL[0].out_id > 0 && oServInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oServInfo[0].idSale, oServInfo[0].idTaller);
+        }
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -2625,6 +2675,7 @@ const saveTallerHeader = async(req, res) => {
 
         var oSQLInsert = await dbConnection.query(`call insertUpdateSaleTaller(
             '${oGetDateNow}'
+            , ${ idTaller }
             , '${idSale}'
             , ${idSucursalLogON}
             , ${idSeller_idUser}
@@ -2635,6 +2686,7 @@ const saveTallerHeader = async(req, res) => {
 
             , ${idUserLogON}
         )`);
+        console.log(oSQLInsert)
 
         if (oSQLInsert.length > 0) {
             idSale = oSQLInsert[0].idSale;
@@ -2733,16 +2785,56 @@ const getTallerByID = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getTallerByID( '${ idTaller }' )`)
-  
-        if(OSQL.length == 0){
-      
-            res.json({
+        const oTaller = await dbConnection.query(`
+            SELECT
+                T.idTaller
+                , T.idSale
+                , T.createDate
+                , DATE_FORMAT( DATE_SUB( T.createDate, INTERVAL IFNULL(@iHours, 0) HOUR ), '%d-%m-%Y %h:%i:%s %p') AS createDateString
+                , DATE_FORMAT( T.createDate, '%d-%m-%Y') AS createDateDate
+                , DATE_FORMAT( T.createDate, '%h:%i:%s %p') AS createDateHours
+                , IFNULL( T.descripcion, '') AS descripcion
+                , IFNULL( DATE_FORMAT( T.fechaIngreso, '%Y-%m-%d'), '') AS fechaIngreso
+                , IFNULL( DATE_FORMAT( T.fechaPrometida, '%Y-%m-%d'), '') AS fechaPrometida
+                , IFNULL( DATE_FORMAT( T.fechaEntrega, '%Y-%m-%d %h:%i:%s %p'), '') AS fechaEntrega
+                , T.idCustomer
+                , CONCAT( C.lastName, ' ', C.name, ' - ', C.tel, ' - ', C.address) AS customerDesc
+                , T.idSucursal
+                , SS.name AS sucursalDesc
+                , T.idSeller_idUser
+                , CONCAT( '#', U.idUser, ' - ', U.name) AS sellerDesc
+                , T.active
+                , T.idTallerStatus
+                , IFNULL( T.manoObraPrecio, 0) AS manoObraPrecio
+                , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
+                , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
+                , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
+            FROM taller AS T
+            INNER JOIN sucursales AS SS ON T.idSucursal = SS.idSucursal
+            INNER JOIN users AS U ON T.idSeller_idUser = U.idUser
+            INNER JOIN customers AS C ON T.idCustomer = C.idCustomer
+            LEFT JOIN (
+                SELECT
+                    PP.idRelation
+                    , ROUND( SUM( PP.pago), 2) AS pagado
+                FROM payments AS PP
+                WHERE PP.relationType IN ('V','A')
+                AND PP.idRelation = ( SELECT idSale FROM taller WHERE idTaller = :idTaller )
+                AND PP.active = 1
+                GROUP BY PP.idRelation
+            ) AS AAA ON AAA.idRelation = T.idSale
+            WHERE T.idTaller = :idTaller
+        `, {
+            replacements: { idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if (!oTaller || oTaller.length === 0) {
+            return res.json({
                 status: 1,
-                message: "No se encontró la venta.",
+                message: "No se encontró el taller.",
                 data: null
             });
-    
         }
         else{
 
@@ -2771,19 +2863,83 @@ const getTallerByID = async(req, res = response) => {
             type: dbConnection.QueryTypes.SELECT
         });
 
+            var oFirmaStatus = await dbConnection.query(`
+                SELECT
+                    TFS.idFirma
+                    , TFS.createDate
+                    , TFS.firmaDate
+                    , TFS.idTaller
+                    , TFS.idTallerStatus
+                    , TFS.idUserCreate
+                    , IFNULL( TFS.firma, 0) AS firma
+                    , TFS.idUserFirma
+                    , IFNULL( TFS.comentario, '') AS comentario
+                    , IFNULL( UF.name, '') AS userFirmaDesc
+                    , CASE WHEN TFS.firma = 1 THEN 'Aprobado'
+                           WHEN TFS.firma = 2 THEN 'Rechazado'
+                           ELSE 'Sin Revisar'
+                      END AS firmaDesc
+                FROM taller_firmas_status AS TFS
+                LEFT JOIN users AS UF ON TFS.idUserFirma = UF.idUser
+                WHERE TFS.idTaller = :idTaller
+                AND TFS.idTallerStatus = ( SELECT idTallerStatus FROM taller WHERE idTaller = :idTaller )
+                ORDER BY TFS.idFirma DESC
+                LIMIT 1
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT
+            });
+
+            const idSaleForPayments = oTaller[0].idSale;
+
+            const oPagos = await dbConnection.query(`
+                SELECT
+                    P.idPayment
+                    , P.createDate
+                    , DATE_FORMAT( P.createDate, '%d-%m-%Y') AS createDateDate
+                    , DATE_FORMAT( P.createDate, '%h:%i:%s %p') AS createDateHours
+                    , P.idRelation AS idSale
+                    , P.idFormaPago
+                    , FP.name AS formaPagoDesc
+                    , ROUND( P.pago, 2) AS pago
+                    , P.referencia
+                    , P.description
+                    , CONCAT( '#', U.idUser, ' - ', U.name) AS sellerName
+                    , ROUND( P.fxRate, 2) AS fxRate
+                    , ROUND( P.pagoF, 2) AS pagoF
+                    , P.active
+                    , IFNULL((
+                        SELECT COUNT(*)
+                        FROM corte_caja_ingresos AS CCI
+                        INNER JOIN corte_caja AS CC ON CCI.idCorteCaja = CC.idCorteCaja
+                        WHERE CC.active = 1
+                          AND CCI.idPayment = P.idPayment
+                    ), 0) AS iPagoCortado
+                    , P.idCaja
+                FROM payments AS P
+                INNER JOIN forma_pago AS FP ON P.idFormaPago = FP.idFormaPago
+                INNER JOIN users AS U ON P.idSeller_idUser = U.idUser
+                WHERE P.active = 1
+                  AND P.idRelation = :idSale
+                ORDER BY P.keyx DESC
+            `, {
+                replacements: { idSale: idSaleForPayments },
+                type: dbConnection.QueryTypes.SELECT
+            });
+
             res.json({
                 status: 0,
                 message: "Ejecutado correctamente.",
                 data: {
-                    oTaller: OSQL[0],
+                    oTaller: oTaller[0],
                     refaccionesDetail: oRefacciones,
                     serviciosExternos: oServiciosExternos,
                     metalesAgranel: oMetalesAgranel,
                     metalesCliente: oMetalesCliente,
-                    oManoObra: oManoObra
+                    oManoObra: oManoObra,
+                    oFirmaStatus: oFirmaStatus.length > 0 ? oFirmaStatus[0] : null,
+                    oPagos: oPagos
                 }
-                
-                //dataPayments: OSQL3
             });
     
         }
@@ -2799,6 +2955,18 @@ const getTallerByID = async(req, res = response) => {
   
 };
 
+const getTallerStatusCat = async(req, res = response) => {
+    try {
+        const rows = await dbConnection.query(
+            `SELECT idTallerStatus, nombre FROM taller_status_cat WHERE active = 1 ORDER BY idTallerStatus ASC`,
+            { type: dbConnection.QueryTypes.SELECT }
+        );
+        res.json({ status: 0, message: 'Ejecutado correctamente.', data: rows });
+    } catch(error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error });
+    }
+};
+
 const getTallerPaginado = async(req, res = response) => {
 
     var {
@@ -2806,6 +2974,8 @@ const getTallerPaginado = async(req, res = response) => {
         , createDateEnd = ''
         , idCustomer = 0
         , idSale = ''
+        , idTallerStatus = 0
+        , idTecnico = 0
 
         , bCancel = false
         , bPending = false
@@ -2819,66 +2989,156 @@ const getTallerPaginado = async(req, res = response) => {
        
     } = req.body;
 
-    //const dbConnectionNEW = await createConexion();
-
     try{
 
-        if (bPending && bPagada)
-        {
-            bPending = false;
-            bPagada = false;
+        if (bCancel  === true  || bCancel  === 'true'  || bCancel  == 1) bCancel  = 1; else bCancel  = 0;
+        if (bPending === true  || bPending === 'true'  || bPending == 1) bPending = 1; else bPending = 0;
+        if (bPagada  === true  || bPagada  === 'true'  || bPagada  == 1) bPagada  = 1; else bPagada  = 0;
+
+        if (bPending && bPagada) {
+            bPending = 0;
+            bPagada  = 0;
         }
 
-        var OSQL = await dbConnection.query(`call getTallerPaginado(
-            '${ createDateStart.substring(0, 10) }'
-            , '${ createDateEnd.substring(0, 10) }'
-            , ${ idCustomer }
-            , '${ idSale }'
+        const activeFilter    = bCancel === 1 ? 0 : 1;
+        const payActive       = bCancel === 1 ? 0 : 1;
+        const dateStart       = createDateStart ? createDateStart.substring(0, 10) : '';
+        const dateEnd         = createDateEnd   ? createDateEnd.substring(0, 10)   : '';
+        const idSaleSearch    = idSale ? `%${idSale}%` : null;
 
-            , ${ bCancel }
-            , ${ bPending }
-            , ${ bPagada }
+        // ── Subquery compartido de abonos ────────────────────────────────────────
+        const abonadoJoin = `
+            LEFT JOIN (
+                SELECT PP.idRelation, ROUND( SUM(PP.pago), 2) AS abonado
+                FROM payments AS PP
+                WHERE PP.relationType IN ('V','A')
+                  AND PP.active = :payActive
+                GROUP BY PP.idRelation
+            ) AS AAA ON AAA.idRelation = T.idSale
+        `;
 
-            , ${ start }
-            , ${ limiter }
+        // ── Cláusulas WHERE compartidas ──────────────────────────────────────────
+        const whereBase = `
+            INNER JOIN sucursalesconfig AS SC ON T.idSucursal = SC.idSucursal
+            ${abonadoJoin}
+            WHERE SC.idUser    = :idUserLogON
+              AND T.active     = :activeFilter
+              AND ( :idSaleSearch IS NULL OR T.idSale LIKE :idSaleSearch )
+              AND ( :dateStart = '' OR CAST(T.createDate AS DATE) BETWEEN CAST(:dateStart AS DATE) AND CAST(:dateEnd AS DATE) )
+              AND ( :idCustomer = 0  OR T.idCustomer = :idCustomer )
+              AND ( :bPending        = 0  OR ( ROUND( IFNULL(T.precioTotal, 0), 2) - IFNULL(AAA.abonado, 0) ) > 0 )
+              AND ( :bPagada         = 0  OR ( ROUND( IFNULL(T.precioTotal, 0), 2) - IFNULL(AAA.abonado, 0) ) = 0 )
+              AND ( :idTallerStatus  = 0  OR T.idTallerStatus = :idTallerStatus )
+              AND ( :idTecnico       = 0  OR EXISTS (
+                    SELECT 1 FROM taller_mano_obra TMO
+                    WHERE TMO.idTaller = T.idTaller AND TMO.idUserTecnico = :idTecnico
+              ))
+        `;
 
-            , ${ idSucursalLogON }
-            , ${ idUserLogON }
-            )`)
+        const replacements = {
+            idUserLogON,
+            activeFilter,
+            payActive,
+            dateStart,
+            dateEnd,
+            idSaleSearch,
+            idCustomer: idCustomer || 0,
+            idTallerStatus: idTallerStatus || 0,
+            idTecnico: idTecnico || 0,
+            bPending,
+            bPagada,
+            start:   Number(start)   || 0,
+            limiter: Number(limiter) || 10
+        };
 
-        if(OSQL.length == 0){
+        // ── COUNT ────────────────────────────────────────────────────────────────
+        const countResult = await dbConnection.query(`
+            SELECT COUNT(*) AS iRows
+            FROM taller AS T
+            ${whereBase}
+        `, { replacements, type: dbConnection.QueryTypes.SELECT });
 
-            res.json({
-                status:0,
-                message:"Ejecutado correctamente.",
-                data:{
-                count: 0,
-                rows: null
-                }
-            });
+        const iRows = countResult[0]?.iRows || 0;
 
-        }
-        else{
-
-            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
-            
-            res.json({
+        if (iRows === 0) {
+            return res.json({
                 status: 0,
                 message: "Ejecutado correctamente.",
-                data:{
-                count: iRows,
-                rows: OSQL
-                }
+                data: { count: 0, rows: [] }
             });
-            
         }
 
-        //await dbConnection.close();
-        
+        // ── DATOS PAGINADOS ──────────────────────────────────────────────────────
+        const rows = await dbConnection.query(`
+            SELECT
+                T.idTaller
+                , T.idSale
+                , T.createDate
+                , DATE_FORMAT(T.createDate, '%d-%m-%Y')      AS createDateDate
+                , DATE_FORMAT(T.createDate, '%h:%i:%s %p')   AS createDateHours
+                , IFNULL(T.descripcion, '')                  AS descripcion
+                , IFNULL(T.fechaIngreso, '')                 AS fechaIngreso
+                , IFNULL(T.fechaPrometida, '')               AS fechaPrometida
+                , IFNULL(T.fechaEntrega, '')                 AS fechaEntrega
+                , T.idCustomer
+                , CONCAT(C.lastName, ' ', C.name, ' - ', C.tel, ' - ', C.address) AS customerDesc
+                , T.idSucursal
+                , SS.name                                    AS sucursalDesc
+                , T.idSeller_idUser
+                , CONCAT('#', U.idUser, ' - ', U.name)       AS sellerDesc
+                , T.active
+                , T.idTallerStatus
+                , TSC.nombre                                 AS statusName
+                , ROUND(IFNULL(T.precioTotal, 0), 2)         AS total
+                , ROUND(IFNULL(AAA.abonado, 0), 2)           AS abonado
+                , ROUND(IFNULL(T.precioTotal, 0) - IFNULL(AAA.abonado, 0), 2) AS pendingAmount
+                , IFNULL((
+                    SELECT ROUND(SUM(PP2.pago), 2)
+                    FROM payments AS PP2
+                    INNER JOIN corte_caja_ingresos AS CCI ON PP2.idPayment = CCI.idPayment
+                    WHERE PP2.active = 1
+                      AND PP2.relationType IN ('V','A')
+                      AND PP2.idRelation = T.idSale
+                      AND PP2.idFormaPago <> 5
+                    GROUP BY PP2.idRelation
+                ), 0)                                        AS pagosYaEnCorte
+                , (
+                    SELECT IFNULL(TFS.firma, 0)
+                    FROM taller_firmas_status AS TFS
+                    WHERE TFS.idTaller = T.idTaller
+                      AND TFS.idTallerStatus = T.idTallerStatus
+                    ORDER BY TFS.idFirma DESC
+                    LIMIT 1
+                )                                            AS firmaStatus
+                , (
+                    SELECT CASE WHEN TFS2.firma = 1 THEN 'Aprobado'
+                                WHEN TFS2.firma = 2 THEN 'Rechazado'
+                                ELSE 'Sin Revisar'
+                           END
+                    FROM taller_firmas_status AS TFS2
+                    WHERE TFS2.idTaller = T.idTaller
+                      AND TFS2.idTallerStatus = T.idTallerStatus
+                    ORDER BY TFS2.idFirma DESC
+                    LIMIT 1
+                )                                            AS firmaDesc
+            FROM taller AS T
+            INNER JOIN taller_status_cat AS TSC ON T.idTallerStatus = TSC.idTallerStatus
+            INNER JOIN sucursales        AS SS  ON T.idSucursal      = SS.idSucursal
+            INNER JOIN users             AS U   ON T.idSeller_idUser = U.idUser
+            INNER JOIN customers         AS C   ON T.idCustomer      = C.idCustomer
+            ${whereBase}
+            ORDER BY T.idTaller DESC
+            LIMIT :start, :limiter
+        `, { replacements, type: dbConnection.QueryTypes.SELECT });
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { count: iRows, rows }
+        });
+
     }catch(error){
 
-        //await dbConnection.close();
-      
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
@@ -3016,10 +3276,12 @@ const addMetalAgranel = async(req, res) => {
                 , ${ idUserLogON }
             )`);
 
-            res.json({
-                status: OSQL_InsertMetalAgranel[0].out_id > 0 ? 0 : 1,
-                message: OSQL_InsertMetalAgranel[0].message
-            });
+            if (OSQL_InsertMetalAgranel[0].out_id > 0) {
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+                res.json({ status: 0, message: OSQL_InsertMetalAgranel[0].message });
+            } else {
+                res.json({ status: 1, message: OSQL_InsertMetalAgranel[0].message });
+            }
         }
 
     } catch (error) {
@@ -3044,12 +3306,21 @@ const deleteMetalAgranel = async(req, res = response) => {
 
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
+        const oMetalInfo = await dbConnection.query(
+            `SELECT idTaller, idSale FROM taller_metal_agranel WHERE idMetalAgranel = :idMetalAgranel LIMIT 1`,
+            { replacements: { idMetalAgranel }, type: dbConnection.QueryTypes.SELECT }
+        );
+
         var OSQL = await dbConnection.query(`call deleteMetalAgranel(
             ${ idMetalAgranel }
             , '${ oGetDateNow }'
             , ${ idUserLogON }
         )`);
         console.log(OSQL)
+
+        if (OSQL[0].out_id > 0 && oMetalInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oMetalInfo[0].idSale, oMetalInfo[0].idTaller);
+        }
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -3519,6 +3790,7 @@ const addManoObraTaller = async(req, res) => {
                 }
 
                 await transaction.commit();
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
 
                 res.json({
                     status: 0,
@@ -3586,6 +3858,7 @@ const addManoObraTaller = async(req, res) => {
                 }
 
                 await transaction.commit();
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
 
                 res.json({
                     status: 0,
@@ -3627,7 +3900,7 @@ const deleteManoObraTaller = async(req, res = response) => {
 
         // Inicialmente, verificar que el registro existe
         const recordExists = await dbConnection.query(`
-            SELECT idManoObra FROM taller_mano_obra
+            SELECT idManoObra, idTaller, idSale FROM taller_mano_obra
             WHERE idManoObra = :idManoObra
             LIMIT 1
         `, {
@@ -3693,6 +3966,10 @@ const deleteManoObraTaller = async(req, res = response) => {
         }
 
         await transaction.commit();
+
+        if (recordExists.length > 0) {
+            await _fn_recalcularTotalSaleTaller(recordExists[0].idSale, recordExists[0].idTaller);
+        }
 
         res.json({
             status: 0,
@@ -3771,6 +4048,11 @@ const updateManoObraPrecio = async(req, res) => {
             return;
         }
 
+        const oTallerSaleInfo = await dbConnection.query(
+            `SELECT idSale FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT }
+        );
+
         // Usar SQL directo para actualizar el campo manoObraPrecio en la tabla sale_taller
         const result = await dbConnection.query(`
             UPDATE taller 
@@ -3780,6 +4062,10 @@ const updateManoObraPrecio = async(req, res) => {
             replacements: { manoObraPrecio: manoObraPrecio || 0, idTaller: idTaller },
             type: dbConnection.QueryTypes.UPDATE
         });
+
+        if (oTallerSaleInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oTallerSaleInfo[0].idSale, idTaller);
+        }
 
         // result retorna un array [undefined, rowsAffected]
         if (result && result[1] > 0) {
@@ -3800,6 +4086,263 @@ const updateManoObraPrecio = async(req, res) => {
             data: error.message
         });
     }
+};
+
+const getTallerByIDSeq = async(req, res = response) => {
+
+    const { idTaller } = req.body;
+
+    try {
+
+        const oTaller = await dbConnection.query(`
+            SELECT
+                T.idTaller
+                , T.idSale
+                , T.createDate
+                , DATE_FORMAT( DATE_SUB( T.createDate, INTERVAL IFNULL(@iHours, 0) HOUR ), '%d-%m-%Y %h:%i:%s %p') AS createDateString
+                , DATE_FORMAT( T.createDate, '%d-%m-%Y') AS createDateDate
+                , DATE_FORMAT( T.createDate, '%h:%i:%s %p') AS createDateHours
+                , IFNULL( T.descripcion, '') AS descripcion
+                , IFNULL( DATE_FORMAT( T.fechaIngreso, '%Y-%m-%d'), '') AS fechaIngreso
+                , IFNULL( DATE_FORMAT( T.fechaPrometida, '%Y-%m-%d'), '') AS fechaPrometida
+                , IFNULL( DATE_FORMAT( T.fechaEntrega, '%Y-%m-%d %h:%i:%s %p'), '') AS fechaEntrega
+                , T.idCustomer
+                , CONCAT( C.lastName, ' ', C.name, ' - ', C.tel, ' - ', C.address) AS customerDesc
+                , T.idSucursal
+                , SS.name AS sucursalDesc
+                , T.idSeller_idUser
+                , CONCAT( '#', U.idUser, ' - ', U.name) AS sellerDesc
+                , T.active
+                , T.idTallerStatus
+                , IFNULL( T.manoObraPrecio, 0) AS manoObraPrecio
+                , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
+                , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
+                , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
+            FROM taller AS T
+            INNER JOIN sucursales AS SS ON T.idSucursal = SS.idSucursal
+            INNER JOIN users AS U ON T.idSeller_idUser = U.idUser
+            INNER JOIN customers AS C ON T.idCustomer = C.idCustomer
+            LEFT JOIN (
+                SELECT
+                    PP.idRelation
+                    , ROUND( SUM( PP.pago), 2) AS pagado
+                FROM payments AS PP
+                WHERE PP.relationType IN ('V','A')
+                AND PP.idRelation = ( SELECT idSale FROM taller WHERE idTaller = :idTaller )
+                AND PP.active = 1
+                GROUP BY PP.idRelation
+            ) AS AAA ON AAA.idRelation = T.idSale
+            WHERE T.idTaller = :idTaller
+        `, {
+            replacements: { idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if (!oTaller || oTaller.length === 0) {
+            return res.json({
+                status: 1,
+                message: "No se encontró el taller.",
+                data: null
+            });
+        }
+
+        const [oRefacciones, oServiciosExternos, oMetalesAgranel, oMetalesCliente, oManoObra, oFirmaStatusArr] = await Promise.all([
+            dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`),
+            dbConnection.query(`
+                SELECT
+                    tmo.idManoObra,
+                    tmo.createDate,
+                    tmo.idTaller,
+                    tmo.idSale,
+                    tmo.idUserTecnico,
+                    u.name AS tecnicoDesc,
+                    u.userName,
+                    tmo.precio,
+                    tmo.idCreateUser
+                FROM taller_mano_obra tmo
+                LEFT JOIN users u ON tmo.idUserTecnico = u.idUser
+                WHERE tmo.idTaller = :idTaller
+                ORDER BY tmo.createDate DESC
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT
+            }),
+            dbConnection.query(`
+                SELECT
+                    TFS.idFirma
+                    , TFS.createDate
+                    , TFS.firmaDate
+                    , TFS.idTaller
+                    , TFS.idTallerStatus
+                    , TFS.idUserCreate
+                    , IFNULL( TFS.firma, 0) AS firma
+                    , TFS.idUserFirma
+                    , IFNULL( TFS.comentario, '') AS comentario
+                    , IFNULL( UF.name, '') AS userFirmaDesc
+                    , CASE WHEN TFS.firma = 1 THEN 'Aprobado'
+                           WHEN TFS.firma = 2 THEN 'Rechazado'
+                           ELSE 'Sin Revisar'
+                      END AS firmaDesc
+                FROM taller_firmas_status AS TFS
+                LEFT JOIN users AS UF ON TFS.idUserFirma = UF.idUser
+                WHERE TFS.idTaller = :idTaller
+                AND TFS.idTallerStatus = ( SELECT idTallerStatus FROM taller WHERE idTaller = :idTaller )
+                ORDER BY TFS.idFirma DESC
+                LIMIT 1
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT
+            })
+        ]);
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                oTaller: oTaller[0],
+                refaccionesDetail: oRefacciones,
+                serviciosExternos: oServiciosExternos,
+                metalesAgranel: oMetalesAgranel,
+                metalesCliente: oMetalesCliente,
+                oManoObra: oManoObra,
+                oFirmaStatus: oFirmaStatusArr.length > 0 ? oFirmaStatusArr[0] : null
+            }
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const insertUpdateTallerFirma = async(req, res = response) => {
+
+    const {
+        idFirma = 0,
+        idTaller,
+        idTallerStatus,
+        idUserCreate = 0,
+        firma = 0,
+        idUserFirma = 0,
+        comentario = ''
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        if (!idFirma || idFirma == 0) {
+
+            // INSERT — se llama al cambiar de status (>= 3)
+            const result = await dbConnection.query(`
+                INSERT INTO taller_firmas_status
+                    (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+                VALUES
+                    (:createDate, NULL, :idTaller, :idTallerStatus, :idUserCreate, 0, 0, '')
+            `, {
+                replacements: { createDate: oGetDateNow, idTaller, idTallerStatus, idUserCreate },
+                type: dbConnection.QueryTypes.INSERT
+            });
+
+            res.json({
+                status: 0,
+                message: "Registro de firma creado correctamente.",
+                insertID: result[0]
+            });
+
+        } else {
+
+            // UPDATE — cuando el responsable firma (aprueba o rechaza)
+            await dbConnection.query(`
+                UPDATE taller_firmas_status
+                SET firma       = :firma,
+                    idUserFirma = :idUserFirma,
+                    comentario  = :comentario,
+                    firmaDate   = :firmaDate
+                WHERE idFirma = :idFirma
+            `, {
+                replacements: { firma, idUserFirma, comentario, firmaDate: oGetDateNow, idFirma },
+                type: dbConnection.QueryTypes.UPDATE
+            });
+
+            res.json({
+                status: 0,
+                message: firma == 1 ? "Aprobación registrada correctamente." : "Rechazo registrado correctamente."
+            });
+
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerFirmasHistorial = async(req, res = response) => {
+
+    const { idTaller } = req.body;
+
+    try {
+
+        const rows = await dbConnection.query(`
+            SELECT
+                tfs.idFirma,
+                tfs.idTallerStatus,
+                CASE tfs.idTallerStatus
+                    WHEN 3 THEN 'Asignado'
+                    WHEN 4 THEN 'Finalizado / Mostrador'
+                    WHEN 5 THEN 'Entregado'
+                    ELSE CONCAT('Status ', tfs.idTallerStatus)
+                END AS statusDesc,
+                tfs.createDate,
+                tfs.firmaDate,
+                tfs.firma,
+                CASE tfs.firma
+                    WHEN 0 THEN 'Pendiente'
+                    WHEN 1 THEN 'Aprobado'
+                    WHEN 2 THEN 'Rechazado'
+                END AS firmaDesc,
+                CONCAT(UC.name, ' - ', UC.userName) AS userCreateDesc,
+                CASE WHEN tfs.idUserFirma > 0
+                    THEN CONCAT(UF.name, ' - ', UF.userName)
+                    ELSE NULL
+                END AS userFirmaDesc,
+                tfs.comentario
+            FROM taller_firmas_status tfs
+            LEFT JOIN users AS UC ON UC.idUser = tfs.idUserCreate
+            LEFT JOIN users AS UF ON UF.idUser = tfs.idUserFirma
+            WHERE tfs.idTaller = :idTaller
+            ORDER BY tfs.idFirma ASC
+        `, {
+            replacements: { idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        res.json({
+            status: 0,
+            message: "Historial de firmas obtenido correctamente.",
+            data: rows
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
 };
 
 module.exports = {
@@ -3862,6 +4405,9 @@ module.exports = {
     , saveTallerHeader
     , updateTallerStatus
     , getTallerByID
+    , getTallerByIDSeq
+    , insertUpdateTallerFirma
+    , getTallerFirmasHistorial
     , getTallerPaginado
     , getTallerRefaccciones
     , getTallerServiciosExternos
@@ -3879,5 +4425,6 @@ module.exports = {
     , deleteManoObraTaller
     , getTallerManoObra
     , updateManoObraPrecio
+    , getTallerStatusCat
 
 }

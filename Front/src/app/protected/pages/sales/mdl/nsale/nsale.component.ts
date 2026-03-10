@@ -1693,7 +1693,7 @@ async ev_PrintTicketConsHistoryList(){
   cbxSalesType: any[] = [];
 
   cbxSalesType_Search() {
-      this.salesTypeServ.CCbxGetSalesTypeCombo( this.salesHeaderForm.saleTypeDesc )
+      this.salesTypeServ.cbxGetSalesTypeComboSales( this.salesHeaderForm.saleTypeDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){

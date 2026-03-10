@@ -34,6 +34,10 @@ const FxRate = dbConnection.define('fxRate', {
   fxRateCost: {
     type: DataTypes.DECIMAL(18, 2),
     allowNull: true
+  },
+  porcentUtility: {
+    type: DataTypes.DECIMAL(18, 2),
+    allowNull: true
   }
 }, {
   tableName: 'fxRate',

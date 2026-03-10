@@ -801,7 +801,7 @@ fn_ClearFilters(){
   cbxSalesType: any[] = [];
 
   cbxSalesType_Search() {
-      this.salesTypeServ.CCbxGetSalesTypeCombo( this.parametersForm.saleTypeDesc )
+      this.salesTypeServ.cbxGetSalesTypeComboSales( this.parametersForm.saleTypeDesc )
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){

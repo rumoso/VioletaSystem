@@ -1,0 +1,86 @@
+.firma-card {
+  border-radius: 8px;
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+.firma-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.firma-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.firma-status-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+.firma-num {
+  margin-left: auto;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.firma-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.firma-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.row-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #777;
+  margin-top: 2px;
+}
+
+.row-label {
+  font-size: 10px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.row-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.row-date {
+  font-size: 11px;
+  color: #999;
+}
+
+.firma-comentario {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 6px;
+  font-size: 13px;
+  color: #555;
+}

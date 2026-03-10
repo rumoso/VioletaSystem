@@ -2,7 +2,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-2">
                     <mat-form-field fxLayout.xs="column" class="with100">
                         <mat-label>Folio</mat-label>
                         <input #barCode
@@ -13,7 +13,7 @@
                     </mat-form-field>
                 </div>
 
-                <div class="col-md-6" style="text-align: left;">
+                <div class="col-md-3" style="text-align: left;">
                     <mat-form-field class="with100">
                       <mat-label>Fecha de creación:</mat-label>
                       <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
@@ -26,19 +26,15 @@
 
                     </mat-form-field>
                 </div>
-            </div>
 
-            <div class="row">
-
-                <div class="col-md-8">
-                    <mat-label>Cliente: </mat-label>
+                <div class="col-md-4">
                     <mat-form-field
                     style="width: 100%;">
                         <input #cbxCustomerCBX
                         type="text"
                                 id="cbxCustomer"
                                 style="width: 100%;"
-                                placeholder="Selecciona..."
+                                placeholder="Selecciona un cliente..."
                                 aria-label="Number"
                                 matInput
                                 [(ngModel)]="parametersForm.customerDesc"
@@ -65,39 +61,53 @@
                     </mat-form-field>
                 </div>
 
-                <div class="col-md-4">
-                    <mat-label>Tipo de venta: </mat-label>
-                    <mat-form-field
-                    style="width: 100%;"
-                    (click)="cbxSalesType_Search()">
-                        <input #cbxSaleTypeCBX
+                <div class="col-md-3">
+                    <mat-form-field style="width: 100%;">
+                        <mat-select [(ngModel)]="parametersForm.idTallerStatus" placeholder="Todos">
+                            <mat-option [value]="0">Todos los estatus</mat-option>
+                            <mat-option *ngFor="let s of oTallerStatus" [value]="s.idTallerStatus">
+                                {{ s.nombre }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <mat-label>Técnico: </mat-label>
+                    <mat-form-field style="width: 100%;" (click)="cbxTecnicos_Search()">
+                        <input #cbxTecnicosCBX
                                 type="text"
                                 style="width: 100%;"
                                 placeholder="Selecciona..."
-                                aria-label="Number"
+                                aria-label="Técnico"
                                 matInput
-                                [(ngModel)]="parametersForm.saleTypeDesc"
-                                [matAutocomplete]="cbxSaleType"
-
-                                (input)="cbxSalesType_Search()"
-                                (click)="cbxSalesType_Clear()"
-                                (focus)="cbxSalesType_Search()">
-                                <button *ngIf="parametersForm.saleTypeDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSalesType_Clear()">
+                                [(ngModel)]="parametersForm.tecnicoDesc"
+                                [matAutocomplete]="cbxTecnico"
+                                (keyup)="CBXskeyup( 2, cbxTecnicosCBX.value )"
+                                (click)="cbxTecnicos_Clear()">
+                                <button *ngIf="parametersForm.tecnicoDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxTecnicos_Clear()">
                                     <mat-icon>close</mat-icon>
                                 </button>
                         <mat-autocomplete autoActiveFirstOption
-                                            #cbxSaleType="matAutocomplete"
-                                            (optionSelected)="cbxSalesType_SelectedOption( $event )">
-                            <mat-option *ngFor="let item of cbxSalesType" [value]="item">
-                                {{ item.name }}
+                                            #cbxTecnico="matAutocomplete"
+                                            (optionSelected)="cbxTecnicos_SelectedOption( $event )">
+                            <mat-option *ngFor="let item of cbxTecnicos" [value]="item">
+                                {{ item.nombre }}
                             </mat-option>
-
-                            <mat-option value="" *ngIf="cbxSalesType.length == 0 && parametersForm.saleTypeDesc">
+                            <mat-option value="" *ngIf="cbxTecnicos.length == 0 && parametersForm.tecnicoDesc">
                                 No se encontró nada...
                             </mat-option>
-
                         </mat-autocomplete>
                     </mat-form-field>
+                </div>
+
+                <div class="col-md-6">
+                    <mat-label>Estatus de pago: </mat-label>
+                    <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bCancel">Canceladas</mat-checkbox>
+                    <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bPending">Pendientes</mat-checkbox>
+                    <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bPagada">Pagadas</mat-checkbox>
                 </div>
 
             </div>
@@ -123,11 +133,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bCancel">Canceladas</mat-checkbox>
-                    <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bPending">Pendientes</mat-checkbox>
-                    <mat-checkbox class="example-margin" [(ngModel)]="parametersForm.bPagada">Pagadas</mat-checkbox>
-                </div>
+
 
             </div>
 
@@ -257,7 +263,35 @@
                                             #{{ item.idSale }}
                                         </div>
                                     </td>
-                                    <td style="text-align: left;">{{ item.statusName }}</td>
+                                    <td style="text-align: left; width: 200px;">
+                                        <span *ngIf="item.idTallerStatus >= 3">
+                                            <mat-icon *ngIf="item.firmaStatus === null || item.firmaStatus === undefined"
+                                                style="vertical-align: middle; cursor: pointer; color: #888; font-size: 18px;"
+                                                matTooltip="Sin firma"
+                                                (click)="fn_openFirmaHistorial(item)">
+                                                pending
+                                            </mat-icon>
+                                            <mat-icon *ngIf="item.firmaStatus === 0"
+                                                style="vertical-align: middle; cursor: pointer; color: #f59e0b; font-size: 18px;"
+                                                [matTooltip]="'Firma pendiente - ' + item.firmaDesc"
+                                                (click)="fn_openFirmaHistorial(item)">
+                                                hourglass_empty
+                                            </mat-icon>
+                                            <mat-icon *ngIf="item.firmaStatus === 1"
+                                                style="vertical-align: middle; cursor: pointer; color: #22c55e; font-size: 18px;"
+                                                [matTooltip]="'Aprobado - ' + item.firmaDesc"
+                                                (click)="fn_openFirmaHistorial(item)">
+                                                verified
+                                            </mat-icon>
+                                            <mat-icon *ngIf="item.firmaStatus === 2"
+                                                style="vertical-align: middle; cursor: pointer; color: #ef4444; font-size: 18px;"
+                                                [matTooltip]="'Rechazado - ' + item.firmaDesc"
+                                                (click)="fn_openFirmaHistorial(item)">
+                                                cancel
+                                            </mat-icon>
+                                        </span>
+                                        <span>{{ item.statusName }}</span>
+                                    </td>
                                     <td style="text-align: right;">{{ item.total | currency }}</td>
                                     <td style="text-align: right;">{{ item.abonado | currency }}</td>
                                     <td style="text-align: right;" [ngClass]="{'colorRed elemento-animado': item.pendingAmount > 0}">{{ ( item.pendingAmount ) | currency }}</td>

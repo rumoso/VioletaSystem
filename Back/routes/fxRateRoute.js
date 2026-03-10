@@ -12,6 +12,7 @@ const {
     , deleteFxRateType
     , updateFxRateType
     , getPriceByKilataje
+    , searchFxRateTypes
    } = require('../controllers/fxRateController');
 
    
@@ -45,5 +46,7 @@ router.put('/updateFxRateType/:idFxRateType', [
 ], updateFxRateType);
 
 router.get('/getPriceByKilataje/:kilates', getPriceByKilataje);
+
+router.get('/searchFxRateTypes', searchFxRateTypes);
 
 module.exports = router;

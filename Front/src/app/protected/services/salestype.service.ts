@@ -12,7 +12,7 @@ export class SalestypeService {
   private baseURL: string = environment.baseUrl;
 
   _api: string = 'api/salesType';
-  
+
   constructor(
     private http: HttpClient
   ) { }
@@ -23,4 +23,12 @@ export class SalestypeService {
     }
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetSalesTypeCombo`, data);
   }
+
+  cbxGetSalesTypeComboSales( search: string ): Observable<ResponseGet> {
+    var data = {
+      search: search
+    }
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetSalesTypeComboSales`, data);
+  }
+
 }

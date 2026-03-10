@@ -19,7 +19,11 @@ import { MetalClienteImagesComponent } from './metal-cliente-images.component';
 import { TallerHeaderImagesComponent } from './taller-header-images.component';
 import { ServiciosExternosModalComponent } from './servicios-externos-modal/servicios-externos-modal.component';
 import { SeleccionarProductoModalComponent } from './seleccionar-producto-modal.component';
+import { TallerFirmaModalComponent } from './taller-firma-modal.component';
+import { TallerFirmaHistorialModalComponent } from './taller-firma-historial-modal.component';
 import { PaymentsComponent } from '../payments/payments.component';
+import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
+import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 
 @Component({
   selector: 'app-taller',
@@ -38,6 +42,7 @@ export class TallerComponent implements OnInit {
   @ViewChild('cbxCustomerCBX') cbxCustomerCBX!: ElementRef;
   @ViewChild('descripcionInput') descripcionInput!: ElementRef;
   @ViewChild('refaccionCantidadInput') refaccionCantidadInput!: ElementRef;
+  @ViewChild('refaccionProductoPrecioInput') refaccionProductoPrecioInput!: ElementRef;
   @ViewChild('refaccionPorDefinirDescInput') refaccionPorDefinirDescInput!: ElementRef;
   @ViewChild('refaccionPorDefinirCantidadInput') refaccionPorDefinirCantidadInput!: ElementRef;
   @ViewChild('refaccionPorDefinirCostoInput') refaccionPorDefinirCostoInput!: ElementRef;
@@ -77,8 +82,14 @@ export class TallerComponent implements OnInit {
     status: '',
     idTallerStatus: 0,
     manoObraPrecio: '',
-    headerImagesCount: 0
+    headerImagesCount: 0,
+    pagado: 0,
+    pendingAmount: 0,
+    saleTotal: 0
   };
+
+  oFirmaStatus: any = null;
+  oPagos: any[] = [];
 
   // VARIABLES DE REFACCIONES
   refaccionTipo: string = 'producto'; // 'producto' o 'porDefinir'
@@ -174,6 +185,39 @@ export class TallerComponent implements OnInit {
     printerName: ''
   }
 
+  tall_CreateEditHeader: boolean = false;
+  tall_CreateOrder: boolean = false;
+  tall_AssignOrder: boolean = false;
+  tall_FinalizeOrder: boolean = false;
+  tall_DeliverOrder: boolean = false;
+  tall_FirmaAsignado: boolean = false;
+  tall_FirmaFinalizado: boolean = false;
+  tall_FirmaEntregado: boolean = false;
+  tall_ViewFirmaHistorial: boolean = false;
+  tall_AddRefaccion: boolean = false;
+  tall_DeleteRefaccion: boolean = false;
+  tall_AddServicioExterno: boolean = false;
+  tall_DeleteServicioExterno: boolean = false;
+  tall_ManageServiciosExternos: boolean = false;
+  tall_AddMetalAgranel: boolean = false;
+  tall_DeleteMetalAgranel: boolean = false;
+  tall_AddMetalCliente: boolean = false;
+  tall_DeleteMetalCliente: boolean = false;
+  tall_ViewMetalClienteImages: boolean = false;
+  tall_AddManoObra: boolean = false;
+  tall_DeleteManoObra: boolean = false;
+  tall_EditManoObraPrecio: boolean = false;
+  tall_ViewHeaderImages: boolean = false;
+  tall_MakePayment: boolean = false;
+  tall_EditAfterEntregado: boolean = false;
+  tall_verCostos: boolean = false;
+
+  bShowActionAuthorization: boolean = false;
+
+  get bIsReadOnly(): boolean {
+    return (this.oFirmaStatus?.firma === 0 || this.tallerForm.idTallerStatus === 5) && !this.tall_EditAfterEntregado;
+  }
+
   //#endregion
 
   constructor(
@@ -191,6 +235,7 @@ export class TallerComponent implements OnInit {
     , private customersServ: CustomersService
     , private productsServ: ProductsService
     , private dialog: MatDialog
+    , private printTicketServ: PrintTicketService
 
   ) { }
 
@@ -201,6 +246,34 @@ export class TallerComponent implements OnInit {
 
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
+
+    var oActions = await this.authServ.CGetActionsPermissionPromise( this.idUserLogON );
+    this.tall_CreateEditHeader       = oActions.some((action: any) => action.name === 'tall_CreateEditHeader');
+    this.tall_CreateOrder            = oActions.some((action: any) => action.name === 'tall_CreateOrder');
+    this.tall_AssignOrder            = oActions.some((action: any) => action.name === 'tall_AssignOrder');
+    this.tall_FinalizeOrder          = oActions.some((action: any) => action.name === 'tall_FinalizeOrder');
+    this.tall_DeliverOrder           = oActions.some((action: any) => action.name === 'tall_DeliverOrder');
+    this.tall_FirmaAsignado          = oActions.some((action: any) => action.name === 'tall_FirmaAsignado');
+    this.tall_FirmaFinalizado        = oActions.some((action: any) => action.name === 'tall_FirmaFinalizado');
+    this.tall_FirmaEntregado         = oActions.some((action: any) => action.name === 'tall_FirmaEntregado');
+    this.tall_ViewFirmaHistorial     = oActions.some((action: any) => action.name === 'tall_ViewFirmaHistorial');
+    this.tall_AddRefaccion           = oActions.some((action: any) => action.name === 'tall_AddRefaccion');
+    this.tall_DeleteRefaccion        = oActions.some((action: any) => action.name === 'tall_DeleteRefaccion');
+    this.tall_AddServicioExterno     = oActions.some((action: any) => action.name === 'tall_AddServicioExterno');
+    this.tall_DeleteServicioExterno  = oActions.some((action: any) => action.name === 'tall_DeleteServicioExterno');
+    this.tall_ManageServiciosExternos= oActions.some((action: any) => action.name === 'tall_ManageServiciosExternos');
+    this.tall_AddMetalAgranel        = oActions.some((action: any) => action.name === 'tall_AddMetalAgranel');
+    this.tall_DeleteMetalAgranel     = oActions.some((action: any) => action.name === 'tall_DeleteMetalAgranel');
+    this.tall_AddMetalCliente        = oActions.some((action: any) => action.name === 'tall_AddMetalCliente');
+    this.tall_DeleteMetalCliente     = oActions.some((action: any) => action.name === 'tall_DeleteMetalCliente');
+    this.tall_ViewMetalClienteImages = oActions.some((action: any) => action.name === 'tall_ViewMetalClienteImages');
+    this.tall_AddManoObra            = oActions.some((action: any) => action.name === 'tall_AddManoObra');
+    this.tall_DeleteManoObra         = oActions.some((action: any) => action.name === 'tall_DeleteManoObra');
+    this.tall_EditManoObraPrecio     = oActions.some((action: any) => action.name === 'tall_EditManoObraPrecio');
+    this.tall_ViewHeaderImages       = oActions.some((action: any) => action.name === 'tall_ViewHeaderImages');
+    this.tall_MakePayment            = oActions.some((action: any) => action.name === 'tall_MakePayment');
+    this.tall_EditAfterEntregado     = oActions.some((action: any) => action.name === 'tall_EditAfterEntregado');
+    this.tall_verCostos              = oActions.some((action: any) => action.name === 'tall_verCostos');
 
     this.fn_loadProductos();
 
@@ -251,6 +324,14 @@ export class TallerComponent implements OnInit {
 
   }
 
+  fn_printTicketTaller() {
+    if (this.selectPrinter.idPrinter > 0) {
+      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1);
+    } else {
+      this.servicesGServ.showSnakbar('No hay impresora seleccionada');
+    }
+  }
+
   fn_ShowPayments(){
       if(this.selectCajas.idCaja > 0){
 
@@ -258,12 +339,13 @@ export class TallerComponent implements OnInit {
           idCaja: this.ODataP.selectCajas.idCaja,
           idCustomer: this.tallerForm.idCustomer,
           idSale: this.tallerForm.idSale,
+          idTaller: this.tallerForm.idTaller,
           relationType: 'V',
           idSeller_idUser: this.tallerForm.idSeller_idUser,
-          idSaleType: 2, //this.dataStone.idSaleType,
+          idSaleType: 1, //this.dataStone.idSaleType,
           saleTypeDesc: this.tallerForm.saleTypeDesc,
           total: this.totalTaller,
-          pendingAmount: this.totalTaller,//this.tallerForm.pendingAmount,
+          pendingAmount: this.tallerForm.pendingAmount,//this.tallerForm.pendingAmount,
 
           selectCajas: this.ODataP.selectCajas
         }
@@ -271,14 +353,7 @@ export class TallerComponent implements OnInit {
           this.servicesGServ.showModalWithParams( PaymentsComponent, OParams, '1500px')
           .afterClosed().subscribe({
             next: ( resp ) =>{
-
-              // if( resp.length > 0 ){
-
-              //   this.fn_NuevaVenta();
-
-              //   this.fn_getSaleByID( resp );
-
-              // }
+              this.fn_getTallerData( this.tallerForm.idTaller );
             }
         });
 
@@ -407,14 +482,17 @@ export class TallerComponent implements OnInit {
             idSale: data.idSale,
             descripcion: data.descripcion || '',
             fechaIngreso: data.fechaIngreso + 'T10:27:51.000Z' || '',
-            fechaPrometidaEntrega: data.fechaPrometida + 'T10:27:51.000Z' || '',
+            fechaPrometidaEntrega: data.fechaPrometida ? data.fechaPrometida + 'T10:27:51.000Z' : '',
             fechaEntrega: data.fechaEntrega || '',
             idCustomer: data.idCustomer || 0,
             customerDesc: data.customerDesc || '',
             idSeller_idUser: data.idSeller_idUser || 0,
             sellerDesc: data.sellerDesc || '',
             idTallerStatus: data.idTallerStatus || 0,
-            manoObraPrecio: data.manoObraPrecio || ''
+            manoObraPrecio: data.manoObraPrecio || '',
+            pagado: data.pagado || 0,
+            pendingAmount: data.pendingAmount || 0,
+            saleTotal: data.saleTotal || 0
           };
 
           this.refaccionesList = resp.data.refaccionesDetail || [];
@@ -422,6 +500,8 @@ export class TallerComponent implements OnInit {
           this.metalAgranelList = resp.data.metalesAgranel || [];
           this.metalClienteList = resp.data.metalesCliente || [];
           this.manoObraList = resp.data.oManoObra || [];
+          this.oFirmaStatus = resp.data.oFirmaStatus || null;
+          this.oPagos = resp.data.oPagos || [];
 
           this.fn_calcularTotalRefacciones();
           this.fn_calcularTotalServiciosExternos();
@@ -458,6 +538,8 @@ export class TallerComponent implements OnInit {
       idUser: this.idUserLogON
     };
 
+    var bNew = oParams.idTaller === 0;
+
     this.bShowSpinner = true;
     this.salesServ.CSaveTallerHeader(oParams)
     .subscribe({
@@ -466,6 +548,10 @@ export class TallerComponent implements OnInit {
         if (resp.status === 0) {
           this.tallerForm.idTaller = resp.data.idTaller;
           this.tallerForm.idSale = resp.data.idSale;
+          if(bNew)
+            this.tallerForm.idTallerStatus = 1;
+
+          this.fn_getTallerData(this.tallerForm.idTaller);
         }
         this.bShowSpinner = false;
       },
@@ -497,6 +583,22 @@ export class TallerComponent implements OnInit {
         this.refaccionPorDefinirDescInput?.nativeElement?.focus();
       }, 50);
     }
+  }
+
+  fn_validateRefaccionProductoPrecio(): boolean {
+    const costo  = parseFloat(this.refaccionForm.costo)  || 0;
+    const precio = parseFloat(this.refaccionForm.precio) || 0;
+    if (costo > 0) {
+      const minPrecio = parseFloat((costo * 1.30).toFixed(2));
+      if (precio < minPrecio) {
+        this.servicesGServ.showSnakbar(
+          `El precio mínimo permitido es ${minPrecio.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} (costo + 30%)`
+        );
+        this.refaccionForm.precio = minPrecio;
+        return false;
+      }
+    }
+    return true;
   }
 
   fn_resetRefaccionForm() {
@@ -531,6 +633,10 @@ export class TallerComponent implements OnInit {
     }, 50);
   }
 
+  fn_focusRefaccionProductoPrecio() {
+    this.nextInputFocus(this.refaccionProductoPrecioInput, 50);
+  }
+
   fn_onProductoChange() {
     const producto = this.productosList.find(p => p.idProduct === this.refaccionForm.idProduct);
     if (producto) {
@@ -551,6 +657,7 @@ export class TallerComponent implements OnInit {
         this.servicesGServ.showSnakbar('La cantidad debe ser mayor a 0');
         return;
       }
+      if (!this.fn_validateRefaccionProductoPrecio()) return;
     } else {
       if (!this.refaccionForm.productDesc.trim()) {
         this.servicesGServ.showSnakbar('La descripción es requerida');
@@ -1007,8 +1114,27 @@ export class TallerComponent implements OnInit {
       tipo: this.metalTipo,
       gramos: '',
       kilates: 0,
-      valorMetal: ''
+      valorMetal: '',
+      costPricePerGram: 0
     };
+  }
+
+  fn_validateMetalAgranel(): boolean {
+    const costPricePerGram = this.metalAgranelForm.costPricePerGram || 0;
+    const gramos           = parseFloat(this.metalAgranelForm.gramos) || 0;
+    const valorMetal       = parseFloat(this.metalAgranelForm.valorMetal) || 0;
+
+    if (costPricePerGram > 0 && gramos > 0) {
+      const minValor = parseFloat((costPricePerGram * gramos * 1.30).toFixed(2));
+      if (valorMetal < minValor) {
+        this.servicesGServ.showSnakbar(
+          `El valor mínimo permitido es ${minValor.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} (costo + 30%)`
+        );
+        this.metalAgranelForm.valorMetal = minValor;
+        return false;
+      }
+    }
+    return true;
   }
 
   fn_agregarMetalAgranel() {
@@ -1022,6 +1148,8 @@ export class TallerComponent implements OnInit {
       this.servicesGServ.showSnakbar('El valor del metal debe ser mayor a 0');
       return;
     }
+
+    if (!this.fn_validateMetalAgranel()) return;
 
     // Preparar objeto para enviar al backend
     const oParams: any = {
@@ -1071,6 +1199,7 @@ export class TallerComponent implements OnInit {
           if (resp.status === 0 && resp.data) {
             // Calcular: gramos * precio
             const pricePerGram = resp.data.price;
+            this.metalAgranelForm.costPricePerGram = parseFloat(resp.data.costPrice) || 0;
             this.metalAgranelForm.valorMetal = this.metalAgranelForm.gramos * pricePerGram;
           } else {
             this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
@@ -1133,8 +1262,24 @@ export class TallerComponent implements OnInit {
       tipo: item.tipo,
       gramos: parseFloat(item.gramos),
       kilates: parseInt(item.kilates) || 8,
-      valorMetal: parseFloat(item.valorMetal)
+      valorMetal: parseFloat(item.valorMetal),
+      costPricePerGram: 0
     };
+    // Cargar costPrice para poder validar el mínimo al editar
+    this.fn_loadMetalCostPrice(this.metalAgranelForm.kilates);
+  }
+
+  fn_loadMetalCostPrice(kilates: number) {
+    if (!kilates) return;
+    this.fxrateServ.CGetPriceByKilataje(kilates)
+      .subscribe({
+        next: (resp: any) => {
+          if (resp.status === 0 && resp.data) {
+            this.metalAgranelForm.costPricePerGram = parseFloat(resp.data.costPrice) || 0;
+          }
+        },
+        error: () => {}
+      });
   }
 
   //#endregion MÉTODOS DE METAL AGRANEL
@@ -1356,6 +1501,7 @@ export class TallerComponent implements OnInit {
                     if (respUpdate.status === 0) {
                       this.servicesGServ.showSnakbar('Pedido de taller creado correctamente');
                       this.tallerForm.idTallerStatus = 2;
+                      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false);
                     } else {
                       this.servicesGServ.showSnakbar('Error al crear el pedido de taller');
                     }
@@ -1372,6 +1518,24 @@ export class TallerComponent implements OnInit {
   }
 
   fn_assignTallerOrder() {
+
+    if (!this.bShowActionAuthorization) {
+      this.bShowActionAuthorization = true;
+      var paramsMDL: any = { actionName: 'tall_AssignOrder', bShowAlert: false };
+      this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+      .afterClosed().subscribe({
+        next: ( auth_idUser ) =>{
+          this.bShowActionAuthorization = false;
+          if( auth_idUser ){
+            this._fn_assignTallerOrder();
+          }
+        }
+      });
+    }
+
+  }
+
+  _fn_assignTallerOrder() {
     this.servicesGServ.showDialog('¿Estás seguro?'
         , 'Está a punto de asignar este pedido de taller'
         , '¿Desea continuar?'
@@ -1394,6 +1558,7 @@ export class TallerComponent implements OnInit {
                     if (respUpdate.status === 0) {
                       this.servicesGServ.showSnakbar('Pedido de taller asignado correctamente');
                       this.tallerForm.idTallerStatus = 3;
+                      this.fn_insertFirmaStatus(3);
                     } else {
                       this.servicesGServ.showSnakbar('Error al asignar el pedido de taller');
                     }
@@ -1410,6 +1575,24 @@ export class TallerComponent implements OnInit {
   }
 
   fn_finalizeTallerOrder() {
+
+    if (!this.bShowActionAuthorization) {
+      this.bShowActionAuthorization = true;
+      var paramsMDL: any = { actionName: 'tall_FinalizeOrder', bShowAlert: false };
+      this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+      .afterClosed().subscribe({
+        next: ( auth_idUser ) =>{
+          this.bShowActionAuthorization = false;
+          if( auth_idUser ){
+            this._fn_finalizeTallerOrder();
+          }
+        }
+      });
+    }
+
+  }
+
+  _fn_finalizeTallerOrder() {
     this.servicesGServ.showDialog('¿Estás seguro?'
         , 'Está a punto de finalizar este pedido de taller'
         , '¿Desea continuar?'
@@ -1432,6 +1615,7 @@ export class TallerComponent implements OnInit {
                     if (respUpdate.status === 0) {
                       this.servicesGServ.showSnakbar('Pedido de taller finalizado correctamente');
                       this.tallerForm.idTallerStatus = 4;
+                      this.fn_insertFirmaStatus(4);
                     } else {
                       this.servicesGServ.showSnakbar('Error al finalizar el pedido de taller');
                     }
@@ -1448,6 +1632,24 @@ export class TallerComponent implements OnInit {
   }
 
   fn_deliverTallerOrder() {
+
+    if (!this.bShowActionAuthorization) {
+      this.bShowActionAuthorization = true;
+      var paramsMDL: any = { actionName: 'tall_DeliverOrder', bShowAlert: false };
+      this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+      .afterClosed().subscribe({
+        next: ( auth_idUser ) =>{
+          this.bShowActionAuthorization = false;
+          if( auth_idUser ){
+            this._fn_deliverTallerOrder();
+          }
+        }
+      });
+    }
+
+  }
+
+  _fn_deliverTallerOrder() {
     this.servicesGServ.showDialog('¿Estás seguro?'
         , 'Está a punto de marcar este pedido como entregado'
         , '¿Desea continuar?'
@@ -1471,6 +1673,8 @@ export class TallerComponent implements OnInit {
                       this.servicesGServ.showSnakbar('Pedido de taller entregado correctamente');
                       this.tallerForm.idTallerStatus = 5;
                       this.tallerForm.fechaEntrega = respUpdate.data.fechaEntrega;
+                      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true);
+                      this.fn_insertFirmaStatus(5);
                     } else {
                       this.servicesGServ.showSnakbar('Error al entregar el pedido de taller');
                     }
@@ -1484,6 +1688,91 @@ export class TallerComponent implements OnInit {
             }
           }
         });
+  }
+
+  fn_reInsertFirmaStatusWithAuth( idTallerStatus: number ): void {
+
+    if (!this.bShowActionAuthorization) {
+      this.bShowActionAuthorization = true;
+      const actionMap: any = { 3: 'tall_AssignOrder', 4: 'tall_FinalizeOrder', 5: 'tall_DeliverOrder' };
+      var paramsMDL: any = { actionName: actionMap[idTallerStatus] || 'tall_AssignOrder', bShowAlert: false };
+      this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+      .afterClosed().subscribe({
+        next: ( auth_idUser ) =>{
+          this.bShowActionAuthorization = false;
+          if( auth_idUser ){
+            this.fn_insertFirmaStatus( idTallerStatus );
+          }
+        }
+      });
+    }
+
+  }
+
+  fn_insertFirmaStatus( idTallerStatus: number ): void {
+    this.salesServ.CInsertUpdateTallerFirma({
+      idFirma: 0,
+      idTaller: this.tallerForm.idTaller,
+      idTallerStatus,
+      idUserCreate: this.idUserLogON
+    }).subscribe({
+      next: (r: any) => {
+        this.oFirmaStatus = { firma: 0, idFirma: r.insertID, idTallerStatus, comentario: '', userFirmaDesc: '' };
+      }
+    });
+  }
+
+  fn_openFirmaModal(): void {
+
+    if (!this.bShowActionAuthorization) {
+      this.bShowActionAuthorization = true;
+      const actionMap: any = { 3: 'tall_FirmaAsignado', 4: 'tall_FirmaFinalizado', 5: 'tall_FirmaEntregado' };
+      var paramsMDL: any = { actionName: actionMap[this.tallerForm.idTallerStatus] || 'tall_FirmaAsignado', bShowAlert: false };
+      this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+      .afterClosed().subscribe({
+        next: ( auth_idUser ) =>{
+          this.bShowActionAuthorization = false;
+          if( auth_idUser ){
+            this._fn_openFirmaModal();
+          }
+        }
+      });
+    }
+
+  }
+
+  _fn_openFirmaModal(): void {
+    const dialogRef = this.dialog.open(TallerFirmaModalComponent, {
+      data: {
+        idFirma: this.oFirmaStatus?.idFirma || 0,
+        idTaller: this.tallerForm.idTaller,
+        idTallerStatus: this.tallerForm.idTallerStatus,
+        idUserLogON: this.idUserLogON
+      },
+      disableClose: true
+    });
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result) {
+        this.oFirmaStatus = {
+          ...this.oFirmaStatus,
+          firma: result.firma,
+          comentario: result.comentario,
+          firmaDesc: result.firma === 1 ? 'Aprobado' : 'Rechazado',
+          userFirmaDesc: ''
+        };
+      }
+    });
+  }
+
+  fn_openFirmaHistorialModal(): void {
+    this.dialog.open(TallerFirmaHistorialModalComponent, {
+      data: {
+        idTaller: this.tallerForm.idTaller,
+        idSale: this.tallerForm.idSale
+      },
+      maxWidth: '960px',
+      width: '90vw'
+    });
   }
 
   //#endregion MÉTODOS DE ACTIVO DEL CLIENTE

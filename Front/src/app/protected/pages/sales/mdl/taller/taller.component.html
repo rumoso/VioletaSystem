@@ -1,19 +1,114 @@
 <div class="" style="padding: 20px !important;">
-  <div class="row" style="position: sticky; top: 0; background: white; z-index: 100; padding: 15px 20px; margin: -20px -20px 20px -20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-bottom: 2px solid #6200EA;">
-    <div class="col-md-6">
-      <h2 style="margin: 0;">{{ tallerForm.idTaller > 0 ? tallerForm.idSale : title }}</h2>
-    </div>
-    <div class="col-md-6" style="text-align: right; display: flex; align-items: center; justify-content: flex-end;">
-      <div style="background: #6200EA; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; margin-right: 10px;">
-        Total Taller: {{ totalTaller | currency }}
+  <div class="row" style="position: sticky; top: 0; background: white; z-index: 100; padding: 12px 20px; margin: -20px -20px 20px -20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-bottom: 2px solid #6200EA;">
+
+    <!-- Fila 1: Folio + firma card + botones de status + total + cierre -->
+    <div class="col-md-12" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+      <h2 style="margin: 0; white-space: nowrap;">{{ tallerForm.idTaller > 0 ? tallerForm.idSale : title }}</h2>
+
+      <!-- Estado de Firma (centro) -->
+      <div *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 3"
+           [ngStyle]="{
+             'border-left': '4px solid ' + (oFirmaStatus?.firma === 1 ? '#4caf50' : oFirmaStatus?.firma === 2 ? '#f44336' : '#ff9800'),
+             'background': oFirmaStatus?.firma === 1 ? '#e8f5e9' : oFirmaStatus?.firma === 2 ? '#ffebee' : '#fff3e0'
+           }"
+           style="flex: 1; min-width: 200px; max-width: 520px; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <mat-icon [style.color]="oFirmaStatus?.firma === 1 ? '#4caf50' : oFirmaStatus?.firma === 2 ? '#f44336' : '#ff9800'">
+            {{ oFirmaStatus?.firma === 1 ? 'verified' : oFirmaStatus?.firma === 2 ? 'cancel' : 'pending' }}
+          </mat-icon>
+          <div>
+            <div style="font-size: 10px; color: #777; font-weight: 600; line-height: 1.1;">
+              {{ tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : 'Entregado' }}
+            </div>
+            <div style="font-size: 13px; font-weight: bold; line-height: 1.2;">
+              {{ oFirmaStatus?.firma === 1 ? 'Aprobado' : oFirmaStatus?.firma === 2 ? 'Rechazado' : 'Pendiente de aprobación' }}
+              <span *ngIf="oFirmaStatus?.userFirmaDesc" style="font-weight: normal;"> — {{ oFirmaStatus?.userFirmaDesc }}</span>
+            </div>
+            <div *ngIf="oFirmaStatus?.comentario" style="font-size: 11px; color: #666;">{{ oFirmaStatus?.comentario }}</div>
+          </div>
+        </div>
+        <button *ngIf="(oFirmaStatus?.firma === 0 || !oFirmaStatus) && (tallerForm.idTallerStatus === 3 || tallerForm.idTallerStatus === 4 || tallerForm.idTallerStatus === 5)"
+                mat-raised-button
+                style="background: #6200EA; color: white; flex-shrink: 0;"
+                (click)="fn_openFirmaModal()">
+          <mat-icon>assignment_turned_in</mat-icon>Firmar
+        </button>
+        <button *ngIf="tall_ViewFirmaHistorial"
+                mat-icon-button
+                matTooltip="Ver historial de firmas"
+                style="color: #6200EA; flex-shrink: 0;"
+                (click)="fn_openFirmaHistorialModal()">
+          <mat-icon>history</mat-icon>
+        </button>
       </div>
 
-      <button mat-icon-button
-              (click)="fn_cancel()"
-              style="margin: 0;">
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+
+        <button *ngIf="tall_MakePayment && tallerForm.pendingAmount > 0" mat-raised-button color="primary" type="submit" (click)="fn_ShowPayments()">
+          Pagar: {{ tallerForm.pendingAmount | currency }}
+        </button>
+
+        <!-- <button *ngIf="tallerForm.idTaller > 0" mat-icon-button type="button" (click)="fn_printTicketTaller()" matTooltip="Imprimir ticket de taller">
+          <mat-icon>print</mat-icon>
+        </button> -->
+
+        <button *ngIf="tallerForm.idTaller > 0 && tall_ViewHeaderImages" mat-raised-button color="accent" type="button" (click)="openTallerHeaderImagesDialog()">
+          <mat-icon>image</mat-icon>({{ tallerForm.headerImagesCount }})
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder"
+                mat-raised-button color="warn" type="button" (click)="fn_createTallerOrder()">
+          <mat-icon>playlist_add</mat-icon>Crear pedido
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 2"
+                mat-raised-button color="accent" type="button" (click)="fn_assignTallerOrder()">
+          <mat-icon>assignment</mat-icon>Asignar
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3 && oFirmaStatus?.firma === 1"
+                mat-raised-button color="primary" type="button" (click)="fn_finalizeTallerOrder()">
+          <mat-icon>done_all</mat-icon>Finalizado/Mostrador
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4 && oFirmaStatus?.firma === 1"
+                mat-raised-button color="success" type="button" (click)="fn_deliverTallerOrder()">
+          <mat-icon>check_circle</mat-icon>Entregado
+        </button>
+
+        <!-- Re-firma: aparece cuando el status actual fue rechazado -->
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3 && oFirmaStatus?.firma === 2"
+                mat-raised-button color="accent" type="button" (click)="fn_reInsertFirmaStatusWithAuth(3)">
+          <mat-icon>assignment</mat-icon>Re-Asignar
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4 && oFirmaStatus?.firma === 2"
+                mat-raised-button color="primary" type="button" (click)="fn_reInsertFirmaStatusWithAuth(4)">
+          <mat-icon>done_all</mat-icon>Re-Finalizar
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 5 && oFirmaStatus?.firma === 2"
+                mat-raised-button color="success" type="button" (click)="fn_reInsertFirmaStatusWithAuth(5)">
+          <mat-icon>check_circle</mat-icon>Re-Entregar
+        </button>
+
+        <button *ngIf="tall_CreateEditHeader && !bIsReadOnly"
+                mat-raised-button color="primary" type="button" (click)="fn_saveTaller()">
+          <mat-icon>save</mat-icon>{{ tallerForm.idTaller == 0 ? 'Generar folio' : 'Actualizar' }}
+        </button>
+
+        <div style="background: #6200EA; color: white; padding: 8px 14px; border-radius: 8px; font-weight: bold;">
+          Total: {{ totalTaller | currency }}
+        </div>
+
+
+
+        <button mat-icon-button (click)="fn_cancel()" style="margin: 0;">
           <mat-icon>close</mat-icon>
-      </button>
+        </button>
+      </div>
     </div>
+
   </div>
 
 
@@ -132,74 +227,54 @@
                 </div>
             </div>
 
-            <!-- Botones de Acción -->
-            <div class="row top30px">
-                <div class="col-md-12" style="text-align: right;">
-
-                    <button mat-raised-button
-                    color="primary"
-                    type="submit"
-                    class="marginRight10px top10px"
-                    (click)="fn_ShowPayments()">
-                    Pagar</button>
-
-                    <button *ngIf="tallerForm.idTaller > 0"
-                    mat-raised-button
-                    color="accent"
-                    type="button"
-                    class="marginRight10px"
-                    (click)="openTallerHeaderImagesDialog()">
-                    <mat-icon matPrefix class="my-icon">image</mat-icon>
-                    Cargar Imágenes ({{ tallerForm.headerImagesCount }})</button>
-
-                    <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1"
-                    mat-raised-button
-                    color="warn"
-                    type="button"
-                    class="marginRight10px"
-                    (click)="fn_createTallerOrder()">
-                    <mat-icon matPrefix class="my-icon">playlist_add</mat-icon>
-                    Crear pedido de taller</button>
-
-                    <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 2"
-                    mat-raised-button
-                    color="accent"
-                    type="button"
-                    class="marginRight10px"
-                    (click)="fn_assignTallerOrder()">
-                    <mat-icon matPrefix class="my-icon">assignment</mat-icon>
-                    Asignar</button>
-
-                    <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3"
-                    mat-raised-button
-                    color="primary"
-                    type="button"
-                    class="marginRight10px"
-                    (click)="fn_finalizeTallerOrder()">
-                    <mat-icon matPrefix class="my-icon">done_all</mat-icon>
-                    Finalizado/Mostrador</button>
-
-                    <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4"
-                    mat-raised-button
-                    color="success"
-                    type="button"
-                    class="marginRight10px"
-                    (click)="fn_deliverTallerOrder()">
-                    <mat-icon matPrefix class="my-icon">check_circle</mat-icon>
-                    Entregado</button>
-
-                    <button *ngIf="tallerForm.idTallerStatus === 1 || tallerForm.idTaller === 0"
-                    mat-raised-button
-                    color="primary"
-                    type="button"
-                    class="marginRight10px"
-                    (click)="fn_saveTaller()">
-                    <mat-icon matPrefix class="my-icon">save</mat-icon>
-                    {{ tallerForm.idTaller == 0 ? 'Generar folio' : 'Actualizar encabezado' }}</button>
-                </div>
-            </div>
-
             <div *ngIf="tallerForm.idTaller > 0">
+
+              <!-- SECCIÓN DE PAGOS -->
+              <div *ngIf="oPagos.length > 0" class="row top20px">
+                  <div class="col-md-12">
+                      <mat-expansion-panel>
+                          <mat-expansion-panel-header>
+                              <mat-panel-title>
+                                  <mat-icon style="margin-right: 8px; color: #6200EA;">payments</mat-icon>
+                                  <strong>Pagos ({{ oPagos.length }})</strong>
+                              </mat-panel-title>
+                              <mat-panel-description>
+                                  Pagado: {{ tallerForm.pagado | currency }} &nbsp;|&nbsp;
+                                  Pendiente: {{ tallerForm.pendingAmount | currency }}
+                              </mat-panel-description>
+                          </mat-expansion-panel-header>
+                          <div class="table-responsive">
+                              <table class="table table-hover table-sm">
+                                  <thead>
+                                      <tr class="header-table">
+                                          <th>Fecha</th>
+                                          <th>Forma de Pago</th>
+                                          <th>Monto</th>
+                                          <th>Referencia</th>
+                                          <th>Notas</th>
+                                          <th>Cajero</th>
+                                          <th>Cortado</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      <tr *ngFor="let p of oPagos">
+                                          <td style="white-space: nowrap;">{{ p.createDateDate }}<br><small style="color:#888;">{{ p.createDateHours }}</small></td>
+                                          <td>{{ p.formaPagoDesc }}</td>
+                                          <td class="text-right"><strong>{{ p.pago | currency }}</strong></td>
+                                          <td>{{ p.referencia }}</td>
+                                          <td>{{ p.description }}</td>
+                                          <td>{{ p.sellerName }}</td>
+                                          <td style="text-align:center;">
+                                              <mat-icon *ngIf="p.iPagoCortado > 0" style="color:#388e3c;" matTooltip="Incluido en corte">check_circle</mat-icon>
+                                              <mat-icon *ngIf="p.iPagoCortado === 0" style="color:#bbb;" matTooltip="Sin corte">radio_button_unchecked</mat-icon>
+                                          </td>
+                                      </tr>
+                                  </tbody>
+                              </table>
+                          </div>
+                      </mat-expansion-panel>
+                  </div>
+              </div>
 
               <!-- SECCIÓN DE REFACCIONES -->
               <div class="card-refacciones top30px">
@@ -208,6 +283,7 @@
                   </div>
 
                   <div class="body-refacciones">
+                      <ng-container *ngIf="tall_AddRefaccion && !bIsReadOnly">
                       <!-- RadioButton de tipo -->
                       <div class="row">
                           <div class="col-md-12">
@@ -225,7 +301,7 @@
                       <!-- FORMULARIO PRODUCTO -->
                       <div *ngIf="refaccionTipo === 'producto'" class="form-producto top15px">
                           <div class="row">
-                              <div class="col-md-8">
+                              <div class="col-md-6">
                                   <mat-form-field
                                   style="width: 100%;"
                                   (click)="cbxProducts_Search()">
@@ -238,7 +314,7 @@
                                               matInput
                                               [(ngModel)]="refaccionForm.productDesc"
                                               [matAutocomplete]="cbxProduct"
-                                              (keyup)="comboBoxKeyUp('cbxProduct', cbxServiciosExternosCBX.value, $event)"
+                                              (keyup)="comboBoxKeyUp('cbxProduct', cbxProductss.value, $event)"
                                               (click)="cbxProducts_Clear()">
                                               <button *ngIf="refaccionForm.productDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxProducts_Clear()">
                                                   <mat-icon>close</mat-icon>
@@ -257,13 +333,29 @@
                                       </mat-autocomplete>
                                   </mat-form-field>
                               </div>
-                              <div class="col-md-4">
+                              <div class="col-md-3">
                                   <mat-form-field class="with100">
                                       <mat-label>Cantidad</mat-label>
                                       <input #refaccionCantidadInput
                                       matInput type="number" [(ngModel)]="refaccionForm.cantidad" min="0" placeholder="0"
+                                      (keyup.enter)="fn_focusRefaccionProductoPrecio()">
+                                  </mat-form-field>
+                              </div>
+                              <div class="col-md-3">
+                                  <mat-form-field class="with100">
+                                      <mat-label>Precio Unit.</mat-label>
+                                      <input #refaccionProductoPrecioInput
+                                      matInput type="number" [(ngModel)]="refaccionForm.precio" min="0" placeholder="0.00"
+                                      (blur)="fn_validateRefaccionProductoPrecio()"
                                       (keyup.enter)="fn_agregarRefaccion()">
                                   </mat-form-field>
+                              </div>
+                          </div>
+                          <div class="row" *ngIf="refaccionForm.idProduct > 0 && refaccionForm.cantidad > 0">
+                              <div class="col-md-12">
+                                  <div class="total-display">
+                                      <strong>Total:</strong> {{ (refaccionForm.cantidad * refaccionForm.precio) | currency }}
+                                  </div>
                               </div>
                           </div>
                       </div>
@@ -287,13 +379,13 @@
                                       (keyup.enter)="fn_focusNextRefaccion('costo')">
                                   </mat-form-field>
                               </div>
-                              <div class="col-md-3">
+                              <!-- <div class="col-md-3">
                                   <mat-form-field class="with100">
                                       <mat-label>Costo</mat-label>
                                       <input #refaccionPorDefinirCostoInput matInput type="number" [(ngModel)]="refaccionForm.costo" min="0" placeholder="0"
                                       (keyup.enter)="fn_focusNextRefaccion('precio')">
                                   </mat-form-field>
-                              </div>
+                              </div> -->
                               <div class="col-md-3">
                                   <mat-form-field class="with100">
                                       <mat-label>Precio</mat-label>
@@ -317,6 +409,7 @@
                               </button>
                           </div>
                       </div>
+                      </ng-container>
 
                       <!-- TABLA DE REFACCIONES -->
                       <div *ngIf="refaccionesList.length > 0" class="table-refacciones top20px">
@@ -334,13 +427,13 @@
                                   <tbody>
                                       <tr *ngFor="let item of refaccionesList" class="row-refaccion">
                                           <td class="col-acciones text-center">
-                                            <button *ngIf="item.idProduct === 0" mat-icon-button (click)="fn_changeProductoFromPorDefinir(item)" matTooltip="Cambiar a Producto">
+                                            <button *ngIf="item.idProduct === 0 && !bIsReadOnly" mat-icon-button (click)="fn_changeProductoFromPorDefinir(item)" matTooltip="Cambiar a Producto">
                                                 <mat-icon class="colorBlue">sync_alt</mat-icon>
                                             </button>
-                                            <button mat-icon-button (click)="editRefaccionGrid(item)" matTooltip="Editar Refacción">
+                                            <button *ngIf="!bIsReadOnly" mat-icon-button (click)="editRefaccionGrid(item)" matTooltip="Editar Refacción">
                                                 <mat-icon class="colorGreen">edit</mat-icon>
                                             </button>
-                                            <button mat-icon-button (click)="fn_eliminarRefaccion(item.idRefaccion)" matTooltip="Eliminar">
+                                            <button *ngIf="tall_DeleteRefaccion && !bIsReadOnly" mat-icon-button (click)="fn_eliminarRefaccion(item.idRefaccion)" matTooltip="Eliminar">
                                                 <mat-icon class="icon-delete">delete_outline</mat-icon>
                                             </button>
                                           </td>
@@ -370,12 +463,13 @@
               <div class="card-refacciones top30px">
                   <div class="header-refacciones">
                       <h3>Servicios Externos <span class="total-servicios">Total: {{ totalServiciosExternos | currency }}</span></h3>
-                      <button mat-icon-button (click)="abrirModalServiciosExternos()" matTooltip="Gestionar Servicios Externos">
+                      <button *ngIf="tall_ManageServiciosExternos && !bIsReadOnly" mat-icon-button (click)="abrirModalServiciosExternos()" matTooltip="Gestionar Servicios Externos">
                           <mat-icon>settings</mat-icon>
                       </button>
                   </div>
 
                   <div class="body-refacciones">
+                      <ng-container *ngIf="tall_AddServicioExterno && !bIsReadOnly">
                       <!-- FORMULARIO SERVICIOS EXTERNOS -->
                       <div class="form-servicios top15px">
                           <div class="row">
@@ -397,7 +491,7 @@
                                 </mat-form-field>
                               </div>
                               <div class="col-md-1">
-                                  <button mat-icon-button color="accent" (click)="abrirModalServiciosExternos()"
+                                  <button *ngIf="tall_ManageServiciosExternos && !bIsReadOnly" mat-icon-button color="accent" (click)="abrirModalServiciosExternos()"
                                       matTooltip="Gestionar Servicios Externos">
                                       <mat-icon>settings</mat-icon>
                                   </button>
@@ -407,10 +501,10 @@
                                       <mat-label>Cantidad</mat-label>
                                       <input #servicioExternoCantidadInput
                                       matInput type="number" [(ngModel)]="servicioExternoForm.cantidad" min="1" placeholder="0"
-                                      (keyup.enter)="fn_focusServicioExternoCosto()">
+                                      (keyup.enter)="tall_verCostos ? fn_focusServicioExternoCosto() : fn_focusServicioExternoPrecio()">
                                   </mat-form-field>
                               </div>
-                              <div class="col-md-2">
+                              <div class="col-md-2" *ngIf="tall_verCostos">
                                   <mat-form-field class="with100">
                                       <mat-label>Costo</mat-label>
                                       <input #servicioExternoCostoInput
@@ -437,6 +531,7 @@
                               </button>
                           </div>
                       </div>
+                      </ng-container>
 
                       <!-- TABLA DE SERVICIOS EXTERNOS -->
                       <div *ngIf="serviciosExternosList.length > 0" class="table-refacciones top20px">
@@ -454,10 +549,10 @@
                                   <tbody>
                                       <tr *ngFor="let item of serviciosExternosList" class="row-refaccion">
                                           <td class="col-acciones text-center">
-                                            <button mat-icon-button (click)="editServicioExternoGrid(item)" matTooltip="Editar Refacción">
+                                            <button *ngIf="!bIsReadOnly" mat-icon-button (click)="editServicioExternoGrid(item)" matTooltip="Editar Refacción">
                                                 <mat-icon class="colorGreen">edit</mat-icon>
                                             </button>
-                                              <button mat-icon-button (click)="fn_eliminarServicioExterno(item)" matTooltip="Eliminar">
+                                              <button *ngIf="tall_DeleteServicioExterno && !bIsReadOnly" mat-icon-button (click)="fn_eliminarServicioExterno(item)" matTooltip="Eliminar">
                                                   <mat-icon class="icon-delete">delete_outline</mat-icon>
                                               </button>
                                           </td>
@@ -486,6 +581,7 @@
                   </div>
 
                   <div class="body-refacciones">
+                      <ng-container *ngIf="tall_AddMetalAgranel && !bIsReadOnly">
                       <!-- RadioButton de tipo -->
                       <div class="row">
                           <div class="col-md-12">
@@ -536,6 +632,7 @@
                                       <mat-label>Valor del Metal</mat-label>
                                       <input #metalAgranelValorMetalInput
                                       matInput type="number" [(ngModel)]="metalAgranelForm.valorMetal" min="0" placeholder="0.00"
+                                      (blur)="fn_validateMetalAgranel()"
                                       (keyup.enter)="fn_agregarMetalAgranel()">
                                   </mat-form-field>
                               </div>
@@ -550,6 +647,7 @@
                               </button>
                           </div>
                       </div>
+                      </ng-container>
 
                       <!-- TABLA DE METAL AGRANEL -->
                       <div *ngIf="metalAgranelList.length > 0" class="table-refacciones top20px">
@@ -567,10 +665,10 @@
                                   <tbody>
                                       <tr *ngFor="let item of metalAgranelList" class="row-metal">
                                           <td class="col-acciones text-center">
-                                              <button mat-icon-button (click)="editMetalAgranelGrid(item)" matTooltip="Editar Metal">
+                                              <button *ngIf="!bIsReadOnly" mat-icon-button (click)="editMetalAgranelGrid(item)" matTooltip="Editar Metal">
                                                   <mat-icon class="colorGreen">edit</mat-icon>
                                               </button>
-                                              <button mat-icon-button (click)="fn_eliminarMetalAgranel(item.idMetalAgranel)" matTooltip="Eliminar">
+                                              <button *ngIf="tall_DeleteMetalAgranel && !bIsReadOnly" mat-icon-button (click)="fn_eliminarMetalAgranel(item.idMetalAgranel)" matTooltip="Eliminar">
                                                   <mat-icon class="icon-delete">delete_outline</mat-icon>
                                               </button>
                                           </td>
@@ -602,6 +700,7 @@
                   </div>
 
                   <div class="body-refacciones">
+                      <ng-container *ngIf="tall_AddMetalCliente && !bIsReadOnly">
                       <!-- RadioButton de tipo -->
                       <div class="row">
                           <div class="col-md-12">
@@ -666,6 +765,7 @@
                               </button>
                           </div>
                       </div>
+                      </ng-container>
 
                       <!-- TABLA DE METAL CLIENTE -->
                       <div *ngIf="metalClienteList.length > 0" class="table-refacciones top20px">
@@ -683,10 +783,11 @@
                                   <tbody>
                                       <tr *ngFor="let item of metalClienteList" class="row-metal">
                                           <td class="col-acciones text-center">
-                                              <button mat-icon-button (click)="editMetalClienteGrid(item)" matTooltip="Editar Metal">
+                                              <button *ngIf="tall_AddMetalCliente && !bIsReadOnly" mat-icon-button (click)="editMetalClienteGrid(item)" matTooltip="Editar Metal">
                                                   <mat-icon class="colorGreen">edit</mat-icon>
                                               </button>
-                                              <button mat-icon-button
+                                              <button *ngIf="tall_ViewMetalClienteImages"
+                                                      mat-icon-button
                                                       (click)="openMetalClienteImagesDialog(item)"
                                                       matTooltip="Ver Fotos"
                                                       [matBadge]="item.imageCount || 0"
@@ -695,7 +796,7 @@
                                                       [matBadgeHidden]="(item.imageCount || 0) === 0">
                                                   <mat-icon class="colorBlue">image</mat-icon>
                                               </button>
-                                              <button mat-icon-button (click)="fn_eliminarMetalCliente(item.idMetalCliente)" matTooltip="Eliminar">
+                                              <button *ngIf="tall_DeleteMetalCliente && !bIsReadOnly" mat-icon-button (click)="fn_eliminarMetalCliente(item.idMetalCliente)" matTooltip="Eliminar">
                                                   <mat-icon class="icon-delete">delete_outline</mat-icon>
                                               </button>
                                           </td>
@@ -728,7 +829,7 @@
 
                   <div class="body-refacciones">
                       <!-- INPUT PRECIO MANO DE OBRA -->
-                      <div class="row top15px">
+                      <div *ngIf="tall_EditManoObraPrecio && !bIsReadOnly" class="row top15px">
                           <div class="col-md-12">
                               <mat-form-field class="with100">
                                   <mat-label>Precio Mano de Obra</mat-label>
@@ -740,6 +841,7 @@
                           </div>
                       </div>
 
+                      <ng-container *ngIf="tall_AddManoObra && !bIsReadOnly">
                       <!-- FORMULARIO MANO DE OBRA -->
                       <div class="form-mano-obra top15px">
                           <div class="row">
@@ -779,6 +881,7 @@
                               </button>
                           </div>
                       </div>
+                      </ng-container>
 
                       <!-- TABLA DE MANO DE OBRA -->
                       <div *ngIf="manoObraList.length > 0" class="table-refacciones top20px">
@@ -794,10 +897,10 @@
                                   <tbody>
                                       <tr *ngFor="let item of manoObraList" class="row-refaccion">
                                           <td class="col-acciones text-center">
-                                            <button mat-icon-button (click)="editManoObraGrid(item)" matTooltip="Editar Mano de Obra">
+                                            <button *ngIf="tall_AddManoObra && !bIsReadOnly" mat-icon-button (click)="editManoObraGrid(item)" matTooltip="Editar Mano de Obra">
                                                 <mat-icon class="colorGreen">edit</mat-icon>
                                             </button>
-                                            <button mat-icon-button (click)="fn_eliminarManoObra(item)" matTooltip="Eliminar">
+                                            <button *ngIf="tall_DeleteManoObra && !bIsReadOnly" mat-icon-button (click)="fn_eliminarManoObra(item)" matTooltip="Eliminar">
                                                 <mat-icon class="icon-delete">delete_outline</mat-icon>
                                             </button>
                                           </td>

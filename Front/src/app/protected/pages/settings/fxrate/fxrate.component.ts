@@ -37,6 +37,7 @@ export class FxrateComponent implements OnInit {
   };
 
   @ViewChildren('costInput') costInputs!: QueryList<any>;
+  @ViewChildren('utilityInput') utilityInputs!: QueryList<any>;
   @ViewChildren('ventaInput') ventaInputs!: QueryList<any>;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +88,11 @@ fn_detectChanges() {
     const edited = this.fxRateEditableData[i];
     const original = this.fxRateTypesWithRates[i];
 
-    if (edited.fxRateCost !== original.fxRateCost || edited.fxRate !== original.fxRate) {
+    if (
+      edited.fxRateCost !== original.fxRateCost ||
+      edited.porcentUtility !== original.porcentUtility ||
+      edited.fxRate !== original.fxRate
+    ) {
       this.hasChanges = true;
       break;
     }
@@ -106,6 +111,21 @@ fn_getFilteredData(): any[] {
 
 fn_moveFocusToVenta(index: number, event: any) {
   event.preventDefault();
+  // Si el item es un Metal Fino (sin idFxRateTypeOrigin), calcular derivados
+  const filteredData = this.fn_getFilteredData();
+  if (filteredData && filteredData.length > index) {
+    const item = filteredData[index];
+    const esFino = !item.idFxRateTypeOrigin;
+    if (esFino) {
+      this.fn_calcularDerivados(item);
+    } else {
+      // No es fino: solo recalcula su propia venta
+      if (item.fxRateCost !== null && item.fxRateCost !== undefined) {
+        item.fxRate = parseFloat((item.fxRateCost * (1 + (item.porcentUtility || 0) / 100)).toFixed(2));
+        this.fn_detectChanges();
+      }
+    }
+  }
 
   // Usar setTimeout para asegurar que los ViewChildren estén listos
   setTimeout(() => {
@@ -113,6 +133,47 @@ fn_moveFocusToVenta(index: number, event: any) {
       const ventaInputElement = this.ventaInputs.toArray()[index].nativeElement;
       ventaInputElement.focus();
       ventaInputElement.select();
+    }
+  }, 0);
+}
+
+fn_calcularDerivados(fino: any): void {
+  // Calcular la venta del propio fino: costo * (1 + %utilidad / 100)
+  if (fino.fxRateCost !== null && fino.porcentUtility !== null) {
+    fino.fxRate = parseFloat((fino.fxRateCost * (1 + (fino.porcentUtility || 0) / 100)).toFixed(2));
+  }
+
+  // Si el fino no tiene base configurada, no puede calcular derivados
+  if (!fino.base || !fino.fxRateCost) {
+    this.fn_detectChanges();
+    return;
+  }
+
+  // Buscar todos los metales que dependen de este fino
+  const derivados = this.fxRateEditableData.filter(
+    (d: any) => d.idFxRateTypeOrigin === fino.idFxRateType
+  );
+
+  for (const derivado of derivados) {
+    const nuevoCosto = (fino.fxRateCost / fino.base) * (derivado.medicion || 0);
+    const nuevaPorcentUtility = fino.porcentUtility;
+    const nuevaVenta = nuevoCosto * (1 + (nuevaPorcentUtility || 0) / 100);
+    derivado.fxRateCost      = parseFloat(nuevoCosto.toFixed(2));
+    derivado.porcentUtility  = nuevaPorcentUtility;
+    derivado.fxRate          = parseFloat(nuevaVenta.toFixed(2));
+  }
+
+  this.fn_detectChanges();
+}
+
+fn_moveFocusToUtility(index: number, event: any) {
+  event.preventDefault();
+
+  setTimeout(() => {
+    if (this.utilityInputs && this.utilityInputs.length > index) {
+      const utilityInputElement = this.utilityInputs.toArray()[index].nativeElement;
+      utilityInputElement.focus();
+      utilityInputElement.select();
     }
   }, 0);
 }
@@ -171,14 +232,19 @@ fn_saveFxRateChanges() {
     const edited = this.fxRateEditableData[i];
     const original = this.fxRateTypesWithRates[i];
 
-    // Verificar si hay cambios en fxRateCost o fxRate
-    if (edited.fxRateCost !== original.fxRateCost || edited.fxRate !== original.fxRate) {
+    // Verificar si hay cambios en fxRateCost, porcentUtility o fxRate
+    if (
+      edited.fxRateCost !== original.fxRateCost ||
+      edited.porcentUtility !== original.porcentUtility ||
+      edited.fxRate !== original.fxRate
+    ) {
       hasChanges = true;
       changesToSave.push({
         idFxRateType: edited.idFxRateType,
         referencia: edited.referencia,
         fxRate: edited.fxRate,
-        fxRateCost: edited.fxRateCost
+        fxRateCost: edited.fxRateCost,
+        porcentUtility: edited.porcentUtility
       });
     }
   }
@@ -246,7 +312,13 @@ fn_openAddReferenceModal() {
     disableClose: false,
     data: {
       nombre: '',
-      descripcion: ''
+      descripcion: '',
+      base: null,
+      medicion: null,
+      idFxRateTypeOrigin: null,
+      idFxRateType: 0,
+      originName: '',
+      isEdit: false
     }
   });
 
@@ -264,7 +336,10 @@ fn_openAddReferenceModal() {
 
               this.fxRateServ.CCreateFxRateType({
                 nombre: result.nombre.trim(),
-                descripcion: result.descripcion ? result.descripcion.trim() : ''
+                descripcion: result.descripcion ? result.descripcion.trim() : '',
+                base: result.base !== null && result.base !== undefined && result.base !== '' ? result.base : null,
+                medicion: result.medicion !== null && result.medicion !== undefined && result.medicion !== '' ? result.medicion : null,
+                idFxRateTypeOrigin: result.idFxRateTypeOrigin || null
               })
                 .subscribe({
                   next: (resp: any) => {
@@ -343,11 +418,17 @@ fn_deleteReference(idFxRateType: number, nombre: string) {
 
 fn_editReference(item: any) {
   const dialogRef = this.dialog.open(AddFxRateTypeDialogComponent, {
-    width: '400px',
+    width: '800px',
     disableClose: false,
     data: {
+      idFxRateType: item.idFxRateType,
       nombre: item.referencia,
-      descripcion: item.descripcion || ''
+      descripcion: item.descripcion || '',
+      base: item.base !== undefined ? item.base : null,
+      medicion: item.medicion !== undefined ? item.medicion : null,
+      idFxRateTypeOrigin: item.idFxRateTypeOrigin || null,
+      originName: item.originName || '',
+      isEdit: true
     }
   });
 
@@ -365,7 +446,10 @@ fn_editReference(item: any) {
 
               this.fxRateServ.CUpdateFxRateType(item.idFxRateType, {
                 nombre: result.nombre.trim(),
-                descripcion: result.descripcion ? result.descripcion.trim() : ''
+                descripcion: result.descripcion ? result.descripcion.trim() : '',
+                base: result.base !== null && result.base !== undefined && result.base !== '' ? result.base : null,
+                medicion: result.medicion !== null && result.medicion !== undefined && result.medicion !== '' ? result.medicion : null,
+                idFxRateTypeOrigin: result.idFxRateTypeOrigin || null
               })
                 .subscribe({
                   next: (resp: any) => {

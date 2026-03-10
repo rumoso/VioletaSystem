@@ -10,8 +10,13 @@ import { AuthService } from 'src/app/auth/services/auth.service';
 })
 export class SalesService {
 
+
   private baseURL: string = environment.baseUrl;
   private idSucursal: number = environment.idSucursal;
+
+  public getIdSucursal(): number {
+    return this.idSucursal;
+  }
 
   _api: string = 'api/sales';
 
@@ -630,6 +635,30 @@ export class SalesService {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerByID`, data);
   }
 
+  async CGetTallerByIDPromise( idTaller: any ): Promise<any> {
+    var data: any = {
+      idTaller: idTaller
+    };
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return new Promise((resolve, reject) => {
+
+      this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerByID`, data)
+      .subscribe({
+        next: ( resp: ResponseGet ) => {
+          resolve( resp );
+        }
+        , error: ( err: any ) => {
+          reject( err );
+        }
+      });
+
+    });
+
+  }
+
   getTallerPaginado( pagination: Pagination, params: any ): Observable<ResponseGet> {
 
     let start = pagination.pageIndex * pagination.pageSize;
@@ -641,7 +670,9 @@ export class SalesService {
       (!params.idCustomer || params.idCustomer === '' || params.idCustomer == 0) &&
       (!params.bCancel && !params.bPending && !params.bPagada) &&
       (!params.createDateStart || params.createDateStart === '') &&
-      (!params.createDateEnd || params.createDateEnd === '')
+      (!params.createDateEnd || params.createDateEnd === '') &&
+      (!params.idTallerStatus || params.idTallerStatus == 0) &&
+      (!params.idTecnico || params.idTecnico == 0)
     );
 
     // Si están vacíos, asignar fecha de hoy en formato ddMMyyyy
@@ -663,6 +694,8 @@ export class SalesService {
       , createDateEnd: params.createDateEnd
       , idCustomer: params.idCustomer
       , idSale: params.idSale
+      , idTallerStatus: params.idTallerStatus || 0
+      , idTecnico: params.idTecnico || 0
 
       , bCancel: params.bCancel
       , bPending: params.bPending
@@ -678,6 +711,12 @@ export class SalesService {
 
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerPaginado`, data );
 
+  }
+
+  CTallerGetStatusCat(): Observable<ResponseGet> {
+    const data: any = {};
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerStatusCat`, data);
   }
 
   getTallerRefaccciones( data: any ): Observable<ResponseGet> {
@@ -719,6 +758,24 @@ export class SalesService {
     data.idSucursalLogON = this.idSucursal;
 
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/updateTallerStatus`, data );
+
+  }
+
+  CInsertUpdateTallerFirma( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertUpdateTallerFirma`, data );
+
+  }
+
+  CGetTallerFirmasHistorial( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerFirmasHistorial`, data );
 
   }
 

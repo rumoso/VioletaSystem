@@ -17,11 +17,13 @@ import { PrintersService } from 'src/app/protected/services/printers.service';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { SalestypeService } from 'src/app/protected/services/salestype.service';
+import { UsersService } from 'src/app/protected/services/users.service';
 import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { TallerComponent } from '../mdl/taller/taller.component';
 import { CajasService } from 'src/app/protected/services/cajas.service';
 import { SelectCajaComponent } from '../mdl/select-caja/select-caja.component';
+import { TallerFirmaHistorialModalComponent } from '../mdl/taller/taller-firma-historial-modal.component';
 
 @Component({
   selector: 'app-taller-list',
@@ -39,6 +41,10 @@ export class TallerListComponent {
   private timeCBXskeyup: Subject<any> = new Subject<any>();
 
   @ViewChild('cbxCustomerCBX') cbxCustomerCBX!: ElementRef;
+  @ViewChild('cbxTecnicosCBX') cbxTecnicosCBX!: ElementRef;
+
+  oTallerStatus: any[] = [];
+  cbxTecnicos: any[] = [];
 
   title: string = 'Taller';
   bShowSpinner: boolean = false;
@@ -73,8 +79,9 @@ export class TallerListComponent {
     customerDesc: '',
     customerResp: '',
 
-    idSaleType: 0,
-    saleTypeDesc: '',
+    idTallerStatus: 0,
+    idTecnico: 0,
+    tecnicoDesc: '',
 
     idSale: '',
 
@@ -117,6 +124,7 @@ constructor(
   , private salesTypeServ: SalestypeService
   , private cajasServ: CajasService
   , private router: Router
+  , private usersServ: UsersService
 
   ) { }
 
@@ -138,6 +146,8 @@ constructor(
     .subscribe( value => {
       if(value.iOption == 1){
         this.cbxCustomers_Search();
+      } else if (value.iOption == 2) {
+        this.cbxTecnicos_Search();
       }
     })
 
@@ -149,6 +159,7 @@ constructor(
     this.fn_getVentasListWithPage();
     this.fn_getSelectPrintByIdUser( this.idUserLogON );
     this.fn_getSelectCajaByIdUser( this.idUserLogON );
+    this.fn_getTallerStatusCat();
 
   }
 
@@ -191,6 +202,14 @@ constructor(
       return this.authServ.hasPermissionAction(action);
     }
 
+  fn_openFirmaHistorial( item: any ): void {
+    this.servicesGServ.showModalWithParams(
+      TallerFirmaHistorialModalComponent,
+      { idTaller: item.idTaller, idSale: item.idSale },
+      '960px'
+    );
+  }
+
     ev_fn_search_keyup_enter(event: any){
       if(event.keyCode == 13) { // PRESS ENTER
 
@@ -209,7 +228,8 @@ fn_getVentasListWithPage() {
     createDateStart: this.parametersForm.createDateStart
     , createDateEnd: this.parametersForm.createDateEnd
     , idCustomer: this.parametersForm.idCustomer
-    , idSaleType: this.parametersForm.idSaleType
+    , idTallerStatus: this.parametersForm.idTallerStatus
+    , idTecnico: this.parametersForm.idTecnico
     , search: this.parametersForm.idSale
 
     , bCancel: this.parametersForm.bCancel
@@ -658,8 +678,9 @@ fn_ClearFilters(){
     customerDesc: '',
     customerResp: '',
 
-    idSaleType: 0,
-    saleTypeDesc: '',
+    idTallerStatus: 0,
+    idTecnico: 0,
+    tecnicoDesc: '',
 
     idSale: '',
 
@@ -754,47 +775,47 @@ fn_ClearFilters(){
   //--------------------------------------------------------------------------
 
   //--------------------------------------------------------------------------
-  // MÉTODOS PARA COMBO DE ÁREAS
+  // MÉTODOS PARA ESTATUS DE TALLER
 
-  cbxSalesType: any[] = [];
+  fn_getTallerStatusCat() {
+    this.salesServ.CTallerGetStatusCat()
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.oTallerStatus = resp.status === 0 ? resp.data : [];
+        },
+        error: () => {}
+      });
+  }
+  //--------------------------------------------------------------------------
 
-  cbxSalesType_Search() {
-      this.salesTypeServ.CCbxGetSalesTypeCombo( this.parametersForm.saleTypeDesc )
-       .subscribe( {
-         next: (resp: ResponseGet) =>{
-           if(resp.status === 0){
-             this.cbxSalesType = resp.data
-           }
-           else{
-            this.cbxSalesType = [];
-           }
-         },
-         error: (ex) => {
-           this.servicesGServ.showSnakbar( "Problemas con el servicio" );
-           this.bShowSpinner = false;
-         }
-       });
+  //--------------------------------------------------------------------------
+  // MÉTODOS PARA COMBO DE TÉCNICOS
+
+  cbxTecnicos_Search() {
+    this.usersServ.CCbxGetTecnicosCombo( this.parametersForm.tecnicoDesc )
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.cbxTecnicos = resp.status === 0 ? resp.data : [];
+        },
+        error: () => {
+          this.servicesGServ.showSnakbar('Problemas al cargar técnicos');
+        }
+      });
   }
 
-  cbxSalesType_SelectedOption( event: MatAutocompleteSelectedEvent ) {
-
-    this.cbxSalesType_Clear();
-
-    setTimeout (() => {
-
+  cbxTecnicos_SelectedOption( event: MatAutocompleteSelectedEvent ) {
+    this.cbxTecnicos = [];
+    setTimeout(() => {
       const ODataCbx: any = event.option.value;
-
-      this.parametersForm.idSaleType = ODataCbx.id;
-      this.parametersForm.saleTypeDesc = ODataCbx.name;
-
+      this.parametersForm.idTecnico = ODataCbx.id;
+      this.parametersForm.tecnicoDesc = ODataCbx.nombre;
     }, 1);
-
   }
 
-  cbxSalesType_Clear(){
-    this.parametersForm.idSaleType = 0;
-    this.parametersForm.saleTypeDesc = '';
-
+  cbxTecnicos_Clear() {
+    this.parametersForm.idTecnico = 0;
+    this.parametersForm.tecnicoDesc = '';
+    this.cbxTecnicos = [];
   }
   //--------------------------------------------------------------------------
 

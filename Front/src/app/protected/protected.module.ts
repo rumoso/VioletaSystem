@@ -68,6 +68,8 @@ import { TallerHeaderImagesComponent } from './pages/sales/mdl/taller/taller-hea
 import { ServiciosExternosModalComponent } from './pages/sales/mdl/taller/servicios-externos-modal/servicios-externos-modal.component';
 import { ServicioExternoFormModalComponent } from './pages/sales/mdl/taller/servicio-externo-form-modal/servicio-externo-form-modal.component';
 import { SeleccionarProductoModalComponent } from './pages/sales/mdl/taller/seleccionar-producto-modal.component';
+import { TallerFirmaModalComponent } from './pages/sales/mdl/taller/taller-firma-modal.component';
+import { TallerFirmaHistorialModalComponent } from './pages/sales/mdl/taller/taller-firma-historial-modal.component';
 
 @NgModule({
     declarations: [
@@ -132,6 +134,8 @@ import { SeleccionarProductoModalComponent } from './pages/sales/mdl/taller/sele
     ServicioExternoFormModalComponent,
     SeleccionarProductoModalComponent,
     AddFxRateTypeDialogComponent,
+    TallerFirmaModalComponent,
+    TallerFirmaHistorialModalComponent,
   ],
     imports: [
         CommonModule,

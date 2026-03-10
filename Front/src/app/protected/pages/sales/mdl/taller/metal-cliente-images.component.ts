@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SalesService } from 'src/app/protected/services/sales.service';
@@ -6,13 +6,14 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { environment } from 'src/environments/environment';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
+import { AuthService } from 'src/app/auth/services/auth.service';
 
 @Component({
   selector: 'app-metal-cliente-images',
   templateUrl: './metal-cliente-images.component.html',
   styleUrls: ['./metal-cliente-images.component.css']
 })
-export class MetalClienteImagesComponent implements OnInit {
+export class MetalClienteImagesComponent implements OnInit, OnDestroy {
 
   metalClienteImages: any[] = [];
   currentImageIndex: number = 0;
@@ -21,17 +22,36 @@ export class MetalClienteImagesComponent implements OnInit {
   bShowSpinner: boolean = false;
   idUserLogON: number = 0;
 
+  // Cámara
+  showCamera: boolean = false;
+  cameraStream: MediaStream | null = null;
+  capturedPhotos: { file: File, preview: string }[] = [];
+  uploadingIndex: number = 0;
+  availableCameras: MediaDeviceInfo[] = [];
+  currentCameraIndex: number = 0;
+  videoReady: boolean = false;
+
+  @ViewChild('videoElement') videoRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('canvasElement') canvasRef!: ElementRef<HTMLCanvasElement>;
+
   constructor(
     private dialogRef: MatDialogRef<MetalClienteImagesComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
     private salesServ: SalesService,
-    private servicesGServ: ServicesGService
+    private servicesGServ: ServicesGService,
+    private authServ: AuthService,
+    private cdr: ChangeDetectorRef
   ) { }
 
-  ngOnInit(): void {
+  async ngOnInit() {
+    this.idUserLogON = await this.authServ.getIdUserSession();
     if (this.data && this.data.idMetalCliente) {
       this.getMetalClienteImages(this.data.idMetalCliente);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.fn_closeCamera();
   }
 
   onFileSelected(event: any): void {
@@ -93,9 +113,9 @@ export class MetalClienteImagesComponent implements OnInit {
         next: (resp: ResponseGet) => {
           this.bShowSpinner = false;
           if (resp.status === 0) {
-            // Procesar imágenes y construir URLs completas con el baseUrl
             this.metalClienteImages = (resp.data.imagesDetail || []).map((img: any) => ({
               ...img,
+              keyX: img.keyX || img.keyx || 0,
               urlImg: `${environment.baseUrl}${img.urlImg}`
             }));
             this.currentImageIndex = 0;
@@ -121,6 +141,10 @@ export class MetalClienteImagesComponent implements OnInit {
   }
 
   deleteMetalClienteImage(keyX: number): void {
+    if (!keyX) {
+      this.servicesGServ.showSnakbar('No se pudo obtener el ID de la imagen');
+      return;
+    }
     this.servicesGServ.showDialog('¿Estás seguro?'
         , 'Está a punto de eliminar esta imagen'
         , '¿Desea continuar?'
@@ -157,6 +181,142 @@ export class MetalClienteImagesComponent implements OnInit {
   }
 
   fn_cancel() {
+    this.fn_closeCamera();
     this.dialogRef.close();
+  }
+
+  fn_openCamera(): void {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      this.servicesGServ.showSnakbar('Su navegador no soporta acceso a la cámara');
+      return;
+    }
+    navigator.mediaDevices.enumerateDevices()
+      .then((devices: MediaDeviceInfo[]) => {
+        this.availableCameras = devices.filter(d => d.kind === 'videoinput');
+        if (this.availableCameras.length === 0) {
+          this.servicesGServ.showSnakbar('No se encontró ninguna cámara');
+          return;
+        }
+        const backIndex = this.availableCameras.findIndex(c =>
+          c.label.toLowerCase().includes('back') ||
+          c.label.toLowerCase().includes('trasera') ||
+          c.label.toLowerCase().includes('rear')
+        );
+        this.currentCameraIndex = backIndex >= 0 ? backIndex : 0;
+        this.fn_startStream();
+      });
+  }
+
+  private fn_startStream(): void {
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach(track => track.stop());
+      this.cameraStream = null;
+    }
+    const deviceId = this.availableCameras[this.currentCameraIndex]?.deviceId;
+    const constraints: MediaStreamConstraints = {
+      video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' },
+      audio: false
+    };
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then((stream: MediaStream) => {
+        this.cameraStream = stream;
+        this.videoReady = false;
+        this.showCamera = true;
+        setTimeout(() => {
+          if (this.videoRef && this.videoRef.nativeElement) {
+            const video = this.videoRef.nativeElement;
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+              video.play();
+              this.videoReady = true;
+            };
+          }
+        }, 0);
+      })
+      .catch(() => {
+        this.servicesGServ.showSnakbar('No se pudo acceder a la cámara. Verifique los permisos.');
+      });
+  }
+
+  fn_switchCamera(): void {
+    if (this.availableCameras.length <= 1) return;
+    this.currentCameraIndex = (this.currentCameraIndex + 1) % this.availableCameras.length;
+    this.fn_startStream();
+  }
+
+  fn_capturePhoto(): void {
+    const video = this.videoRef?.nativeElement;
+    const canvas = this.canvasRef?.nativeElement;
+    if (!video || !canvas) return;
+    if (!this.videoReady || video.videoWidth === 0 || video.videoHeight === 0) {
+      this.servicesGServ.showSnakbar('La cámara aún no está lista, espere un momento');
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob((blob: Blob | null) => {
+      if (!blob) return;
+      const timestamp = new Date().getTime();
+      const file = new File([blob], `foto_metal_${timestamp}.jpg`, { type: 'image/jpeg' });
+      const preview = canvas.toDataURL('image/jpeg');
+      this.capturedPhotos.push({ file, preview });
+      this.cdr.detectChanges();
+    }, 'image/jpeg', 0.9);
+  }
+
+  fn_removeCapturedPhoto(index: number): void {
+    this.capturedPhotos.splice(index, 1);
+  }
+
+  fn_closeCamera(): void {
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach(track => track.stop());
+      this.cameraStream = null;
+    }
+    this.videoReady = false;
+    this.showCamera = false;
+  }
+
+  fn_uploadCapturedPhotos(): void {
+    if (this.capturedPhotos.length === 0) {
+      this.servicesGServ.showSnakbar('No hay fotos capturadas para subir');
+      return;
+    }
+    if (!this.data || this.data.idMetalCliente === 0) {
+      this.servicesGServ.showSnakbar('Metal no válido');
+      return;
+    }
+    this.fn_closeCamera();
+    this.bShowSpinner = true;
+    this.uploadingIndex = 0;
+    this.fn_uploadNext();
+  }
+
+  private fn_uploadNext(): void {
+    if (this.uploadingIndex >= this.capturedPhotos.length) {
+      this.capturedPhotos = [];
+      this.bShowSpinner = false;
+      setTimeout(() => this.cdr.detectChanges(), 1000);
+      this.getMetalClienteImages(this.data.idMetalCliente);
+      this.servicesGServ.showAlertIA({ status: 0, message: 'Fotos subidas correctamente' }, false);
+      return;
+    }
+    const photo = this.capturedPhotos[this.uploadingIndex];
+    this.salesServ.uploadMetalClienteImage(photo.file, this.data.idMetalCliente)
+      .subscribe({
+        next: () => {
+          this.uploadingIndex++;
+          setTimeout(() => this.cdr.detectChanges(), 1000);
+          this.fn_uploadNext();
+        },
+        error: () => {
+          this.uploadingIndex++;
+          setTimeout(() => this.cdr.detectChanges(), 1000);
+          this.fn_uploadNext();
+        }
+      });
   }
 }

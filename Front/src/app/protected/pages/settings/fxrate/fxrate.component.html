@@ -51,9 +51,10 @@
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
-                        <th class="textAlingCenter" *ngIf="fn_hasReferencesWithoutRates()">Acciones</th>
+                        <th class="textAlingCenter">Acciones</th>
                         <th class="textAlingLeft">Referencia</th>
                         <th class="textAlingRight">Costo</th>
+                        <th class="textAlingRight">% Utilidad</th>
                         <th class="textAlingRight">Venta</th>
                         <th class="textAlingCenter">Última Fecha de Modificación</th>
                     </thead>
@@ -61,8 +62,8 @@
                     <tbody>
                         <tr *ngFor="let item of fn_getFilteredData(); let i = index">
 
-                            <td class="textAlingCenter" *ngIf="fn_hasReferencesWithoutRates()">
-                                <div *ngIf="fn_canEditOrDelete(item)" class="action-buttons">
+                            <td class="textAlingCenter">
+                                <div class="action-buttons">
                                     <button mat-icon-button
                                             color="primary"
                                             (click)="fn_editReference(item)"
@@ -71,6 +72,7 @@
                                     </button>
                                     <button mat-icon-button
                                             color="warn"
+                                            *ngIf="fn_canEditOrDelete(item)"
                                             (click)="fn_deleteReference(item.idFxRateType, item.referencia)"
                                             matTooltip="Eliminar referencia">
                                         <mat-icon>delete</mat-icon>
@@ -85,6 +87,16 @@
                                     step="0.01"
                                     #costInput
                                     [(ngModel)]="item.fxRateCost"
+                                    (ngModelChange)="fn_detectChanges()"
+                                    (keydown.enter)="fn_moveFocusToUtility(i, $event)"
+                                    placeholder="0.00">
+                            </td>
+                            <td class="textAlingRight">
+                                <input class="table-input"
+                                    type="number"
+                                    step="0.01"
+                                    #utilityInput
+                                    [(ngModel)]="item.porcentUtility"
                                     (ngModelChange)="fn_detectChanges()"
                                     (keydown.enter)="fn_moveFocusToVenta(i, $event)"
                                     placeholder="0.00">

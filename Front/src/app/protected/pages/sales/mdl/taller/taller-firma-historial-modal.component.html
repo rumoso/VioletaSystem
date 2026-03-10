@@ -1,0 +1,67 @@
+<h2 mat-dialog-title style="display: flex; align-items: center; gap: 10px; margin: 0;">
+  <mat-icon style="color: #6200EA;">history</mat-icon>
+  Historial de Firmas — {{ data.idSale }}
+  <span style="flex: 1;"></span>
+  <button mat-icon-button (click)="fn_close()"><mat-icon>close</mat-icon></button>
+</h2>
+
+<mat-dialog-content style="min-width: 640px; max-width: 900px; padding: 16px 24px;">
+
+  <div *ngIf="bShowSpinner" style="text-align: center; padding: 40px 0;">
+    <app-spinner [hidden]="false"></app-spinner>
+  </div>
+
+  <div *ngIf="!bShowSpinner && historial.length === 0"
+       style="text-align: center; padding: 40px; color: #999;">
+    <mat-icon style="font-size: 48px; width: 48px; height: 48px;">inbox</mat-icon>
+    <p>No hay registros de firmas para este taller.</p>
+  </div>
+
+  <div *ngFor="let item of historial; let i = index" class="firma-card" [ngStyle]="{
+    'border-left': '4px solid ' + getFirmaColor(item.firma),
+    'background': item.firma === 1 ? '#f9fdf9' : item.firma === 2 ? '#fff5f5' : '#fffbf0'
+  }">
+
+    <!-- Encabezado: status + firma -->
+    <div class="firma-header">
+      <div class="firma-status-badge" [ngStyle]="{ 'background': getFirmaColor(item.firma) }">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">{{ getFirmaIcon(item.firma) }}</mat-icon>
+        {{ item.firmaDesc }}
+      </div>
+      <span class="firma-status-label">{{ item.statusDesc }}</span>
+      <span class="firma-num">#{{ i + 1 }}</span>
+    </div>
+
+    <!-- Detalle: creador + firmante -->
+    <div class="firma-body">
+      <div class="firma-row">
+        <mat-icon class="row-icon">person_add</mat-icon>
+        <div>
+          <div class="row-label">Creado por</div>
+          <div class="row-value">{{ item.userCreateDesc || '—' }}</div>
+          <div class="row-date">{{ item.createDate | date:'dd/MM/yyyy HH:mm' }}</div>
+        </div>
+      </div>
+
+      <div class="firma-row" *ngIf="item.idUserFirma > 0 || item.firmaDate">
+        <mat-icon class="row-icon" [style.color]="getFirmaColor(item.firma)">how_to_reg</mat-icon>
+        <div>
+          <div class="row-label">Firmado por</div>
+          <div class="row-value">{{ item.userFirmaDesc || '—' }}</div>
+          <div class="row-date">{{ item.firmaDate | date:'dd/MM/yyyy HH:mm' }}</div>
+        </div>
+      </div>
+
+      <div class="firma-comentario" *ngIf="item.comentario">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px; color: #666;">comment</mat-icon>
+        <span>{{ item.comentario }}</span>
+      </div>
+    </div>
+
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-raised-button (click)="fn_close()">Cerrar</button>
+</mat-dialog-actions>

@@ -70,4 +70,11 @@ export class FxrateService {
   CGetPriceByKilataje( kilates: number ): Observable<any> {
     return this.http.get<any>( `${ this.baseURL }/${ this._api }/getPriceByKilataje/${kilates}` );
   }
+
+  CSearchFxRateTypes(search: string, excludeIdFxRateType: number = 0): Observable<any> {
+    const sSearch = encodeURIComponent(search || '');
+    return this.http.get<any>(
+      `${ this.baseURL }/${ this._api }/searchFxRateTypes?search=${sSearch}&excludeIdFxRateType=${excludeIdFxRateType}`
+    );
+  }
 }

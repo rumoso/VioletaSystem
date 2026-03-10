@@ -1,0 +1,63 @@
+<div style="padding: 24px; min-width: 450px; max-width: 550px;">
+
+  <!-- Encabezado -->
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #6200EA; padding-bottom: 12px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <mat-icon style="color: #6200EA; font-size: 28px; width: 28px; height: 28px;">assignment_turned_in</mat-icon>
+      <h2 style="margin: 0; color: #333;">Firma de Conformidad</h2>
+    </div>
+    <button mat-icon-button (click)="fn_noFirmar()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Info del status -->
+  <div style="background: #f3e5f5; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; border-left: 4px solid #6200EA;">
+    <p style="margin: 0; font-size: 13px; color: #666;">Está firmando la conformidad del cambio de status:</p>
+    <p style="margin: 6px 0 0; font-size: 16px; font-weight: bold; color: #6200EA;">{{ statusDesc }}</p>
+    <p style="margin: 4px 0 0; font-size: 12px; color: #888;">Taller: {{ data?.idTaller }}</p>
+  </div>
+
+  <!-- Textarea comentario -->
+  <mat-form-field class="with100" style="width: 100%;">
+    <mat-label>Comentario <span style="color: #999; font-size: 11px;">(obligatorio al rechazar)</span></mat-label>
+    <textarea matInput
+              [(ngModel)]="comentario"
+              placeholder="Ingrese un comentario..."
+              rows="4"
+              style="resize: none;">
+    </textarea>
+  </mat-form-field>
+
+  <!-- Botones de acción -->
+  <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap;">
+
+    <button mat-raised-button
+            (click)="fn_noFirmar()"
+            style="background: #fff; color: #555; border: 1px solid #ccc;"
+            [disabled]="bShowSpinner">
+      <mat-icon>schedule</mat-icon>
+      No firmar aún
+    </button>
+
+    <button mat-raised-button
+            (click)="fn_rechazar()"
+            style="background: #f44336; color: #fff;"
+            [disabled]="bShowSpinner">
+      <mat-icon>thumb_down</mat-icon>
+      RECHAZAR
+    </button>
+
+    <button mat-raised-button
+            (click)="fn_aprobar()"
+            style="background: #4caf50; color: #fff;"
+            [disabled]="bShowSpinner">
+      <mat-icon>thumb_up</mat-icon>
+      APROBAR
+    </button>
+
+  </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -34,6 +34,7 @@ export class PaymentsComponent {
   saldoACubrir: number = 0;
   showPending: boolean = false;
   idSale: any = 0;
+  idTaller: number = 0;
 
   paymentList: any = [];
 
@@ -96,6 +97,7 @@ ngOnInit(): void {
   this.paymentList = [];
 
   this.idSale = this.ODataP.idSale;
+  this.idTaller = this.ODataP.idTaller || 0;
 
   this.paymentForm.idCaja = this.ODataP.idCaja;
   this.paymentForm.idCustomer = this.ODataP.idCustomer;
@@ -148,7 +150,11 @@ async fn_savePayment() {
                     if( resp.status === 0 ){
 
                       var sumCambio = this.paymentList.reduce((sum: any, x: any) => sum + x.cambio, 0);
-                      this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, 1, this.paymentList.length, '', sumCambio);
+                      if(this.idTaller > 0){
+                        this.printTicketServ.printTicketTallerPago("Payments", this.idTaller, this.selectCajas.idPrinter, 1, this.paymentList.length, '', sumCambio);
+                      }else{
+                        this.printTicketServ.printTicket("Payments", this.idSale, this.selectCajas.idPrinter, 1, this.paymentList.length, '', sumCambio);
+                      }
                       console.log(this.idSale)
                       this.dialogRef.close( this.idSale );
 
