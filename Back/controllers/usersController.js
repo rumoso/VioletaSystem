@@ -411,6 +411,37 @@ const updateAuthorizationCode = async(req, res) => {
     }
 }
 
+const cbxGetAllUsersCombo = async(req, res = response) => {
+
+    const { search = '' } = req.body;
+
+    try {
+        const OSQL = await dbConnection.query(`
+            SELECT
+                u.idUser  AS id,
+                u.name    AS nombre,
+                u.userName
+            FROM users u
+            WHERE u.active = 1
+              AND (u.name LIKE :search OR u.userName LIKE :search)
+            ORDER BY u.name ASC
+            LIMIT 50
+        `, {
+            replacements: { search: `%${search}%` },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if (OSQL.length === 0) {
+            res.json({ status: 3, message: 'No se encontró información.', data: [] });
+        } else {
+            res.json({ status: 0, message: 'Ejecutado correctamente.', data: OSQL });
+        }
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
 module.exports = {
     getUsersListWithPage
     , getUserByID
@@ -421,4 +452,5 @@ module.exports = {
     , cbxGetSellersCombo
     , cbxGetTecnicosCombo
     , updateAuthorizationCode
+    , cbxGetAllUsersCombo
 }

@@ -5,6 +5,7 @@ import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 
+
 @Component({
   selector: 'app-taller-firma-modal',
   templateUrl: './taller-firma-modal.component.html',
@@ -15,11 +16,22 @@ export class TallerFirmaModalComponent implements OnInit {
   comentario: string = '';
   bShowSpinner: boolean = false;
 
+  // Modo bEditAfterEntregado
+  selectedStatus: number = 0;
+  readonly statusOptions = [
+    { value: 2, label: 'Pedido' },
+    { value: 3, label: 'Asignado' },
+    { value: 4, label: 'Finalizado / Mostrador' },
+    { value: 5, label: 'Entregado' },
+    { value: 6, label: 'Devolución' }
+  ];
+
   // Labels por status
   readonly statusLabels: { [key: number]: string } = {
     3: 'Asignado',
     4: 'Finalizado / Mostrador',
-    5: 'Entregado'
+    5: 'Entregado',
+    6: 'Devolución del cliente'
   };
 
   constructor(
@@ -49,6 +61,30 @@ export class TallerFirmaModalComponent implements OnInit {
 
   fn_noFirmar(): void {
     this.dialogRef.close(null);
+  }
+
+  fn_confirmarEditAfterEntregado(): void {
+    if (!this.selectedStatus) {
+      this.servicesGServ.showSnakbar('Seleccione el estado destino');
+      return;
+    }
+    if (!this.comentario || this.comentario.trim().length === 0) {
+      this.servicesGServ.showSnakbar('El motivo es obligatorio');
+      return;
+    }
+    this.dialogRef.close({
+      targetStatus: this.selectedStatus,
+      comentario: this.comentario.trim()
+    });
+  }
+
+  // Modo devolución: solo captura el motivo y cierra sin llamar la API de firma
+  fn_confirmarDevolucion(): void {
+    if (!this.comentario || this.comentario.trim().length === 0) {
+      this.servicesGServ.showSnakbar('El motivo de la devolución es obligatorio');
+      return;
+    }
+    this.dialogRef.close({ comentario: this.comentario.trim() });
   }
 
   private fn_firmar(firma: number): void {

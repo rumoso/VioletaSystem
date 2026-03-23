@@ -528,4 +528,44 @@ router.post('/cbxGetServiciosExternosCombo', [
   validarCampos
 ], cbxGetServiciosExternosCombo);
 
+// Responsables de devolución
+const {
+  getTallerResponsablesDevolucion,
+  insertResponsableDevolucion,
+  updateResponsableDevolucion,
+  deleteResponsableDevolucion
+} = require('../controllers/salesController');
+
+router.post('/getTallerResponsablesDevolucion', [
+  check('idTaller','idTaller es obligatorio').not().isEmpty(),
+  check('idTaller','idTaller debe ser numérico').isNumeric(),
+  validarCampos
+], getTallerResponsablesDevolucion);
+
+router.post('/insertResponsableDevolucion', [
+  check('idTaller','idTaller es obligatorio').not().isEmpty(),
+  check('idTaller','idTaller debe ser numérico').isNumeric(),
+  check('idUser','idUser es obligatorio').not().isEmpty(),
+  check('idUser','idUser debe ser numérico').isNumeric(),
+  check('monto','monto es obligatorio').not().isEmpty(),
+  check('monto','monto debe ser numérico').isNumeric(),
+  validarCampos
+], insertResponsableDevolucion);
+
+router.post('/updateResponsableDevolucion', [
+  check('idResponsablesDevolucion','id es obligatorio').not().isEmpty(),
+  check('idResponsablesDevolucion','id debe ser numérico').isNumeric(),
+  check('idUser','idUser es obligatorio').not().isEmpty(),
+  check('idUser','idUser debe ser numérico').isNumeric(),
+  check('monto','monto es obligatorio').not().isEmpty(),
+  check('monto','monto debe ser numérico').isNumeric(),
+  validarCampos
+], updateResponsableDevolucion);
+
+router.post('/deleteResponsableDevolucion', [
+  check('idResponsablesDevolucion','id es obligatorio').not().isEmpty(),
+  check('idResponsablesDevolucion','id debe ser numérico').isNumeric(),
+  validarCampos
+], deleteResponsableDevolucion);
+
 module.exports = router;

@@ -4357,13 +4357,20 @@ const insertUpdateTallerFirma = async(req, res = response) => {
         if (!idFirma || idFirma == 0) {
 
             // INSERT — se llama al cambiar de status (>= 3)
+            // Los campos firma/idUserFirma/comentario permiten insertar ya aprobado
+            // (usado por el flujo de Devolución del cliente, status 6)
             const result = await dbConnection.query(`
                 INSERT INTO taller_firmas_status
                     (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
                 VALUES
-                    (:createDate, NULL, :idTaller, :idTallerStatus, :idUserCreate, 0, 0, '')
+                    (:createDate, :firmaDate, :idTaller, :idTallerStatus, :idUserCreate, :firma, :idUserFirma, :comentario)
             `, {
-                replacements: { createDate: oGetDateNow, idTaller, idTallerStatus, idUserCreate },
+                replacements: {
+                    createDate: oGetDateNow,
+                    firmaDate: firma > 0 ? oGetDateNow : null,
+                    idTaller, idTallerStatus, idUserCreate,
+                    firma, idUserFirma, comentario
+                },
                 type: dbConnection.QueryTypes.INSERT
             });
 
@@ -4461,6 +4468,107 @@ const getTallerFirmasHistorial = async(req, res = response) => {
 
 };
 
+// =====================================================================
+// RESPONSABLES DE DEVOLUCIÓN
+// =====================================================================
+
+const getTallerResponsablesDevolucion = async(req, res = response) => {
+
+    const { idTaller } = req.body;
+
+    try {
+        const OSQL = await dbConnection.query(`
+            SELECT
+                rd.idResponsablesDevolucion,
+                rd.createDate,
+                rd.idTaller,
+                rd.idUser,
+                u.name   AS userName,
+                rd.monto
+            FROM taller_responsables_devolucion rd
+            INNER JOIN users u ON rd.idUser = u.idUser
+            WHERE rd.idTaller = :idTaller
+            ORDER BY rd.createDate ASC
+        `, { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT });
+
+        res.json({ status: 0, message: 'OK', data: OSQL });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+const insertResponsableDevolucion = async(req, res = response) => {
+
+    const { idTaller, idUser, monto, idUserLogON } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+        await dbConnection.query(`
+            INSERT INTO taller_responsables_devolucion (createDate, idTaller, idUser, monto)
+            VALUES (:createDate, :idTaller, :idUser, :monto)
+        `, {
+            replacements: { createDate: oGetDateNow, idTaller, idUser, monto },
+            type: dbConnection.QueryTypes.INSERT
+        });
+
+        const lastId = await dbConnection.query(`SELECT LAST_INSERT_ID() AS lastId`);
+        const newId = lastId[0][0].lastId;
+
+        res.json({ status: 0, message: 'Responsable agregado correctamente', insertID: newId });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+const updateResponsableDevolucion = async(req, res = response) => {
+
+    const { idResponsablesDevolucion, idUser, monto, idUserLogON } = req.body;
+
+    try {
+        const result = await dbConnection.query(`
+            UPDATE taller_responsables_devolucion
+            SET idUser = :idUser, monto = :monto
+            WHERE idResponsablesDevolucion = :idResponsablesDevolucion
+        `, {
+            replacements: { idResponsablesDevolucion, idUser, monto },
+            type: dbConnection.QueryTypes.UPDATE
+        });
+
+        if (!result || result[1] === 0) {
+            res.json({ status: 1, message: 'No se encontró el registro' });
+            return;
+        }
+
+        res.json({ status: 0, message: 'Responsable actualizado correctamente' });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+const deleteResponsableDevolucion = async(req, res = response) => {
+
+    const { idResponsablesDevolucion, idUserLogON } = req.body;
+
+    try {
+        await dbConnection.query(`
+            DELETE FROM taller_responsables_devolucion
+            WHERE idResponsablesDevolucion = :idResponsablesDevolucion
+        `, {
+            replacements: { idResponsablesDevolucion },
+            type: dbConnection.QueryTypes.DELETE
+        });
+
+        res.json({ status: 0, message: 'Responsable eliminado correctamente' });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
 module.exports = {
     insertSale
     , getVentasListWithPage
@@ -4543,5 +4651,9 @@ module.exports = {
     , getTallerManoObra
     , updateManoObraPrecio
     , getTallerStatusCat
-
+    , getTallerResponsablesDevolucion
+    , insertResponsableDevolucion
+    , updateResponsableDevolucion
+    , deleteResponsableDevolucion
 }
+

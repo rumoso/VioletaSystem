@@ -21,6 +21,7 @@ import { ServiciosExternosModalComponent } from './servicios-externos-modal/serv
 import { SeleccionarProductoModalComponent } from './seleccionar-producto-modal.component';
 import { TallerFirmaModalComponent } from './taller-firma-modal.component';
 import { TallerFirmaHistorialModalComponent } from './taller-firma-historial-modal.component';
+import { TallerResponsablesDevolucionModalComponent } from './taller-responsables-devolucion-modal.component';
 import { PaymentsComponent } from '../payments/payments.component';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
@@ -211,11 +212,12 @@ export class TallerComponent implements OnInit {
   tall_MakePayment: boolean = false;
   tall_EditAfterEntregado: boolean = false;
   tall_verCostos: boolean = false;
+  tall_DevolutionClient: boolean = false;
 
   bShowActionAuthorization: boolean = false;
 
   get bIsReadOnly(): boolean {
-    return (this.oFirmaStatus?.firma === 0 || this.tallerForm.idTallerStatus === 5) && !this.tall_EditAfterEntregado;
+    return (this.oFirmaStatus?.firma === 0 || this.tallerForm.idTallerStatus === 5 || this.tallerForm.idTallerStatus === 6) && !this.tall_EditAfterEntregado;
   }
 
   //#endregion
@@ -274,6 +276,7 @@ export class TallerComponent implements OnInit {
     this.tall_MakePayment            = oActions.some((action: any) => action.name === 'tall_MakePayment');
     this.tall_EditAfterEntregado     = oActions.some((action: any) => action.name === 'tall_EditAfterEntregado');
     this.tall_verCostos              = oActions.some((action: any) => action.name === 'tall_verCostos');
+    this.tall_DevolutionClient       = oActions.some((action: any) => action.name === 'tall_DevolutionClient');
 
     this.fn_loadProductos();
 
@@ -1690,6 +1693,132 @@ export class TallerComponent implements OnInit {
         });
   }
 
+  fn_editAfterEntregado(): void {
+    if (!this.bShowActionAuthorization) {
+      this.bShowActionAuthorization = true;
+      var paramsMDL: any = { actionName: 'tall_EditAfterEntregado', bShowAlert: false };
+      this.servicesGServ.showModalWithParams(ActionAuthorizationComponent, paramsMDL, '400px')
+        .afterClosed().subscribe({
+          next: (auth_idUser) => {
+            this.bShowActionAuthorization = false;
+            if (auth_idUser) {
+              const dialogRef = this.dialog.open(TallerFirmaModalComponent, {
+                data: {
+                  idTaller: this.tallerForm.idTaller,
+                  currentStatus: this.tallerForm.idTallerStatus,
+                  bEditAfterEntregado: true
+                },
+                disableClose: true
+              });
+              dialogRef.afterClosed().subscribe((result: any) => {
+                if (result) {
+                  this._fn_procesarEditAfterEntregado(auth_idUser, result.targetStatus, result.comentario);
+                }
+              });
+            }
+          }
+        });
+    }
+  }
+
+  _fn_procesarEditAfterEntregado(auth_idUser: number, targetStatus: number, motivo: string): void {
+    this.bShowSpinner = true;
+    const oParamsStatus: any = {
+      idTaller: this.tallerForm.idTaller,
+      idTallerStatus: targetStatus,
+      precioTotal: this.totalTaller,
+      idUser: this.idUserLogON
+    };
+    this.salesServ.CUpdateTallerStatus(oParamsStatus)
+      .subscribe({
+        next: (respUpdate: any) => {
+          if (respUpdate.status === 0) {
+            this.salesServ.CInsertUpdateTallerFirma({
+              idFirma: 0,
+              idTaller: this.tallerForm.idTaller,
+              idTallerStatus: targetStatus,
+              idUserCreate: this.idUserLogON,
+              comentario: motivo
+            }).subscribe({
+              next: (r: any) => {
+                this.oFirmaStatus = { firma: 0, idFirma: r.insertID, idTallerStatus: targetStatus, comentario: motivo, userFirmaDesc: '' };
+              },
+              error: () => {}
+            });
+            const statusLabels: any = { 2: 'Pedido', 3: 'Asignado', 4: 'Finalizado', 5: 'Entregado', 6: 'Devolución' };
+            this.servicesGServ.showSnakbar('Estado cambiado a: ' + (statusLabels[targetStatus] || targetStatus));
+            this.tallerForm.idTallerStatus = targetStatus;
+          } else {
+            this.servicesGServ.showSnakbar(respUpdate.message || 'Error al cambiar el estado');
+          }
+          this.bShowSpinner = false;
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar(ex.error.message || 'Error al cambiar el estado');
+          this.bShowSpinner = false;
+        }
+      });
+  }
+
+  fn_devolutionTallerOrder(): void {
+    if (!this.bShowActionAuthorization) {
+      this.bShowActionAuthorization = true;
+      var paramsMDL: any = { actionName: 'tall_DevolutionClient', bShowAlert: false };
+      this.servicesGServ.showModalWithParams(ActionAuthorizationComponent, paramsMDL, '400px')
+        .afterClosed().subscribe({
+          next: (auth_idUser) => {
+            this.bShowActionAuthorization = false;
+            if (auth_idUser) {
+              const dialogRef = this.dialog.open(TallerFirmaModalComponent, {
+                data: { idTaller: this.tallerForm.idTaller, idTallerStatus: 6, bDevolucion: true },
+                disableClose: true
+              });
+              dialogRef.afterClosed().subscribe((result: any) => {
+                if (result) {
+                  this._fn_procesarDevolucion(auth_idUser, result.comentario);
+                }
+              });
+            }
+          }
+        });
+    }
+  }
+
+  _fn_procesarDevolucion(auth_idUser: number, motivo: string): void {
+    this.bShowSpinner = true;
+    const oParamsStatus: any = {
+      idTaller: this.tallerForm.idTaller,
+      idTallerStatus: 6,
+      precioTotal: this.totalTaller,
+      idUser: this.idUserLogON
+    };
+    this.salesServ.CUpdateTallerStatus(oParamsStatus)
+      .subscribe({
+        next: (respUpdate: any) => {
+          if (respUpdate.status === 0) {
+            this.salesServ.CInsertUpdateTallerFirma({
+              idFirma: 0,
+              idTaller: this.tallerForm.idTaller,
+              idTallerStatus: 6,
+              idUserCreate: this.idUserLogON,
+              firma: 1,
+              idUserFirma: auth_idUser,
+              comentario: motivo
+            }).subscribe({ next: () => {}, error: () => {} });
+            this.servicesGServ.showSnakbar('Devolución registrada correctamente');
+            this.tallerForm.idTallerStatus = 6;
+          } else {
+            this.servicesGServ.showSnakbar(respUpdate.message || 'Error al registrar la devolución');
+          }
+          this.bShowSpinner = false;
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar(ex.error.message || 'Error al registrar la devolución');
+          this.bShowSpinner = false;
+        }
+      });
+  }
+
   fn_reInsertFirmaStatusWithAuth( idTallerStatus: number ): void {
 
     if (!this.bShowActionAuthorization) {
@@ -1772,6 +1901,18 @@ export class TallerComponent implements OnInit {
       },
       maxWidth: '960px',
       width: '90vw'
+    });
+  }
+
+  fn_openResponsablesDevolucion(): void {
+    this.dialog.open(TallerResponsablesDevolucionModalComponent, {
+      data: {
+        idTaller: this.tallerForm.idTaller,
+        totalTaller: this.totalTaller
+      },
+      disableClose: false,
+      maxWidth: '820px',
+      width: '95vw'
     });
   }
 

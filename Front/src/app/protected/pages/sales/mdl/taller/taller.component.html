@@ -18,7 +18,7 @@
           </mat-icon>
           <div>
             <div style="font-size: 10px; color: #777; font-weight: 600; line-height: 1.1;">
-              {{ tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : 'Entregado' }}
+              {{ tallerForm.idTallerStatus === 2 ? 'Pedido' : tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : tallerForm.idTallerStatus === 5 ? 'Entregado' : tallerForm.idTallerStatus === 6 ? 'Devolución' : 'Status ' + tallerForm.idTallerStatus }}
             </div>
             <div style="font-size: 13px; font-weight: bold; line-height: 1.2;">
               {{ oFirmaStatus?.firma === 1 ? 'Aprobado' : oFirmaStatus?.firma === 2 ? 'Rechazado' : 'Pendiente de aprobación' }}
@@ -74,6 +74,25 @@
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4 && oFirmaStatus?.firma === 1"
                 mat-raised-button color="success" type="button" (click)="fn_deliverTallerOrder()">
           <mat-icon>check_circle</mat-icon>Entregado
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && (tallerForm.idTallerStatus === 4 || tallerForm.idTallerStatus === 5) && tall_DevolutionClient"
+                mat-raised-button color="warn" type="button" (click)="fn_devolutionTallerOrder()"
+                [disabled]="bShowActionAuthorization">
+          <mat-icon>assignment_return</mat-icon>Devolución del cliente
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 5 && tall_EditAfterEntregado"
+                mat-raised-button type="button" (click)="fn_editAfterEntregado()"
+                [disabled]="bShowActionAuthorization"
+                style="background: #FF6F00; color: #fff;">
+          <mat-icon>edit_note</mat-icon>Editar estado
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 6"
+                mat-raised-button type="button" (click)="fn_openResponsablesDevolucion()"
+                style="background: #6200EA; color: #fff;">
+          <mat-icon>people</mat-icon>Responsables devolución
         </button>
 
         <!-- Re-firma: aparece cuando el status actual fue rechazado -->

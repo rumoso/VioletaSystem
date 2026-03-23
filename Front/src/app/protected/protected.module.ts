@@ -70,6 +70,7 @@ import { ServicioExternoFormModalComponent } from './pages/sales/mdl/taller/serv
 import { SeleccionarProductoModalComponent } from './pages/sales/mdl/taller/seleccionar-producto-modal.component';
 import { TallerFirmaModalComponent } from './pages/sales/mdl/taller/taller-firma-modal.component';
 import { TallerFirmaHistorialModalComponent } from './pages/sales/mdl/taller/taller-firma-historial-modal.component';
+import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/taller/taller-responsables-devolucion-modal.component';
 
 @NgModule({
     declarations: [
@@ -136,6 +137,7 @@ import { TallerFirmaHistorialModalComponent } from './pages/sales/mdl/taller/tal
     AddFxRateTypeDialogComponent,
     TallerFirmaModalComponent,
     TallerFirmaHistorialModalComponent,
+    TallerResponsablesDevolucionModalComponent,
   ],
     imports: [
         CommonModule,

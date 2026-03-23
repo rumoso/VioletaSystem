@@ -13,6 +13,7 @@ const {
   , cbxGetSellersCombo
   , cbxGetTecnicosCombo
   , updateAuthorizationCode
+  , cbxGetAllUsersCombo
    } = require('../controllers/usersController');
 
    
@@ -76,5 +77,9 @@ router.post('/updateAuthorizationCode', [
   check('authorizationCode','Id obligatorio').not().isEmpty(),
   validarCampos
 ], updateAuthorizationCode);
+
+router.post('/cbxGetAllUsersCombo', [
+  validarCampos
+], cbxGetAllUsersCombo);
 
 module.exports = router;

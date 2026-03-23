@@ -82,4 +82,9 @@ export class UsersService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateAuthorizationCode`, data );
   }
 
+  CCbxGetAllUsersCombo( search: string = '' ): Observable<ResponseGet> {
+    const data: any = { search };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetAllUsersCombo`, data );
+  }
+
 }

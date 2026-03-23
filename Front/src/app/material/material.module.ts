@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatRadioModule } from '@angular/material/radio';
@@ -52,6 +53,7 @@ import { CurrencyMaskModule } from "ng2-currency-mask";
     MatListModule,
     MatMenuModule,
     MatNativeDateModule,
+    MatProgressBarModule,
     MatProgressSpinnerModule,
     MatPaginatorModule,
     MatRadioModule,

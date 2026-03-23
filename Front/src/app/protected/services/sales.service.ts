@@ -1009,4 +1009,32 @@ export class SalesService {
 
   }
 
+  // RESPONSABLES DE DEVOLUCIÓN
+
+  CGetTallerResponsablesDevolucion( idTaller: number ): Observable<ResponseGet> {
+    const data: any = { idTaller };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerResponsablesDevolucion`, data );
+  }
+
+  CInsertResponsableDevolucion( data: any ): Observable<ResponseDB_CRUD> {
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertResponsableDevolucion`, data );
+  }
+
+  CUpdateResponsableDevolucion( data: any ): Observable<ResponseDB_CRUD> {
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateResponsableDevolucion`, data );
+  }
+
+  CDeleteResponsableDevolucion( idResponsablesDevolucion: number ): Observable<ResponseDB_CRUD> {
+    const data: any = { idResponsablesDevolucion };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteResponsableDevolucion`, data );
+  }
+
 }
