@@ -48,4 +48,6 @@ INSERT INTO actions (idActionSection, name, nameHtml, description, active) VALUE
 INSERT INTO actions (idActionSection, name, nameHtml, description, active, nSpecial) VALUES (9, 'tall_EditAfterEntregado',     'Editar Taller despues de entregado',   'Permite modificar el taler despues de entregado',                        1, 1);
 INSERT INTO actions (idActionSection, name, nameHtml, description, active, nSpecial) VALUES (9, 'tall_verCostos',    'Ver Costos del Taller',   						'Permite ver los costos internos (costo de compra) en la orden de taller',                        1, 1);
 
+INSERT INTO actions (idActionSection, name, nameHtml, description, active, nSpecial) VALUES (9, 'tall_DevolutionClient',    'Devolución',   						'Permite generar una devolución de taller',                        1, 1);
+
 
