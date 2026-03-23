@@ -56,6 +56,9 @@ export class TallerListComponent {
 
   saleslist: any[] = [];
 
+  // Selección masiva para firma
+  firmaSeleccionados: any[] = [];
+
   //-------------------------------
   // VARIABLES PARA LA PAGINACIÓN
   iRows: number = 0;
@@ -210,6 +213,76 @@ constructor(
     );
   }
 
+  // Muestra el checkbox en items con firma pendiente (status 0) sin importar permisos
+  fn_canFirmarItem( item: any ): boolean {
+    return item.firmaStatus === 0 && item.idTallerStatus >= 3;
+  }
+
+  fn_toggleFirmaSeleccion( item: any ): void {
+    const idx = this.firmaSeleccionados.findIndex( s => s.idTaller === item.idTaller );
+    if ( idx >= 0 ) {
+      this.firmaSeleccionados.splice( idx, 1 );
+      return;
+    }
+
+    if ( item.idTallerStatus === 3 && ( !item.totalTecnicos || item.totalTecnicos === 0 ) ) {
+      this.servicesGServ.showSnakbar( `El folio #${item.idSale} no tiene técnicos asignados.` );
+      return;
+    }
+
+    this.firmaSeleccionados.push({ idTaller: item.idTaller, idSale: item.idSale, idTallerStatus: item.idTallerStatus });
+  }
+
+  fn_isFirmaSeleccionado( item: any ): boolean {
+    return this.firmaSeleccionados.some( s => s.idTaller === item.idTaller );
+  }
+
+  fn_firmasCountByStatus( idTallerStatus: number ): number {
+    return this.firmaSeleccionados.filter( s => s.idTallerStatus === idTallerStatus ).length;
+  }
+
+  fn_aprobarFirmasMasivoByStatus( idTallerStatus: number ): void {
+    const firmasDelStatus = this.firmaSeleccionados.filter( s => s.idTallerStatus === idTallerStatus );
+    if ( firmasDelStatus.length === 0 || this.bShowActionAuthorization ) return;
+
+    const actionMap: any  = { 3: 'tall_FirmaAsignado', 4: 'tall_FirmaFinalizado', 5: 'tall_FirmaEntregado' };
+    const statusLabel: any = { 3: 'Asignados', 4: 'Finalizados', 5: 'Entregados' };
+
+    this.bShowActionAuthorization = true;
+    const paramsMDL: any = { actionName: actionMap[idTallerStatus], bShowAlert: false };
+
+    this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+    .afterClosed().subscribe({
+      next: ( auth_idUser: any ) => {
+        this.bShowActionAuthorization = false;
+        if ( !auth_idUser ) return;
+
+        this.bShowSpinner = true;
+        const oParams = {
+          firmas: firmasDelStatus,
+          idUserFirma: auth_idUser,
+          comentario: `Aprobación masiva - ${statusLabel[idTallerStatus]}`
+        };
+
+        this.salesServ.CInsertUpdateTallerFirmasMasivo( oParams )
+          .subscribe({
+            next: ( resp: ResponseDB_CRUD ) => {
+              this.bShowSpinner = false;
+              this.servicesGServ.showAlertIA( resp, false );
+              if ( resp.status === 0 ) {
+                this.firmaSeleccionados = this.firmaSeleccionados.filter( s => s.idTallerStatus !== idTallerStatus );
+                this.fn_getVentasListWithPage();
+              }
+            },
+            error: ( ex: HttpErrorResponse ) => {
+              this.servicesGServ.showSnakbar( ex.error?.message || 'Error al aprobar firmas' );
+              this.bShowSpinner = false;
+            }
+          });
+      }
+    });
+  }
+
     ev_fn_search_keyup_enter(event: any){
       if(event.keyCode == 13) { // PRESS ENTER
 
@@ -243,6 +316,7 @@ fn_getVentasListWithPage() {
     next: (resp: ResponseGet) => {
       this.saleslist = resp.data.rows;
       this.pagination.length = resp.data.count;
+      this.firmaSeleccionados = [];
       this.bShowSpinner = false;
     },
     error: (ex: HttpErrorResponse) => {

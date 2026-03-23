@@ -35,22 +35,16 @@ const getProductsListWithPage = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getProductsListWithPage(
-        ${idUser}
-        ,${idSucursal}
-        ,'${ createDateStart.substring(0, 10) }'
-        ,'${ createDateEnd.substring(0, 10) }'
-        ,'${ barCode }'
-        ,'${ name }'
-        ,${ idFamily }
-        ,${ idGroup }
-        ,${ idQuality }
-        ,${ idOrigin }
-
-        ,'${ search }'
-        ,${ start }
-        ,${ limiter }
-        )`)
+        var OSQL = await dbConnection.query(
+            `call getProductsListWithPage(
+            :idUser, :idSucursal,
+            :createDateStart, :createDateEnd,
+            :barCode, :name,
+            :idFamily, :idGroup, :idQuality, :idOrigin,
+            :search, :start, :limiter
+            )`,
+            { replacements: { idUser, idSucursal, createDateStart: createDateStart.substring(0,10), createDateEnd: createDateEnd.substring(0,10), barCode, name, idFamily, idGroup, idQuality, idOrigin, search, start, limiter }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 
@@ -170,26 +164,14 @@ const insertProduct = async(req, res) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call insertProduct(
-        ${ idSucursal }
-        , ${ idFamily }
-        , ${ idGroup }
-        , ${ idQuality }
-        , ${ idOrigin }
-        , ${ idSupplier }
-        ,'${ barCode }'
-        ,'${ name }'
-        ,'${ gramos }'
-        ,'${ cost }'
-        ,'${ price }'
-        , ${ active }
-
-        , '${ addInv }'
-        , '${ noEntrada }'
-        , '${ oGetDateNow }'
-
-        , ${ idUserLogON }
-        )`)
+        var OSQL = await dbConnection.query(
+            `call insertProduct(
+            :idSucursal, :idFamily, :idGroup, :idQuality, :idOrigin, :idSupplier,
+            :barCode, :name, :gramos, :cost, :price, :active,
+            :addInv, :noEntrada, :oGetDateNow, :idUserLogON
+            )`,
+            { replacements: { idSucursal, idFamily, idGroup, idQuality, idOrigin, idSupplier, barCode, name, gramos, cost, price, active, addInv, noEntrada, oGetDateNow, idUserLogON }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 
@@ -246,21 +228,13 @@ const updateProduct = async(req, res) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call updateProduct(
-            ${idProduct}
-            , ${idSucursal}
-            , ${idFamily}
-            , ${idGroup}
-            , ${idQuality}
-            , ${idOrigin}
-            , ${idSupplier}
-            ,'${barCode}'
-            ,'${name}'
-            ,'${gramos}'
-            ,'${cost}'
-            ,'${price}'
-            , ${active}
-        )`);
+        var OSQL = await dbConnection.query(
+            `call updateProduct(
+            :idProduct, :idSucursal, :idFamily, :idGroup, :idQuality, :idOrigin, :idSupplier,
+            :barCode, :name, :gramos, :cost, :price, :active
+            )`,
+            { replacements: { idProduct, idSucursal, idFamily, idGroup, idQuality, idOrigin, idSupplier, barCode, name, gramos, cost, price, active }, type: dbConnection.QueryTypes.RAW }
+        );
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -336,7 +310,10 @@ const getProductByBarCode = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getProductByBarCode('${ barCode }', ${idUser})`)
+        var OSQL = await dbConnection.query(
+            `call getProductByBarCode(:barCode, :idUser)`,
+            { replacements: { barCode, idUser }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 
@@ -394,21 +371,15 @@ const getInventaryListWithPage = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getInventaryListWithPage(
-            ${idUser}
-            ,${idSucursal}
-            ,'${ barCode }'
-            ,'${ name }'
-            ,${ idFamily }
-            ,${ idGroup }
-            ,${ idQuality }
-            ,${ idOrigin }
-            ,${ iConInventario }
-
-            ,'${ search }'
-            ,${ start }
-            ,${ limiter }
-            )`)
+        var OSQL = await dbConnection.query(
+            `call getInventaryListWithPage(
+            :idUser, :idSucursal,
+            :barCode, :name,
+            :idFamily, :idGroup, :idQuality, :idOrigin, :iConInventario,
+            :search, :start, :limiter
+            )`,
+            { replacements: { idUser, idSucursal, barCode, name, idFamily, idGroup, idQuality, idOrigin, iConInventario, search, start, limiter }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 
@@ -472,18 +443,14 @@ const getInventaryBySucursal = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getInventaryBySucursal(
-            ${idUser}
-            ,${idSucursal}
-            ,'${ barCode }'
-            ,'${ name }'
-            ,${ idFamily }
-            ,${ idGroup }
-            ,${ idQuality }
-            ,${ idOrigin }
-            ,${ iConInventario }
-
-            )`)
+        var OSQL = await dbConnection.query(
+            `call getInventaryBySucursal(
+            :idUser, :idSucursal,
+            :barCode, :name,
+            :idFamily, :idGroup, :idQuality, :idOrigin, :iConInventario
+            )`,
+            { replacements: { idUser, idSucursal, barCode, name, idFamily, idGroup, idQuality, idOrigin, iConInventario }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 
@@ -913,13 +880,10 @@ const verifyPhysicalInventoryDetail = async(req, res) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call verifyPhysicalInventoryDetail(
-        '${ idPhysicalInventory }'
-        , '${ barCode }'
-        , '${ cantidad }'
-
-        , ${ idUserLogON }
-        )`)
+        var OSQL = await dbConnection.query(
+            `call verifyPhysicalInventoryDetail(:idPhysicalInventory, :barCode, :cantidad, :idUserLogON)`,
+            { replacements: { idPhysicalInventory, barCode, cantidad, idUserLogON }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 

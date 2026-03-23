@@ -77,6 +77,7 @@ const {
   , getTallerByID
   , getTallerByIDSeq
   , insertUpdateTallerFirma
+  , insertUpdateTallerFirmasMasivo
   , getTallerFirmasHistorial
   , getTallerPaginado
   , getTallerRefaccciones
@@ -446,6 +447,14 @@ router.post('/insertUpdateTallerFirma', [
 
   validarCampos
 ], insertUpdateTallerFirma);
+
+router.post('/insertUpdateTallerFirmasMasivo', [
+  check('firmas','firmas es obligatorio').not().isEmpty(),
+  check('firmas','firmas debe ser un array').isArray({ min: 1 }),
+  check('idUserFirma','idUserFirma es obligatorio').not().isEmpty(),
+  check('idUserFirma','idUserFirma debe ser numérico').isNumeric(),
+  validarCampos
+], insertUpdateTallerFirmasMasivo);
 
 router.post('/getTallerFirmasHistorial', [
   check('idTaller','idTaller es obligatorio').not().isEmpty(),

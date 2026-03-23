@@ -2729,6 +2729,26 @@ const updateTallerStatus = async(req, res) => {
 
     try {
 
+        // Status 3 (Asignado): validar que el taller tenga al menos un técnico
+        if (idTallerStatus === 3) {
+            const [tecnico] = await dbConnection.query(`
+                SELECT 1 AS ok
+                FROM taller_mano_obra
+                WHERE idTaller = :idTaller
+                LIMIT 1
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT
+            });
+
+            if (!tecnico) {
+                return res.json({
+                    status: 1,
+                    message: 'No se puede asignar el taller: no tiene técnicos registrados en la lista de mano de obra.'
+                });
+            }
+        }
+
         // Construir la consulta dinámicamente
         let updateQuery = `
             UPDATE taller 
@@ -3121,6 +3141,11 @@ const getTallerPaginado = async(req, res = response) => {
                     ORDER BY TFS2.idFirma DESC
                     LIMIT 1
                 )                                            AS firmaDesc
+                , (
+                    SELECT COUNT(*)
+                    FROM taller_mano_obra AS TMO
+                    WHERE TMO.idTaller = T.idTaller
+                )                                            AS totalTecnicos
             FROM taller AS T
             INNER JOIN taller_status_cat AS TSC ON T.idTallerStatus = TSC.idTallerStatus
             INNER JOIN sucursales        AS SS  ON T.idSucursal      = SS.idSucursal
@@ -4222,6 +4247,97 @@ const getTallerByIDSeq = async(req, res = response) => {
 
 };
 
+const insertUpdateTallerFirmasMasivo = async(req, res = response) => {
+
+    const {
+        firmas = [],      // array de { idTaller, idTallerStatus }
+        idUserFirma = 0,
+        comentario = ''
+    } = req.body;
+
+    if (!Array.isArray(firmas) || firmas.length === 0) {
+        return res.json({ status: 1, message: 'No se recibieron registros para aprobar.' });
+    }
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        let aprobados  = 0;
+        const rechazados = []; // talleres donde el firmante NO es técnico asignado
+
+        for (const f of firmas) {
+            if (!f.idTaller) continue;
+
+            // Status 3 (Asignado): validar que idUserFirma sea técnico del taller
+            if (f.idTallerStatus === 3) {
+                const [esTecnico] = await dbConnection.query(`
+                    SELECT 1 AS ok
+                    FROM taller_mano_obra
+                    WHERE idTaller       = :idTaller
+                      AND idUserTecnico  = :idUserFirma
+                    LIMIT 1
+                `, {
+                    replacements: { idTaller: f.idTaller, idUserFirma },
+                    type: dbConnection.QueryTypes.SELECT
+                });
+
+                if (!esTecnico) {
+                    rechazados.push(`#${f.idSale}`);
+                    continue;
+                }
+            }
+
+            await dbConnection.query(`
+                UPDATE taller_firmas_status
+                SET firma       = 1,
+                    idUserFirma = :idUserFirma,
+                    comentario  = :comentario,
+                    firmaDate   = :firmaDate
+                WHERE idTaller       = :idTaller
+                  AND idTallerStatus = :idTallerStatus
+                  AND firma          = 0
+            `, {
+                replacements: {
+                    idUserFirma,
+                    comentario,
+                    firmaDate: oGetDateNow,
+                    idTaller: f.idTaller,
+                    idTallerStatus: f.idTallerStatus
+                },
+                type: dbConnection.QueryTypes.UPDATE
+            });
+
+            aprobados++;
+        }
+
+        if (rechazados.length > 0 && aprobados === 0) {
+            return res.json({
+                status: 1,
+                message: `El usuario no es técnico asignado en ninguna de las órdenes seleccionadas (folios: ${rechazados.join(', ')}).`
+            });
+        }
+
+        let message = `Se aprobaron ${aprobados} firma(s) correctamente.`;
+        if (rechazados.length > 0) {
+            message += ` Se omitieron ${rechazados.length} orden(es) porque el usuario no es técnico asignado (folios: ${rechazados.join(', ')}).`;
+        }
+
+        res.json({
+            status: 0,
+            message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+    }
+
+};
+
 const insertUpdateTallerFirma = async(req, res = response) => {
 
     const {
@@ -4407,6 +4523,7 @@ module.exports = {
     , getTallerByID
     , getTallerByIDSeq
     , insertUpdateTallerFirma
+    , insertUpdateTallerFirmasMasivo
     , getTallerFirmasHistorial
     , getTallerPaginado
     , getTallerRefaccciones

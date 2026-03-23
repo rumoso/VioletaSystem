@@ -1560,7 +1560,7 @@ export class TallerComponent implements OnInit {
                       this.tallerForm.idTallerStatus = 3;
                       this.fn_insertFirmaStatus(3);
                     } else {
-                      this.servicesGServ.showSnakbar('Error al asignar el pedido de taller');
+                      this.servicesGServ.showSnakbar(respUpdate.message || 'Error al asignar el pedido de taller');
                     }
                     this.bShowSpinner = false;
                   },

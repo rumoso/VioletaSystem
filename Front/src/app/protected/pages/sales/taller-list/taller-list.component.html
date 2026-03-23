@@ -157,6 +157,36 @@
                 Nuevo taller</button>
 
                 <button mat-raised-button
+                color="warn"
+                type="button"
+                class="marginRight10px top10px700"
+                (click)="fn_aprobarFirmasMasivoByStatus(3)"
+                [disabled]="bShowActionAuthorization"
+                *ngIf="fn_firmasCountByStatus(3) > 0">
+                <mat-icon matPrefix class="my-icon">assignment_turned_in</mat-icon>
+                Aprobar Asignados ({{ fn_firmasCountByStatus(3) }})</button>
+
+                <button mat-raised-button
+                color="warn"
+                type="button"
+                class="marginRight10px top10px700"
+                (click)="fn_aprobarFirmasMasivoByStatus(4)"
+                [disabled]="bShowActionAuthorization"
+                *ngIf="fn_firmasCountByStatus(4) > 0">
+                <mat-icon matPrefix class="my-icon">assignment_turned_in</mat-icon>
+                Aprobar Finalizados ({{ fn_firmasCountByStatus(4) }})</button>
+
+                <button mat-raised-button
+                color="warn"
+                type="button"
+                class="marginRight10px top10px700"
+                (click)="fn_aprobarFirmasMasivoByStatus(5)"
+                [disabled]="bShowActionAuthorization"
+                *ngIf="fn_firmasCountByStatus(5) > 0">
+                <mat-icon matPrefix class="my-icon">assignment_turned_in</mat-icon>
+                Aprobar Entregados ({{ fn_firmasCountByStatus(5) }})</button>
+
+                <button mat-raised-button
 
                 color="primary"
                 type="submit"
@@ -211,6 +241,7 @@
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
+                                <th class="textAlingCenter padding-th"></th>
                                 <th class="textAlingCenter padding-th">Acciones</th>
                                 <th class="textAlingLeft padding-th">Folio</th>
                                 <th class="textAlingLeft padding-th">Estatus</th>
@@ -225,6 +256,14 @@
 
                             <tbody>
                                 <tr *ngFor="let item of saleslist; let i = index">
+                                    <td class="textAlingCenter" style="width: 40px;">
+                                        <mat-checkbox
+                                            *ngIf="fn_canFirmarItem(item)"
+                                            [checked]="fn_isFirmaSeleccionado(item)"
+                                            (change)="fn_toggleFirmaSeleccion(item)"
+                                            matTooltip="Seleccionar para aprobar">
+                                        </mat-checkbox>
+                                    </td>
                                     <td class="textAlingCenter">
                                         <div style="width: 100px;">
 

@@ -685,8 +685,8 @@ export class SalesService {
       threeDaysAgo.setDate(today.getDate() - 3);
       const fechaInicio = `${threeDaysAgo.getFullYear()}-${pad(threeDaysAgo.getMonth() + 1)}-${pad(threeDaysAgo.getDate())}`;
 
-      params.createDateStart = fechaInicio;
-      params.createDateEnd = fechaFin;
+      // params.createDateStart = fechaInicio;
+      // params.createDateEnd = fechaFin;
     }
 
     const data: any = {
@@ -767,6 +767,15 @@ export class SalesService {
     data.idSucursalLogON = this.idSucursal;
 
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertUpdateTallerFirma`, data );
+
+  }
+
+  CInsertUpdateTallerFirmasMasivo( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/insertUpdateTallerFirmasMasivo`, data );
 
   }
 
