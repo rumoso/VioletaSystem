@@ -66,6 +66,10 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "ssl": true,
+            "host": "0.0.0.0"
+          },
           "configurations": {
             "production": {
               "browserTarget": "violetasystem:build:production"

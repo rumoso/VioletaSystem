@@ -2670,42 +2670,124 @@ const saveTallerHeader = async(req, res) => {
     console.log(req.body)
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const fIngreso   = fechaIngreso          ? fechaIngreso.substring(0, 10)          : null;
+    const fPrometida = fechaPrometidaEntrega ? fechaPrometidaEntrega.substring(0, 10) : null;
+
+    const transaction = await dbConnection.transaction();
 
     try {
 
-        var oSQLInsert = await dbConnection.query(`call insertUpdateSaleTaller(
-            '${oGetDateNow}'
-            , ${ idTaller }
-            , '${idSale}'
-            , ${idSucursalLogON}
-            , ${idSeller_idUser}
-            , ${idCustomer}
-            , '${fechaIngreso ? fechaIngreso.substring(0, 10) : ''}'
-            , '${fechaPrometidaEntrega ? fechaPrometidaEntrega.substring(0, 10) : ''}'
-            , '${descripcion}'
+        if (!idSale || idSale.toString().trim().length === 0) {
 
-            , ${idUserLogON}
-        )`);
-        console.log(oSQLInsert)
+            // ── INSERT: generar folio y crear taller nuevo ──────────────────────
 
-        if (oSQLInsert.length > 0) {
-            idSale = oSQLInsert[0].idSale;
-            idTaller = oSQLInsert[0].idTaller;
-            res.json({
-                status: 0,
-                message: "Taller creado con éxito.",
-                data: {
-                    idSale: idSale,
-                    idTaller: idTaller
+            // 1. Obtener siguiente ID secuencial (idSaleType = 6 = Cotización)
+            await dbConnection.query(
+                `CALL getIDs_BySucursal(:idUserC, :idSucursal, 6, @idSaleNew)`,
+                { replacements: { idUserC: idUserLogON, idSucursal: idSucursalLogON }, type: dbConnection.QueryTypes.RAW }
+            );
+            const [seqResult] = await dbConnection.query(
+                `SELECT @idSaleNew AS idSaleNew`,
+                { type: dbConnection.QueryTypes.SELECT }
+            );
+            const idSaleNew = seqResult.idSaleNew;
+
+            // 2. Obtener prefijo del folio desde sales_type (ej: 'Cot1-')
+            const [sigResult] = await dbConnection.query(
+                `SELECT CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE idSaleType = 6 LIMIT 1`,
+                { replacements: { idSucursal: idSucursalLogON }, type: dbConnection.QueryTypes.SELECT }
+            );
+            const sig = sigResult?.sig || 'V';
+
+            // 3. Folio resultante: 'Cot1-000123'
+            idSale = `${sig}${idSaleNew}`;
+
+            // 4. INSERT en sales
+            await dbConnection.query(
+                `INSERT INTO sales (idSale, createDate, idSucursal, idSeller_idUser, idCustomer, idSaleType, active)
+                 VALUES (:idSale, :createDate, :idSucursal, :idSeller_idUser, :idCustomer, 5, 1)`,
+                {
+                    replacements: {
+                        idSale,
+                        createDate:      oGetDateNow,
+                        idSucursal:      idSucursalLogON,
+                        idSeller_idUser: idSeller_idUser,
+                        idCustomer:      idCustomer
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction
                 }
-            });
+            );
+
+            // 5. INSERT en taller (idTallerStatus = 1 = Cotización)
+            await dbConnection.query(
+                `INSERT INTO taller (idSale, createDate, descripcion, fechaIngreso, fechaPrometida, fechaEntrega, idCustomer, idSucursal, idSeller_idUser, active, idTallerStatus, idCotizacion)
+                 VALUES (:idSale, :createDate, :descripcion, :fechaIngreso, :fechaPrometida, NULL, :idCustomer, :idSucursal, :idSeller_idUser, 1, 1, :idSale)`,
+                {
+                    replacements: {
+                        idSale,
+                        createDate:      oGetDateNow,
+                        descripcion:     descripcion,
+                        fechaIngreso:    fIngreso,
+                        fechaPrometida:  fPrometida,
+                        idCustomer:      idCustomer,
+                        idSucursal:      idSucursalLogON,
+                        idSeller_idUser: idSeller_idUser
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction
+                }
+            );
+
+            const [tallerRow] = await dbConnection.query(
+                `SELECT LAST_INSERT_ID() AS idTaller`,
+                { type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+            idTaller = tallerRow.idTaller;
+
         } else {
-            res.json({
-                status: 1,
-                message: "No se pudo crear el taller."
-            });
+
+            // ── UPDATE: modificar encabezado existente ──────────────────────────
+
+            await dbConnection.query(
+                `UPDATE sales SET idSeller_idUser = :idSeller_idUser, idCustomer = :idCustomer WHERE idSale = :idSale`,
+                { replacements: { idSeller_idUser, idCustomer, idSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+
+            await dbConnection.query(
+                `UPDATE taller
+                 SET descripcion    = :descripcion,
+                     fechaIngreso   = :fechaIngreso,
+                     fechaPrometida = :fechaPrometida,
+                     idCustomer     = :idCustomer,
+                     idSucursal     = :idSucursal
+                 WHERE idSale = :idSale AND idTaller = :idTaller`,
+                {
+                    replacements: {
+                        descripcion,
+                        fechaIngreso:   fIngreso,
+                        fechaPrometida: fPrometida,
+                        idCustomer,
+                        idSucursal:     idSucursalLogON,
+                        idSale,
+                        idTaller
+                    },
+                    type: dbConnection.QueryTypes.UPDATE,
+                    transaction
+                }
+            );
+
         }
+
+        await transaction.commit();
+        res.json({
+            status: 0,
+            message: "Taller guardado con éxito.",
+            data: { idSale, idTaller }
+        });
+
     } catch (error) {
+        await transaction.rollback();
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
@@ -2727,7 +2809,73 @@ const updateTallerStatus = async(req, res) => {
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
+    const transaction = await dbConnection.transaction();
+
     try {
+
+        let newIdSale = null;
+
+        // Status 2 (Pedido): generar folio de taller (idSaleType=5) y actualizar idSale
+        if (idTallerStatus === 2) {
+            const [tallerInfo] = await dbConnection.query(
+                `SELECT idSale, idSucursal FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+            if (!tallerInfo) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: 'No se encontró el taller.' });
+            }
+            const oldIdSale = tallerInfo.idSale;
+            const idSucursal = tallerInfo.idSucursal;
+
+            await dbConnection.query(
+                `CALL getIDs_BySucursal(:idUserC, :idSucursal, 5, @idSaleNew)`,
+                { replacements: { idUserC: idUserLogON, idSucursal }, type: dbConnection.QueryTypes.RAW }
+            );
+            const [seqResult] = await dbConnection.query(
+                `SELECT @idSaleNew AS idSaleNew`,
+                { type: dbConnection.QueryTypes.SELECT }
+            );
+            const idSaleSeq = seqResult.idSaleNew;
+
+            const [sigResult] = await dbConnection.query(
+                `SELECT CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE idSaleType = 5 LIMIT 1`,
+                { replacements: { idSucursal }, type: dbConnection.QueryTypes.SELECT }
+            );
+            const sig = sigResult?.sig || 'T';
+            newIdSale = `${sig}${idSaleSeq}`;
+
+            await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 0`, { transaction, type: dbConnection.QueryTypes.RAW });
+            await dbConnection.query(
+                `UPDATE sales SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller SET idSale = :newIdSale WHERE idTaller = :idTaller`,
+                { replacements: { newIdSale, idTaller }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_refacciones SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_servicios_externos SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_mano_obra SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_metal_agranel SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE payments SET idRelation = :newIdSale WHERE idRelation = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 1`, { transaction, type: dbConnection.QueryTypes.RAW });
+        }
 
         // Status 3 (Asignado): validar que el taller tenga al menos un técnico
         if (idTallerStatus === 3) {
@@ -2738,10 +2886,12 @@ const updateTallerStatus = async(req, res) => {
                 LIMIT 1
             `, {
                 replacements: { idTaller },
-                type: dbConnection.QueryTypes.SELECT
+                type: dbConnection.QueryTypes.SELECT,
+                transaction
             });
 
             if (!tecnico) {
+                await transaction.rollback();
                 return res.json({
                     status: 1,
                     message: 'No se puede asignar el taller: no tiene técnicos registrados en la lista de mano de obra.'
@@ -2766,7 +2916,9 @@ const updateTallerStatus = async(req, res) => {
         
         updateQuery += ` WHERE idTaller = ${idTaller}`;
 
-        var oSQLUpdate = await dbConnection.query(updateQuery);
+        const oSQLUpdate = await dbConnection.query(updateQuery, { transaction });
+
+        await transaction.commit();
 
         if (oSQLUpdate[0].affectedRows > 0) {
             res.json({
@@ -2776,7 +2928,8 @@ const updateTallerStatus = async(req, res) => {
                     idTaller: idTaller,
                     idTallerStatus: idTallerStatus,
                     precioTotal: precioTotal,
-                    fechaEntrega: idTallerStatus === 5 ? oGetDateNow : null
+                    fechaEntrega: idTallerStatus === 5 ? oGetDateNow : null,
+                    idSale: newIdSale
                 }
             });
         } else {
@@ -2786,6 +2939,8 @@ const updateTallerStatus = async(req, res) => {
             });
         }
     } catch (error) {
+        await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 1`).catch(() => {});
+        await transaction.rollback();
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",

@@ -5,9 +5,22 @@ SELECT * FROM menus WHERE idMenuPadre = 1;
 INSERT INTO `menus` (`idMenu`, `createDate`, `idMenuPadre`, `lugar`, `name`, `description`, `icon`, `linkCat`, `linkList`, `imgDash`, `imgDashSize`, `idAplication`, `active`)
 VALUES (NULL, NOW(), '1', '7', 'Taller', 'Listado de taller', NULL, NULL, 'tallerList', 'assets/img/icons/tallerIco.gif', '80', '1', '1');
 
-INSERTAR UN ROL QUE SE LLAME TÉCNICO PARA LOS TECNICOS DE TALLER
+-- INSERTAR UN ROL QUE SE LLAME TÉCNICO PARA LOS TECNICOS DE TALLER
 
-INSERT INTO `db_violetasystem`.`actionsection` (`idActionSection`, `sectionName`, `iLugar`, `active`) VALUES ('9', 'Taller', '1.1', '1');
+LOCK TABLES `fxrate_type` WRITE;
+/*!40000 ALTER TABLE `fxrate_type` DISABLE KEYS */;
+INSERT INTO `fxrate_type` VALUES (1,'2026-02-23 00:00:00','Oro Fino','Oro Fino',1,NULL,24.00,1.00),(2,'2026-02-23 00:00:00','Dólares','Dólares',1,0,NULL,NULL),(3,'2026-02-23 00:00:00','Plata Fina','Tpo de cambio de la Plata pura',1,NULL,1000.00,1.00),(6,'2026-02-23 22:00:57','8 Kilates','Es para el oro de 8 Kilates',1,1,NULL,8.00),(8,'2026-02-23 22:40:02','10 Kilates','',1,1,NULL,10.00),(9,'2026-02-23 22:40:12','12 Kilates','',1,1,NULL,12.00),(10,'2026-02-23 22:40:19','14 Kilates','',1,1,NULL,14.00),(11,'2026-02-23 22:40:32','16 Kilates','',1,1,NULL,16.00),(12,'2026-02-23 22:40:50','18 Kilates','',1,1,NULL,18.00),(13,'2026-02-23 22:41:23','20 Kilates','',1,1,NULL,20.00),(14,'2026-02-23 22:41:32','22 Kilates','',1,1,NULL,22.00),(15,'2026-02-23 22:41:45','24 Kilates','',1,1,NULL,24.00),(16,'2026-02-23 22:42:05','1000 Ley','',1,3,NULL,1000.00),(17,'2026-02-23 22:42:13','925 Ley','',1,3,NULL,925.00),(18,'2026-02-23 22:42:21','720 Ley','',1,3,NULL,720.00);
+/*!40000 ALTER TABLE `fxrate_type` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
+LOCK TABLES `taller_status_cat` WRITE;
+/*!40000 ALTER TABLE `taller_status_cat` DISABLE KEYS */;
+INSERT INTO `taller_status_cat` VALUES (1,'2026-02-07 00:00:00','Cotización',NULL,1),(2,'2026-02-07 00:00:00','Pedido de taller',NULL,1),(3,'2026-02-07 00:00:00','Asignado',NULL,1),(4,'2026-02-07 00:00:00','Finalizado/Mostrador',NULL,1),(5,'2026-02-07 00:00:00','Entregado',NULL,1),(6,'2026-03-22 00:00:00','Devolución',NULL,1);
+/*!40000 ALTER TABLE `taller_status_cat` ENABLE KEYS */;
+UNLOCK TABLES;
+
+INSERT INTO `actionsection` (`idActionSection`, `sectionName`, `iLugar`, `active`) VALUES ('9', 'Taller', '1.1', '1');
 
 -- ============================================================
 -- TALLER - INSERT de permisos en tabla actions
@@ -45,9 +58,12 @@ INSERT INTO actions (idActionSection, name, nameHtml, description, active) VALUE
 
 INSERT INTO actions (idActionSection, name, nameHtml, description, active) VALUES (9, 'tall_ViewHeaderImages',       'Ver / Cargar Imágenes del Encabezado', 'Permite ver y cargar imágenes asociadas al encabezado de la orden de taller',         1);
 INSERT INTO actions (idActionSection, name, nameHtml, description, active) VALUES (9, 'tall_MakePayment',            'Realizar Pago de Taller',              'Permite acceder al módulo de pagos desde la orden de taller',                        1);
+INSERT INTO actions (idActionSection, name, nameHtml, description, active) VALUES (9, 'tall_CreateEditHeader',       'Crear Editar Encabezado de Taller',    'Permite Crear folio de Taller y modifcar el encabezado',                        1);
 INSERT INTO actions (idActionSection, name, nameHtml, description, active, nSpecial) VALUES (9, 'tall_EditAfterEntregado',     'Editar Taller despues de entregado',   'Permite modificar el taler despues de entregado',                        1, 1);
 INSERT INTO actions (idActionSection, name, nameHtml, description, active, nSpecial) VALUES (9, 'tall_verCostos',    'Ver Costos del Taller',   						'Permite ver los costos internos (costo de compra) en la orden de taller',                        1, 1);
 
 INSERT INTO actions (idActionSection, name, nameHtml, description, active, nSpecial) VALUES (9, 'tall_DevolutionClient',    'Devolución',   						'Permite generar una devolución de taller',                        1, 1);
+
+
 
 

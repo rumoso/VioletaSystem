@@ -48,9 +48,9 @@
           Pagar: {{ tallerForm.pendingAmount | currency }}
         </button>
 
-        <!-- <button *ngIf="tallerForm.idTaller > 0" mat-icon-button type="button" (click)="fn_printTicketTaller()" matTooltip="Imprimir ticket de taller">
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 1 && totalTaller > 0" mat-icon-button type="button" (click)="fn_printTicketTaller()" matTooltip="Imprimir ticket de taller">
           <mat-icon>print</mat-icon>
-        </button> -->
+        </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tall_ViewHeaderImages" mat-raised-button color="accent" type="button" (click)="openTallerHeaderImagesDialog()">
           <mat-icon>image</mat-icon>({{ tallerForm.headerImagesCount }})

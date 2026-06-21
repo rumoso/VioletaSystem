@@ -1577,8 +1577,10 @@ export class PrintTicketService {
 
     if(type == "TallerHeader"){
 
-      let sale = await this.salesServ.CGetTallerByIDPromise( idRelation );
-      sale = sale.data.oTaller;
+      const tallerResp = await this.salesServ.CGetTallerByIDPromise( idRelation );
+      let sale = tallerResp.data.oTaller;
+      const metalesCliente: any[] = tallerResp.data.metalesCliente || [];
+      const metalesAgranel: any[] = tallerResp.data.metalesAgranel || [];
 
       console.log(sale);
 
@@ -1718,6 +1720,104 @@ export class PrintTicketService {
       var oLine: any = { aling: "Left", size: 7, text: " " }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
+
+      // ── METAL DEL CLIENTE (activo) ────────────────────────────
+      if( metalesCliente.length > 0 ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "METAL DEL CLIENTE:", iWith: 100 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 25 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 25 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT", iWith: 20 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "VALOR", iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        let totalMetalCliente = 0;
+        for( var mc = 0; mc < metalesCliente.length; mc++ ){
+          const mci = metalesCliente[mc];
+          totalMetalCliente += Number(mci.valorMetal) || 0;
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, text: (mci.tipo || '').toUpperCase(), iWith: 25 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: (Number(mci.gramos) || 0).toFixed(1) + ' gr', iWith: 25 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: (Number(mci.kilates) || 0) + 'K', iWith: 20 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( mci.valorMetal ), iWith: 30 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+        }
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalMetalCliente ), iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      // ── METAL AGRANEL (metal de la joyeria) ───────────────────
+      if( metalesAgranel.length > 0 ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "METAL DE LA JOYERIA:", iWith: 100 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 25 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 25 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT", iWith: 20 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "VALOR", iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        let totalMetalAgranel = 0;
+        for( var ma = 0; ma < metalesAgranel.length; ma++ ){
+          const mai = metalesAgranel[ma];
+          totalMetalAgranel += Number(mai.valorMetal) || 0;
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, text: (mai.tipo || '').toUpperCase(), iWith: 25 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: (Number(mai.gramos) || 0).toFixed(1) + ' gr', iWith: 25 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: (Number(mai.kilates) || 0) + 'K', iWith: 20 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( mai.valorMetal ), iWith: 30 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+        }
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalMetalAgranel ), iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
 
       if( bShowTotales ){
         oLines = [];

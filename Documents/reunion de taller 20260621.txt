@@ -1,0 +1,6 @@
+*** RÁPIDA ***
+descripcion autoincementable, que sea solo una línea
+- simplificar espacio
+- mover la mano de obra hasta el inicio de las secciones
+
+corte de caja se sobrepone en los conceptos de salida

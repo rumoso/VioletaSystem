@@ -996,6 +996,11 @@ export class TallerComponent implements OnInit {
       return;
     }
 
+    if (parseFloat(this.servicioExternoForm.precio) < parseFloat(this.servicioExternoForm.costo)) {
+      this.servicesGServ.showSnakbar('El precio no puede ser menor al costo');
+      return;
+    }
+
     // Preparar objeto para enviar al backend
     const oParams: any = {
       idTaller: this.tallerForm.idTaller,
@@ -1504,6 +1509,9 @@ export class TallerComponent implements OnInit {
                     if (respUpdate.status === 0) {
                       this.servicesGServ.showSnakbar('Pedido de taller creado correctamente');
                       this.tallerForm.idTallerStatus = 2;
+                      if ((respUpdate as any).data?.idSale) {
+                        this.tallerForm.idSale = (respUpdate as any).data.idSale;
+                      }
                       this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false);
                     } else {
                       this.servicesGServ.showSnakbar('Error al crear el pedido de taller');
