@@ -1,128 +1,143 @@
 <div class="" style="padding: 20px !important;">
-  <div class="row" style="position: sticky; top: 0; background: white; z-index: 100; padding: 12px 20px; margin: -20px -20px 20px -20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-bottom: 2px solid #6200EA;">
+  <div class="row taller-header-sticky">
 
-    <!-- Fila 1: Folio + firma card + botones de status + total + cierre -->
-    <div class="col-md-12" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-      <h2 style="margin: 0; white-space: nowrap;">{{ tallerForm.idTaller > 0 ? tallerForm.idSale : title }}</h2>
+    <!-- Fila ÚNICA: Folio + status + botones de acción + total + cierre -->
+    <div class="col-md-12 taller-header-row">
 
-      <!-- Estado de Firma (centro) -->
+      <!-- Folio -->
+      <h2 class="taller-header-folio">{{ tallerForm.idTaller > 0 ? tallerForm.idSale : title }}</h2>
+
+      <!-- Estado de Firma (inline, compacto) -->
       <div *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 3"
+           class="taller-header-firma"
            [ngStyle]="{
-             'border-left': '4px solid ' + (oFirmaStatus?.firma === 1 ? '#4caf50' : oFirmaStatus?.firma === 2 ? '#f44336' : '#ff9800'),
+             'border-left': '3px solid ' + (oFirmaStatus?.firma === 1 ? '#4caf50' : oFirmaStatus?.firma === 2 ? '#f44336' : '#ff9800'),
              'background': oFirmaStatus?.firma === 1 ? '#e8f5e9' : oFirmaStatus?.firma === 2 ? '#ffebee' : '#fff3e0'
-           }"
-           style="flex: 1; min-width: 200px; max-width: 520px; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <mat-icon [style.color]="oFirmaStatus?.firma === 1 ? '#4caf50' : oFirmaStatus?.firma === 2 ? '#f44336' : '#ff9800'">
-            {{ oFirmaStatus?.firma === 1 ? 'verified' : oFirmaStatus?.firma === 2 ? 'cancel' : 'pending' }}
-          </mat-icon>
-          <div>
-            <div style="font-size: 10px; color: #777; font-weight: 600; line-height: 1.1;">
-              {{ tallerForm.idTallerStatus === 2 ? 'Pedido' : tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : tallerForm.idTallerStatus === 5 ? 'Entregado' : tallerForm.idTallerStatus === 6 ? 'Devolución' : 'Status ' + tallerForm.idTallerStatus }}
-            </div>
-            <div style="font-size: 13px; font-weight: bold; line-height: 1.2;">
-              {{ oFirmaStatus?.firma === 1 ? 'Aprobado' : oFirmaStatus?.firma === 2 ? 'Rechazado' : 'Pendiente de aprobación' }}
-              <span *ngIf="oFirmaStatus?.userFirmaDesc" style="font-weight: normal;"> — {{ oFirmaStatus?.userFirmaDesc }}</span>
-            </div>
-            <div *ngIf="oFirmaStatus?.comentario" style="font-size: 11px; color: #666;">{{ oFirmaStatus?.comentario }}</div>
+           }">
+        <mat-icon class="taller-header-firma-icon"
+          [style.color]="oFirmaStatus?.firma === 1 ? '#4caf50' : oFirmaStatus?.firma === 2 ? '#f44336' : '#ff9800'">
+          {{ oFirmaStatus?.firma === 1 ? 'verified' : oFirmaStatus?.firma === 2 ? 'cancel' : 'pending' }}
+        </mat-icon>
+        <div class="taller-header-firma-text">
+          <div class="taller-header-firma-status">
+            {{ tallerForm.idTallerStatus === 2 ? 'Pedido' : tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : tallerForm.idTallerStatus === 5 ? 'Entregado' : tallerForm.idTallerStatus === 6 ? 'Devolución' : 'Status ' + tallerForm.idTallerStatus }}
+            <span class="taller-header-firma-sep">·</span>
+            <span class="taller-header-firma-result">
+              {{ oFirmaStatus?.firma === 1 ? 'Aprobado' : oFirmaStatus?.firma === 2 ? 'Rechazado' : 'Pendiente' }}
+            </span>
+            <span *ngIf="oFirmaStatus?.userFirmaDesc" class="taller-header-firma-user">— {{ oFirmaStatus?.userFirmaDesc }}</span>
           </div>
+          <div *ngIf="oFirmaStatus?.comentario" class="taller-header-firma-comentario">{{ oFirmaStatus?.comentario }}</div>
         </div>
         <button *ngIf="(oFirmaStatus?.firma === 0 || !oFirmaStatus) && (tallerForm.idTallerStatus === 3 || tallerForm.idTallerStatus === 4 || tallerForm.idTallerStatus === 5)"
                 mat-raised-button
-                style="background: #6200EA; color: white; flex-shrink: 0;"
+                class="taller-btn-firma"
                 (click)="fn_openFirmaModal()">
           <mat-icon>assignment_turned_in</mat-icon>Firmar
         </button>
         <button *ngIf="tall_ViewFirmaHistorial"
                 mat-icon-button
+                class="taller-btn-historial"
                 matTooltip="Ver historial de firmas"
-                style="color: #6200EA; flex-shrink: 0;"
                 (click)="fn_openFirmaHistorialModal()">
           <mat-icon>history</mat-icon>
         </button>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+      <!-- Botones de acción (todos en una línea, alineados a la derecha) -->
+      <div class="taller-header-actions">
 
-        <button *ngIf="tall_MakePayment && tallerForm.pendingAmount > 0" mat-raised-button color="primary" type="submit" (click)="fn_ShowPayments()">
-          Pagar: {{ tallerForm.pendingAmount | currency }}
+        <button *ngIf="tall_MakePayment && tallerForm.pendingAmount > 0"
+          mat-raised-button color="primary" type="submit" class="taller-btn-compact"
+          (click)="fn_ShowPayments()">
+          <mat-icon>payment</mat-icon>Pagar: {{ tallerForm.pendingAmount | currency }}
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 1 && totalTaller > 0" mat-icon-button type="button" (click)="fn_printTicketTaller()" matTooltip="Imprimir ticket de taller">
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 1 && totalTaller > 0"
+          mat-icon-button class="taller-btn-icon" type="button"
+          (click)="fn_printTicketTaller()" matTooltip="Imprimir ticket de taller">
           <mat-icon>print</mat-icon>
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tall_ViewHeaderImages" mat-raised-button color="accent" type="button" (click)="openTallerHeaderImagesDialog()">
+        <button *ngIf="tallerForm.idTaller > 0 && tall_ViewHeaderImages"
+          mat-raised-button color="accent" type="button" class="taller-btn-compact"
+          (click)="openTallerHeaderImagesDialog()">
           <mat-icon>image</mat-icon>({{ tallerForm.headerImagesCount }})
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder"
-                mat-raised-button color="warn" type="button" (click)="fn_createTallerOrder()">
+          mat-raised-button color="warn" type="button" class="taller-btn-compact"
+          (click)="fn_createTallerOrder()">
           <mat-icon>playlist_add</mat-icon>Crear pedido
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 2"
-                mat-raised-button color="accent" type="button" (click)="fn_assignTallerOrder()">
+          mat-raised-button color="accent" type="button" class="taller-btn-compact"
+          (click)="fn_assignTallerOrder()">
           <mat-icon>assignment</mat-icon>Asignar
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3 && oFirmaStatus?.firma === 1"
-                mat-raised-button color="primary" type="button" (click)="fn_finalizeTallerOrder()">
+          mat-raised-button color="primary" type="button" class="taller-btn-compact"
+          (click)="fn_finalizeTallerOrder()">
           <mat-icon>done_all</mat-icon>Finalizado/Mostrador
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4 && oFirmaStatus?.firma === 1"
-                mat-raised-button color="success" type="button" (click)="fn_deliverTallerOrder()">
+          mat-raised-button color="success" type="button" class="taller-btn-compact"
+          (click)="fn_deliverTallerOrder()">
           <mat-icon>check_circle</mat-icon>Entregado
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && (tallerForm.idTallerStatus === 4 || tallerForm.idTallerStatus === 5) && tall_DevolutionClient"
-                mat-raised-button color="warn" type="button" (click)="fn_devolutionTallerOrder()"
-                [disabled]="bShowActionAuthorization">
-          <mat-icon>assignment_return</mat-icon>Devolución del cliente
+          mat-raised-button color="warn" type="button" class="taller-btn-compact"
+          (click)="fn_devolutionTallerOrder()" [disabled]="bShowActionAuthorization">
+          <mat-icon>assignment_return</mat-icon>Devolución
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 5 && tall_EditAfterEntregado"
-                mat-raised-button type="button" (click)="fn_editAfterEntregado()"
-                [disabled]="bShowActionAuthorization"
-                style="background: #FF6F00; color: #fff;">
+          mat-raised-button type="button" class="taller-btn-compact taller-btn-edit-estado"
+          (click)="fn_editAfterEntregado()" [disabled]="bShowActionAuthorization">
           <mat-icon>edit_note</mat-icon>Editar estado
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 6"
-                mat-raised-button type="button" (click)="fn_openResponsablesDevolucion()"
-                style="background: #6200EA; color: #fff;">
-          <mat-icon>people</mat-icon>Responsables devolución
+          mat-raised-button type="button" class="taller-btn-compact taller-btn-responsables"
+          (click)="fn_openResponsablesDevolucion()">
+          <mat-icon>people</mat-icon>Responsables
         </button>
 
         <!-- Re-firma: aparece cuando el status actual fue rechazado -->
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3 && oFirmaStatus?.firma === 2"
-                mat-raised-button color="accent" type="button" (click)="fn_reInsertFirmaStatusWithAuth(3)">
+          mat-raised-button color="accent" type="button" class="taller-btn-compact"
+          (click)="fn_reInsertFirmaStatusWithAuth(3)">
           <mat-icon>assignment</mat-icon>Re-Asignar
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4 && oFirmaStatus?.firma === 2"
-                mat-raised-button color="primary" type="button" (click)="fn_reInsertFirmaStatusWithAuth(4)">
+          mat-raised-button color="primary" type="button" class="taller-btn-compact"
+          (click)="fn_reInsertFirmaStatusWithAuth(4)">
           <mat-icon>done_all</mat-icon>Re-Finalizar
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 5 && oFirmaStatus?.firma === 2"
-                mat-raised-button color="success" type="button" (click)="fn_reInsertFirmaStatusWithAuth(5)">
+          mat-raised-button color="success" type="button" class="taller-btn-compact"
+          (click)="fn_reInsertFirmaStatusWithAuth(5)">
           <mat-icon>check_circle</mat-icon>Re-Entregar
         </button>
 
         <button *ngIf="tall_CreateEditHeader && !bIsReadOnly"
-                mat-raised-button color="primary" type="button" (click)="fn_saveTaller()">
+          mat-raised-button color="primary" type="button" class="taller-btn-compact"
+          (click)="fn_saveTaller()">
           <mat-icon>save</mat-icon>{{ tallerForm.idTaller == 0 ? 'Generar folio' : 'Actualizar' }}
         </button>
 
-        <div style="background: #6200EA; color: white; padding: 8px 14px; border-radius: 8px; font-weight: bold;">
+        <!-- Total: pill compacto, alineado con los botones -->
+        <div class="taller-header-total">
           Total: {{ totalTaller | currency }}
         </div>
 
-
-
-        <button mat-icon-button (click)="fn_cancel()" style="margin: 0;">
+        <button mat-icon-button class="taller-btn-close" (click)="fn_cancel()">
           <mat-icon>close</mat-icon>
         </button>
       </div>

@@ -1,6 +1,7 @@
 .divMain {
     padding: 20px;
-    background: #f5f5f5;
+    background: #f0f2f7;
+    /* Paleta unificada con taller-list: Indigo #1a237e / #283593 / #3949ab */
 }
 
 h2 {
@@ -110,10 +111,10 @@ textarea {
     gap: 8px;
     padding: 8px 14px;
     min-height: 42px;
-    background: #f7f4ff;
-    border: 1px solid #d6cce8;
-    border-left: 3px solid #6200EA;
-    border-radius: 6px;
+    background: #f5f7ff;
+    border: 1px solid #e8eaf6;
+    border-left: 3px solid #283593;
+    border-radius: 8px;
     font-size: 13px;
     color: #2c2c2c;
     cursor: pointer;
@@ -122,9 +123,9 @@ textarea {
 }
 
 .header-chip:hover {
-    background: #efe7ff;
-    border-color: #6200EA;
-    box-shadow: 0 1px 4px rgba(98, 0, 234, .15);
+    background: #e8eaf6;
+    border-color: #3949ab;
+    box-shadow: 0 1px 4px rgba(40, 53, 147, .15);
 }
 
 .header-chip.vacio {
@@ -136,16 +137,16 @@ textarea {
 }
 
 .header-chip.vacio:hover {
-    background: #f3eaff;
-    border-color: #6200EA;
-    color: #6200EA;
+    background: #e8eaf6;
+    border-color: #283593;
+    color: #1a237e;
     font-style: normal;
 }
 
 .header-chip .chip-label {
     font-size: 10px;
     font-weight: 700;
-    color: #6200EA;
+    color: #283593;
     text-transform: uppercase;
     letter-spacing: .5px;
     line-height: 1;
@@ -157,7 +158,7 @@ textarea {
 }
 
 .header-chip.vacio:hover .chip-label {
-    color: #6200EA;
+    color: #283593;
 }
 
 .header-chip .chip-valor {
@@ -170,7 +171,7 @@ textarea {
 }
 
 .header-chip .chip-icon {
-    color: #6200EA;
+    color: #283593;
     font-size: 18px;
     width: 18px;
     height: 18px;
@@ -188,17 +189,17 @@ textarea {
     flex-direction: column;
     padding: 4px 6px 4px 8px;
     background: #ffffff;
-    border: 1px solid #6200EA;
-    border-left: 3px solid #6200EA;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(98, 0, 234, .12);
+    border: 1px solid #283593;
+    border-left: 3px solid #283593;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(40, 53, 147, .12);
     min-height: 36px;
 }
 
 .header-edit > .edit-label {
     font-size: 9px;
     font-weight: 700;
-    color: #6200EA;
+    color: #283593;
     text-transform: uppercase;
     letter-spacing: .5px;
     line-height: 1;
@@ -215,7 +216,7 @@ textarea {
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    color: #6200EA;
+    color: #283593;
     cursor: pointer;
     font-size: 16px;
     width: 16px;
@@ -227,8 +228,8 @@ textarea {
 }
 
 .header-edit .datepicker-icon:hover {
-    background: rgba(98, 0, 234, 0.1);
-    color: #4a00b0;
+    background: rgba(40, 53, 147, 0.1);
+    color: #1a237e;
 }
 
 .header-edit .datepicker-icon.lock {
@@ -248,10 +249,10 @@ textarea {
     max-height: 320px;
     overflow-y: auto;
     padding: 10px 14px;
-    border: 1px solid #d6cce8;
-    border-left: 3px solid #6200EA;
-    border-radius: 6px;
-    background: #f7f4ff;
+    border: 1px solid #e8eaf6;
+    border-left: 3px solid #283593;
+    border-radius: 8px;
+    background: #f5f7ff;
     font-family: 'Arial', sans-serif;
     font-size: 13px;
     color: #2c2c2c;
@@ -265,8 +266,8 @@ textarea {
 .descripcion-autogrow:focus {
     outline: none;
     background: #ffffff;
-    border-color: #6200EA;
-    box-shadow: 0 1px 4px rgba(98, 0, 234, .15);
+    border-color: #283593;
+    box-shadow: 0 1px 4px rgba(40, 53, 147, .15);
 }
 
 .descripcion-autogrow::placeholder {
@@ -296,7 +297,7 @@ button:hover {
 }
 
 .header-refacciones {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a237e 0%, #283593 55%, #3949ab 100%);
     color: white;
     padding: 4px 10px;
     display: flex;
@@ -405,7 +406,7 @@ button:hover {
     padding: 8px 10px 8px 12px;
     background: #f9f9f9;
     border-radius: 6px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #283593;
     min-height: 44px;
 }
 
@@ -453,8 +454,8 @@ button:hover {
 }
 
 .inline-input:focus {
-    border-color: #6200EA;
-    box-shadow: 0 0 0 2px rgba(98, 0, 234, 0.15);
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
 }
 
 .inline-input::placeholder {
@@ -509,8 +510,8 @@ button:hover {
 }
 
 .inline-wrap .clear-icon:hover {
-    color: #6200EA;
-    background: rgba(98, 0, 234, 0.08);
+    color: #283593;
+    background: rgba(40, 53, 147, 0.08);
 }
 
 /* Radio buttons compactos para la fila Producto / Por Definir de refacciones.
@@ -583,8 +584,8 @@ button:hover {
 }
 
 .refaccion-row:hover {
-    background: #f7f4ff;
-    border-color: #d6cce8;
+    background: #f5f7ff;
+    border-color: #c5cae9;
 }
 
 .refaccion-row .ref-descripcion {
@@ -601,7 +602,7 @@ button:hover {
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: #764ba2;
+    color: #283593;
 }
 
 .refaccion-row .ref-descripcion span {
@@ -697,8 +698,8 @@ button:hover {
 }
 
 .servicio-row:hover {
-    background: #f7f4ff;
-    border-color: #d6cce8;
+    background: #f5f7ff;
+    border-color: #c5cae9;
 }
 
 .servicio-row .serv-descripcion {
@@ -792,7 +793,7 @@ button:hover {
 }
 
 .metal-row:hover {
-    background: #f3e9ff;
+    background: #e8eaf6;
 }
 
 .metal-tipo {
@@ -879,7 +880,7 @@ button:hover {
 
 .field-kilates-slim:hover .mdc-notched-outline__leading,
 .field-kilates-slim:hover .mdc-notched-outline__trailing {
-    border-color: #7e57c2;
+    border-color: #283593;
 }
 
 .field-kilates-slim .mat-mdc-select-arrow-wrapper {
@@ -916,12 +917,12 @@ button:hover {
     min-width: 0 !important;
     padding: 0 12px !important;
     height: 36px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    background: linear-gradient(135deg, #1a237e 0%, #283593 55%, #3949ab 100%) !important;
     color: white !important;
 }
 
 .form-mano-obra-inline > .btn-agregar-inline:hover {
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 2px 8px rgba(40, 53, 147, 0.4);
 }
 
 .form-mano-obra-inline > .btn-agregar-inline:active {
@@ -984,8 +985,8 @@ button:hover {
 }
 
 .manoobra-row:hover {
-    background: #f7f4ff;
-    border-color: #d6cce8;
+    background: #f5f7ff;
+    border-color: #c5cae9;
 }
 
 .manoobra-row .mo-tecnico {
@@ -1000,7 +1001,7 @@ button:hover {
 }
 
 .manoobra-row .mo-tecnico mat-icon {
-    color: #667eea;
+    color: #283593;
     font-size: 18px;
     width: 18px;
     height: 18px;
@@ -1090,7 +1091,7 @@ button:hover {
     background: #f9f9f9;
     padding: 15px;
     border-radius: 6px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #283593;
 }
 
 .total-display {
@@ -1108,7 +1109,7 @@ button:hover {
 
 .btn-agregar {
     width: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a237e 0%, #283593 55%, #3949ab 100%);
     color: white !important;
 }
 
@@ -1275,13 +1276,13 @@ button:hover {
 
 .carousel-btn.prev,
 .carousel-btn.next {
-    background: #667eea;
+    background: #283593;
     color: white;
 }
 
 .carousel-btn.prev:hover,
 .carousel-btn.next:hover {
-    background: #764ba2;
+    background: #1a237e;
 }
 
 .carousel-image {
@@ -1427,5 +1428,245 @@ button:hover {
     .carousel-btn {
         width: 40px;
         height: 40px;
+    }
+}
+
+/* ══════════════════════════════════════════════════
+   TALLER HEADER COMPACTO (1 sola fila)
+   Junio 2026 — header en una línea para aprovechar
+   todo el ancho horizontal y reducir altura vertical.
+   Responsive: en ≤768px se apila verticalmente.
+══════════════════════════════════════════════════ */
+
+.taller-header-sticky {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 100;
+    padding: 8px 16px;
+    margin: -20px -20px 16px -20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-bottom: 2px solid #283593;
+}
+
+.taller-header-row {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 38px;
+}
+
+.taller-header-folio {
+    margin: 0 !important;
+    white-space: nowrap;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #283593;
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+
+/* Card de firma inline (compacto, sin flex:1 para no comerse el ancho) */
+.taller-header-firma {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    min-height: 32px;
+    max-width: 480px;
+    flex-shrink: 1;
+    min-width: 0;
+}
+.taller-header-firma-icon {
+    font-size: 18px !important;
+    width: 18px;
+    height: 18px;
+    line-height: 18px !important;
+    flex-shrink: 0;
+}
+.taller-header-firma-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.2;
+}
+.taller-header-firma-status {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.taller-header-firma-sep {
+    margin: 0 6px;
+    color: #999;
+}
+.taller-header-firma-user {
+    font-weight: 400;
+    color: #555;
+    margin-left: 4px;
+}
+.taller-header-firma-comentario {
+    font-size: 11px;
+    color: #666;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botón Firmar (morado) */
+.taller-btn-firma.mat-mdc-raised-button {
+    background: #283593 !important;
+    color: white !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    flex-shrink: 0;
+}
+.taller-btn-firma.mat-mdc-raised-button mat-icon {
+    font-size: 14px !important;
+    width: 14px;
+    height: 14px;
+    line-height: 14px !important;
+    margin-right: 4px !important;
+}
+
+/* Botón historial (icon-only) */
+.taller-btn-historial.mat-mdc-icon-button {
+    color: #283593 !important;
+    flex-shrink: 0;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+}
+.taller-btn-historial.mat-mdc-icon-button mat-icon {
+    font-size: 16px !important;
+    width: 16px;
+    height: 16px;
+    line-height: 16px !important;
+}
+.taller-btn-historial.mat-mdc-icon-button .mat-mdc-button-touch-target {
+    width: 28px;
+    height: 28px;
+}
+
+/* Contenedor de botones de acción — alineado a la derecha */
+.taller-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Botones compactos (raised buttons) */
+.taller-btn-compact.mat-mdc-raised-button {
+    min-width: 0 !important;
+    height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    border-radius: 6px !important;
+}
+.taller-btn-compact.mat-mdc-raised-button mat-icon {
+    font-size: 14px !important;
+    width: 14px;
+    height: 14px;
+    line-height: 14px !important;
+    margin-right: 4px !important;
+    vertical-align: middle;
+}
+
+/* Botones icon-only compactos */
+.taller-btn-icon.mat-mdc-icon-button {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
+.taller-btn-icon.mat-mdc-icon-button mat-icon {
+    font-size: 16px !important;
+    width: 16px;
+    height: 16px;
+    line-height: 16px !important;
+}
+.taller-btn-icon.mat-mdc-icon-button .mat-mdc-button-touch-target {
+    width: 28px;
+    height: 28px;
+}
+
+/* Variantes de color (mantienen los colores originales del usuario) */
+.taller-btn-edit-estado.mat-mdc-raised-button {
+    background: #FF6F00 !important;
+    color: #fff !important;
+}
+.taller-btn-responsables.mat-mdc-raised-button {
+    background: #283593 !important;
+    color: #fff !important;
+}
+
+/* Total pill (compacto, alineado con los botones) */
+.taller-header-total {
+    background: #283593;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+/* Botón × close (compacto) */
+.taller-btn-close.mat-mdc-icon-button {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    flex-shrink: 0;
+}
+.taller-btn-close.mat-mdc-icon-button mat-icon {
+    font-size: 18px !important;
+    width: 18px;
+    height: 18px;
+    line-height: 18px !important;
+}
+.taller-btn-close.mat-mdc-icon-button .mat-mdc-button-touch-target {
+    width: 28px;
+    height: 28px;
+}
+
+/* Compactar el h2 global del archivo cuando está en el header-row */
+.taller-header-row h2 {
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    font-size: 18px !important;
+    color: #283593;
+}
+
+/* Responsive: en pantallas chicas el header se apila verticalmente */
+@media (max-width: 768px) {
+    .taller-header-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .taller-header-folio {
+        text-align: center;
+        margin-bottom: 4px !important;
+    }
+    .taller-header-firma {
+        max-width: 100%;
+    }
+    .taller-header-actions {
+        margin-left: 0;
+        justify-content: center;
     }
 }
