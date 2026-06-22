@@ -246,11 +246,12 @@
                                                         <span class="edit-label">F. Ingreso</span>
                                                         <div class="inline-wrap">
                                                           <input type="text"
+                                                                                         #cbxFechaIngresoInput
                                                                                          class="inline-input with-suffix"
                                                                                          [value]="tallerForm.fechaIngreso ? (tallerForm.fechaIngreso | date:'dd/MM/yyyy') : ''"
                                                                                          (click)="fn_openHeaderDatepicker('ingreso')"
                                                                                          [matDatepicker]="pickerIngreso"
-                                                                                         (dateChange)="tallerForm.fechaIngreso = $event.value; fn_closeHeaderField()"
+                                                                                         (dateChange)="tallerForm.fechaIngreso = $event.value; fn_focusHeaderField('fechaPrometida')"
                                                                                          placeholder="Seleccione fecha..."
                                                                                          readonly>
                                                           <mat-icon class="datepicker-icon"
@@ -280,11 +281,12 @@
                                                         <span class="edit-label">F. Prometida</span>
                                                         <div class="inline-wrap">
                                                           <input type="text"
+                                                                                         #cbxFechaPrometidaInput
                                                                                          class="inline-input with-suffix"
                                                                                          [value]="tallerForm.fechaPrometidaEntrega ? (tallerForm.fechaPrometidaEntrega | date:'dd/MM/yyyy') : ''"
                                                                                          (click)="fn_openHeaderDatepicker('prometida')"
                                                                                          [matDatepicker]="pickerPromesa"
-                                                                                         (dateChange)="tallerForm.fechaPrometidaEntrega = $event.value; fn_closeHeaderField()"
+                                                                                         (dateChange)="tallerForm.fechaPrometidaEntrega = $event.value; fn_closeHeaderField(); nextInputFocus(descripcionInput, 80);"
                                                                                          placeholder="Seleccione fecha..."
                                                                                          readonly>
                                                           <mat-icon class="datepicker-icon"
@@ -386,12 +388,25 @@
             </div>
         </div>
 
-        <!-- SECCIÓN MANO DE OBRA -->
-                <div class="card-refacciones top30px">
+        <!-- SECCIÓN MANO DE OBRA: la tarjeta SIEMPRE se muestra (si el usuario
+             puede agregar), pero el body interno se oculta cuando no hay
+             registros Y el form está colapsado. Así solo queda visible el
+             header compacto con el botón +, sin empty state grande. -->
+                <div class="card-refacciones top30px" *ngIf="tall_AddManoObra && !bIsReadOnly">
                     <div class="header-refacciones">
-                        <h3>Mano de Obra</h3>
+                        <h3 class="header-refacciones-h3">
+                            <button mat-icon-button
+                                    type="button"
+                                    class="btn-toggle-manoobra-icon"
+                                    [matTooltip]="bShowManoObraForm ? 'Cerrar' : 'Agregar mano de obra'"
+                                    (click)="fn_toggleManoObraForm()">
+                                <mat-icon>{{ bShowManoObraForm ? 'close' : 'add' }}</mat-icon>
+                            </button>
+                            Mano de Obra
+                        </h3>
 
                         <!-- Precio Mano de Obra inline en el header -->
+                        <div class="header-refacciones-right">
                                         <div *ngIf="tall_EditManoObraPrecio && !bIsReadOnly" class="header-refacciones-precio">
                                             <label>Precio Base:</label>
                                             <input #manoObraPrecioInput
@@ -404,14 +419,18 @@
                                                    (blur)="fn_saveManoObraPrecio()">
                                         </div>
 
-                        <span class="total-manoobra">Total: {{ totalManoObra | currency }}</span>
+                            <span class="total-manoobra">Total: {{ totalManoObra | currency }}</span>
+                        </div>
                     </div>
 
-                    <div class="body-refacciones">
-                        <ng-container *ngIf="tall_AddManoObra && !bIsReadOnly">
-                                        <!-- FORMULARIO MANO DE OBRA: técnico + precio + botón en una sola fila -->
+                    <!-- BODY: solo se muestra si hay registros o el form está abierto.
+                         Si no, queda solo el header compacto con el botón +. -->
+                    <div class="body-refacciones" *ngIf="manoObraList.length > 0 || bShowManoObraForm">
+                        <ng-container *ngIf="tall_AddManoObra && !bIsReadOnly && bShowManoObraForm">
+                                        <!-- FORMULARIO MANO DE OBRA: visible solo cuando bShowManoObraForm es true -->
                                         <div class="form-mano-obra-inline">
                                             <div class="field-tecnico">
+                                                <label class="inline-label">Técnico</label>
                                                                     <div class="inline-wrap">
                                                                         <input #cbxTecnicosCBX
                                                                                type="text"
@@ -433,6 +452,7 @@
                                                                     </div>
                                                                 </div>
                                             <div class="field-precio">
+                                                <label class="inline-label">Precio</label>
                                                 <div class="inline-wrap">
                                                     <input #manoObraCantidadInput
                                                            type="number"
@@ -444,10 +464,6 @@
                                                     <span class="inline-suffix">$</span>
                                                 </div>
                                             </div>
-                                            <button mat-raised-button class="btn-agregar-inline" (click)="fn_agregarManoObra()">
-                                                <mat-icon>{{ manoObraForm.idManoObra > 0 ? 'save' : 'add' }}</mat-icon>
-                                                {{ manoObraForm.idManoObra > 0 ? 'Actualizar' : 'Agregar' }}
-                                            </button>
                                         </div>
                                         </ng-container>
 
@@ -476,556 +492,501 @@
                                                         </div>
                             </div>
                         </div>
-
-                        <!-- MENSAJE VACÍO -->
-                        <div *ngIf="manoObraList.length === 0" class="empty-state top20px">
-                            <mat-icon>engineering</mat-icon>
-                            <p>No hay mano de obra agregada</p>
-                        </div>
                     </div>
                 </div>
 
-        <!-- SECCIÓN DE REFACCIONES -->
+        <!-- SECCIÓN DE REFACCIONES: misma estructura que Mano de Obra.
+             Header siempre visible (con botón + al lado del título);
+             el body (form + tabla) solo se muestra si hay registros o el form está abierto.
+             Header usa variante "compact" (más angosto). -->
         <div class="card-refacciones top30px">
-            <div class="header-refacciones">
-                <h3>Refacciones <span class="total-refacciones">Total: {{ totalRefacciones | currency }}</span></h3>
+            <div class="header-refacciones header-refacciones-compact">
+                <h3 class="header-refacciones-h3">
+                    <button *ngIf="tall_AddRefaccion && !bIsReadOnly"
+                            mat-icon-button
+                            type="button"
+                            class="btn-toggle-manoobra-icon"
+                            [matTooltip]="bShowRefaccionForm ? 'Cerrar' : 'Agregar refacción'"
+                            (click)="fn_toggleRefaccionForm()">
+                        <mat-icon>{{ bShowRefaccionForm ? 'close' : 'add' }}</mat-icon>
+                    </button>
+                    Refacciones
+                </h3>
+                <span class="total-refacciones" style="margin-left:auto;">Total: {{ totalRefacciones | currency }}</span>
             </div>
 
             <div class="body-refacciones">
-                <ng-container *ngIf="tall_AddRefaccion && !bIsReadOnly">
-                <!-- RadioButton de tipo -->
-                <div class="row">
-                    <div class="col-md-12">
-                        <mat-radio-group [(ngModel)]="refaccionTipo" (change)="fn_changeRefaccionTipo(refaccionTipo)" class="radio-group">
-                            <mat-radio-button value="producto" class="radio-option">
-                                <mat-icon>inventory</mat-icon> Producto
-                            </mat-radio-button>
-                            <mat-radio-button value="porDefinir" class="radio-option">
-                                <mat-icon>description</mat-icon> Por Definir
-                            </mat-radio-button>
-                        </mat-radio-group>
-                    </div>
+                <ng-container *ngIf="bShowRefaccionForm && tall_AddRefaccion && !bIsReadOnly">
+                <!-- RADIO BUTTONS: Producto / Por Definir (compacto) -->
+                <div class="refaccion-tabs-row">
+                    <mat-radio-group [(ngModel)]="refaccionTipo" (change)="fn_changeRefaccionTipo(refaccionTipo)" class="radio-group-inline">
+                        <mat-radio-button value="producto" class="radio-option-inline">
+                            <mat-icon>inventory</mat-icon> Producto
+                        </mat-radio-button>
+                        <mat-radio-button value="porDefinir" class="radio-option-inline">
+                            <mat-icon>description</mat-icon> Por Definir
+                        </mat-radio-button>
+                    </mat-radio-group>
                 </div>
 
                 <!-- FORMULARIO PRODUCTO -->
-                <div *ngIf="refaccionTipo === 'producto'" class="form-producto top15px">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <mat-form-field
-                            style="width: 100%;"
-                            (click)="cbxProducts_Search()">
-                                <input #cbxProductss
-                                        type="text"
-                                        id="cbxProduct"
-                                        style="width: 100%;"
-                                        placeholder="Selecciona un producto..."
-                                        aria-label="Number"
-                                        matInput
-                                        [(ngModel)]="refaccionForm.productDesc"
-                                        [matAutocomplete]="cbxProduct"
-                                        (keyup)="comboBoxKeyUp('cbxProduct', cbxProductss.value, $event)"
-                                        (click)="cbxProducts_Clear()">
-                                        <button *ngIf="refaccionForm.productDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxProducts_Clear()">
-                                            <mat-icon>close</mat-icon>
-                                        </button>
-                                <mat-autocomplete autoActiveFirstOption
-                                                    #cbxProduct="matAutocomplete"
-                                                    (optionSelected)="cbxProducts_SelectedOption( $event )">
-                                    <mat-option *ngFor="let item of cbxProducts" [value]="item">
-                                        <mat-icon matPrefix class="my-icon">qr_code</mat-icon>{{ item.nameConcat }}
-                                    </mat-option>
-
-                                    <mat-option value="" *ngIf="cbxProducts.length == 0 && refaccionForm.productDesc">
-                                        No se encontró nada...
-                                    </mat-option>
-
-                                </mat-autocomplete>
-                            </mat-form-field>
+                <div *ngIf="refaccionTipo === 'producto'" class="agregar-row row g-2 align-items-end top10px">
+                    <div class="col-12 col-md-7">
+                        <label class="inline-label">Producto</label>
+                        <div class="inline-wrap" (click)="cbxProducts_Search()">
+                            <input #cbxProductss
+                                    type="text"
+                                    id="cbxProduct"
+                                    class="inline-input with-suffix"
+                                    placeholder="Selecciona un producto..."
+                                    aria-label="Number"
+                                    [(ngModel)]="refaccionForm.productDesc"
+                                    [matAutocomplete]="cbxProduct"
+                                    (keyup)="comboBoxKeyUp('cbxProduct', cbxProductss.value, $event)"
+                                    (click)="cbxProducts_Clear()">
+                                    <mat-icon *ngIf="refaccionForm.productDesc"
+                                              class="clear-icon"
+                                              matTooltip="Limpiar"
+                                              (click)="cbxProducts_Clear(); $event.stopPropagation()">close</mat-icon>
                         </div>
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Cantidad</mat-label>
-                                <input #refaccionCantidadInput
-                                matInput type="number" [(ngModel)]="refaccionForm.cantidad" min="0" placeholder="0"
-                                (keyup.enter)="fn_focusRefaccionProductoPrecio()">
-                            </mat-form-field>
-                        </div>
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Precio Unit.</mat-label>
-                                <input #refaccionProductoPrecioInput
-                                matInput type="number" [(ngModel)]="refaccionForm.precio" min="0" placeholder="0.00"
-                                (blur)="fn_validateRefaccionProductoPrecio()"
-                                (keyup.enter)="fn_agregarRefaccion()">
-                            </mat-form-field>
+                        <mat-autocomplete autoActiveFirstOption
+                                            #cbxProduct="matAutocomplete"
+                                            (optionSelected)="cbxProducts_SelectedOption( $event )">
+                            <mat-option *ngFor="let item of cbxProducts" [value]="item">
+                                <mat-icon matPrefix class="my-icon">qr_code</mat-icon>{{ item.nameConcat }}
+                            </mat-option>
+                            <mat-option value="" *ngIf="cbxProducts.length == 0 && refaccionForm.productDesc">
+                                No se encontró nada...
+                            </mat-option>
+                        </mat-autocomplete>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="inline-label">Cantidad</label>
+                        <div class="inline-wrap">
+                            <input #refaccionCantidadInput
+                                   class="inline-input text-right"
+                                   type="number" [(ngModel)]="refaccionForm.cantidad" min="0" placeholder="0"
+                                   (keyup.enter)="fn_focusRefaccionProductoPrecio()">
                         </div>
                     </div>
-                    <div class="row" *ngIf="refaccionForm.idProduct > 0 && refaccionForm.cantidad > 0">
-                        <div class="col-md-12">
-                            <div class="total-display">
-                                <strong>Total:</strong> {{ (refaccionForm.cantidad * refaccionForm.precio) | currency }}
-                            </div>
+                    <div class="col-6 col-md-2">
+                        <label class="inline-label">Precio</label>
+                        <div class="inline-wrap">
+                            <input #refaccionProductoPrecioInput
+                                   class="inline-input with-suffix text-right"
+                                   type="number" [(ngModel)]="refaccionForm.precio" min="0" placeholder="0.00"
+                                   (blur)="fn_validateRefaccionProductoPrecio()"
+                                   (keyup.enter)="fn_agregarRefaccion()">
+                            <span class="inline-suffix">$</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- FORMULARIO POR DEFINIR -->
-                <div *ngIf="refaccionTipo === 'porDefinir'" class="form-por-definir top15px">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <mat-form-field class="with100">
-                                <mat-label>Descripción</mat-label>
-                                <input #refaccionPorDefinirDescInput matInput [(ngModel)]="refaccionForm.productDesc" placeholder="Descripción del artículo"
-                                (keyup.enter)="fn_focusNextRefaccion('cantidad')">
-                            </mat-form-field>
+                <div *ngIf="refaccionTipo === 'porDefinir'" class="agregar-row row g-2 align-items-end top10px">
+                    <div class="col-12 col-md-5">
+                        <label class="inline-label">Descripción</label>
+                        <div class="inline-wrap">
+                            <input #refaccionPorDefinirDescInput
+                                   class="inline-input"
+                                   [(ngModel)]="refaccionForm.productDesc" placeholder="Descripción del artículo"
+                                   (keyup.enter)="fn_focusNextRefaccion('cantidad')">
                         </div>
                     </div>
-                    <div class="row top10px">
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Cantidad</mat-label>
-                                <input #refaccionPorDefinirCantidadInput matInput type="number" [(ngModel)]="refaccionForm.cantidad" min="0" placeholder="0"
-                                (keyup.enter)="fn_focusNextRefaccion('costo')">
-                            </mat-form-field>
+                    <div class="col-6 col-md-2">
+                        <label class="inline-label">Cantidad</label>
+                        <div class="inline-wrap">
+                            <input #refaccionPorDefinirCantidadInput
+                                   class="inline-input text-right"
+                                   type="number" [(ngModel)]="refaccionForm.cantidad" min="0" placeholder="0"
+                                   (keyup.enter)="fn_focusNextRefaccion('precio')">
                         </div>
-                        <!-- <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Costo</mat-label>
-                                <input #refaccionPorDefinirCostoInput matInput type="number" [(ngModel)]="refaccionForm.costo" min="0" placeholder="0"
-                                (keyup.enter)="fn_focusNextRefaccion('precio')">
-                            </mat-form-field>
-                        </div> -->
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Precio</mat-label>
-                                <input #refaccionPorDefinirPrecioInput matInput type="number" [(ngModel)]="refaccionForm.precio" min="0" placeholder="0"
-                                (keyup.enter)="fn_agregarRefaccion()">
-                            </mat-form-field>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="inline-label">Precio</label>
+                        <div class="inline-wrap">
+                            <input #refaccionPorDefinirPrecioInput
+                                   class="inline-input with-suffix text-right"
+                                   type="number" [(ngModel)]="refaccionForm.precio" min="0" placeholder="0.00"
+                                   (keyup.enter)="fn_agregarRefaccion()">
+                            <span class="inline-suffix">$</span>
                         </div>
-                        <div class="col-md-3">
-                            <div class="total-display">
-                                <strong>Total:</strong> {{ (refaccionForm.cantidad * refaccionForm.precio) | currency }}
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="total-display-inline total-display-inline-right">
+                            <strong>Total:</strong> {{ (refaccionForm.cantidad * refaccionForm.precio) | currency }}
+                        </div>
+                    </div>
+                </div>
+                </ng-container>
+
+                <!-- GRID DE REFACCIONES (mismo patrón que Mano de Obra) -->
+                <div *ngIf="refaccionesList.length > 0" class="refaccion-grid top15px">
+                    <div class="refaccion-header">
+                        <div>Descripción</div>
+                        <div class="text-right">Cant.</div>
+                        <div class="text-right">Precio</div>
+                        <div class="text-right">Total</div>
+                        <div></div>
+                    </div>
+                    <div *ngFor="let item of refaccionesList" class="refaccion-row">
+                        <div class="ref-descripcion">
+                            <mat-icon *ngIf="item.tipo === 'producto'" class="icon-tipo" matTooltip="Producto">inventory</mat-icon>
+                            <mat-icon *ngIf="item.tipo === 'porDefinir'" class="icon-tipo" matTooltip="Por Definir">description</mat-icon>
+                            <span>{{ item.productDesc }}</span>
+                        </div>
+                        <div class="ref-cantidad text-right">{{ item.cantidad | number:'1.0-0' }}</div>
+                        <div class="ref-precio text-right">{{ item.precio | currency }}</div>
+                        <div class="ref-total text-right"><strong>{{ item.total | currency }}</strong></div>
+                        <div class="ref-acciones">
+                            <mat-icon *ngIf="item.idProduct === 0 && !bIsReadOnly"
+                                      class="ref-action-icon sync"
+                                      matTooltip="Cambiar a Producto"
+                                      (click)="fn_changeProductoFromPorDefinir(item)">sync_alt</mat-icon>
+                            <mat-icon *ngIf="!bIsReadOnly"
+                                      class="ref-action-icon edit"
+                                      matTooltip="Editar Refacción"
+                                      (click)="editRefaccionGrid(item)">edit</mat-icon>
+                            <mat-icon *ngIf="tall_DeleteRefaccion && !bIsReadOnly"
+                                      class="ref-action-icon delete"
+                                      matTooltip="Eliminar"
+                                      (click)="fn_eliminarRefaccion(item.idRefaccion)">delete_outline</mat-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MENSAJE VACÍO: ya no se muestra. La tarjeta completa
+                     sigue visible (header) y el body se oculta cuando no hay
+                     registros (ver *ngIf arriba). -->
+            </div>
+        </div>
+
+        <!-- SECCIÓN SERVICIOS EXTERNOS: mismo patrón que Refacciones / Mano de Obra.
+             Header con + colapsable, body separado en form (visible solo con +) y grid
+             (visible solo si hay registros). -->
+        <div class="card-refacciones top30px">
+            <div class="header-refacciones">
+                <h3 class="header-refacciones-h3">
+                    <button *ngIf="tall_AddServicioExterno && !bIsReadOnly"
+                            mat-icon-button
+                            type="button"
+                            class="btn-toggle-manoobra-icon"
+                            [matTooltip]="bShowServicioExternoForm ? 'Cerrar' : 'Agregar servicio externo'"
+                            (click)="fn_toggleServicioExternoForm()">
+                        <mat-icon>{{ bShowServicioExternoForm ? 'close' : 'add' }}</mat-icon>
+                    </button>
+                    Servicios Externos
+                </h3>
+                <div class="header-refacciones-right">
+                    <button *ngIf="tall_ManageServiciosExternos && !bIsReadOnly"
+                            mat-icon-button
+                            type="button"
+                            (click)="abrirModalServiciosExternos()"
+                            matTooltip="Gestionar Servicios Externos">
+                        <mat-icon>settings</mat-icon>
+                    </button>
+                    <span class="total-servicios">Total: {{ totalServiciosExternos | currency }}</span>
+                </div>
+            </div>
+
+            <div class="body-refacciones">
+                <ng-container *ngIf="bShowServicioExternoForm && tall_AddServicioExterno && !bIsReadOnly">
+                <!-- FORMULARIO SERVICIOS EXTERNOS (formato slim) -->
+                <div class="agregar-row row g-2 align-items-end top10px">
+                    <div class="col-12 col-md-6">
+                        <label class="inline-label">Servicio</label>
+                        <div class="inline-wrap" (click)="cbxServiciosExternos_Clear(); cbxServiciosExternos_Search()">
+                            <input #cbxServiciosExternosCBX
+                                    type="text"
+                                    id="cbxServiciosExternosMdl"
+                                    class="inline-input with-suffix"
+                                    placeholder="Selecciona un servicio externo..."
+                                    aria-label="Servicio Externo"
+                                    [(ngModel)]="servicioExternoForm.servicioExternoDesc"
+                                    [matAutocomplete]="_cbxServiciosExternos"
+                                    (keyup)="comboBoxKeyUp('cbxServiciosExternos', cbxServiciosExternosCBX.value, $event)"
+                                    (click)="cbxServiciosExternos_Clear(); $event.stopPropagation()">
+                                    <mat-icon *ngIf="servicioExternoForm.servicioExternoDesc"
+                                              class="clear-icon"
+                                              matTooltip="Limpiar"
+                                              (click)="cbxServiciosExternos_Clear(); $event.stopPropagation()">close</mat-icon>
+                        </div>
+                        <mat-autocomplete autoActiveFirstOption #_cbxServiciosExternos="matAutocomplete" (optionSelected)="cbxServiciosExternos_SelectedOption($event)">
+                            <mat-option *ngFor="let role of cbxServiciosExternos" [value]="role">{{ role.name }}</mat-option>
+                            <mat-option value="" *ngIf="cbxServiciosExternos.length == 0 && servicioExternoForm.servicioExternoDesc">No se encontró nada...</mat-option>
+                        </mat-autocomplete>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="inline-label">Cantidad</label>
+                        <div class="inline-wrap">
+                            <input #servicioExternoCantidadInput
+                                   class="inline-input text-right"
+                                   type="number" [(ngModel)]="servicioExternoForm.cantidad" min="1" placeholder="0"
+                                   (keyup.enter)="tall_verCostos ? fn_focusServicioExternoCosto() : fn_focusServicioExternoPrecio()">
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2" *ngIf="tall_verCostos">
+                        <label class="inline-label">Costo</label>
+                        <div class="inline-wrap">
+                            <input #servicioExternoCostoInput
+                                   class="inline-input with-suffix text-right"
+                                   type="number" [(ngModel)]="servicioExternoForm.costo" min="0" placeholder="0.00"
+                                   (keyup.enter)="fn_focusServicioExternoPrecio()">
+                            <span class="inline-suffix">$</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="inline-label">Precio</label>
+                        <div class="inline-wrap">
+                            <input #servicioExternoPrecioInput
+                                   class="inline-input with-suffix text-right"
+                                   type="number" [(ngModel)]="servicioExternoForm.precio" min="0" placeholder="0.00"
+                                   (keyup.enter)="fn_agregarServicioExterno()">
+                            <span class="inline-suffix">$</span>
+                        </div>
+                    </div>
+                </div>
+                </ng-container>
+
+                <!-- GRID DE SERVICIOS EXTERNOS (mismo patrón que Refacciones / Mano de Obra) -->
+                <div *ngIf="serviciosExternosList.length > 0" class="servicio-grid top15px">
+                    <div class="servicio-header">
+                        <div>Servicio</div>
+                        <div class="text-right">Cant.</div>
+                        <div class="text-right">Precio</div>
+                        <div class="text-right">Total</div>
+                        <div></div>
+                    </div>
+                    <div *ngFor="let item of serviciosExternosList" class="servicio-row">
+                        <div class="serv-descripcion">
+                            <mat-icon class="icon-tipo" matTooltip="Servicio Externo">handyman</mat-icon>
+                            <span>{{ item.servicioExtName }}</span>
+                        </div>
+                        <div class="serv-cantidad text-right">{{ item.cantidad | number:'1.0-0' }}</div>
+                        <div class="serv-precio text-right">{{ item.precio | currency }}</div>
+                        <div class="serv-total text-right"><strong>{{ item.total | currency }}</strong></div>
+                        <div class="serv-acciones">
+                            <mat-icon *ngIf="!bIsReadOnly"
+                                      class="se-action-icon edit"
+                                      matTooltip="Editar Servicio Externo"
+                                      (click)="editServicioExternoGrid(item)">edit</mat-icon>
+                            <mat-icon *ngIf="tall_DeleteServicioExterno && !bIsReadOnly"
+                                      class="se-action-icon delete"
+                                      matTooltip="Eliminar"
+                                      (click)="fn_eliminarServicioExterno(item)">delete_outline</mat-icon>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN METAL AGRANEL: mismo patrón que Refacciones / Mano de Obra. -->
+        <div class="card-refacciones top30px">
+            <div class="header-refacciones">
+                <h3 class="header-refacciones-h3">
+                    <button *ngIf="tall_AddMetalAgranel && !bIsReadOnly"
+                            mat-icon-button
+                            type="button"
+                            class="btn-toggle-manoobra-icon"
+                            [matTooltip]="bShowMetalAgranelForm ? 'Cerrar' : 'Agregar metal a granel'"
+                            (click)="fn_toggleMetalAgranelForm()">
+                        <mat-icon>{{ bShowMetalAgranelForm ? 'close' : 'add' }}</mat-icon>
+                    </button>
+                    Metal Agranel
+                </h3>
+                <span class="total-metal" style="margin-left:auto;">Total: {{ totalMetalAgranel | currency }}</span>
                             </div>
-                        </div>
-                    </div>
+
+                            <div class="body-refacciones body-refacciones-metal">
+                                <ng-container *ngIf="bShowMetalAgranelForm && tall_AddMetalAgranel && !bIsReadOnly">
+                <!-- Radio Oro / Plata (compacto, inline) -->
+                <div class="refaccion-tabs-row">
+                    <mat-radio-group [(ngModel)]="metalTipo" (change)="fn_changeMetalTipo(metalTipo)" class="radio-group-inline">
+                        <mat-radio-button value="oro" class="radio-option-inline">
+                            <mat-icon style="color: gold;">circle</mat-icon> Oro
+                        </mat-radio-button>
+                        <mat-radio-button value="plata" class="radio-option-inline">
+                            <mat-icon style="color: silver;">circle</mat-icon> Plata
+                        </mat-radio-button>
+                    </mat-radio-group>
                 </div>
 
-                <!-- BOTÓN AGREGAR -->
-                <div class="row top15px">
-                    <div class="col-md-12">
-                        <button mat-raised-button color="accent" (click)="fn_agregarRefaccion()" class="btn-agregar">
-                            <mat-icon>add</mat-icon>{{ ( refaccionForm.idRefaccion > 0 ? 'Editar' : 'Agregar' ) }} Refacción
-                        </button>
+                <!-- FORMULARIO METAL AGRANEL (formato slim) -->
+                <div class="agregar-row row g-2 align-items-end top10px">
+                    <div class="col-12 col-md-4">
+                        <label class="inline-label">Gramos</label>
+                        <div class="inline-wrap">
+                            <input #metalAgranelGramosInput
+                                   class="inline-input text-right"
+                                   type="number" [(ngModel)]="metalAgranelForm.gramos"
+                                   (blur)="fn_calculateMetalValue()"
+                                   (keyup.enter)="fn_focusMetalAgranelKilates()"
+                                   min="0" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                                            <label class="inline-label">Kilataje</label>
+                                            <mat-form-field class="field-kilates-slim" subscriptSizing="dynamic">
+                                                <mat-select #metalAgranelKilatesSelect
+                                                        #metalAgranelKilatesSelectRef
+                                                        placeholder="Seleccionar..."
+                                                        [(ngModel)]="metalAgranelForm.kilates"
+                                                        (selectionChange)="fn_onMetalAgranelKilatesChange()">
+                                                    <mat-option *ngFor="let kilate of kilatajes" [value]="kilate">
+                                                        {{ kilate }} Kilates
+                                                    </mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+                    <div class="col-12 col-md-4">
+                        <label class="inline-label">Valor del Metal</label>
+                        <div class="inline-wrap">
+                            <input #metalAgranelValorMetalInput
+                                   class="inline-input with-suffix text-right"
+                                   type="number" [(ngModel)]="metalAgranelForm.valorMetal" min="0" placeholder="0.00"
+                                   (blur)="fn_validateMetalAgranel()"
+                                   (keyup.enter)="fn_agregarMetalAgranel()">
+                            <span class="inline-suffix">$</span>
+                        </div>
                     </div>
                 </div>
                 </ng-container>
 
-                <!-- TABLA DE REFACCIONES -->
-                <div *ngIf="refaccionesList.length > 0" class="table-refacciones top20px">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr class="header-table">
-                                    <th class="col-acciones">Acciones</th>
-                                    <th class="col-descripcion">Descripción</th>
-                                    <th class="col-cantidad">Cantidad</th>
-                                    <th class="col-precio">Precio Unit.</th>
-                                    <th class="col-total">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let item of refaccionesList" class="row-refaccion">
-                                    <td class="col-acciones text-center">
-                                      <button *ngIf="item.idProduct === 0 && !bIsReadOnly" mat-icon-button (click)="fn_changeProductoFromPorDefinir(item)" matTooltip="Cambiar a Producto">
-                                          <mat-icon class="colorBlue">sync_alt</mat-icon>
-                                      </button>
-                                      <button *ngIf="!bIsReadOnly" mat-icon-button (click)="editRefaccionGrid(item)" matTooltip="Editar Refacción">
-                                          <mat-icon class="colorGreen">edit</mat-icon>
-                                      </button>
-                                      <button *ngIf="tall_DeleteRefaccion && !bIsReadOnly" mat-icon-button (click)="fn_eliminarRefaccion(item.idRefaccion)" matTooltip="Eliminar">
-                                          <mat-icon class="icon-delete">delete_outline</mat-icon>
-                                      </button>
-                                    </td>
-                                    <td class="col-descripcion">
-                                        <mat-icon *ngIf="item.tipo === 'producto'" class="icon-tipo" matTooltip="Producto">inventory</mat-icon>
-                                        <mat-icon *ngIf="item.tipo === 'porDefinir'" class="icon-tipo" matTooltip="Por Definir">description</mat-icon>
-                                        {{ item.productDesc }}
-                                    </td>
-                                    <td class="col-cantidad text-center">{{ item.cantidad | number:'1.0-0' }}</td>
-                                    <td class="col-precio text-right">{{ item.precio | currency }}</td>
-                                    <td class="col-total text-right"><strong>{{ item.total | currency }}</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- GRID DE METAL AGRANEL -->
+                <div *ngIf="metalAgranelList.length > 0" class="metal-grid top15px">
+                    <div class="metal-header">
+                        <div>Tipo</div>
+                        <div class="text-right">Gramos</div>
+                        <div class="text-right">Kilates</div>
+                        <div class="text-right">Valor</div>
+                        <div></div>
                     </div>
-                </div>
-
-                <!-- MENSAJE VACÍO -->
-                <div *ngIf="refaccionesList.length === 0" class="empty-state top20px">
-                    <mat-icon>folder_open</mat-icon>
-                    <p>No hay refacciones agregadas</p>
+                    <div *ngFor="let item of metalAgranelList" class="metal-row">
+                        <div class="metal-tipo">
+                            <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
+                            <span>{{ item.tipo | uppercase }}</span>
+                        </div>
+                        <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-0' }}</div>
+                        <div class="metal-kilates text-right">{{ item.kilates | number:'1.0-0' }} K</div>
+                        <div class="metal-valor text-right">{{ item.valorMetal | currency }}</div>
+                        <div class="metal-acciones">
+                            <mat-icon *ngIf="!bIsReadOnly"
+                                      class="metal-action-icon edit"
+                                      matTooltip="Editar Metal"
+                                      (click)="editMetalAgranelGrid(item)">edit</mat-icon>
+                            <mat-icon *ngIf="tall_DeleteMetalAgranel && !bIsReadOnly"
+                                      class="metal-action-icon delete"
+                                      matTooltip="Eliminar"
+                                      (click)="fn_eliminarMetalAgranel(item.idMetalAgranel)">delete_outline</mat-icon>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- SECCIÓN SERVICIOS EXTERNOS -->
+        <!-- SECCIÓN ACTIVO DEL CLIENTE: mismo patrón que Metal Agranel / Refacciones. -->
         <div class="card-refacciones top30px">
             <div class="header-refacciones">
-                <h3>Servicios Externos <span class="total-servicios">Total: {{ totalServiciosExternos | currency }}</span></h3>
-                <button *ngIf="tall_ManageServiciosExternos && !bIsReadOnly" mat-icon-button (click)="abrirModalServiciosExternos()" matTooltip="Gestionar Servicios Externos">
-                    <mat-icon>settings</mat-icon>
-                </button>
-            </div>
+                <h3 class="header-refacciones-h3">
+                    <button *ngIf="tall_AddMetalCliente && !bIsReadOnly"
+                            mat-icon-button
+                            type="button"
+                            class="btn-toggle-manoobra-icon"
+                            [matTooltip]="bShowMetalClienteForm ? 'Cerrar' : 'Agregar activo del cliente'"
+                            (click)="fn_toggleMetalClienteForm()">
+                        <mat-icon>{{ bShowMetalClienteForm ? 'close' : 'add' }}</mat-icon>
+                    </button>
+                    Activo del Cliente
+                </h3>
+                <span class="total-activo" style="margin-left:auto;">Total: {{ totalMetalCliente | currency }}</span>
+                            </div>
 
-            <div class="body-refacciones">
-                <ng-container *ngIf="tall_AddServicioExterno && !bIsReadOnly">
-                <!-- FORMULARIO SERVICIOS EXTERNOS -->
-                <div class="form-servicios top15px">
-                    <div class="row">
-                        <div class="col-md-5">
-                          <mat-form-field appearance="outline" style="width: 100%;" (click)="cbxServiciosExternos_Clear(); cbxServiciosExternos_Search()">
-                            <mat-label>Servicio Externo</mat-label>
-                            <input #cbxServiciosExternosCBX matInput [(ngModel)]="servicioExternoForm.servicioExternoDesc"
-                                  id="cbxServiciosExternosMdl"
-                                  [matAutocomplete]="_cbxServiciosExternos"
-                                  (keyup)="comboBoxKeyUp('cbxServiciosExternos', cbxServiciosExternosCBX.value, $event)"
-                                  (click)="cbxServiciosExternos_Clear()" placeholder="Selecciona...">
-                            <button *ngIf="servicioExternoForm.servicioExternoDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxServiciosExternos_Clear()">
-                              <mat-icon>close</mat-icon>
-                            </button>
-                            <mat-autocomplete autoActiveFirstOption #_cbxServiciosExternos="matAutocomplete" (optionSelected)="cbxServiciosExternos_SelectedOption($event)">
-                              <mat-option *ngFor="let role of cbxServiciosExternos" [value]="role">{{ role.name }}</mat-option>
-                              <mat-option value="" *ngIf="cbxServiciosExternos.length == 0 && servicioExternoForm.servicioExternoDesc">No se encontró nada...</mat-option>
-                            </mat-autocomplete>
-                          </mat-form-field>
-                        </div>
-                        <div class="col-md-1">
-                            <button *ngIf="tall_ManageServiciosExternos && !bIsReadOnly" mat-icon-button color="accent" (click)="abrirModalServiciosExternos()"
-                                matTooltip="Gestionar Servicios Externos">
-                                <mat-icon>settings</mat-icon>
-                            </button>
-                        </div>
-                        <div class="col-md-2">
-                            <mat-form-field class="with100">
-                                <mat-label>Cantidad</mat-label>
-                                <input #servicioExternoCantidadInput
-                                matInput type="number" [(ngModel)]="servicioExternoForm.cantidad" min="1" placeholder="0"
-                                (keyup.enter)="tall_verCostos ? fn_focusServicioExternoCosto() : fn_focusServicioExternoPrecio()">
-                            </mat-form-field>
-                        </div>
-                        <div class="col-md-2" *ngIf="tall_verCostos">
-                            <mat-form-field class="with100">
-                                <mat-label>Costo</mat-label>
-                                <input #servicioExternoCostoInput
-                                matInput type="number" [(ngModel)]="servicioExternoForm.costo" min="0" placeholder="0"
-                                (keyup.enter)="fn_focusServicioExternoPrecio()">
-                            </mat-form-field>
-                        </div>
-                        <div class="col-md-2">
-                            <mat-form-field class="with100">
-                                <mat-label>Precio</mat-label>
-                                <input #servicioExternoPrecioInput
-                                matInput type="number" [(ngModel)]="servicioExternoForm.precio" min="0" placeholder="0"
-                                (keyup.enter)="fn_agregarServicioExterno()">
-                            </mat-form-field>
-                        </div>
-                    </div>
+                            <div class="body-refacciones body-refacciones-metal">
+                                <ng-container *ngIf="bShowMetalClienteForm && tall_AddMetalCliente && !bIsReadOnly">
+                <!-- Radio Oro / Plata (compacto, inline) -->
+                <div class="refaccion-tabs-row">
+                    <mat-radio-group [(ngModel)]="metalClienteTipo" (change)="fn_changeMetalClienteTipo(metalClienteTipo)" class="radio-group-inline">
+                        <mat-radio-button value="oro" class="radio-option-inline">
+                            <mat-icon style="color: gold;">circle</mat-icon> Oro
+                        </mat-radio-button>
+                        <mat-radio-button value="plata" class="radio-option-inline">
+                            <mat-icon style="color: silver;">circle</mat-icon> Plata
+                        </mat-radio-button>
+                    </mat-radio-group>
                 </div>
 
-                <!-- BOTÓN AGREGAR -->
-                <div class="row top15px">
-                    <div class="col-md-12">
-                        <button mat-raised-button color="accent" (click)="fn_agregarServicioExterno()" class="btn-agregar">
-                            <mat-icon>add</mat-icon>{{ ( servicioExternoForm.idServicioExternoDetalle > 0 ? 'Editar' : 'Agregar' ) }} Servicio Externo
-                        </button>
+                <!-- FORMULARIO METAL CLIENTE (formato slim) -->
+                <div class="agregar-row row g-2 align-items-end top10px">
+                    <div class="col-12 col-md-4">
+                        <label class="inline-label">Gramos</label>
+                        <div class="inline-wrap">
+                            <input #metalClienteGramosInput
+                                   class="inline-input text-right"
+                                   type="number" [(ngModel)]="metalClienteForm.gramos"
+                                   (blur)="fn_calculateMetalClienteValue()"
+                                   (keyup.enter)="fn_focusMetalClienteKilates()"
+                                   min="0" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                                            <label class="inline-label">Kilataje</label>
+                                            <mat-form-field class="field-kilates-slim" subscriptSizing="dynamic">
+                                                <mat-select #metalClienteKilatesSelect
+                                                        #metalClienteKilatesSelectRef
+                                                        placeholder="Seleccionar..."
+                                                        [(ngModel)]="metalClienteForm.kilates"
+                                                        (selectionChange)="fn_onMetalClienteKilatesChange()">
+                                                    <mat-option *ngFor="let kilate of kilatajes_cliente" [value]="kilate">
+                                                        {{ kilate }} Kilates
+                                                    </mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+                    <div class="col-12 col-md-4">
+                        <label class="inline-label">Valor del Metal</label>
+                        <div class="inline-wrap">
+                            <input #metalClienteValorMetalInput
+                                   class="inline-input with-suffix text-right"
+                                   type="number" [(ngModel)]="metalClienteForm.valorMetal" min="0" placeholder="0.00"
+                                   (keyup.enter)="fn_agregarMetalCliente()">
+                            <span class="inline-suffix">$</span>
+                        </div>
                     </div>
                 </div>
                 </ng-container>
 
-                <!-- TABLA DE SERVICIOS EXTERNOS -->
-                <div *ngIf="serviciosExternosList.length > 0" class="table-refacciones top20px">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr class="header-table">
-                                    <th class="col-acciones">Acciones</th>
-                                    <th class="col-descripcion">Servicios Externos</th>
-                                    <th class="col-cantidad">Cantidad</th>
-                                    <th class="col-precio">Precio Unit.</th>
-                                    <th class="col-total">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let item of serviciosExternosList" class="row-refaccion">
-                                    <td class="col-acciones text-center">
-                                      <button *ngIf="!bIsReadOnly" mat-icon-button (click)="editServicioExternoGrid(item)" matTooltip="Editar Refacción">
-                                          <mat-icon class="colorGreen">edit</mat-icon>
-                                      </button>
-                                        <button *ngIf="tall_DeleteServicioExterno && !bIsReadOnly" mat-icon-button (click)="fn_eliminarServicioExterno(item)" matTooltip="Eliminar">
-                                            <mat-icon class="icon-delete">delete_outline</mat-icon>
-                                        </button>
-                                    </td>
-                                    <td class="col-descripcion">{{ item.servicioExtName }}</td>
-                                    <td class="col-cantidad text-center">{{ item.cantidad | number:'1.0-0' }}</td>
-                                    <td class="col-precio text-right">{{ item.precio | currency }}</td>
-                                    <td class="col-total text-right"><strong>{{ item.total | currency }}</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- GRID DE ACTIVO DEL CLIENTE -->
+                <div *ngIf="metalClienteList.length > 0" class="metal-grid top15px">
+                    <div class="metal-header">
+                        <div>Tipo</div>
+                        <div class="text-right">Gramos</div>
+                        <div class="text-right">Kilates</div>
+                        <div class="text-right">Valor</div>
+                        <div></div>
                     </div>
-                </div>
-
-                <!-- MENSAJE VACÍO -->
-                <div *ngIf="serviciosExternosList.length === 0" class="empty-state top20px">
-                    <mat-icon>folder_open</mat-icon>
-                    <p>No hay servicios externos agregados</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN METAL AGRANEL -->
-        <div class="card-refacciones top30px">
-            <div class="header-refacciones">
-                <h3>Metal Agranel <span class="total-metal">Total: {{ totalMetalAgranel | currency }}</span></h3>
-            </div>
-
-            <div class="body-refacciones">
-                <ng-container *ngIf="tall_AddMetalAgranel && !bIsReadOnly">
-                <!-- RadioButton de tipo -->
-                <div class="row">
-                    <div class="col-md-12">
-                        <mat-label>Tipo de Metal:</mat-label>
-                        <mat-radio-group [(ngModel)]="metalTipo" (change)="fn_changeMetalTipo(metalTipo)" class="radio-group">
-                            <mat-radio-button [value]="'oro'" class="radio-option">
-                                <mat-icon class="icon-oro" style="color: gold; margin-right: 5px;">circle</mat-icon>
-                                Oro
-                            </mat-radio-button>
-                            <mat-radio-button [value]="'plata'" class="radio-option">
-                                <mat-icon class="icon-plata" style="color: silver; margin-right: 5px;">circle</mat-icon>
-                                Plata
-                            </mat-radio-button>
-                        </mat-radio-group>
-                    </div>
-                </div>
-
-                <!-- FORMULARIO METAL AGRANEL -->
-                <div class="form-metal top15px">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Gramos</mat-label>
-                                <input #metalAgranelGramosInput
-                                  matInput
-                                  type="number"
-                                  [(ngModel)]="metalAgranelForm.gramos"
-                                  (blur)="fn_calculateMetalValue()"
-                                  (keyup.enter)="fn_focusMetalAgranelKilates()"
-                                  min="0"
-                                  placeholder="0">
-                            </mat-form-field>
+                    <div *ngFor="let item of metalClienteList" class="metal-row">
+                        <div class="metal-tipo">
+                            <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
+                            <span>{{ item.tipo | uppercase }}</span>
                         </div>
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Kilataje</mat-label>
-                                <mat-select #metalAgranelKilatesSelect #metalAgranelKilatesSelectRef
-                                [(ngModel)]="metalAgranelForm.kilates"
-                                (selectionChange)="fn_onMetalAgranelKilatesChange()">
-                                    <mat-option *ngFor="let kilate of kilatajes" [value]="kilate">
-                                        {{ kilate }} Kilates
-                                    </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </div>
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Valor del Metal</mat-label>
-                                <input #metalAgranelValorMetalInput
-                                matInput type="number" [(ngModel)]="metalAgranelForm.valorMetal" min="0" placeholder="0.00"
-                                (blur)="fn_validateMetalAgranel()"
-                                (keyup.enter)="fn_agregarMetalAgranel()">
-                            </mat-form-field>
+                        <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-0' }}</div>
+                        <div class="metal-kilates text-right">{{ item.kilates | number:'1.0-0' }} K</div>
+                        <div class="metal-valor text-right">{{ item.valorMetal | currency }}</div>
+                        <div class="metal-acciones">
+                            <mat-icon *ngIf="tall_AddMetalCliente && !bIsReadOnly"
+                                      class="metal-action-icon edit"
+                                      matTooltip="Editar Metal"
+                                      (click)="editMetalClienteGrid(item)">edit</mat-icon>
+                            <mat-icon *ngIf="tall_ViewMetalClienteImages"
+                                      class="metal-action-icon image"
+                                      matTooltip="Ver Fotos"
+                                      (click)="openMetalClienteImagesDialog(item)">image</mat-icon>
+                            <mat-icon *ngIf="tall_DeleteMetalCliente && !bIsReadOnly"
+                                      class="metal-action-icon delete"
+                                      matTooltip="Eliminar"
+                                      (click)="fn_eliminarMetalCliente(item.idMetalCliente)">delete_outline</mat-icon>
                         </div>
                     </div>
-                </div>
-
-                <!-- BOTÓN AGREGAR -->
-                <div class="row top15px">
-                    <div class="col-md-12">
-                        <button mat-raised-button color="accent" (click)="fn_agregarMetalAgranel()" class="btn-agregar">
-                            <mat-icon>add</mat-icon>{{ metalAgranelForm.idMetalAgranel > 0 ? 'Actualizar' : 'Agregar' }} Metal
-                        </button>
-                    </div>
-                </div>
-                </ng-container>
-
-                <!-- TABLA DE METAL AGRANEL -->
-                <div *ngIf="metalAgranelList.length > 0" class="table-refacciones top20px">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr class="header-table">
-                                    <th class="col-acciones">Acciones</th>
-                                    <th class="col-tipo">Tipo</th>
-                                    <th class="col-gramos">Gramos</th>
-                                    <th class="col-kilates">Kilataje</th>
-                                    <th class="col-valor">Valor Metal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let item of metalAgranelList" class="row-metal">
-                                    <td class="col-acciones text-center">
-                                        <button *ngIf="!bIsReadOnly" mat-icon-button (click)="editMetalAgranelGrid(item)" matTooltip="Editar Metal">
-                                            <mat-icon class="colorGreen">edit</mat-icon>
-                                        </button>
-                                        <button *ngIf="tall_DeleteMetalAgranel && !bIsReadOnly" mat-icon-button (click)="fn_eliminarMetalAgranel(item.idMetalAgranel)" matTooltip="Eliminar">
-                                            <mat-icon class="icon-delete">delete_outline</mat-icon>
-                                        </button>
-                                    </td>
-                                    <td class="col-tipo">
-                                        <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
-                                        {{ item.tipo | uppercase }}
-                                    </td>
-                                    <td class="col-gramos text-center">{{ item.gramos | number:'1.0-0' }}</td>
-                                    <td class="col-kilates text-center">{{ item.kilates | number:'1.0-0' }} K</td>
-                                    <td class="col-valor text-right">{{ item.valorMetal | currency }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- MENSAJE VACÍO -->
-                <div *ngIf="metalAgranelList.length === 0" class="empty-state top20px">
-                    <mat-icon>folder_open</mat-icon>
-                    <p>No hay metales agregados</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN METAL DEL CLIENTE -->
-        <div class="card-refacciones top30px">
-            <div class="header-refacciones">
-                <h3>Activo del Cliente <span class="total-activo">Total: {{ totalMetalCliente | currency }}</span></h3>
-            </div>
-
-            <div class="body-refacciones">
-                <ng-container *ngIf="tall_AddMetalCliente && !bIsReadOnly">
-                <!-- RadioButton de tipo -->
-                <div class="row">
-                    <div class="col-md-12">
-                        <mat-label>Tipo de Metal:</mat-label>
-                        <mat-radio-group [(ngModel)]="metalClienteTipo" (change)="fn_changeMetalClienteTipo(metalClienteTipo)" class="radio-group">
-                            <mat-radio-button [value]="'oro'" class="radio-option">
-                                <mat-icon class="icon-oro" style="color: gold; margin-right: 5px;">circle</mat-icon>
-                                Oro
-                            </mat-radio-button>
-                            <mat-radio-button [value]="'plata'" class="radio-option">
-                                <mat-icon class="icon-plata" style="color: silver; margin-right: 5px;">circle</mat-icon>
-                                Plata
-                            </mat-radio-button>
-                        </mat-radio-group>
-                    </div>
-                </div>
-
-                <!-- FORMULARIO METAL CLIENTE -->
-                <div class="form-metal top15px">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Gramos</mat-label>
-                                <input #metalClienteGramosInput
-                                  matInput
-                                  type="number"
-                                  [(ngModel)]="metalClienteForm.gramos"
-                                  (blur)="fn_calculateMetalClienteValue()"
-                                  (keyup.enter)="fn_focusMetalClienteKilates()"
-                                  min="0"
-                                  placeholder="0">
-                            </mat-form-field>
-                        </div>
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Kilataje</mat-label>
-                                <mat-select #metalClienteKilatesSelect #metalClienteKilatesSelectRef
-                                [(ngModel)]="metalClienteForm.kilates"
-                                (selectionChange)="fn_onMetalClienteKilatesChange()">
-                                    <mat-option *ngFor="let kilate of kilatajes_cliente" [value]="kilate">
-                                        {{ kilate }} Kilates
-                                    </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </div>
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Valor del Metal</mat-label>
-                                <input #metalClienteValorMetalInput
-                                matInput type="number" [(ngModel)]="metalClienteForm.valorMetal" min="0" placeholder="0.00"
-                                (keyup.enter)="fn_agregarMetalCliente()">
-                            </mat-form-field>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BOTÓN AGREGAR -->
-                <div class="row top15px">
-                    <div class="col-md-12">
-                        <button mat-raised-button color="accent" (click)="fn_agregarMetalCliente()" class="btn-agregar">
-                            <mat-icon>add</mat-icon>{{ metalClienteForm.idMetalCliente > 0 ? 'Actualizar' : 'Agregar' }} Metal
-                        </button>
-                    </div>
-                </div>
-                </ng-container>
-
-                <!-- TABLA DE METAL CLIENTE -->
-                <div *ngIf="metalClienteList.length > 0" class="table-refacciones top20px">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr class="header-table">
-                                    <th class="col-acciones">Acciones</th>
-                                    <th class="col-tipo">Tipo</th>
-                                    <th class="col-gramos">Gramos</th>
-                                    <th class="col-kilates">Kilataje</th>
-                                    <th class="col-valor">Valor Metal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let item of metalClienteList" class="row-metal">
-                                    <td class="col-acciones text-center">
-                                        <button *ngIf="tall_AddMetalCliente && !bIsReadOnly" mat-icon-button (click)="editMetalClienteGrid(item)" matTooltip="Editar Metal">
-                                            <mat-icon class="colorGreen">edit</mat-icon>
-                                        </button>
-                                        <button *ngIf="tall_ViewMetalClienteImages"
-                                                mat-icon-button
-                                                (click)="openMetalClienteImagesDialog(item)"
-                                                matTooltip="Ver Fotos"
-                                                [matBadge]="item.imageCount || 0"
-                                                matBadgeColor="accent"
-                                                matBadgeSize="medium"
-                                                [matBadgeHidden]="(item.imageCount || 0) === 0">
-                                            <mat-icon class="colorBlue">image</mat-icon>
-                                        </button>
-                                        <button *ngIf="tall_DeleteMetalCliente && !bIsReadOnly" mat-icon-button (click)="fn_eliminarMetalCliente(item.idMetalCliente)" matTooltip="Eliminar">
-                                            <mat-icon class="icon-delete">delete_outline</mat-icon>
-                                        </button>
-                                    </td>
-                                    <td class="col-tipo">
-                                        <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
-                                        {{ item.tipo | uppercase }}
-                                    </td>
-                                    <td class="col-gramos text-center">{{ item.gramos | number:'1.0-0' }}</td>
-                                    <td class="col-kilates text-center">{{ item.kilates | number:'1.0-0' }} K</td>
-                                    <td class="col-valor text-right">{{ item.valorMetal | currency }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- MENSAJE VACÍO -->
-                <div *ngIf="metalClienteList.length === 0" class="empty-state top20px">
-                    <mat-icon>folder_open</mat-icon>
-                    <p>No hay metales agregados</p>
                 </div>
             </div>
         </div>

@@ -102,6 +102,81 @@ export class TallerComponent implements OnInit {
       @ViewChild('pickerPromesa') pickerPromesaRef!: MatDatepicker<any>;
       @ViewChild('pickerEntrega') pickerEntregaRef!: MatDatepicker<any>;
 
+      // ViewChilds de los <input> dentro de los <ng-template> de los chips del header
+      // (vendedor y cliente ya están declarados arriba: cbxSellerCBX, cbxCustomerCBX)
+      @ViewChild('cbxFechaIngresoInput') cbxFechaIngresoInput!: ElementRef;
+      @ViewChild('cbxFechaPrometidaInput') cbxFechaPrometidaInput!: ElementRef;
+
+      // Foco pendiente: si llega un pedido de foco antes de que la vista esté lista
+      // (típico en ngOnInit), se aplica apenas Angular termina el primer render.
+      private _pendingFocusField: 'seller' | 'customer' | 'fechaIngreso' | 'fechaPrometida' | 'fechaEntregada' | null = null;
+      private _focusApplied = false;
+
+      /**
+       * Cadena de foco inteligente para talleres NUEVOS.
+       * Abre el chip del campo correspondiente y enfoca su input.
+       * Si el campo es una fecha, además abre el datepicker.
+       * Usado en: ngOnInit (al crear), optionSelected (vendedor/cliente),
+       *            dateChange (fechas).
+       *
+       * Estrategia de focus robusta: dos intentos con setTimeout (200ms y 500ms)
+       * porque el chip se renderiza dentro de un <ng-template> que Angular tarda
+       * en materializar, y el <mat-autocomplete> de Material añade un overlay que
+       * puede interferir si el foco se aplica muy temprano.
+       */
+      fn_focusHeaderField(field: 'seller' | 'customer' | 'fechaIngreso' | 'fechaPrometida' | 'fechaEntregada' | null): void {
+        if (!field) return;
+        this.editingHeaderField = field;
+        this._pendingFocusField = field;
+
+        // Si es fecha, NO enfocar el input: el usuario pidió que el foco quede
+        // en el datepicker (popup de Material) al pasar a la fecha prometida.
+        // El input es solo un disparador; el <input [matDatepicker]> ya está
+        // conectado al picker via template, así que picker.open() funciona sin focus.
+        if (field === 'fechaIngreso' || field === 'fechaPrometida') {
+          const which = field === 'fechaIngreso' ? 'ingreso' : 'prometida';
+          // Doble intento: 200ms (ng-template ya renderizado) y 500ms (respaldo)
+          const tryOpen = (delay: number) => {
+            setTimeout(() => {
+              if (this._pendingFocusField !== field) return;
+              this.fn_openHeaderDatepicker(which);
+            }, delay);
+          };
+          tryOpen(200);
+          tryOpen(500);
+          return;
+        }
+
+        const tryFocus = (delay: number) => {
+          setTimeout(() => {
+            // Solo aplicar si sigue siendo el mismo pedido y no se aplicó antes
+            if (this._pendingFocusField !== field) return;
+
+            let inputRef: ElementRef | undefined;
+            switch (field) {
+              case 'seller':           inputRef = this.cbxSellerCBX; break;
+              case 'customer':         inputRef = this.cbxCustomerCBX; break;
+              case 'fechaEntregada':   return;
+            }
+            const el: HTMLElement | undefined = inputRef?.nativeElement;
+            if (el && document.activeElement !== el) {
+              el.focus();
+              // Si después del focus el navegador lo rechazó (sigue otro elemento activo),
+              // lo intentamos de nuevo en el siguiente tick
+              if (document.activeElement !== el) {
+                setTimeout(() => { if (document.activeElement !== el) el.focus(); }, 0);
+              }
+            }
+          }, delay);
+        };
+
+        // Primer intento: 200ms (cubre el render del ng-template + primer paint de Material)
+        tryFocus(200);
+        // Segundo intento de respaldo: 500ms (cubre el caso donde el overlay del autocomplete
+        // o el primer paint del Material form-field desplazó el input)
+        tryFocus(500);
+      }
+
       fn_editHeaderField(field: string): void {
         this.editingHeaderField = field;
       }
@@ -129,6 +204,10 @@ export class TallerComponent implements OnInit {
 
   // VARIABLES DE REFACCIONES
   refaccionTipo: string = 'producto'; // 'producto' o 'porDefinir'
+  // Índice del tab activo del mat-tab-group (0 = Producto, 1 = Por Definir).
+  // Refleja refaccionTipo pero permite que mat-tab-group controle el cambio
+  // vía two-way binding sin disparar el radio button legacy.
+  refaccionTabIndex: number = 0;
 
   productosList: any[] = [];
   refaccionForm: any = {
@@ -251,6 +330,24 @@ export class TallerComponent implements OnInit {
 
   bShowActionAuthorization: boolean = false;
 
+  // Colapsable: el form de "técnico + precio + AGREGAR" arranca oculto para
+  // ahorrar espacio. Click en "+ Agregar mano de obra" lo expande; al guardar
+  // o cancelar se vuelve a colapsar.
+  bShowManoObraForm: boolean = false;
+
+  // Colapsable: el form de refacción arranca oculto. Mismo patrón que
+  // Mano de Obra: el header se muestra siempre, el body solo cuando hay
+  // registros o el form está abierto.
+  bShowRefaccionForm: boolean = false;
+
+  // Colapsable: el form de servicios externos sigue el mismo patrón que
+  // refacciones y mano de obra.
+  bShowServicioExternoForm: boolean = false;
+
+  // Colapsable: el form de metal a granel y activo del cliente.
+  bShowMetalAgranelForm: boolean = false;
+  bShowMetalClienteForm: boolean = false;
+
   get bIsReadOnly(): boolean {
     return (this.oFirmaStatus?.firma === 0 || this.tallerForm.idTallerStatus === 5 || this.tallerForm.idTallerStatus === 6) && !this.tall_EditAfterEntregado;
   }
@@ -349,12 +446,10 @@ export class TallerComponent implements OnInit {
     if (this.ODataP && this.ODataP.idTaller > 0) {
       this.fn_getTallerData(this.ODataP.idTaller);
     } else {
-      // Si es un taller nuevo, poner foco en el vendedor después de que se renderice el DOM
-      setTimeout(() => {
-        if (this.cbxSellerCBX && this.cbxSellerCBX.nativeElement) {
-          this.cbxSellerCBX.nativeElement.focus();
-        }
-      }, 200);
+      // Si es un taller nuevo, abrir el chip del vendedor y enfocar su input.
+      // (No se puede enfocar directamente el nativeElement del input porque
+      //  está dentro de un <ng-template> que aún no se ha renderizado.)
+      this.fn_focusHeaderField('seller');
     }
 
     this.selectCajas = this.ODataP.selectCajas;
@@ -609,17 +704,24 @@ export class TallerComponent implements OnInit {
   fn_changeRefaccionTipo(tipo: string) {
     this.refaccionTipo = tipo;
     this.refaccionForm.tipo = tipo;
+    this.refaccionTabIndex = tipo === 'producto' ? 0 : 1;
     this.fn_resetRefaccionForm();
 
     // Focus on product combo when selecting "Producto"
     if (tipo === 'producto') {
       this.fn_focusProductCombo();
     }
-    // Toggle switch to "Por Definir" - focus on description
-    else if (tipo === 'porDefinir') {
-      setTimeout(() => {
-        this.refaccionPorDefinirDescInput?.nativeElement?.focus();
-      }, 50);
+  }
+
+  /**
+   * Cambio de tab (mat-tab-group) → refleja el cambio en refaccionTipo
+   * usando el método legacy para mantener la lógica centralizada
+   * (reset del form + focus en input).
+   */
+  fn_onRefaccionTabChange(index: number): void {
+    const tipo = index === 0 ? 'producto' : 'porDefinir';
+    if (tipo !== this.refaccionTipo) {
+      this.fn_changeRefaccionTipo(tipo);
     }
   }
 
@@ -639,6 +741,11 @@ export class TallerComponent implements OnInit {
     return true;
   }
 
+  /**
+   * Limpia los campos del form de refacción. NO toca el flag
+   * bShowRefaccionForm: el form sigue abierto/colapsado como esté.
+   * Usar fn_closeRefaccionForm() cuando se quiera limpiar Y colapsar.
+   */
   fn_resetRefaccionForm() {
     this.refaccionForm = {
       tipo: this.refaccionTipo,
@@ -649,6 +756,15 @@ export class TallerComponent implements OnInit {
       precio: '',
       costo: ''
     };
+  }
+
+  /**
+   * Cierra el form de refacción: limpia los campos + colapsa el body.
+   * Llamar después de un save exitoso o al cancelar explícitamente.
+   */
+  fn_closeRefaccionForm() {
+    this.fn_resetRefaccionForm();
+    this.bShowRefaccionForm = false;
   }
 
   fn_focusNextRefaccion(campo: string) {
@@ -730,7 +846,7 @@ export class TallerComponent implements OnInit {
           this.servicesGServ.showAlertIA(resp, false);
           if (resp.status === 0) {
             this.getTallerRefaccciones( this.tallerForm.idTaller );
-            this.fn_resetRefaccionForm();
+            this.fn_closeRefaccionForm();
 
             // Focus según el tipo de refacción
             if (this.refaccionTipo === 'producto') {
@@ -881,6 +997,8 @@ export class TallerComponent implements OnInit {
             // Recargar la lista de mano de obra
             this.getTallerManoObra(this.tallerForm.idTaller);
             this.fn_resetManoObraForm();
+            // Colapsar el form después de guardar
+            this.bShowManoObraForm = false;
           }
           this.bShowSpinner = false;
         },
@@ -951,6 +1069,46 @@ export class TallerComponent implements OnInit {
       tecnicoDesc: '',
       precio: ''
     };
+    this.bShowManoObraForm = false;
+  }
+
+  fn_toggleManoObraForm(): void {
+    // Si está cerrando (estaba abierto), también resetea el form
+    if (this.bShowManoObraForm) {
+      this.fn_resetManoObraForm();
+    } else {
+      this.bShowManoObraForm = true;
+      setTimeout(() => {
+        if (this.cbxTecnicosCBX && this.cbxTecnicosCBX.nativeElement) {
+          this.cbxTecnicosCBX.nativeElement.focus();
+        }
+      }, 50);
+    }
+  }
+
+  fn_toggleRefaccionForm(): void {
+    // Si está cerrando (estaba abierto), también resetea el form
+    if (this.bShowRefaccionForm) {
+      this.fn_closeRefaccionForm();
+    } else {
+      this.bShowRefaccionForm = true;
+      // Dar foco al primer input del form:
+      // - producto → cbxProductss
+      // - porDefinir → refaccionPorDefinirDescInput
+      // 80ms para dar tiempo a que Angular renderice el ng-template del body.
+      // Se reintenta a 250ms por si el primer intento es aún antes del mount.
+      const tryFocus = (attempt: number) => {
+        const target: ElementRef | undefined =
+          this.refaccionTipo === 'porDefinir' ? this.refaccionPorDefinirDescInput : this.cbxProductss;
+        const el: HTMLElement | undefined = target?.nativeElement;
+        if (el && document.body.contains(el)) {
+          el.focus();
+        } else if (attempt < 2) {
+          setTimeout(() => tryFocus(attempt + 1), 150);
+        }
+      };
+      setTimeout(() => tryFocus(0), 80);
+    }
   }
 
   fn_saveManoObraPrecio() {
@@ -1008,6 +1166,8 @@ export class TallerComponent implements OnInit {
       tecnicoDesc: item.tecnicoDesc,
       precio: parseFloat(item.precio)
     };
+    // Abrir el form para que el usuario vea los datos cargados y pueda modificar
+    this.bShowManoObraForm = true;
   }
 
   //#endregion MÉTODOS DE MANO DE OBRA
@@ -1059,7 +1219,7 @@ export class TallerComponent implements OnInit {
           if (resp.status === 0) {
             // Recargar la lista de servicios externos
             this.getTallerServiciosExternos(this.tallerForm.idTaller);
-            this.fn_resetServicioExternoForm();
+            this.fn_closeServicioExternoForm();
             // Devolver el foco al combobox de servicios externos después de agregar
             this.nextInputFocus(this.cbxServiciosExternosCBX, 100);
           }
@@ -1125,6 +1285,29 @@ export class TallerComponent implements OnInit {
     };
   }
 
+  fn_closeServicioExternoForm() {
+    this.fn_resetServicioExternoForm();
+    this.bShowServicioExternoForm = false;
+  }
+
+  fn_toggleServicioExternoForm(): void {
+    if (this.bShowServicioExternoForm) {
+      this.fn_closeServicioExternoForm();
+    } else {
+      this.bShowServicioExternoForm = true;
+      // Dar foco al input del combo de servicios externos.
+      const tryFocus = (attempt: number) => {
+        const el: HTMLElement | undefined = this.cbxServiciosExternosCBX?.nativeElement;
+        if (el && document.body.contains(el)) {
+          el.focus();
+        } else if (attempt < 2) {
+          setTimeout(() => tryFocus(attempt + 1), 150);
+        }
+      };
+      setTimeout(() => tryFocus(0), 80);
+    }
+  }
+
   abrirModalServiciosExternos(): void {
     const dialogRef = this.dialog.open(ServiciosExternosModalComponent, {
       width: '900px',
@@ -1160,6 +1343,29 @@ export class TallerComponent implements OnInit {
       valorMetal: '',
       costPricePerGram: 0
     };
+  }
+
+  fn_closeMetalAgranelForm() {
+    this.fn_resetMetalAgranelForm();
+    this.bShowMetalAgranelForm = false;
+  }
+
+  fn_toggleMetalAgranelForm(): void {
+    if (this.bShowMetalAgranelForm) {
+      this.fn_closeMetalAgranelForm();
+    } else {
+      this.bShowMetalAgranelForm = true;
+      // Dar foco al input de gramos.
+      const tryFocus = (attempt: number) => {
+        const el: HTMLElement | undefined = this.metalAgranelGramosInput?.nativeElement;
+        if (el && document.body.contains(el)) {
+          el.focus();
+        } else if (attempt < 2) {
+          setTimeout(() => tryFocus(attempt + 1), 150);
+        }
+      };
+      setTimeout(() => tryFocus(0), 80);
+    }
   }
 
   fn_validateMetalAgranel(): boolean {
@@ -1216,8 +1422,7 @@ export class TallerComponent implements OnInit {
           if (resp.status === 0) {
             // Recargar la lista de metales
             this.getTallerMetalesAgranel(this.tallerForm.idTaller);
-            this.fn_resetMetalAgranelForm();
-            this.nextInputFocus(this.metalAgranelGramosInput, 100);
+            this.fn_closeMetalAgranelForm();
           }
           this.bShowSpinner = false;
         },
@@ -1308,6 +1513,8 @@ export class TallerComponent implements OnInit {
       valorMetal: parseFloat(item.valorMetal),
       costPricePerGram: 0
     };
+    // Abrir el form para que el usuario vea los datos cargados y pueda modificar
+    this.bShowMetalAgranelForm = true;
     // Cargar costPrice para poder validar el mínimo al editar
     this.fn_loadMetalCostPrice(this.metalAgranelForm.kilates);
   }
@@ -1344,6 +1551,29 @@ export class TallerComponent implements OnInit {
       kilates: 0,
       valorMetal: ''
     };
+  }
+
+  fn_closeMetalClienteForm() {
+    this.fn_resetMetalClienteForm();
+    this.bShowMetalClienteForm = false;
+  }
+
+  fn_toggleMetalClienteForm(): void {
+    if (this.bShowMetalClienteForm) {
+      this.fn_closeMetalClienteForm();
+    } else {
+      this.bShowMetalClienteForm = true;
+      // Dar foco al input de gramos.
+      const tryFocus = (attempt: number) => {
+        const el: HTMLElement | undefined = this.metalClienteGramosInput?.nativeElement;
+        if (el && document.body.contains(el)) {
+          el.focus();
+        } else if (attempt < 2) {
+          setTimeout(() => tryFocus(attempt + 1), 150);
+        }
+      };
+      setTimeout(() => tryFocus(0), 80);
+    }
   }
 
   fn_calculateMetalClienteValue() {
@@ -1407,8 +1637,7 @@ export class TallerComponent implements OnInit {
           if (resp.status === 0) {
             // Recargar la lista de metales
             this.getTallerMetalesCliente(this.tallerForm.idTaller);
-            this.fn_resetMetalClienteForm();
-            this.nextInputFocus(this.metalClienteGramosInput, 100);
+            this.fn_closeMetalClienteForm();
           }
           this.bShowSpinner = false;
         },
@@ -1470,6 +1699,8 @@ export class TallerComponent implements OnInit {
       kilates: parseInt(item.kilates) || 8,
       valorMetal: parseFloat(item.valorMetal)
     };
+    // Abrir el form para que el usuario vea los datos cargados y pueda modificar
+    this.bShowMetalClienteForm = true;
   }
 
   openMetalClienteImagesDialog(item: any) {
@@ -1976,6 +2207,8 @@ export class TallerComponent implements OnInit {
       precio: parseFloat(item.precio),
       costo: parseFloat(item.costo)
     };
+    // Abrir el form para que el usuario vea los datos cargados y pueda modificar
+    this.bShowRefaccionForm = true;
   }
 
   editServicioExternoGrid( item: any ){
@@ -1988,6 +2221,8 @@ export class TallerComponent implements OnInit {
       precio: parseFloat(item.precio),
       costo: parseFloat(item.costo)
     };
+    // Abrir el form para que el usuario vea los datos cargados y pueda modificar
+    this.bShowServicioExternoForm = true;
   }
 
   fn_closeDialog(data?: any): void {
@@ -2098,8 +2333,8 @@ export class TallerComponent implements OnInit {
       this.tallerForm.idCustomer =  ODataCbx.idCustomer;
       this.tallerForm.customerDesc = ODataCbx.name;
 
-      // Pasar el foco a la descripción después de seleccionar cliente
-      this.nextInputFocus(this.descripcionInput, 100);
+      // Cadena de foco: cliente → fecha prometida (abre chip + abre datepicker)
+      this.fn_focusHeaderField('fechaPrometida');
 
     }, 1);
 
@@ -2146,8 +2381,8 @@ export class TallerComponent implements OnInit {
       this.tallerForm.sellerDesc = ODataCbx.name;
       this.tallerForm.sellerResp = '';
 
-      // Pasar el foco al cliente después de seleccionar vendedor
-      this.nextInputFocus(this.cbxCustomerCBX, 100);
+      // Cadena de foco: vendedor → cliente (abre chip + enfoca input del autocomplete)
+      this.fn_focusHeaderField('customer');
 
     }, 1);
 
@@ -2159,10 +2394,11 @@ export class TallerComponent implements OnInit {
     this.tallerForm.sellerResp = '';
   }
 
-  nextInputFocus(inputRef: ElementRef, time: number) {
+  nextInputFocus(inputRef: ElementRef | HTMLElement | any, time: number) {
     setTimeout(() => {
-      if (inputRef && inputRef.nativeElement) {
-        inputRef.nativeElement.focus();
+      const el: HTMLElement | undefined = inputRef?.nativeElement ?? inputRef;
+      if (el && typeof (el as any).focus === 'function') {
+        (el as HTMLElement).focus();
       }
     }, time);
   }

@@ -298,23 +298,41 @@ button:hover {
 .header-refacciones {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 8px 14px;
+    padding: 4px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    min-height: 40px;
+    min-height: 30px;
 }
 
 .header-refacciones h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
     gap: 10px;
+}
+
+/* Override: el h3 de Mano de Obra no debe ocupar todo el ancho ni separar
+   sus elementos con space-between — el contenido (botón + título) debe ir
+   pegado al lado izquierdo del header. */
+.header-refacciones h3.header-refacciones-h3 {
+    width: auto;
+    justify-content: flex-start;
+    gap: 4px;
+}
+
+/* Contenedor derecho: agrupa Precio Base + Total para que queden
+   juntos a la derecha del header, en vez de distribuidos por space-between. */
+.header-refacciones-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
 }
 
 .total-refacciones {
@@ -400,6 +418,24 @@ button:hover {
     flex: 0 0 110px;
 }
 
+/* Etiqueta sutil arriba de cada input slim: gris claro, font pequeña,
+   uppercase, margin-bottom 2px para no sacrificar espacio vertical. */
+.inline-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9e9e9e;
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+/* Cuando el form es un flex-row (mano de obra), el label va inline con el input */
+.form-mano-obra-inline .inline-label {
+    margin-bottom: 2px;
+}
+
 /* Input nativo estilizado — reemplaza mat-form-field para ahorrar espacio */
 .inline-input {
     width: 100%;
@@ -477,23 +513,411 @@ button:hover {
     background: rgba(98, 0, 234, 0.08);
 }
 
-.form-mano-obra-inline > .btn-agregar-inline {
-    flex: 0 0 auto;
-    height: 36px;
-    padding: 0 14px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white !important;
-    border: none;
-    border-radius: 4px;
-    font-weight: 600;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    cursor: pointer;
-    display: inline-flex;
+/* Radio buttons compactos para la fila Producto / Por Definir de refacciones.
+   margin-top negativo para que los radios queden muy pegados (incluso
+   solapando visualmente) al header morado de arriba. */
+.refaccion-tabs-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: -20px;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
+}
+
+.radio-group-inline {
+    display: flex;
+    gap: 16px;
+}
+
+.radio-option-inline {
+    font-size: 13px;
+}
+
+/* Iconos dentro de los radio buttons: más chicos para ahorrar espacio */
+.radio-option-inline ::ng-deep .mat-internal-form-field,
+.radio-option-inline ::ng-deep .mdc-form-field {
     align-items: center;
-    justify-content: center;
-    transition: box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.radio-option-inline mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+/* Grid compacto de Refacciones: 5 columnas (descripción, cant, precio, total, acciones).
+   Mismo patrón visual que .manoobra-grid. */
+.refaccion-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+}
+
+.refaccion-header {
+    display: grid;
+    grid-template-columns: 1fr 60px 90px 100px 90px;
+    gap: 12px;
+    padding: 4px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9e9e9e;
+}
+
+.refaccion-row {
+    display: grid;
+    grid-template-columns: 1fr 60px 90px 100px 90px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.refaccion-row:hover {
+    background: #f7f4ff;
+    border-color: #d6cce8;
+}
+
+.refaccion-row .ref-descripcion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.refaccion-row .ref-descripcion .icon-tipo {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #764ba2;
+}
+
+.refaccion-row .ref-descripcion span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.refaccion-row .ref-acciones {
+    display: flex;
+    gap: 2px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* Iconos de acción del grid de refacciones: mismo patrón que .mo-action-icon
+   de Mano de Obra. mat-icon directo (no mat-icon-button) para que el click
+   handler funcione sin botón Material de 40px. */
+.ref-action-icon {
+    cursor: pointer;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    box-sizing: content-box;
+}
+
+.ref-action-icon.edit {
+    color: #388e3c;
+}
+
+.ref-action-icon.edit:hover {
+    background: rgba(56, 142, 60, 0.12);
+    color: #2e7d32;
+}
+
+.ref-action-icon.delete {
+    color: #d32f2f;
+}
+
+.ref-action-icon.delete:hover {
+    background: rgba(211, 47, 47, 0.12);
+    color: #c62828;
+}
+
+.ref-action-icon.sync {
+    color: #1976d2;
+}
+
+.ref-action-icon.sync:hover {
+    background: rgba(25, 118, 210, 0.12);
+    color: #1565c0;
+}
+
+.ref-action-icon:active {
+    transform: scale(0.9);
+}
+
+/* Grid compacto de Servicios Externos: 5 columnas (descripción, cant, precio, total, acciones).
+   Mismo patrón que .refaccion-grid y .manoobra-grid. */
+.servicio-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+}
+
+.servicio-header {
+    display: grid;
+    grid-template-columns: 1fr 60px 90px 100px 90px;
+    gap: 12px;
+    padding: 4px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9e9e9e;
+}
+
+.servicio-row {
+    display: grid;
+    grid-template-columns: 1fr 60px 90px 100px 90px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.servicio-row:hover {
+    background: #f7f4ff;
+    border-color: #d6cce8;
+}
+
+.servicio-row .serv-descripcion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.servicio-row .serv-descripcion .icon-tipo {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #1976d2;
+}
+
+.servicio-row .serv-descripcion span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.servicio-row .serv-acciones {
+    display: flex;
+    gap: 2px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* Iconos de acción del grid de servicios externos: mismo patrón que .mo-action-icon. */
+.se-action-icon {
+    cursor: pointer;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    box-sizing: content-box;
+}
+
+.se-action-icon.edit {
+    color: #388e3c;
+}
+
+.se-action-icon.edit:hover {
+    background: rgba(56, 142, 60, 0.12);
+    color: #2e7d32;
+}
+
+.se-action-icon.delete {
+    color: #d32f2f;
+}
+
+.se-action-icon.delete:hover {
+    background: rgba(211, 47, 47, 0.12);
+    color: #c62828;
+}
+
+/* Grid compacto de Metal Agranel / Activo del Cliente: 5 columnas
+   (tipo | gramos | kilates | valor | acciones).
+   Mismo patrón que .servicio-grid y .refaccion-grid. */
+.metal-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metal-header {
+    display: grid;
+    grid-template-columns: 1fr 70px 70px 100px 90px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.metal-row {
+    display: grid;
+    grid-template-columns: 1fr 70px 70px 100px 90px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    transition: background 0.2s;
+    align-items: center;
+}
+
+.metal-row:hover {
+    background: #f3e9ff;
+}
+
+.metal-tipo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.metal-tipo mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.metal-gramos, .metal-kilates, .metal-valor {
+    color: #444;
+}
+
+.metal-acciones {
+    display: flex;
+    gap: 2px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* Iconos de acción del grid de metales: mismo patrón que .mo-action-icon / .ref-action-icon */
+.metal-action-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.metal-action-icon:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.metal-action-icon.edit {
+    color: #2e7d32;
+}
+
+.metal-action-icon.delete {
+    color: #c62828;
+}
+
+.metal-action-icon.image {
+    color: #1565c0;
+}
+
+.metal-action-icon:active {
+    transform: scale(0.9);
+}
+
+/* Mat-form-field slim para Kilataje: outline minimalista, mismo alto que
+   .inline-input (36px), sin padding interno extra. */
+.field-kilates-slim.mat-mdc-form-field {
+    height: 36px;
+}
+
+.field-kilates-slim .mat-mdc-text-field-wrapper {
+    height: 36px;
+    padding: 0 8px;
+    background: #fff;
+}
+
+.field-kilates-slim .mat-mdc-form-field-infix {
+    min-height: 36px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    width: auto;
+}
+
+.field-kilates-slim .mat-mdc-form-field-flex {
+    height: 36px;
+}
+
+.field-kilates-slim .mdc-notched-outline__leading,
+.field-kilates-slim .mdc-notched-outline__trailing {
+    border-color: #d0d0d0;
+}
+
+.field-kilates-slim:hover .mdc-notched-outline__leading,
+.field-kilates-slim:hover .mdc-notched-outline__trailing {
+    border-color: #7e57c2;
+}
+
+.field-kilates-slim .mat-mdc-select-arrow-wrapper {
+    height: 36px;
+    display: flex;
+    align-items: center;
+}
+
+/* Variante "compact" del header de refacciones: misma estructura que el
+   header estándar (full-width), pero más bajo para ahorrar espacio vertical. */
+.header-refacciones-compact {
+    border-radius: 6px 6px 0 0;
+    padding: 2px 14px;
+    min-height: 22px;
+    font-size: 13px;
+    margin-bottom: 0;
+}
+
+.header-refacciones-compact h3 {
+    font-size: 13px !important;
+}
+
+.header-refacciones-compact .header-refacciones-h3 {
+    font-size: 13px;
+}
+
+/* En su variante compact, el header se mantiene pegado al body. */
+.card-refacciones {
+    overflow: visible;
+}
+
+/* Botón AGREGAR compacto (solo ícono +) */
+.btn-agregar {
+    min-width: 0 !important;
+    padding: 0 12px !important;
+    height: 36px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
 }
 
 .form-mano-obra-inline > .btn-agregar-inline:hover {
@@ -632,7 +1056,14 @@ button:hover {
 }
 
 .body-refacciones {
-    padding: 20px;
+    padding: 10px 14px;
+    margin-top: -15px;
+}
+
+/* Override para Metal Agranel y Activo del Cliente: el header ya tiene su
+   separación propia, no se necesita el margin-top negativo. */
+.body-refacciones.body-refacciones-metal {
+    margin-top: 0;
 }
 
 .radio-group {
