@@ -78,7 +78,7 @@
 }
 .tll-field          { flex: 1; min-width: 160px; }
 .tll-field--folio   { min-width: 180px; flex: 1.2; }
-.tll-field--date    { min-width: 220px; flex: 1.4; }
+.tll-field--date    { min-width: 240px; flex: 1.6; }
 .tll-field--customer{ min-width: 220px; flex: 2; }
 .tll-field--status  { min-width: 180px; }
 .tll-field--tecnico { min-width: 240px; flex: 2; }
@@ -413,4 +413,243 @@
 .tll-pagination {
   padding: 10px 20px;
   border-top: 1px solid #f2f2f2;
+}
+
+/* ══════════════════════════════════════════════════
+   TLL — Inputs SLIM nativos (36px) — patrón del taller
+   Junio 2026 — compactar filtros al máximo sin mat-form-field
+   (excepto date range, que requiere mat-form-field sí o sí).
+   Reemplaza mat-form-field por <input>/<select> nativos
+   estilizados con CSS, con <mat-autocomplete> como hermano.
+══════════════════════════════════════════════════ */
+
+/* Label arriba del input (reemplaza el mat-label flotante) */
+.tll-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  margin-bottom: 3px;
+  line-height: 1.2;
+  padding-left: 2px;
+}
+
+/* Wrapper del input + iconos (mismo patrón que .inline-wrap del taller) */
+.tll-field .inline-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.tll-field .inline-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+
+/* Input nativo slim (espejo de .inline-input del taller) */
+.tll-slim-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  box-sizing: border-box;
+}
+.tll-slim-input::placeholder {
+  color: #9e9e9e;
+  font-weight: 400;
+}
+
+/* Cuando tiene icono prefijo, dejar espacio a la izquierda */
+.tll-slim-input--with-prefix {
+  padding-left: 6px;
+}
+
+/* Icono prefijo dentro del wrap */
+.tll-slim-prefix-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  color: #9e9e9e !important;
+  margin: 0 6px 0 10px;
+  flex-shrink: 0;
+}
+
+/* Icono close (clear) — espejo de .clear-icon del taller */
+.tll-slim-clear {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  color: #9e9e9e !important;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.tll-slim-clear:hover {
+  color: #283593;
+  background: rgba(40, 53, 147, 0.08);
+}
+
+/* Select nativo (Estatus) — sin arrow de Material, con el nativo del browser */
+.tll-slim-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23283593' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  padding-right: 28px !important;
+  cursor: pointer;
+}
+
+/* ── Date range con mat-form-field outline (slim 36px) ──
+   El mat-date-range-input NECESITA un mat-form-field padre para que
+   Material maneje correctamente el ancho de los 2 inputs (Inicio/Fin).
+   Por eso volvemos al patrón outline pero ultra-compactado. */
+.tll-field--date.mat-mdc-form-field {
+  height: 40px;
+  --mat-form-field-container-vertical-padding: 6px;
+  --mat-form-field-container-text-size: 13px;
+}
+
+/* Wrapper interno: altura fija 36px (lo que ve el usuario) */
+.tll-field--date .mat-mdc-text-field-wrapper {
+  height: 36px;
+  padding: 0 12px;
+  background: #fff;
+  border-radius: 6px !important;
+}
+
+/* Infix (donde están los inputs) — sin padding extra, gap interno correcto */
+.tll-field--date .mat-mdc-form-field-infix {
+  min-height: 32px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* El mat-date-range-input toma todo el ancho disponible */
+.tll-field--date .mat-mdc-form-field-flex {
+  width: 100%;
+  height: 36px;
+}
+
+/* mat-date-range-input: flexbox correcto */
+.tll-field--date .mat-date-range-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Inputs Inicio y Fin: cada uno toma la mitad del espacio */
+.tll-field--date input.mat-start-date,
+.tll-field--date input.mat-end-date,
+.tll-field--date input[matStartDate],
+.tll-field--date input[matEndDate] {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  height: 24px;
+  border: none !important;
+  background: transparent !important;
+  font-family: inherit;
+  font-size: 13px !important;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  padding: 0 2px;
+}
+.tll-field--date input::placeholder {
+  color: #9e9e9e;
+  font-weight: 400;
+}
+
+/* Separador " – " entre Inicio y Fin */
+.tll-field--date .mat-date-range-input-separator {
+  color: #9e9e9e;
+  font-size: 14px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Label flotante: más chico */
+.tll-field--date .mat-mdc-form-field-label,
+.tll-field--date .mdc-floating-label {
+  font-size: 12px !important;
+}
+
+/* Outline border: indigo cuando está focused */
+.tll-field--date.mat-focused .mdc-notched-outline__leading,
+.tll-field--date.mat-focused .mdc-notched-outline__trailing,
+.tll-field--date.mat-focused .mdc-notched-outline__notch {
+  border-color: #283593 !important;
+}
+
+/* Sin subscript wrapper */
+.tll-field--date .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+/* El notched outline (borde animado del label) no debe ocupar altura */
+.tll-field--date .mdc-notched-outline {
+  display: none;
+}
+.tll-field--date .mdc-notched-outline__leading,
+.tll-field--date .mdc-notched-outline__trailing,
+.tll-field--date .mdc-notched-outline__notch {
+  border: none !important;
+}
+
+/* Border del wrapper outline (el que sí se ve) — gris normal, indigo en focus */
+.tll-field--date .mat-mdc-text-field-wrapper {
+  border: 1px solid #d0d0d0;
+}
+.tll-field--date.mat-focused .mat-mdc-text-field-wrapper {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+
+/* Checkbox chips de estatus de pago (mantener compactos) */
+.tll-chip-check.mat-mdc-checkbox {
+  font-size: 13px;
+  color: #555;
+}
+.tll-chip-check .mdc-checkbox {
+  width: 16px;
+  height: 16px;
+}
+.tll-chip-check .mdc-checkbox__background {
+  width: 16px;
+  height: 16px;
+}
+
+/* Las filas de filtros deben alinear label+input a la misma altura */
+.tll-filters-row {
+  align-items: flex-end;
+}
+.tll-filters-row--secondary {
+  align-items: flex-end;
 }

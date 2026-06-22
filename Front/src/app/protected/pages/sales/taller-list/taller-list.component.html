@@ -16,85 +16,91 @@
 
     <div class="tll-filters-row">
 
-      <mat-form-field class="tll-field tll-field--folio" appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Folio</mat-label>
-        <mat-icon matPrefix class="tll-field-icon">tag</mat-icon>
-        <input #barCode
-        matInput
-        placeholder="Ingrese un Folio y presione ENTER"
-        [(ngModel)]="parametersForm.idSale"
-        (keyup.enter)="ev_fn_search_keyup_enter($event)">
-      </mat-form-field>
+      <div class="tll-field tll-field--folio">
+        <label class="tll-label">Folio</label>
+        <div class="inline-wrap">
+          <input #barCode
+          type="text"
+          class="tll-slim-input"
+          placeholder="Ingrese un Folio y presione ENTER"
+          [(ngModel)]="parametersForm.idSale"
+          (keyup.enter)="ev_fn_search_keyup_enter($event)">
+        </div>
+      </div>
 
       <mat-form-field class="tll-field tll-field--date" appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Fecha de creación</mat-label>
-        <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
-          <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Inicio">
-          <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="Fin">
-        </mat-date-range-input>
-        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-date-range-picker #picker></mat-date-range-picker>
-      </mat-form-field>
+              <mat-label>Fecha de creación</mat-label>
+              <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+                <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Inicio">
+                <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="Fin">
+              </mat-date-range-input>
+              <mat-date-range-picker #picker></mat-date-range-picker>
+            </mat-form-field>
 
-      <mat-form-field class="tll-field tll-field--customer" appearance="outline" subscriptSizing="dynamic"
-        (click)="cbxCustomers_Search()">
-        <mat-label>Cliente</mat-label>
-        <mat-icon matPrefix class="tll-field-icon">person</mat-icon>
-        <input #cbxCustomerCBX
-          type="text"
-          id="cbxCustomer"
-          placeholder="Buscar cliente..."
-          matInput
-          [(ngModel)]="parametersForm.customerDesc"
-          [matAutocomplete]="cbxCustomer"
-          (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
-          (click)="cbxCustomers_Clear()">
-        <button *ngIf="parametersForm.customerDesc" matSuffix mat-icon-button (click)="cbxCustomers_Clear()">
-          <mat-icon>close</mat-icon>
-        </button>
+      <div class="tll-field tll-field--customer">
+        <label class="tll-label">Cliente</label>
+        <div class="inline-wrap">
+          <mat-icon class="tll-slim-prefix-icon">person</mat-icon>
+          <input #cbxCustomerCBX
+            type="text"
+            id="cbxCustomer"
+            class="tll-slim-input tll-slim-input--with-prefix"
+            placeholder="Buscar cliente..."
+            [(ngModel)]="parametersForm.customerDesc"
+            [matAutocomplete]="cbxCustomer"
+            (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
+            (click)="cbxCustomers_Clear()">
+          <mat-icon *ngIf="parametersForm.customerDesc"
+            class="tll-slim-clear"
+            (click)="$event.stopPropagation(); cbxCustomers_Clear()">close</mat-icon>
+        </div>
         <mat-autocomplete autoActiveFirstOption
           #cbxCustomer="matAutocomplete"
           (optionSelected)="cbxCustomers_SelectedOption( $event )">
           <mat-option *ngFor="let item of cbxCustomers" [value]="item">{{ item.name }}</mat-option>
           <mat-option value="" *ngIf="parametersForm.customerResp.length > 0">{{ parametersForm.customerResp }}</mat-option>
         </mat-autocomplete>
-      </mat-form-field>
+      </div>
 
-      <mat-form-field class="tll-field tll-field--status" appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Estatus</mat-label>
-        <mat-icon matPrefix class="tll-field-icon">flag</mat-icon>
-        <mat-select [(ngModel)]="parametersForm.idTallerStatus" placeholder="Todos">
-          <mat-option [value]="0">Todos los estatus</mat-option>
-          <mat-option *ngFor="let s of oTallerStatus" [value]="s.idTallerStatus">{{ s.nombre }}</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="tll-field tll-field--status">
+        <label class="tll-label">Estatus</label>
+        <div class="inline-wrap">
+          <mat-icon class="tll-slim-prefix-icon">flag</mat-icon>
+          <select class="tll-slim-input tll-slim-input--with-prefix tll-slim-select"
+            [(ngModel)]="parametersForm.idTallerStatus">
+            <option [value]="0">Todos los estatus</option>
+            <option *ngFor="let s of oTallerStatus" [value]="s.idTallerStatus">{{ s.nombre }}</option>
+          </select>
+        </div>
+      </div>
 
     </div>
 
     <div class="tll-filters-row tll-filters-row--secondary">
 
-      <mat-form-field class="tll-field tll-field--tecnico" appearance="outline" subscriptSizing="dynamic"
-        (click)="cbxTecnicos_Search()">
-        <mat-label>Técnico</mat-label>
-        <mat-icon matPrefix class="tll-field-icon">engineering</mat-icon>
-        <input #cbxTecnicosCBX
-          type="text"
-          placeholder="Selecciona un técnico..."
-          matInput
-          [(ngModel)]="parametersForm.tecnicoDesc"
-          [matAutocomplete]="cbxTecnico"
-          (keyup)="CBXskeyup( 2, cbxTecnicosCBX.value )"
-          (click)="cbxTecnicos_Clear()">
-        <button *ngIf="parametersForm.tecnicoDesc" matSuffix mat-icon-button (click)="cbxTecnicos_Clear()">
-          <mat-icon>close</mat-icon>
-        </button>
+      <div class="tll-field tll-field--tecnico">
+        <label class="tll-label">Técnico</label>
+        <div class="inline-wrap">
+          <mat-icon class="tll-slim-prefix-icon">engineering</mat-icon>
+          <input #cbxTecnicosCBX
+            type="text"
+            class="tll-slim-input tll-slim-input--with-prefix"
+            placeholder="Selecciona un técnico..."
+            [(ngModel)]="parametersForm.tecnicoDesc"
+            [matAutocomplete]="cbxTecnico"
+            (keyup)="CBXskeyup( 2, cbxTecnicosCBX.value )"
+            (click)="cbxTecnicos_Clear()">
+          <mat-icon *ngIf="parametersForm.tecnicoDesc"
+            class="tll-slim-clear"
+            (click)="$event.stopPropagation(); cbxTecnicos_Clear()">close</mat-icon>
+        </div>
         <mat-autocomplete autoActiveFirstOption
           #cbxTecnico="matAutocomplete"
           (optionSelected)="cbxTecnicos_SelectedOption( $event )">
           <mat-option *ngFor="let item of cbxTecnicos" [value]="item">{{ item.nombre }}</mat-option>
           <mat-option value="" *ngIf="cbxTecnicos.length == 0 && parametersForm.tecnicoDesc">No se encontró nada...</mat-option>
         </mat-autocomplete>
-      </mat-form-field>
+      </div>
 
       <div class="tll-payment-chips">
         <span class="tll-payment-label">Estatus de pago:</span>
