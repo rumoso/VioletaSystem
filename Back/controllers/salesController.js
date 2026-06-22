@@ -3959,16 +3959,6 @@ const addManoObraTaller = async(req, res) => {
                     transaction: transaction
                 });
 
-                // Validar que se actualizó correctamente
-                if (!resultUpdate || resultUpdate[1] === 0) {
-                    await transaction.rollback();
-                    res.json({
-                        status: 1,
-                        message: "No se pudo actualizar la mano de obra"
-                    });
-                    return;
-                }
-
                 await transaction.commit();
                 await _fn_recalcularTotalSaleTaller(idSale, idTaller);
 

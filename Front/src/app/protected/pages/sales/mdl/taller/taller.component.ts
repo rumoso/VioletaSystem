@@ -3,6 +3,7 @@ import { Component, Inject, OnInit, ViewChild, ElementRef } from '@angular/core'
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatSelect } from '@angular/material/select';
+import { MatDatepicker } from '@angular/material/datepicker';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { SalesService } from 'src/app/protected/services/sales.service';
@@ -90,7 +91,41 @@ export class TallerComponent implements OnInit {
   };
 
   oFirmaStatus: any = null;
-  oPagos: any[] = [];
+    oPagos: any[] = [];
+
+    // Control del patrón chip ↔ campo editable en el header
+      // Valores: 'seller' | 'customer' | 'fechaIngreso' | 'fechaPrometida' | 'fechaEntregada' | null
+      editingHeaderField: string | null = null;
+
+      // ViewChilds de los datepickers del header (referenciados desde ng-templates)
+      @ViewChild('pickerIngreso') pickerIngresoRef!: MatDatepicker<any>;
+      @ViewChild('pickerPromesa') pickerPromesaRef!: MatDatepicker<any>;
+      @ViewChild('pickerEntrega') pickerEntregaRef!: MatDatepicker<any>;
+
+      fn_editHeaderField(field: string): void {
+        this.editingHeaderField = field;
+      }
+
+      fn_closeHeaderField(): void {
+        this.editingHeaderField = null;
+      }
+
+      /**
+       * Abre el datepicker del header correspondiente.
+       * Se llama desde el HTML (input click o icono click) porque las template refs
+       * dentro de <ng-template> no son accesibles directamente desde el template.
+       */
+      fn_openHeaderDatepicker(which: 'ingreso' | 'prometida' | 'entrega'): void {
+        setTimeout(() => {
+          const picker =
+            which === 'ingreso' ? this.pickerIngresoRef :
+            which === 'prometida' ? this.pickerPromesaRef :
+            this.pickerEntregaRef;
+          if (picker) {
+            picker.open();
+          }
+        }, 0);
+      }
 
   // VARIABLES DE REFACCIONES
   refaccionTipo: string = 'producto'; // 'producto' o 'porDefinir'
