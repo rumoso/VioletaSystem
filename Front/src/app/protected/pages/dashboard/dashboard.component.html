@@ -1,44 +1,38 @@
-<div class="row">
-    <div class="col-md-12">
-        <div id="dashboardAutomatico" class="row">
-            <div id="autoDashBoard" class="col-md-12">
+<div class="db-page">
 
-                <div *ngFor="let item of _menuList">
+  <!-- ═══════════════ LAUNCHER ═══════════════ -->
+  <div class="db-launcher">
 
-                    <div class="row top20px">
-                        <div class="col-md-12">
-                            <span class="label label-primary">{{ item.name }}</span>
-                        </div>
-                    </div>
+    <div *ngFor="let item of _menuList" class="db-group">
 
-                    <div *ngFor="let itemSub of item.subMenus" class="divAutoDashBoard" (click)="changeRoute(itemSub.linkList)">
+      <!-- Etiqueta de sección -->
+      <div class="db-group-label">
+        <span>{{ item.name | uppercase }}</span>
+      </div>
 
-                        <div class="row">
-                            <div class="col-md-3">
-                                <img class="imgDashboard" [ngStyle]="{'max-width.px': itemSub.imgDashSize}" src="{{ itemSub.imgDash }}"/>
-                            </div>
-                            <div class="col-md-9">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <span class="label label-success">{{ itemSub.name }}</span>
-                                    </div>
-    
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <label class="LabelCountInvoicingDashboard">{{ itemSub.description }}</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+      <!-- Tiles -->
+      <div class="db-tiles">
+        <div *ngFor="let itemSub of item.subMenus"
+             class="db-tile"
+             (click)="changeRoute(itemSub.linkList)">
 
+          <div class="db-tile-icon">
+            <img class="db-tile-img"
+                 [ngStyle]="{'max-width.px': itemSub.imgDashSize}"
+                 [src]="itemSub.imgDash"
+                 alt=""/>
+          </div>
 
+          <div class="db-tile-body">
+            <span class="db-tile-name">{{ itemSub.name }}</span>
+            <span class="db-tile-desc" *ngIf="itemSub.description">{{ itemSub.description }}</span>
+          </div>
 
-                    </div>
-
-                </div>
-
-            </div>
         </div>
+      </div>
+
     </div>
+
+  </div>
+
 </div>

@@ -1,48 +1,161 @@
-#autoDashBoard {
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    position: relative;
+/* ═══════════════════════════════════════════════
+   DASHBOARD PAGE — APP LAUNCHER
+   Paleta: Indigo #1a237e / #283593 / #3949ab
+   ═══════════════════════════════════════════════ */
+
+.db-page {
+  padding: 20px 20px 80px;
+  background: #f0f2f7;
+  min-height: 100vh;
 }
 
-
-.divAutoDashBoard {
-    display: inline-block;
-    margin-top: 20px;
-    width: 350px;
-    height:120px;
-    background-color: white;
-    border-radius: 5px;
-    padding: 30px;
-    margin-left: 1%;
-    box-shadow: 5px 5px 10px grey;
-    transition-property: all;
-    transition-duration: 0.2s;
-    transition-timing-function: linear;
+/* ===== LAUNCHER ===== */
+.db-launcher {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
-    .divAutoDashBoard:hover {
-        transform: scale(1.02);
-        box-shadow: 5px 5px 10px grey;
-    }
-
-.LabelCountInvoicingDashboard {
-    /*margin-left: 70px;
-    margin-top: 10px;
-    font-size: xx-large;
-    float: right;*/
-    font-size: 15px;
-    float: right;
+/* ===== ETIQUETA DE SECCIÓN ===== */
+.db-group-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.btnDashBoard {
-    border-radius: 50px;
-    transition-property: all;
-    transition-duration: 0.2s;
-    transition-timing-function: linear;
+.db-group-label span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  white-space: nowrap;
 }
 
-    .btnDashBoard:hover {
-        transform: scale(1.02);
-        box-shadow: 5px 5px 5px grey;
-    }
+.db-group-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+/* ===== TILES GRID ===== */
+.db-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+/* ===== TILE ===== */
+.db-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 20px 20px 0;
+  background: #fff;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  user-select: none;
+  border-left: 4px solid #3949ab;
+  overflow: hidden;
+}
+
+.db-tile:hover {
+  background: linear-gradient(135deg, #3949ab, #5c6bc0);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(57, 73, 171, 0.22);
+}
+
+.db-tile:hover .db-tile-img {
+  filter: brightness(0) invert(1);
+}
+
+.db-tile:hover .db-tile-name {
+  color: #fff;
+}
+
+.db-tile:hover .db-tile-desc {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.db-tile:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(57, 73, 171, 0.18);
+}
+
+/* ===== ICONO DEL TILE ===== */
+.db-tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.10), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  flex-shrink: 0;
+  margin-left: 16px;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.db-tile:hover .db-tile-icon {
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: none;
+}
+
+.db-tile-img {
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
+  transition: filter 0.15s;
+}
+
+/* ===== BODY DEL TILE ===== */
+.db-tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.db-tile-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.3;
+  transition: color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.db-tile-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+  transition: color 0.15s;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .db-page {
+    padding: 14px 12px 60px;
+  }
+
+  .db-tiles {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .db-tile {
+    padding: 14px 16px;
+  }
+}
