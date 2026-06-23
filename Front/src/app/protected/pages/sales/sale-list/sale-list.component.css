@@ -1,0 +1,583 @@
+/* ══════════════════════════════════════════════════
+   SLL — Sale List  |  Rediseño moderno (espejo de taller-list)
+   Paleta Indigo #1a237e / #283593 / #3949ab
+══════════════════════════════════════════════════ */
+
+/* ── Página ── */
+.sll-page {
+  padding: 20px 24px 40px;
+  background: #f0f2f7;
+  min-height: 100vh;
+}
+
+/* ══ Título integrado en la tarjeta de filtros ══ */
+.sll-inline-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
+}
+.sll-inline-title-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1a237e, #3949ab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(26,35,126,.22);
+}
+.sll-inline-title-icon mat-icon {
+  font-size: 22px !important;
+  width: 22px;
+  height: 22px;
+  color: #fff;
+}
+.sll-inline-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sll-inline-title-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a237e;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+.sll-inline-title-desc {
+  font-size: 12px;
+  color: #888;
+}
+
+/* ══ TARJETAS ══ */
+.sll-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* ══ FILTROS ══ */
+.sll-filters {
+  padding: 0 0 16px;
+}
+.sll-filters-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 16px 24px 0;
+}
+.sll-filters-row--secondary {
+  padding-top: 6px;
+}
+.sll-field            { flex: 1; min-width: 160px; }
+.sll-field--folio     { min-width: 180px; flex: 1.2; }
+.sll-field--date      { min-width: 240px; flex: 1.6; }
+.sll-field--customer  { min-width: 220px; flex: 2; }
+.sll-field--salestype { min-width: 220px; flex: 1.5; }
+
+/* Chips de estatus de pago */
+.sll-payment-chips {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 8px 0 0;
+}
+.sll-payment-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.sll-chip-check .sll-chip-check-text {
+  font-size: 13px;
+  color: #555;
+}
+
+/* Barra inferior de filtros */
+.sll-filters-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid #f0f0f0;
+  padding: 14px 24px 0;
+}
+.sll-filters-btns--secondary {
+  border-top: none;
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+
+.sll-divider-v {
+  width: 1px;
+  height: 26px;
+  background: #e0e0e0;
+  margin: 0 2px;
+}
+
+.sll-btn-primary {
+  background: #283593 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.sll-btn-primary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+.sll-btn-secondary {
+  border-color: #dadada !important;
+  color: #555 !important;
+  border-radius: 8px !important;
+}
+.sll-btn-secondary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+.sll-btn-warn {
+  border-color: #ef6c00 !important;
+  color: #ef6c00 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.sll-btn-warn mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+.sll-btn-add {
+  background: #fff !important;
+  color: #1a237e !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  padding: 0 14px !important;
+  height: 32px;
+  font-size: 13px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  white-space: nowrap;
+}
+.sll-btn-add mat-icon { font-size: 16px !important; margin-right: 4px; vertical-align: middle; }
+.sll-btn-add[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Count badge */
+.sll-count-badge {
+  background: #e8eaf6;
+  border: 1px solid #c5cae9;
+  color: #283593;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Chips contextuales (Caja / Impresora seleccionadas) */
+.sll-context-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.sll-context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.18s;
+}
+.sll-context-chip:hover { opacity: 0.85; }
+.sll-context-chip-icon {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50%;
+  background: #fff;
+  padding: 1px;
+}
+.sll-context-chip-text {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sll-context-chip-close {
+  font-size: 14px !important;
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+.sll-context-chip--caja {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+}
+.sll-context-chip--print {
+  background: #e3f2fd;
+  color: #0d47a1;
+  border: 1px solid #bbdefb;
+}
+
+/* ══ CONTENIDO / TABLA ══ */
+.sll-content { padding: 0; }
+
+.sll-table-wrapper {
+  overflow-x: auto;
+  padding: 4px 0 0;
+}
+.sll-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sll-th {
+  padding: 13px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #8e97a4;
+  background: #fafbfc;
+  border-bottom: 2px solid #ececec;
+  white-space: nowrap;
+}
+.sll-th--left   { text-align: left; }
+.sll-th--right  { text-align: right; }
+.sll-th--center { text-align: center; }
+
+.sll-tr { transition: background 0.12s; }
+.sll-tr:hover { background: #f5f7ff; }
+
+.sll-td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 14px;
+  color: #333;
+  vertical-align: middle;
+}
+.sll-td--center { text-align: center; }
+.sll-td--right  { text-align: right; }
+.sll-td--left   { text-align: left; }
+.sll-td--amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #37474f;
+  letter-spacing: 0.2px;
+}
+.sll-td--danger { color: #c62828; }
+
+/* Folio */
+.sll-td--folio { min-width: 90px; }
+.sll-folio-wrap { display: flex; flex-direction: column; }
+.sll-folio-id {
+  font-weight: 700;
+  color: #1a237e;
+  font-size: 14px;
+}
+
+/* Tipo de venta chip */
+.sll-type-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #ede7f6;
+  color: #4527a0;
+}
+
+/* Fechas */
+.sll-td--date { min-width: 90px; }
+.sll-date { display: block; font-size: 13px; font-weight: 500; color: #444; }
+.sll-time { display: block; font-size: 11px; color: #a0aab4; }
+
+/* Descripción */
+.sll-td--desc {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #555;
+}
+
+/* Usuario / cliente */
+.sll-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 180px;
+}
+.sll-user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c6bc0, #8e99f3);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sll-user-name {
+  font-size: 13px;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Acciones */
+.sll-td--actions { min-width: 110px; }
+.sll-actions {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+.sll-action-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  cursor: pointer;
+  margin: 0 2px;
+  vertical-align: middle;
+  transition: opacity 0.2s;
+}
+.sll-action-icon:hover { opacity: 0.75; }
+.sll-action-icon--view  { color: #1565c0; }
+.sll-action-icon--paid  { color: #2e7d32; }
+.sll-action-icon--edit  { color: #1565c0; }
+.sll-action-icon--delete{ color: #c62828; }
+
+/* Estado vacío */
+.sll-empty {
+  padding: 64px 20px;
+  text-align: center;
+  color: #c4ccd6;
+}
+.sll-empty mat-icon {
+  font-size: 52px !important;
+  width: 52px;
+  height: 52px;
+  display: block;
+  margin: 0 auto 10px;
+}
+.sll-empty span {
+  display: block;
+  font-size: 15px;
+}
+
+/* Paginación */
+.sll-pagination {
+  padding: 10px 20px;
+  border-top: 1px solid #f2f2f2;
+}
+
+/* ══════════════════════════════════════════════════
+   SLL — Inputs SLIM nativos (36px) — patrón del taller
+   Junio 2026 — compactar filtros al máximo sin mat-form-field
+   (excepto date range, que requiere mat-form-field sí o sí).
+   Reemplaza mat-form-field por <input>/<select> nativos
+   estilizados con CSS, con <mat-autocomplete> como hermano.
+══════════════════════════════════════════════════ */
+
+/* Label arriba del input (reemplaza el mat-label flotante) */
+.sll-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  margin-bottom: 3px;
+  line-height: 1.2;
+  padding-left: 2px;
+}
+
+/* Wrapper del input + iconos (mismo patrón que .inline-wrap del taller) */
+.sll-field .inline-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sll-field .inline-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+
+/* Input nativo slim */
+.sll-slim-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  box-sizing: border-box;
+}
+.sll-slim-input::placeholder {
+  color: #9e9e9e;
+  font-weight: 400;
+}
+
+/* Cuando tiene icono prefijo */
+.sll-slim-input--with-prefix {
+  padding-left: 6px;
+}
+
+/* Icono prefijo dentro del wrap */
+.sll-slim-prefix-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  color: #9e9e9e !important;
+  margin: 0 6px 0 10px;
+  flex-shrink: 0;
+}
+
+/* Icono close (clear) */
+.sll-slim-clear {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  color: #9e9e9e !important;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.sll-slim-clear:hover {
+  color: #283593;
+  background: rgba(40, 53, 147, 0.08);
+}
+
+/* ── Date range con mat-form-field outline (slim 36px) ── */
+.sll-field--date.mat-mdc-form-field {
+  height: 40px;
+  --mat-form-field-container-vertical-padding: 6px;
+  --mat-form-field-container-text-size: 13px;
+}
+
+.sll-field--date .mat-mdc-text-field-wrapper {
+  height: 36px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px !important;
+}
+.sll-field--date.mat-focused .mat-mdc-text-field-wrapper {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+
+.sll-field--date .mat-mdc-form-field-infix {
+  min-height: 32px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sll-field--date .mat-mdc-form-field-flex {
+  width: 100%;
+  height: 36px;
+}
+
+.sll-field--date .mat-date-range-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+.sll-field--date input.mat-start-date,
+.sll-field--date input.mat-end-date,
+.sll-field--date input[matStartDate],
+.sll-field--date input[matEndDate] {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  height: 24px;
+  border: none !important;
+  background: transparent !important;
+  font-family: inherit;
+  font-size: 13px !important;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  padding: 0 2px;
+}
+.sll-field--date input::placeholder {
+  color: #9e9e9e;
+  font-weight: 400;
+}
+
+.sll-field--date .mat-date-range-input-separator {
+  color: #9e9e9e;
+  font-size: 14px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.sll-field--date .mat-mdc-form-field-label,
+.sll-field--date .mdc-floating-label {
+  font-size: 12px !important;
+}
+
+.sll-field--date.mat-focused .mdc-notched-outline__leading,
+.sll-field--date.mat-focused .mdc-notched-outline__trailing,
+.sll-field--date.mat-focused .mdc-notched-outline__notch {
+  border-color: #283593 !important;
+}
+
+.sll-field--date .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.sll-field--date .mdc-notched-outline {
+  display: none;
+}
+.sll-field--date .mdc-notched-outline__leading,
+.sll-field--date .mdc-notched-outline__trailing,
+.sll-field--date .mdc-notched-outline__notch {
+  border: none !important;
+}
+
+/* Checkbox chips de estatus de pago */
+.sll-chip-check.mat-mdc-checkbox {
+  font-size: 13px;
+  color: #555;
+}
+.sll-chip-check .mdc-checkbox {
+  width: 16px;
+  height: 16px;
+}
+.sll-chip-check .mdc-checkbox__background {
+  width: 16px;
+  height: 16px;
+}
