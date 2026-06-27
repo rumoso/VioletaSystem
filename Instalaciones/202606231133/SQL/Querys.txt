@@ -1,0 +1,2 @@
+INSERT INTO sales_type ( createDate, name, sig, description, active )
+SELECT NOW(), 'TallerRápidas', 'TALLR', 'Taller Rápidas', 1

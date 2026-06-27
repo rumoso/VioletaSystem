@@ -1621,7 +1621,7 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Center", size: 15, text: sale.fechaEntrega }
+        var oLine: any = { aling: "Center", size: 15, text: String(sale.fechaEntrega).slice(0, 10) }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 

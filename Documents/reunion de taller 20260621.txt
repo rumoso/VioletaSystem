@@ -1,6 +1,10 @@
 *** RÁPIDA ***
-descripcion autoincementable, que sea solo una línea
-- simplificar espacio
-- mover la mano de obra hasta el inicio de las secciones
+descripcion autoincementable, que sea solo una línea -- listo
+- simplificar espacio -- listo
+- mover la mano de obra hasta el inicio de las secciones -- listo
 
 corte de caja se sobrepone en los conceptos de salida
+
+Se genera la rápida en status de pendiente de entrega
+ticket para el cajero
+comprobante para el técnico (copia del ticket)

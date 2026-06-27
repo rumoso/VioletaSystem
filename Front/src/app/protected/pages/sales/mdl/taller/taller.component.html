@@ -65,6 +65,12 @@
           <mat-icon>image</mat-icon>({{ tallerForm.headerImagesCount }})
         </button>
 
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder && ( manoObraList.length > 0 || refaccionesList.length > 0 )"
+          mat-raised-button color="warn" type="button" class="taller-btn-compact"
+          (click)="fn_createTallerRapidaOrder()">
+          <mat-icon>playlist_add</mat-icon>Crear Rápida
+        </button>
+
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder"
           mat-raised-button color="warn" type="button" class="taller-btn-compact"
           (click)="fn_createTallerOrder()">
@@ -545,7 +551,7 @@
                 </div>
 
                 <!-- FORMULARIO PRODUCTO -->
-                <div *ngIf="refaccionTipo === 'producto'" class="agregar-row row g-2 align-items-end top10px">
+                <div *ngIf="refaccionTipo === 'producto'" class="agregar-row row g-2 align-items-end">
                     <div class="col-12 col-md-7">
                         <label class="inline-label">Producto</label>
                         <div class="inline-wrap" (click)="cbxProducts_Search()">
@@ -598,7 +604,7 @@
                 </div>
 
                 <!-- FORMULARIO POR DEFINIR -->
-                <div *ngIf="refaccionTipo === 'porDefinir'" class="agregar-row row g-2 align-items-end top10px">
+                <div *ngIf="refaccionTipo === 'porDefinir'" class="agregar-row row g-2 align-items-end">
                     <div class="col-12 col-md-5">
                         <label class="inline-label">Descripción</label>
                         <div class="inline-wrap">

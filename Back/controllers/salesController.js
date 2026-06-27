@@ -2815,12 +2815,15 @@ const updateTallerStatus = async(req, res) => {
 
         let newIdSale = null;
 
+        const [tallerInfo] = await dbConnection.query(
+            `SELECT idSale, idSucursal, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
         // Status 2 (Pedido): generar folio de taller (idSaleType=5) y actualizar idSale
-        if (idTallerStatus === 2) {
-            const [tallerInfo] = await dbConnection.query(
-                `SELECT idSale, idSucursal FROM taller WHERE idTaller = :idTaller LIMIT 1`,
-                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
-            );
+        if (idTallerStatus === 2 || idTallerStatus === 5) {
+            // SI EL TALLER ESTÁ EN STATUS 1 Y SE VA A STATUS 5, SE DEBE GENERAR EL FOLIO DE TALLER RAPIDA (idSaleType=7) Y SI NO EL (idSaleType=5)
+            var idSaleTypeID = tallerInfo.idTallerStatus == 1 && idTallerStatus == 5 ? 7 : 5; // Taller
             if (!tallerInfo) {
                 await transaction.rollback();
                 return res.json({ status: 1, message: 'No se encontró el taller.' });
@@ -2828,9 +2831,28 @@ const updateTallerStatus = async(req, res) => {
             const oldIdSale = tallerInfo.idSale;
             const idSucursal = tallerInfo.idSucursal;
 
+            if(idSaleTypeID == 7)
+            {
+                // INSERT — se llama al cambiar de status (>= 3)
+                // Los campos firma/idUserFirma/comentario permiten insertar ya aprobado
+                // (usado por el flujo de Devolución del cliente, status 6)
+                const result = await dbConnection.query(`
+                    INSERT INTO taller_firmas_status
+                        (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+                    VALUES
+                        (:createDate, null, :idTaller, :idTallerStatus, :idUserCreate, 0, 0, '')
+                `, {
+                    replacements: {
+                        createDate: oGetDateNow,
+                        idTaller, idTallerStatus, idUserCreate: idUserLogON
+                    },
+                    type: dbConnection.QueryTypes.INSERT
+                });
+            }
+
             await dbConnection.query(
-                `CALL getIDs_BySucursal(:idUserC, :idSucursal, 5, @idSaleNew)`,
-                { replacements: { idUserC: idUserLogON, idSucursal }, type: dbConnection.QueryTypes.RAW }
+                `CALL getIDs_BySucursal(:idUserC, :idSucursal, :idSaleTypeID, @idSaleNew)`,
+                { replacements: { idUserC: idUserLogON, idSucursal, idSaleTypeID }, type: dbConnection.QueryTypes.RAW }
             );
             const [seqResult] = await dbConnection.query(
                 `SELECT @idSaleNew AS idSaleNew`,
@@ -2839,8 +2861,8 @@ const updateTallerStatus = async(req, res) => {
             const idSaleSeq = seqResult.idSaleNew;
 
             const [sigResult] = await dbConnection.query(
-                `SELECT CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE idSaleType = 5 LIMIT 1`,
-                { replacements: { idSucursal }, type: dbConnection.QueryTypes.SELECT }
+                `SELECT CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE idSaleType = :idSaleTypeID LIMIT 1`,
+                { replacements: { idSucursal, idSaleTypeID }, type: dbConnection.QueryTypes.SELECT }
             );
             const sig = sigResult?.sig || 'T';
             newIdSale = `${sig}${idSaleSeq}`;
