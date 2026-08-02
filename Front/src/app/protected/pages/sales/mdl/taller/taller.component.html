@@ -71,7 +71,7 @@
           <mat-icon>playlist_add</mat-icon>Crear Rápida
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder"
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder && !bRapida"
           mat-raised-button color="warn" type="button" class="taller-btn-compact"
           (click)="fn_createTallerOrder()">
           <mat-icon>playlist_add</mat-icon>Crear pedido
@@ -250,43 +250,18 @@
               <!-- ─────────────────────────────────────────── -->
               <div class="header-row" style="margin-top: 10px;">
 
-                <!-- FECHA INGRESO -->
+                <!-- FECHA INGRESO (bloqueada: siempre el día actual, no editable) -->
                                 <div class="header-field" style="flex: 1 1 0; min-width: 180px;">
-                                  <div *ngIf="editingHeaderField !== 'fechaIngreso'; else fechaIngresoEdit">
-                                    <div class="header-chip"
-                                         [class.vacio]="!tallerForm.fechaIngreso"
-                                         (click)="fn_editHeaderField('fechaIngreso')"
-                                         [matTooltip]="tallerForm.fechaIngreso ? 'Clic para cambiar fecha de ingreso' : 'Clic para asignar fecha de ingreso'">
-                                      <span class="chip-label">F. Ingreso</span>
-                                      <span class="chip-valor">{{ tallerForm.fechaIngreso ? (tallerForm.fechaIngreso | date:'dd/MM/yyyy') : 'Sin asignar' }}</span>
-                                      <mat-icon class="chip-icon">edit</mat-icon>
-                                    </div>
+                                  <div class="header-chip locked"
+                                       matTooltip="La fecha de ingreso siempre es el día actual y no se puede modificar">
+                                    <span class="chip-label">F. Ingreso</span>
+                                    <span class="chip-valor">{{ tallerForm.fechaIngreso | date:'dd/MM/yyyy' }}</span>
+                                    <mat-icon class="chip-icon">lock</mat-icon>
                                   </div>
-                                  <ng-template #fechaIngresoEdit>
-                                                      <div class="header-edit">
-                                                        <span class="edit-label">F. Ingreso</span>
-                                                        <div class="inline-wrap">
-                                                          <input type="text"
-                                                                                         #cbxFechaIngresoInput
-                                                                                         class="inline-input with-suffix"
-                                                                                         [value]="tallerForm.fechaIngreso ? (tallerForm.fechaIngreso | date:'dd/MM/yyyy') : ''"
-                                                                                         (click)="fn_openHeaderDatepicker('ingreso')"
-                                                                                         [matDatepicker]="pickerIngreso"
-                                                                                         (dateChange)="tallerForm.fechaIngreso = $event.value; fn_focusHeaderField('fechaPrometida')"
-                                                                                         placeholder="Seleccione fecha..."
-                                                                                         readonly>
-                                                          <mat-icon class="datepicker-icon"
-                                                                                            (click)="fn_openHeaderDatepicker('ingreso')">calendar_today</mat-icon>
-                                                                                  <mat-datepicker #pickerIngreso
-                                                                                                  (closed)="fn_closeHeaderField()">
-                                                                                  </mat-datepicker>
-                                                        </div>
-                                                      </div>
-                                                    </ng-template>
                                 </div>
 
-                                <!-- FECHA PROMETIDA -->
-                                <div class="header-field" style="flex: 1 1 0; min-width: 180px;">
+                                <!-- FECHA PROMETIDA (oculta en rápidas) -->
+                                <div *ngIf="!bRapida" class="header-field" style="flex: 1 1 0; min-width: 180px;">
                                   <div *ngIf="editingHeaderField !== 'fechaPrometida'; else fechaPrometidaEdit">
                                     <div class="header-chip"
                                          [class.vacio]="!tallerForm.fechaPrometidaEntrega"
@@ -544,7 +519,7 @@
                         <mat-radio-button value="producto" class="radio-option-inline">
                             <mat-icon>inventory</mat-icon> Producto
                         </mat-radio-button>
-                        <mat-radio-button value="porDefinir" class="radio-option-inline">
+                        <mat-radio-button *ngIf="!bRapida" value="porDefinir" class="radio-option-inline">
                             <mat-icon>description</mat-icon> Por Definir
                         </mat-radio-button>
                     </mat-radio-group>
@@ -586,7 +561,9 @@
                         <div class="inline-wrap">
                             <input #refaccionCantidadInput
                                    class="inline-input text-right"
-                                   type="number" [(ngModel)]="refaccionForm.cantidad" min="0" placeholder="0"
+                                   type="number" [(ngModel)]="refaccionForm.cantidad" min="1" step="1" placeholder="1"
+                                   (keydown)="fn_blockDecimalKey($event)"
+                                   (blur)="fn_sanitizeCantidadEntero(refaccionForm)"
                                    (keyup.enter)="fn_focusRefaccionProductoPrecio()">
                         </div>
                     </div>
@@ -619,7 +596,9 @@
                         <div class="inline-wrap">
                             <input #refaccionPorDefinirCantidadInput
                                    class="inline-input text-right"
-                                   type="number" [(ngModel)]="refaccionForm.cantidad" min="0" placeholder="0"
+                                   type="number" [(ngModel)]="refaccionForm.cantidad" min="1" step="1" placeholder="1"
+                                   (keydown)="fn_blockDecimalKey($event)"
+                                   (blur)="fn_sanitizeCantidadEntero(refaccionForm)"
                                    (keyup.enter)="fn_focusNextRefaccion('precio')">
                         </div>
                     </div>
@@ -684,8 +663,8 @@
 
         <!-- SECCIÓN SERVICIOS EXTERNOS: mismo patrón que Refacciones / Mano de Obra.
              Header con + colapsable, body separado en form (visible solo con +) y grid
-             (visible solo si hay registros). -->
-        <div class="card-refacciones top30px">
+             (visible solo si hay registros). Oculta en rápidas. -->
+        <div *ngIf="!bRapida" class="card-refacciones top30px">
             <div class="header-refacciones">
                 <h3 class="header-refacciones-h3">
                     <button *ngIf="tall_AddServicioExterno && !bIsReadOnly"
@@ -809,11 +788,11 @@
                             mat-icon-button
                             type="button"
                             class="btn-toggle-manoobra-icon"
-                            [matTooltip]="bShowMetalAgranelForm ? 'Cerrar' : 'Agregar metal a granel'"
+                            [matTooltip]="bShowMetalAgranelForm ? 'Cerrar' : 'Agregar metal'"
                             (click)="fn_toggleMetalAgranelForm()">
                         <mat-icon>{{ bShowMetalAgranelForm ? 'close' : 'add' }}</mat-icon>
                     </button>
-                    Metal Agranel
+                    Poner Metal
                 </h3>
                 <span class="total-metal" style="margin-left:auto;">Total: {{ totalMetalAgranel | currency }}</span>
                             </div>
@@ -839,10 +818,12 @@
                         <div class="inline-wrap">
                             <input #metalAgranelGramosInput
                                    class="inline-input text-right"
-                                   type="number" [(ngModel)]="metalAgranelForm.gramos"
-                                   (blur)="fn_calculateMetalValue()"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalAgranelForm.gramos"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalAgranelForm, 'gramos', 1)"
+                                   (blur)="fn_normalizeDecimalBlur(metalAgranelForm, 'gramos', 1); fn_calculateMetalValue()"
                                    (keyup.enter)="fn_focusMetalAgranelKilates()"
-                                   min="0" placeholder="0">
+                                   placeholder="0.0">
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
@@ -864,8 +845,11 @@
                         <div class="inline-wrap">
                             <input #metalAgranelValorMetalInput
                                    class="inline-input with-suffix text-right"
-                                   type="number" [(ngModel)]="metalAgranelForm.valorMetal" min="0" placeholder="0.00"
-                                   (blur)="fn_validateMetalAgranel()"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalAgranelForm.valorMetal"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalAgranelForm, 'valorMetal', 2)"
+                                   placeholder="0.00"
+                                   (blur)="fn_normalizeDecimalBlur(metalAgranelForm, 'valorMetal', 2); fn_validateMetalAgranel()"
                                    (keyup.enter)="fn_agregarMetalAgranel()">
                             <span class="inline-suffix">$</span>
                         </div>
@@ -887,7 +871,7 @@
                             <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
                             <span>{{ item.tipo | uppercase }}</span>
                         </div>
-                        <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-0' }}</div>
+                        <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-1' }}</div>
                         <div class="metal-kilates text-right">{{ item.kilates | number:'1.0-0' }} K</div>
                         <div class="metal-valor text-right">{{ item.valorMetal | currency }}</div>
                         <div class="metal-acciones">
@@ -913,11 +897,11 @@
                             mat-icon-button
                             type="button"
                             class="btn-toggle-manoobra-icon"
-                            [matTooltip]="bShowMetalClienteForm ? 'Cerrar' : 'Agregar activo del cliente'"
+                            [matTooltip]="bShowMetalClienteForm ? 'Cerrar' : 'Agregar metal del cliente'"
                             (click)="fn_toggleMetalClienteForm()">
                         <mat-icon>{{ bShowMetalClienteForm ? 'close' : 'add' }}</mat-icon>
                     </button>
-                    Activo del Cliente
+                    Metal Cliente
                 </h3>
                 <span class="total-activo" style="margin-left:auto;">Total: {{ totalMetalCliente | currency }}</span>
                             </div>
@@ -943,10 +927,12 @@
                         <div class="inline-wrap">
                             <input #metalClienteGramosInput
                                    class="inline-input text-right"
-                                   type="number" [(ngModel)]="metalClienteForm.gramos"
-                                   (blur)="fn_calculateMetalClienteValue()"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalClienteForm.gramos"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalClienteForm, 'gramos', 1)"
+                                   (blur)="fn_normalizeDecimalBlur(metalClienteForm, 'gramos', 1); fn_calculateMetalClienteValue()"
                                    (keyup.enter)="fn_focusMetalClienteKilates()"
-                                   min="0" placeholder="0">
+                                   placeholder="0.0">
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
@@ -968,7 +954,11 @@
                         <div class="inline-wrap">
                             <input #metalClienteValorMetalInput
                                    class="inline-input with-suffix text-right"
-                                   type="number" [(ngModel)]="metalClienteForm.valorMetal" min="0" placeholder="0.00"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalClienteForm.valorMetal"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalClienteForm, 'valorMetal', 2)"
+                                   placeholder="0.00"
+                                   (blur)="fn_normalizeDecimalBlur(metalClienteForm, 'valorMetal', 2)"
                                    (keyup.enter)="fn_agregarMetalCliente()">
                             <span class="inline-suffix">$</span>
                         </div>
@@ -990,7 +980,7 @@
                             <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
                             <span>{{ item.tipo | uppercase }}</span>
                         </div>
-                        <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-0' }}</div>
+                        <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-1' }}</div>
                         <div class="metal-kilates text-right">{{ item.kilates | number:'1.0-0' }} K</div>
                         <div class="metal-valor text-right">{{ item.valorMetal | currency }}</div>
                         <div class="metal-acciones">

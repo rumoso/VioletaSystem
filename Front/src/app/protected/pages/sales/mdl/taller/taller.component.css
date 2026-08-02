@@ -143,6 +143,17 @@ textarea {
     font-style: normal;
 }
 
+/* Chip bloqueado (no editable, p. ej. F. Ingreso) */
+.header-chip.locked {
+    cursor: default;
+}
+
+.header-chip.locked:hover {
+    background: #f5f7ff;
+    border-color: #e8eaf6;
+    box-shadow: none;
+}
+
 .header-chip .chip-label {
     font-size: 10px;
     font-weight: 700;
@@ -813,36 +824,49 @@ button:hover {
 
 .metal-acciones {
     display: flex;
-    gap: 2px;
+    gap: 4px;
     justify-content: flex-end;
     align-items: center;
 }
 
 /* Iconos de acción del grid de metales: mismo patrón que .mo-action-icon / .ref-action-icon */
 .metal-action-icon {
+    cursor: pointer;
     font-size: 18px;
     width: 18px;
     height: 18px;
+    line-height: 18px;
     padding: 4px;
-    cursor: pointer;
     border-radius: 50%;
-    transition: background 0.15s, transform 0.1s;
-}
-
-.metal-action-icon:hover {
-    background: rgba(0, 0, 0, 0.06);
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    box-sizing: content-box;
 }
 
 .metal-action-icon.edit {
+    color: #388e3c;
+}
+
+.metal-action-icon.edit:hover {
+    background: rgba(56, 142, 60, 0.12);
     color: #2e7d32;
 }
 
 .metal-action-icon.delete {
+    color: #d32f2f;
+}
+
+.metal-action-icon.delete:hover {
+    background: rgba(211, 47, 47, 0.12);
     color: #c62828;
 }
 
 .metal-action-icon.image {
     color: #1565c0;
+}
+
+.metal-action-icon.image:hover {
+    background: rgba(21, 101, 192, 0.12);
+    color: #0d47a1;
 }
 
 .metal-action-icon:active {

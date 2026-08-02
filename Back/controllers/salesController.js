@@ -2664,6 +2664,7 @@ const saveTallerHeader = async(req, res) => {
         descripcion = '',
         fechaIngreso = '',
         fechaPrometidaEntrega = '',
+        bRapida = 0,
         idUserLogON,
         idSucursalLogON
     } = req.body;
@@ -2721,8 +2722,8 @@ const saveTallerHeader = async(req, res) => {
 
             // 5. INSERT en taller (idTallerStatus = 1 = Cotización)
             await dbConnection.query(
-                `INSERT INTO taller (idSale, createDate, descripcion, fechaIngreso, fechaPrometida, fechaEntrega, idCustomer, idSucursal, idSeller_idUser, active, idTallerStatus, idCotizacion)
-                 VALUES (:idSale, :createDate, :descripcion, :fechaIngreso, :fechaPrometida, NULL, :idCustomer, :idSucursal, :idSeller_idUser, 1, 1, :idSale)`,
+                `INSERT INTO taller (idSale, createDate, descripcion, fechaIngreso, fechaPrometida, fechaEntrega, idCustomer, idSucursal, idSeller_idUser, active, idTallerStatus, idCotizacion, bRapida)
+                 VALUES (:idSale, :createDate, :descripcion, :fechaIngreso, :fechaPrometida, NULL, :idCustomer, :idSucursal, :idSeller_idUser, 1, 1, :idSale, :bRapida)`,
                 {
                     replacements: {
                         idSale,
@@ -2732,7 +2733,8 @@ const saveTallerHeader = async(req, res) => {
                         fechaPrometida:  fPrometida,
                         idCustomer:      idCustomer,
                         idSucursal:      idSucursalLogON,
-                        idSeller_idUser: idSeller_idUser
+                        idSeller_idUser: idSeller_idUser,
+                        bRapida:         bRapida ? 1 : 0
                     },
                     type: dbConnection.QueryTypes.INSERT,
                     transaction
@@ -3003,6 +3005,7 @@ const getTallerByID = async(req, res = response) => {
                 , T.active
                 , T.idTallerStatus
                 , IFNULL( T.manoObraPrecio, 0) AS manoObraPrecio
+                , IFNULL( T.bRapida, 0) AS bRapida
                 , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
                 , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
                 , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
@@ -4307,6 +4310,7 @@ const getTallerByIDSeq = async(req, res = response) => {
                 , T.active
                 , T.idTallerStatus
                 , IFNULL( T.manoObraPrecio, 0) AS manoObraPrecio
+                , IFNULL( T.bRapida, 0) AS bRapida
                 , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
                 , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
                 , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal

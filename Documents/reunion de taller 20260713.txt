@@ -1,0 +1,30 @@
+
+* en rapidas que no pida fecha prometida -- LISTO
+* agregar boton de rapidas -- LISTO
+- vendedor, cliente, descripción -- LISTO
+mano de obra -- LISTO
+refacciones sin por definir -- LISTO
+la cantidad de refacciones debe ser 1 puros enteros, no decimales -- LISTO
+en productos que salga el código del producto en la lista
+servicios externos se oculta
+metal agranel ( PONER METAL ) - SALGA EN EL TICKET CON PRECIO DE VENTA, REFACCIONES, MANO DE OBRA, TODOOO MENOS METAL CLIENTE
+, SOLO A LA ENTREGA
+en los gramos de metal solo 1 decimal ejemplo 3.2
+activo del cliente ( METAL CLIENTE )
+TOTAL DEL METAL A DOS DECIMALES
+CAMBIAR KILATAJE A LEY EN PLATA
+REGLA DE NO PODER BAJARLE MAS DEL 30%
+REVISAR USABILIDAD DE CAMBIO DE COMPONENTES AL DAR ENTER
+2 TICKETS EN LA RAPIDA, CAJA Y DE LOS TÉCNICOS UNO POR CADA UNO
+boton de ticket para el cliente
+STATUS FUTURO, EN CRÉDITO, ENTREGADO/PAGADO
+
+CONTROL DE INVENTARIO DE METAL, PARA LA SUCURSAL Y TECNICO
+
+-- *********************************************
+la rapida no ocupa servicios externos
+
+vendedor y cliente cambio con permiso especial
+
+ya en mostrador no se puede cambiar nada, solo con permiso especial
+bloquear al pasarse mostrador

@@ -135,6 +135,13 @@
         <mat-icon>add</mat-icon>
         Nuevo taller
       </button>
+      <button mat-flat-button class="tll-btn-add"
+        (click)="fn_ShowSale( 0, true )"
+        [disabled]="_idSucursal == 0"
+        *ngIf="hasPermissionAction('ventas_Crear')">
+        <mat-icon>add</mat-icon>
+        Nueva rápida
+      </button>
       <div class="tll-divider-v"></div>
       <button mat-stroked-button class="tll-btn-secondary" (click)="goToSaleList()">
         <mat-icon>shopping_cart</mat-icon>

@@ -535,10 +535,11 @@ fn_CDisabledSale( idSale: number, auth_idUser: number ){
 // SECCIÓN DE MÉTODOS CON EL FRONT
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn_ShowSale( idTaller: number ){
+fn_ShowSale( idTaller: number, bRapida: boolean = false ){
 
   var paramsMDL: any = {
     idTaller: idTaller,
+    bRapida: bRapida,
     selectPrinter: this.selectPrinter,
     selectCajas: this.selectCajas
   }

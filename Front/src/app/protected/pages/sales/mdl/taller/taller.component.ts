@@ -94,22 +94,20 @@ export class TallerComponent implements OnInit {
     oPagos: any[] = [];
 
     // Control del patrón chip ↔ campo editable en el header
-      // Valores: 'seller' | 'customer' | 'fechaIngreso' | 'fechaPrometida' | 'fechaEntregada' | null
+      // Valores: 'seller' | 'customer' | 'fechaPrometida' | 'fechaEntregada' | null
       editingHeaderField: string | null = null;
 
       // ViewChilds de los datepickers del header (referenciados desde ng-templates)
-      @ViewChild('pickerIngreso') pickerIngresoRef!: MatDatepicker<any>;
       @ViewChild('pickerPromesa') pickerPromesaRef!: MatDatepicker<any>;
       @ViewChild('pickerEntrega') pickerEntregaRef!: MatDatepicker<any>;
 
       // ViewChilds de los <input> dentro de los <ng-template> de los chips del header
       // (vendedor y cliente ya están declarados arriba: cbxSellerCBX, cbxCustomerCBX)
-      @ViewChild('cbxFechaIngresoInput') cbxFechaIngresoInput!: ElementRef;
       @ViewChild('cbxFechaPrometidaInput') cbxFechaPrometidaInput!: ElementRef;
 
       // Foco pendiente: si llega un pedido de foco antes de que la vista esté lista
       // (típico en ngOnInit), se aplica apenas Angular termina el primer render.
-      private _pendingFocusField: 'seller' | 'customer' | 'fechaIngreso' | 'fechaPrometida' | 'fechaEntregada' | null = null;
+      private _pendingFocusField: 'seller' | 'customer' | 'fechaPrometida' | 'fechaEntregada' | null = null;
       private _focusApplied = false;
 
       /**
@@ -124,7 +122,7 @@ export class TallerComponent implements OnInit {
        * en materializar, y el <mat-autocomplete> de Material añade un overlay que
        * puede interferir si el foco se aplica muy temprano.
        */
-      fn_focusHeaderField(field: 'seller' | 'customer' | 'fechaIngreso' | 'fechaPrometida' | 'fechaEntregada' | null): void {
+      fn_focusHeaderField(field: 'seller' | 'customer' | 'fechaPrometida' | 'fechaEntregada' | null): void {
         if (!field) return;
         this.editingHeaderField = field;
         this._pendingFocusField = field;
@@ -133,13 +131,12 @@ export class TallerComponent implements OnInit {
         // en el datepicker (popup de Material) al pasar a la fecha prometida.
         // El input es solo un disparador; el <input [matDatepicker]> ya está
         // conectado al picker via template, así que picker.open() funciona sin focus.
-        if (field === 'fechaIngreso' || field === 'fechaPrometida') {
-          const which = field === 'fechaIngreso' ? 'ingreso' : 'prometida';
+        if (field === 'fechaPrometida') {
           // Doble intento: 200ms (ng-template ya renderizado) y 500ms (respaldo)
           const tryOpen = (delay: number) => {
             setTimeout(() => {
               if (this._pendingFocusField !== field) return;
-              this.fn_openHeaderDatepicker(which);
+              this.fn_openHeaderDatepicker('prometida');
             }, delay);
           };
           tryOpen(200);
@@ -190,10 +187,9 @@ export class TallerComponent implements OnInit {
        * Se llama desde el HTML (input click o icono click) porque las template refs
        * dentro de <ng-template> no son accesibles directamente desde el template.
        */
-      fn_openHeaderDatepicker(which: 'ingreso' | 'prometida' | 'entrega'): void {
+      fn_openHeaderDatepicker(which: 'prometida' | 'entrega'): void {
         setTimeout(() => {
           const picker =
-            which === 'ingreso' ? this.pickerIngresoRef :
             which === 'prometida' ? this.pickerPromesaRef :
             this.pickerEntregaRef;
           if (picker) {
@@ -215,7 +211,7 @@ export class TallerComponent implements OnInit {
     idRefaccion: 0,
     idProduct: 0,
     productDesc: '',
-    cantidad: '',
+    cantidad: 1,
     precio: '',
     costo: ''
   };
@@ -348,6 +344,11 @@ export class TallerComponent implements OnInit {
   bShowMetalAgranelForm: boolean = false;
   bShowMetalClienteForm: boolean = false;
 
+  // Bandera que indica si este taller es una "rápida": una versión simplificada
+  // del taller sin F. Prometida, sin refacciones "Por Definir" y sin Servicios Externos.
+  // Se recibe desde el llamador del modal (taller-list) vía ODataP.bRapida.
+  bRapida: boolean = false;
+
   get bIsReadOnly(): boolean {
     return (this.oFirmaStatus?.firma === 0 || this.tallerForm.idTallerStatus === 5 || this.tallerForm.idTallerStatus === 6) && !this.tall_EditAfterEntregado;
   }
@@ -442,6 +443,8 @@ export class TallerComponent implements OnInit {
       }
 
     })
+
+    this.bRapida = !!(this.ODataP && this.ODataP.bRapida);
 
     if (this.ODataP && this.ODataP.idTaller > 0) {
       this.fn_getTallerData(this.ODataP.idTaller);
@@ -610,6 +613,10 @@ export class TallerComponent implements OnInit {
         if (resp.status === 0) {
           const data = resp.data.oTaller;
 
+          // La bandera de rápida se persiste en BD: al consultar un taller existente
+          // prevalece lo guardado, no lo que traía el modal al abrirse.
+          this.bRapida = !!(data.bRapida && data.bRapida != 0);
+
           this.tallerForm = {
             idTaller: data.idTaller || 0,
             idSale: data.idSale,
@@ -668,6 +675,7 @@ export class TallerComponent implements OnInit {
       descripcion: this.tallerForm.descripcion,
       fechaIngreso: this.tallerForm.fechaIngreso,
       fechaPrometidaEntrega: this.tallerForm.fechaPrometidaEntrega,
+      bRapida: this.bRapida ? 1 : 0,
       idUser: this.idUserLogON
     };
 
@@ -752,10 +760,24 @@ export class TallerComponent implements OnInit {
       idRefaccion: 0,
       idProduct: 0,
       productDesc: '',
-      cantidad: '',
+      cantidad: 1,
       precio: '',
       costo: ''
     };
+  }
+
+  /** Bloquea teclas de decimales/signos en campos de cantidad (solo enteros). */
+  fn_blockDecimalKey(event: KeyboardEvent): void {
+    if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  /** Normaliza la cantidad a un entero >= 1 al perder el foco. */
+  fn_sanitizeCantidadEntero(form: any): void {
+    let val = Math.round(Number(form.cantidad));
+    if (isNaN(val) || val < 1) val = 1;
+    form.cantidad = val;
   }
 
   /**
@@ -1433,6 +1455,28 @@ export class TallerComponent implements OnInit {
       });
   }
 
+  /**
+   * Sanitiza en cada tecleo/pegado un campo decimal (gramos, valor del metal, etc.)
+   * para que nunca tenga más de `maxDecimals` dígitos después del punto.
+   * Ej: gramos (maxDecimals=1) → "2.2"; valor del metal (maxDecimals=2) → "8957.25".
+   */
+  fn_onDecimalInputChange(value: string, form: any, field: string, maxDecimals: number): void {
+    let raw = (value ?? '').toString().replace(',', '.').replace(/[^0-9.]/g, '');
+    const firstDot = raw.indexOf('.');
+    if (firstDot !== -1) {
+      raw = raw.slice(0, firstDot + 1) + raw.slice(firstDot + 1).replace(/\./g, '').slice(0, maxDecimals);
+    }
+    form[field] = raw;
+  }
+
+  /** Al perder el foco, convierte el campo a número redondeado a `decimals` decimales. */
+  fn_normalizeDecimalBlur(form: any, field: string, decimals: number): void {
+    if (form[field] === '' || form[field] === null || form[field] === undefined) return;
+    const val = parseFloat(form[field]);
+    const factor = Math.pow(10, decimals);
+    form[field] = isNaN(val) ? '' : Math.round(val * factor) / factor;
+  }
+
   fn_calculateMetalValue() {
     // Validar que haya gramos ingresados
     if (!this.metalAgranelForm.gramos || this.metalAgranelForm.gramos <= 0 || !this.metalAgranelForm.kilates) {
@@ -1445,10 +1489,10 @@ export class TallerComponent implements OnInit {
       .subscribe({
         next: (resp: any) => {
           if (resp.status === 0 && resp.data) {
-            // Calcular: gramos * precio
+            // Calcular: gramos * precio, redondeado a 2 decimales (ej. 8957.25)
             const pricePerGram = resp.data.price;
             this.metalAgranelForm.costPricePerGram = parseFloat(resp.data.costPrice) || 0;
-            this.metalAgranelForm.valorMetal = this.metalAgranelForm.gramos * pricePerGram;
+            this.metalAgranelForm.valorMetal = Math.round(this.metalAgranelForm.gramos * pricePerGram * 100) / 100;
           } else {
             this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
             this.metalAgranelForm.valorMetal = '';
@@ -1508,7 +1552,7 @@ export class TallerComponent implements OnInit {
     this.metalAgranelForm = {
       idMetalAgranel: item.idMetalAgranel,
       tipo: item.tipo,
-      gramos: parseFloat(item.gramos),
+      gramos: Math.round(parseFloat(item.gramos) * 10) / 10,
       kilates: parseInt(item.kilates) || 8,
       valorMetal: parseFloat(item.valorMetal),
       costPricePerGram: 0
@@ -1588,9 +1632,9 @@ export class TallerComponent implements OnInit {
       .subscribe({
         next: (resp: any) => {
           if (resp.status === 0 && resp.data) {
-            // Calcular: gramos * precio
+            // Calcular: gramos * precio, redondeado a 2 decimales (ej. 8957.25)
             const pricePerGram = resp.data.price;
-            this.metalClienteForm.valorMetal = this.metalClienteForm.gramos * pricePerGram;
+            this.metalClienteForm.valorMetal = Math.round(this.metalClienteForm.gramos * pricePerGram * 100) / 100;
           } else {
             this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
             this.metalClienteForm.valorMetal = '';
@@ -1695,7 +1739,7 @@ export class TallerComponent implements OnInit {
     this.metalClienteForm = {
       idMetalCliente: item.idMetalCliente,
       tipo: item.tipo,
-      gramos: parseFloat(item.gramos),
+      gramos: Math.round(parseFloat(item.gramos) * 10) / 10,
       kilates: parseInt(item.kilates) || 8,
       valorMetal: parseFloat(item.valorMetal)
     };
@@ -1774,15 +1818,13 @@ export class TallerComponent implements OnInit {
                   next: (respUpdate: ResponseDB_CRUD) => {
                     if (respUpdate.status === 0) {
                       this.servicesGServ.showSnakbar('Pedido de taller creado correctamente');
-                      this.tallerForm.idTallerStatus = 2;
-                      if ((respUpdate as any).data?.idSale) {
-                        this.tallerForm.idSale = (respUpdate as any).data.idSale;
-                      }
                       this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false);
+                      // Refrescar la pantalla con lo realmente guardado (status, folio, etc.)
+                      this.fn_getTallerData(this.tallerForm.idTaller);
                     } else {
                       this.servicesGServ.showSnakbar('Error al crear el pedido de taller');
+                      this.bShowSpinner = false;
                     }
-                    this.bShowSpinner = false;
                   },
                   error: (ex: HttpErrorResponse) => {
                     this.servicesGServ.showSnakbar(ex.error.message || 'Error al crear pedido de taller');
@@ -2248,7 +2290,7 @@ export class TallerComponent implements OnInit {
       idRefaccion: item.idRefaccion,
       idProduct: item.idProduct,
       productDesc: item.productDesc,
-      cantidad: parseFloat(item.cantidad),
+      cantidad: parseInt(item.cantidad, 10) || 1,
       precio: parseFloat(item.precio),
       costo: parseFloat(item.costo)
     };
@@ -2314,7 +2356,9 @@ export class TallerComponent implements OnInit {
       setTimeout (() => {
         const ODataCbx: any = event.option.value;
         this.refaccionForm.idProduct = ODataCbx.idProduct;
-        this.refaccionForm.productDesc = ODataCbx.name;
+        // nameConcat trae "barCode - name" (mismo formato que se ve en el combo),
+        // así queda visible en la lista de refacciones igual que en la búsqueda.
+        this.refaccionForm.productDesc = ODataCbx.nameConcat || ODataCbx.name;
         this.refaccionForm.costo = ODataCbx.cost;
         this.refaccionForm.precio = ODataCbx.price;
         this.nextInputFocus( this.refaccionCantidadInput, 100);
@@ -2378,8 +2422,14 @@ export class TallerComponent implements OnInit {
       this.tallerForm.idCustomer =  ODataCbx.idCustomer;
       this.tallerForm.customerDesc = ODataCbx.name;
 
-      // Cadena de foco: cliente → fecha prometida (abre chip + abre datepicker)
-      this.fn_focusHeaderField('fechaPrometida');
+      if (this.bRapida) {
+        // En rápidas no hay F. Prometida: cliente → descripción directo.
+        this.fn_closeHeaderField();
+        this.nextInputFocus(this.descripcionInput, 80);
+      } else {
+        // Cadena de foco: cliente → fecha prometida (abre chip + abre datepicker)
+        this.fn_focusHeaderField('fechaPrometida');
+      }
 
     }, 1);
 
