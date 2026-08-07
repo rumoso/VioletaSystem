@@ -1,0 +1,159 @@
+<div class="audit-modal">
+
+    <div mat-dialog-title class="modal-header">
+        <div class="title-section">
+            <mat-icon class="title-icon">fact_check</mat-icon>
+            <h2>Auditoría de inventarios físicos</h2>
+        </div>
+        <button mat-icon-button class="close-button" (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="modal-content">
+
+        <div class="filters-row">
+
+            <div class="slim-field field-sucursal">
+                <span class="slim-label">Sucursal</span>
+                <div class="inline-wrap">
+                    <input type="text"
+                            class="inline-input"
+                            placeholder="Selecciona..."
+                            [(ngModel)]="parametersForm.sucursalDesc"
+                            [matAutocomplete]="cbxSucursalAudit"
+                            (input)="cbxSucursales_Search()"
+                            (click)="cbxSucursales_Search()">
+                    <mat-icon *ngIf="parametersForm.sucursalDesc" class="clear-icon manitaSobre" (click)="cbxSucursales_Clear()">close</mat-icon>
+                    <mat-autocomplete autoActiveFirstOption
+                                        #cbxSucursalAudit="matAutocomplete"
+                                        (optionSelected)="cbxSucursales_SelectedOption( $event )">
+                        <mat-option *ngFor="let sucursal of cbxSucursales" [value]="sucursal">
+                            {{ sucursal.name }}
+                        </mat-option>
+                        <mat-option value="" *ngIf="cbxSucursales.length == 0 && parametersForm.sucursalDesc">
+                            No se encontró nada...
+                        </mat-option>
+                    </mat-autocomplete>
+                </div>
+            </div>
+
+            <div class="slim-field">
+                <span class="slim-label">Periodo</span>
+                <div class="preset-group">
+                    <button type="button" class="preset-btn" [class.active]="sPreset === 'M1'" (click)="fn_setPreset('M1')">Mes pasado</button>
+                    <button type="button" class="preset-btn" [class.active]="sPreset === 'M2'" (click)="fn_setPreset('M2')">Últimos 2 meses</button>
+                    <button type="button" class="preset-btn" [class.active]="sPreset === 'M3'" (click)="fn_setPreset('M3')">Últimos 3 meses</button>
+
+                    <label *ngIf="!bShowDateRange"
+                    class="range-label manitaSobre"
+                    matTooltip="Clic para capturar el rango manualmente"
+                    (click)="bShowDateRange = true">
+                        {{ parametersForm.startDate }} — {{ parametersForm.endDate }}
+                    </label>
+
+                    <ng-container *ngIf="bShowDateRange">
+                        <input type="date" class="inline-input date-input" [(ngModel)]="parametersForm.startDate" (change)="fn_manualRangeChange()">
+                        <span class="range-sep">—</span>
+                        <input type="date" class="inline-input date-input" [(ngModel)]="parametersForm.endDate" (change)="fn_manualRangeChange()">
+                    </ng-container>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="filters-row">
+
+            <div class="slim-field">
+                <span class="slim-label">Mostrar</span>
+                <mat-radio-group class="slim-radios" [(ngModel)]="sFilterInv">
+                    <mat-radio-button value="T">Todos</mat-radio-button>
+                    <mat-radio-button value="C">Con inventario físico</mat-radio-button>
+                    <mat-radio-button value="S">Sin inventario físico</mat-radio-button>
+                </mat-radio-group>
+            </div>
+
+            <div class="slim-field field-search">
+                <span class="slim-label">Buscar</span>
+                <div class="inline-wrap">
+                    <mat-icon class="inline-icon">search</mat-icon>
+                    <input type="text" class="inline-input with-icon" placeholder="Grupo o familia..." [(ngModel)]="searchText">
+                    <mat-icon *ngIf="searchText" class="clear-icon manitaSobre" (click)="searchText = ''">close</mat-icon>
+                </div>
+            </div>
+
+        </div>
+
+        <mat-tab-group [(selectedIndex)]="iTabIndex" class="audit-tabs">
+
+            <mat-tab label="Grupos">
+
+                <div class="table-responsive">
+                    <table class="table table-hover audit-table">
+                        <thead>
+                            <th class="textAlingCenter">Acciones</th>
+                            <th class="textAlingLeft">Grupo</th>
+                            <th class="textAlingCenter">Último inventario físico</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of filteredGroups">
+                                <td class="textAlingCenter">
+                                    <span class="material-icons manitaSobre colorBlue audit-action-icon"
+                                    matTooltip="Generar inventario físico de este grupo"
+                                    (click)="fn_startPhysicInventory( item, 'G' )">
+                                        inbox
+                                    </span>
+                                </td>
+                                <td class="textAlingLeft">{{ item.name }}</td>
+                                <td class="textAlingCenter">
+                                    <span *ngIf="item.lastInventoryDate">{{ item.lastInventoryDateDesc }}</span>
+                                    <span *ngIf="!item.lastInventoryDate" class="badge bg-danger text-wrap">Sin inventario</span>
+                                    <mat-icon *ngIf="item.bConInventario == 1" matTooltip="Con inventario físico en el periodo" class="material-icons colorGreen audit-status-icon">check_circle</mat-icon>
+                                    <mat-icon *ngIf="item.bConInventario == 0 && item.lastInventoryDate" matTooltip="Sin inventario físico en el periodo" class="material-icons colorRed audit-status-icon">error</mat-icon>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </mat-tab>
+
+            <mat-tab label="Familias">
+
+                <div class="table-responsive">
+                    <table class="table table-hover audit-table">
+                        <thead>
+                            <th class="textAlingCenter">Acciones</th>
+                            <th class="textAlingLeft">Familia</th>
+                            <th class="textAlingCenter">Último inventario físico</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of filteredFamilies">
+                                <td class="textAlingCenter">
+                                    <span class="material-icons manitaSobre colorBlue audit-action-icon"
+                                    matTooltip="Generar inventario físico de esta familia"
+                                    (click)="fn_startPhysicInventory( item, 'F' )">
+                                        inbox
+                                    </span>
+                                </td>
+                                <td class="textAlingLeft">{{ item.name }}</td>
+                                <td class="textAlingCenter">
+                                    <span *ngIf="item.lastInventoryDate">{{ item.lastInventoryDateDesc }}</span>
+                                    <span *ngIf="!item.lastInventoryDate" class="badge bg-danger text-wrap">Sin inventario</span>
+                                    <mat-icon *ngIf="item.bConInventario == 1" matTooltip="Con inventario físico en el periodo" class="material-icons colorGreen audit-status-icon">check_circle</mat-icon>
+                                    <mat-icon *ngIf="item.bConInventario == 0 && item.lastInventoryDate" matTooltip="Sin inventario físico en el periodo" class="material-icons colorRed audit-status-icon">error</mat-icon>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </mat-tab>
+
+        </mat-tab-group>
+
+    </mat-dialog-content>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

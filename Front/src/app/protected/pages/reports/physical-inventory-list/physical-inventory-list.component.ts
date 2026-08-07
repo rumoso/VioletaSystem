@@ -15,6 +15,7 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { PhysicalInventoryComponent } from '../physical-inventory/physical-inventory.component';
+import { PhysicalInventoryAuditComponent } from '../physical-inventory-audit/physical-inventory-audit.component';
 
 @Component({
   selector: 'app-physical-inventory-list',
@@ -61,6 +62,7 @@ export class PhysicalInventoryListComponent {
   };
 
   showCostPrice: boolean = false;
+  bCanDelete: boolean = false;
 
 // #endregion
 
@@ -86,6 +88,7 @@ export class PhysicalInventoryListComponent {
       this.idUserLogON = await this.authServ.getIdUserSession();
 
       this.showCostPrice = this.authServ.hasPermissionAction('invF_showCostPrice');
+      this.bCanDelete = this.authServ.hasPermissionAction('inv_Delete');
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
@@ -147,6 +150,58 @@ export class PhysicalInventoryListComponent {
         }
       });
 
+
+    }
+
+    fn_showAudit(){
+
+      this.servicesGServ.showModalWithParams( PhysicalInventoryAuditComponent, {}, '950px')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+          if( resp ){
+            this.fn_getPhysicalInventoryListWithPage();
+          }
+        }
+      });
+
+    }
+
+    fn_deletePhysicalInventory( idPhysicalInventory: any ){
+
+      this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Está a punto de eliminar este inventario físico'
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+      .afterClosed().subscribe({
+        next: ( resp ) =>{
+
+          if(resp){
+
+            this.bShowSpinner = true;
+
+            this.productsServ.CDeletePhysicalInventory( idPhysicalInventory )
+            .subscribe({
+              next: (resp: any) => {
+
+                if( resp.status === 0 ){
+                  this.fn_getPhysicalInventoryListWithPage();
+                }
+
+                this.servicesGServ.showAlertIA( resp );
+
+                this.bShowSpinner = false;
+
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log( ex )
+                this.servicesGServ.showSnakbar( ex.error.data );
+                this.bShowSpinner = false;
+              }
+            });
+
+          }
+        }
+      });
 
     }
 

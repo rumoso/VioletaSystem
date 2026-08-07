@@ -166,6 +166,14 @@
                             <mat-icon matPrefix class="my-icon">inbox</mat-icon>
                             GENERAR INVENTARIO FÍSICO CON ESTOS FILTROS</button>
 
+                            <button mat-raised-button
+                            color="accent"
+                            type="button"
+                            class="marginRight10px"
+                            (click)="fn_showAudit()">
+                            <mat-icon matPrefix class="my-icon">fact_check</mat-icon>
+                            Auditoría</button>
+
                         </div>
                     </div>
                 </div>
@@ -247,13 +255,12 @@
                                             edit
                                         </span>
 
-                                        <!-- <span class="material-icons manitaSobre colorRed"
+                                        <span class="material-icons manitaSobre colorRed"
                                         matTooltip="Eliminar inventario físico"
-
-
-                                            *ngIf="item.active">
+                                        (click)="fn_deletePhysicalInventory( item.idPhysicalInventory )"
+                                            *ngIf="item.active && bCanDelete">
                                             delete_outline
-                                        </span> -->
+                                        </span>
 
                                         <span class="material-icons manitaSobre colorRed"
                                         matTooltip="Inventario físico real"

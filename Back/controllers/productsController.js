@@ -1105,6 +1105,76 @@ const getPhysicalInventoryHeaderBySucursal = async(req, res = response) => {
     }
 };
 
+const getAuditPhysicalInventory = async(req, res = response) => {
+
+    const {
+        sOption = 'G'
+        , idSucursal
+        , startDate = ''
+        , endDate = ''
+
+        , idUserLogON
+        , idSucursalLogON
+    } = req.body;
+
+    try{
+
+        var OSQL = await dbConnection.query(
+            `call getAuditPhysicalInventory(:sOption, :idSucursal, :startDate, :endDate)`,
+            { replacements: { sOption, idSucursal, startDate: startDate.substring(0, 10), endDate: endDate.substring(0, 10) }, type: dbConnection.QueryTypes.RAW }
+        )
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                rows: OSQL
+            }
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const deletePhysicalInventory = async(req, res = response) => {
+
+    const {
+        idPhysicalInventory,
+
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try{
+
+        var OSQL = await dbConnection.query(
+            `call deletePhysicalInventory(:idPhysicalInventory, :idUserLogON)`,
+            { replacements: { idPhysicalInventory, idUserLogON }, type: dbConnection.QueryTypes.RAW }
+        )
+
+        res.json({
+            status: OSQL[0].out_id == 1 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
 const getCatListWithPage = async(req, res = response) => {
 
     const {
@@ -1975,6 +2045,8 @@ module.exports = {
     , getPhysicalInventoryHeader
     , updateMostradorPhysicalInventoryDetail
     , getPhysicalInventoryHeaderBySucursal
+    , getAuditPhysicalInventory
+    , deletePhysicalInventory
     , getCatListWithPage
     , insertUpdateCat
     , getRepComprasProveedorListWithPage

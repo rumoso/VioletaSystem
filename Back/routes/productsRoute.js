@@ -24,6 +24,8 @@ const {
     , getPhysicalInventoryHeader
     , updateMostradorPhysicalInventoryDetail
     , getPhysicalInventoryHeaderBySucursal
+    , getAuditPhysicalInventory
+    , deletePhysicalInventory
 
     , getCatListWithPage
     , insertUpdateCat
@@ -235,6 +237,22 @@ router.post('/updateMostradorPhysicalInventoryDetail', [
 ], updateMostradorPhysicalInventoryDetail);
 
 router.post('/getPhysicalInventoryHeaderBySucursal', getPhysicalInventoryHeaderBySucursal);
+
+router.post('/getAuditPhysicalInventory', [
+
+  check('sOption','sOption obligatorío').not().isEmpty(),
+  check('idSucursal','idSucursal obligatorío').not().isEmpty(),
+  check('idSucursal','idSucursal debe ser numérico').isNumeric(),
+
+  validarCampos
+], getAuditPhysicalInventory);
+
+router.post('/deletePhysicalInventory', [
+
+  check('idPhysicalInventory','id obligatorío').not().isEmpty(),
+
+  validarCampos
+], deletePhysicalInventory);
 
 router.post('/getCatListWithPage', [
 

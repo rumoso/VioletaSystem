@@ -38,6 +38,7 @@ import { SuppliersComponent } from './pages/catssales/suppliers/suppliers.compon
 import { ActionsconfComponent } from './pages/security/mdl/actionsconf/actionsconf.component';
 import { PhysicalInventoryComponent } from './pages/reports/physical-inventory/physical-inventory.component';
 import { PhysicalInventoryListComponent } from './pages/reports/physical-inventory-list/physical-inventory-list.component';
+import { PhysicalInventoryAuditComponent } from './pages/reports/physical-inventory-audit/physical-inventory-audit.component';
 import { ComisionesComponent } from './pages/operation/comisiones/comisiones.component';
 import { ComisionComponent } from './pages/operation/comision/comision.component';
 import { EgresosListComponent } from './pages/sales/egresos-list/egresos-list.component';
@@ -105,6 +106,7 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
     ActionsconfComponent,
     PhysicalInventoryComponent,
     PhysicalInventoryListComponent,
+    PhysicalInventoryAuditComponent,
     ComisionesComponent,
     ComisionComponent,
     EgresosListComponent,

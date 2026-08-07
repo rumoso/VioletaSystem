@@ -256,6 +256,21 @@ export class ProductsService {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getPhysicalInventoryHeaderBySucursal`, data);
   }
 
+  CGetAuditPhysicalInventory( data: any ): Observable<ResponseGet> {
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getAuditPhysicalInventory`, data);
+  }
+
+  CDeletePhysicalInventory( idPhysicalInventory: any ): Observable<ResponseDB_CRUD> {
+    var data = {
+      idPhysicalInventory: idPhysicalInventory,
+      idUserLogON: this.authServ.getIdUserSession(),
+      idSucursalLogON: this.idSucursal
+    }
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deletePhysicalInventory`, data );
+  }
+
   CGetCatListWithPage( pagination: Pagination, data: any ): Observable<ResponseGet> {
 
     let start = pagination.pageIndex * pagination.pageSize;
