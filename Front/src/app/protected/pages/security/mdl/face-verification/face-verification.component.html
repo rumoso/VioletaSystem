@@ -46,9 +46,20 @@
             <p>Preparando cámara y reconocimiento local...</p>
         </div>
 
-        <!-- Cámara -->
+        <!-- Cámara + plantilla-guía: el óvalo cambia de color según la
+             posición del rostro y la captura se dispara sola al alinearse. -->
         <div class="fv-camera-wrap" [hidden]="!bCameraReady || bLoadingModels || resultadoPendiente">
             <video #video class="fv-video" autoplay playsinline muted></video>
+            <div class="fv-guia-ovalo"
+                [class.buscando]="guiaEstado === 'buscando'"
+                [class.reacomoda]="guiaEstado === 'reacomoda'"
+                [class.alineado]="guiaEstado === 'alineado'"></div>
+        </div>
+
+        <div class="fv-guia-hint" *ngIf="bCameraReady && !bLoadingModels && !resultadoPendiente">
+            {{ guiaEstado === 'alineado' ? '¡Perfecto, no te muevas!'
+                : guiaEstado === 'reacomoda' ? 'Centra tu rostro dentro del óvalo'
+                : 'Coloca tu rostro dentro del óvalo' }}
         </div>
 
         <!-- Resultado encontrado: pide confirmación antes de aceptarlo -->
@@ -84,7 +95,7 @@
         [disabled]="bCapturing"
         (click)="fn_capturar()">
             <mat-icon matPrefix class="my-icon">camera_alt</mat-icon>
-            {{ bCapturing ? 'Procesando...' : 'Capturar' }}</button>
+            {{ bCapturing ? 'Procesando...' : 'Capturar ahora' }}</button>
 
     </mat-dialog-actions>
 

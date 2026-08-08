@@ -159,6 +159,7 @@
 }
 
 .fv-camera-wrap {
+    position: relative;
     display: flex;
     justify-content: center;
     background: #111;
@@ -171,6 +172,46 @@
     max-width: 420px;
     border-radius: 8px;
     transform: scaleX(-1);
+}
+
+/* Plantilla-guía: óvalo centrado sobre el video (mismo centro/tamaño
+   que usa el sondeo en el TS para decidir "alineado"). */
+.fv-guia-ovalo {
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    transform: translate(-50%, -50%);
+    width: 46%;
+    height: 68%;
+    max-width: 190px;
+    max-height: 260px;
+    border-radius: 50%;
+    border: 3px dashed rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    pointer-events: none;
+}
+
+.fv-guia-ovalo.buscando {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.fv-guia-ovalo.reacomoda {
+    border-color: #ffa726;
+    border-style: solid;
+    box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35), 0 0 14px rgba(255, 167, 38, 0.5);
+}
+
+.fv-guia-ovalo.alineado {
+    border-color: #66bb6a;
+    border-style: solid;
+    box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35), 0 0 18px rgba(102, 187, 106, 0.7);
+}
+
+.fv-guia-hint {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #666;
 }
 
 .fv-mensaje {

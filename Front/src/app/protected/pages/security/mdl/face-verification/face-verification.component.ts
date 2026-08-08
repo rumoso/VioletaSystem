@@ -49,11 +49,23 @@ export class FaceVerificationComponent implements OnDestroy {
   deviceIdActivo: string | null = null;
   bCambiandoCamara: boolean = false;
 
+  // Plantilla-guía: estado del óvalo mientras se sondea la posición del
+  // rostro para disparar la captura sola, sin que el usuario dé clic.
+  guiaEstado: 'buscando' | 'reacomoda' | 'alineado' = 'buscando';
+
   private stream: MediaStream | null = null;
   private referenciaEsperada: any = null;
   private referenciasTodas: any[] = [];
   private idUserLogON: number = 0;
   private deviceIdPreferido: string | null = null;
+
+  private deteccionTimer: any = null;
+  private ticksAlineado: number = 0;
+
+  // Cuántos sondeos alineados seguidos (~250ms c/u) antes de disparar la
+  // captura sola — evita que un parpadeo dispare de más.
+  private readonly TICKS_PARA_CAPTURAR = 5;
+  private readonly INTERVALO_SONDEO_MS = 250;
 
   constructor(
     private dialogRef: MatDialogRef<FaceVerificationComponent>
@@ -158,6 +170,8 @@ export class FaceVerificationComponent implements OnDestroy {
           await this.fn_seleccionarCamara(this.deviceIdPreferido, false);
         }
 
+        this.fn_iniciarSondeoGuia();
+
       } else {
         this.mensaje = oCam.error || 'No se pudo acceder a la cámara.';
         this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
@@ -204,11 +218,73 @@ export class FaceVerificationComponent implements OnDestroy {
     return cam.label || `Cámara ${ index + 1 }`;
   }
 
+  // Sondeo continuo (liviano, solo la caja del rostro) que dibuja la
+  // guía y dispara la captura sola cuando el rostro queda alineado y
+  // estable — el usuario no necesita dar clic en "Capturar".
+  private fn_iniciarSondeoGuia() {
+
+    if (this.deteccionTimer) {
+      return;
+    }
+
+    this.deteccionTimer = setInterval(async () => {
+
+      // Pausado mientras se procesa una captura, se confirma un
+      // resultado, o la cámara todavía no está lista.
+      if (!this.bCameraReady || this.bCapturing || this.resultadoPendiente || this.bCambiandoCamara) {
+        return;
+      }
+
+      const box = await this.faceRecognitionServ.detectFaceBox(this.videoRef.nativeElement);
+
+      if (!box) {
+        this.guiaEstado = 'buscando';
+        this.ticksAlineado = 0;
+        return;
+      }
+
+      const centroX = (box.x + box.width / 2) / box.videoWidth;
+      const centroY = (box.y + box.height / 2) / box.videoHeight;
+      const anchoRelativo = box.width / box.videoWidth;
+
+      const bAlineado = Math.abs(centroX - 0.5) <= 0.13
+        && Math.abs(centroY - 0.45) <= 0.15
+        && anchoRelativo >= 0.28
+        && anchoRelativo <= 0.65;
+
+      if (bAlineado) {
+
+        this.guiaEstado = 'alineado';
+        this.ticksAlineado++;
+
+        if (this.ticksAlineado >= this.TICKS_PARA_CAPTURAR) {
+          this.ticksAlineado = 0;
+          this.fn_capturar();
+        }
+
+      } else {
+        this.guiaEstado = 'reacomoda';
+        this.ticksAlineado = 0;
+      }
+
+    }, this.INTERVALO_SONDEO_MS);
+
+  }
+
+  private fn_detenerSondeoGuia() {
+    if (this.deteccionTimer) {
+      clearInterval(this.deteccionTimer);
+      this.deteccionTimer = null;
+    }
+  }
+
   ngOnDestroy(): void {
+    this.fn_detenerSondeoGuia();
     this.faceRecognitionServ.stopCamera(this.stream);
   }
 
   fn_close(resultado: any = null) {
+    this.fn_detenerSondeoGuia();
     this.faceRecognitionServ.stopCamera(this.stream);
     this.dialogRef.close(resultado);
   }

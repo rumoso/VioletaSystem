@@ -80,6 +80,31 @@ export class FaceRecognitionService {
     return track?.getSettings().deviceId || null;
   }
 
+  // Deteccion liviana (solo la caja, sin landmarks ni descriptor) para
+  // el sondeo continuo que dibuja la plantilla-guia y dispara la
+  // captura automática. Mucho más barata que captureDescriptor().
+  async detectFaceBox(videoEl: HTMLVideoElement): Promise<{ x: number; y: number; width: number; height: number; videoWidth: number; videoHeight: number } | null> {
+
+    if (!videoEl.videoWidth) {
+      return null;
+    }
+
+    const detection = await faceapi.detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions());
+
+    if (!detection) {
+      return null;
+    }
+
+    return {
+      x: detection.box.x,
+      y: detection.box.y,
+      width: detection.box.width,
+      height: detection.box.height,
+      videoWidth: videoEl.videoWidth,
+      videoHeight: videoEl.videoHeight
+    };
+  }
+
   // Detecta un rostro en el frame actual del video y regresa su
   // descriptor (128 numeros) + una miniatura en base64 del recorte.
   async captureDescriptor(videoEl: HTMLVideoElement): Promise<{ ok: boolean; descriptor?: number[]; imgThumb?: string; error?: string }> {
