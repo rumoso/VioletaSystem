@@ -47,8 +47,16 @@
         </div>
 
         <!-- Cámara -->
-        <div class="fv-camera-wrap" [hidden]="!bCameraReady || bLoadingModels">
+        <div class="fv-camera-wrap" [hidden]="!bCameraReady || bLoadingModels || resultadoPendiente">
             <video #video class="fv-video" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Resultado encontrado: pide confirmación antes de aceptarlo -->
+        <div class="fv-resultado" *ngIf="resultadoPendiente">
+            <mat-icon class="fv-resultado-icon">face</mat-icon>
+            <p>Identificamos a:</p>
+            <p class="fv-resultado-nombre">{{ resultadoPendiente.nombre }}</p>
+            <p class="fv-resultado-similitud">Similitud: {{ (resultadoPendiente.similitud * 100).toFixed(0) }}%</p>
         </div>
 
         <div class="fv-mensaje" *ngIf="mensaje">
@@ -58,7 +66,7 @@
 
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end" class="fv-actions">
+    <mat-dialog-actions align="end" class="fv-actions" *ngIf="!resultadoPendiente">
 
         <button mat-raised-button type="button"
         *ngIf="bMostrarAutorizacionManual"
@@ -77,6 +85,21 @@
         (click)="fn_capturar()">
             <mat-icon matPrefix class="my-icon">camera_alt</mat-icon>
             {{ bCapturing ? 'Procesando...' : 'Capturar' }}</button>
+
+    </mat-dialog-actions>
+
+    <mat-dialog-actions align="end" class="fv-actions" *ngIf="resultadoPendiente">
+
+        <button mat-raised-button type="button"
+        (click)="fn_rechazarIdentificacion()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            No es correcto</button>
+
+        <button mat-raised-button color="primary" type="button"
+        [disabled]="bAceptando"
+        (click)="fn_aceptarIdentificacion()">
+            <mat-icon matPrefix class="my-icon">check_circle</mat-icon>
+            {{ bAceptando ? 'Procesando...' : 'Sí, aceptar' }}</button>
 
     </mat-dialog-actions>
 

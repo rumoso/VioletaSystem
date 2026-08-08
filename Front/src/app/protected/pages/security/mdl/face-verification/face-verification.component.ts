@@ -40,6 +40,11 @@ export class FaceVerificationComponent implements OnDestroy {
   bMostrarAutorizacionManual: boolean = false;
   bOcultarAutorizacionManual: boolean = false;
 
+  // Resultado encontrado (VERIFICAR o IDENTIFICAR) esperando que el
+  // operador confirme "sí es esta persona" antes de cerrar el modal.
+  resultadoPendiente: { nombre: string; similitud: number; tipoPersona?: string; idPersona?: number } | null = null;
+  bAceptando: boolean = false;
+
   camaras: MediaDeviceInfo[] = [];
   deviceIdActivo: string | null = null;
   bCambiandoCamara: boolean = false;
@@ -235,9 +240,15 @@ export class FaceVerificationComponent implements OnDestroy {
       const oResultado = this.faceRecognitionServ.compare(oCaptura.descriptor!, this.referenciaEsperada.descriptor ? JSON.parse(this.referenciaEsperada.descriptor) : []);
 
       if (oResultado.match) {
-        await this.fn_logResultado('EXITO', this.tipoPersona, this.idPersona, oResultado.similitud);
+        // No se cierra todavía: se muestra a quién identificó y se
+        // espera que el operador lo acepte.
+        this.resultadoPendiente = {
+          nombre: this.nombrePersona || this.referenciaEsperada?.nombrePersona || 'la persona esperada',
+          similitud: oResultado.similitud,
+          tipoPersona: this.tipoPersona,
+          idPersona: this.idPersona
+        };
         this.bCapturing = false;
-        this.fn_close({ ok: true, similitud: oResultado.similitud });
       } else {
         this.mensaje = `No coincide con ${ this.nombrePersona || 'la persona esperada' } (similitud ${ (oResultado.similitud * 100).toFixed(0) }%).`;
         await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
@@ -250,15 +261,13 @@ export class FaceVerificationComponent implements OnDestroy {
       const oResultado = this.faceRecognitionServ.identify(oCaptura.descriptor!, this.referenciasTodas);
 
       if (oResultado.match) {
-        await this.fn_logResultado('EXITO', oResultado.referencia.tipoPersona, oResultado.referencia.idPersona, oResultado.similitud);
-        this.bCapturing = false;
-        this.fn_close({
-          ok: true,
-          tipoPersona: oResultado.referencia.tipoPersona,
-          idPersona: oResultado.referencia.idPersona,
+        this.resultadoPendiente = {
           nombre: oResultado.referencia.nombrePersona,
-          similitud: oResultado.similitud
-        });
+          similitud: oResultado.similitud,
+          tipoPersona: oResultado.referencia.tipoPersona,
+          idPersona: oResultado.referencia.idPersona
+        };
+        this.bCapturing = false;
       } else {
         this.mensaje = 'No se encontró coincidencia con nadie enrolado.';
         await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
@@ -267,6 +276,42 @@ export class FaceVerificationComponent implements OnDestroy {
       }
 
     }
+
+  }
+
+  async fn_aceptarIdentificacion() {
+
+    if (!this.resultadoPendiente || this.bAceptando) {
+      return;
+    }
+
+    this.bAceptando = true;
+
+    const r = this.resultadoPendiente;
+    await this.fn_logResultado('EXITO', r.tipoPersona || null, r.idPersona || 0, r.similitud);
+
+    this.fn_close({
+      ok: true,
+      tipoPersona: r.tipoPersona,
+      idPersona: r.idPersona,
+      nombre: r.nombre,
+      similitud: r.similitud
+    });
+
+  }
+
+  async fn_rechazarIdentificacion() {
+
+    if (!this.resultadoPendiente) {
+      return;
+    }
+
+    const r = this.resultadoPendiente;
+    this.resultadoPendiente = null;
+    this.mensaje = `Se descartó la identificación de ${ r.nombre }. Puedes intentar de nuevo.`;
+
+    await this.fn_logResultado('FALLO', null, 0, r.similitud);
+    this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
 
   }
 

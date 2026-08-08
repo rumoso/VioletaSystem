@@ -97,6 +97,38 @@
     margin-bottom: 10px;
 }
 
+.fv-resultado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 24px 10px;
+}
+
+.fv-resultado-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: #2e7d32;
+    margin-bottom: 6px;
+}
+
+.fv-resultado p {
+    margin: 0;
+}
+
+.fv-resultado-nombre {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1b5e20;
+}
+
+.fv-resultado-similitud {
+    font-size: 12px;
+    color: #757575;
+    margin-top: 4px !important;
+}
+
 .fv-estado {
     display: flex;
     flex-direction: column;
