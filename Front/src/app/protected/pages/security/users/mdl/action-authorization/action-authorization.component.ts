@@ -7,6 +7,7 @@ import { ActionsService } from 'src/app/protected/services/actions.service';
 import { AuthorizationActionService } from 'src/app/protected/services/authorization-action.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
+import { FaceVerificationComponent } from '../../../mdl/face-verification/face-verification.component';
 
 @Component({
   selector: 'app-action-authorization',
@@ -77,6 +78,61 @@ constructor(
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
   bShow: boolean = false;
+
+  fn_authorizarPorRostro() {
+
+    if (this.bShow) {
+      return;
+    }
+
+    this.servicesGServ.showModalWithParams(FaceVerificationComponent, {
+      modo: 'IDENTIFICAR',
+      tipoPersona: 'USUARIO',
+      referencia: `Autorización: ${ this.actionForm.actionName }`,
+      ocultarAutorizacionManual: true
+    }, '480px')
+      .afterClosed().subscribe({
+        next: (resp: any) => {
+
+          if (!resp?.ok) {
+            return; // canceló o no identificó a nadie: puede seguir con el código
+          }
+
+          this.bShow = true;
+          this.bShowSpinner = true;
+
+          this.authorizationServ.CAuthorizationActionByFace({
+            idUser: resp.idPersona,
+            actionName: this.actionForm.actionName
+          }).subscribe({
+            next: (resp2: ResponseDB_CRUD) => {
+
+              if (this.ODataP.bShowAlert) {
+                this.servicesGServ.showAlertIA(resp2);
+              }
+
+              if (resp2.status == 0 && resp2.insertID > 0) {
+                this.fn_CerrarMDL(resp2.insertID);
+              } else {
+                this.servicesGServ.showAlertIA(resp2);
+              }
+
+              this.bShowSpinner = false;
+              this.bShow = false;
+
+            },
+            error: () => {
+              this.servicesGServ.showSnakbar("Problemas con el servicio");
+              this.bShowSpinner = false;
+              this.bShow = false;
+            }
+          });
+
+        }
+      });
+
+  }
+
   fn_authorizationAction() {
 
     if( this.actionForm?.authorizationCode?.trim()?.length > 0 && !this.bShow){

@@ -38,6 +38,7 @@ export class FaceVerificationComponent implements OnDestroy {
 
   mensaje: string = '';
   bMostrarAutorizacionManual: boolean = false;
+  bOcultarAutorizacionManual: boolean = false;
 
   camaras: MediaDeviceInfo[] = [];
   deviceIdActivo: string | null = null;
@@ -66,6 +67,10 @@ export class FaceVerificationComponent implements OnDestroy {
     this.idPersona = this.ODataP.idPersona || 0;
     this.nombrePersona = this.ODataP.nombrePersona || '';
     this.referencia = this.ODataP.referencia || '';
+    // Cuando este modal se invoca DESDE otro flujo de autorización (ej.
+    // ActionAuthorizationComponent), su propio fallback manual no aplica
+    // — quien lo invoque ya tiene su propia vía alterna (el código).
+    this.bOcultarAutorizacionManual = !!this.ODataP.ocultarAutorizacionManual;
 
     this.idUserLogON = await this.authServ.getIdUserSession();
 
@@ -88,19 +93,19 @@ export class FaceVerificationComponent implements OnDestroy {
             } else {
               this.bSinReferencia = true;
               this.bLoadingModels = false;
-              this.bMostrarAutorizacionManual = true;
+              this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
             }
           },
           error: () => {
             this.bSinReferencia = true;
             this.bLoadingModels = false;
-            this.bMostrarAutorizacionManual = true;
+            this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
           }
         });
 
     } else if (this.modo === 'IDENTIFICAR') {
 
-      this.faceReferenceServ.CGetFaceReferences('')
+      this.faceReferenceServ.CGetFaceReferences(this.tipoPersona)
         .subscribe({
           next: (resp: ResponseGet) => {
             this.referenciasTodas = resp.status === 0 ? (resp.data || []) : [];
@@ -150,7 +155,7 @@ export class FaceVerificationComponent implements OnDestroy {
 
       } else {
         this.mensaje = oCam.error || 'No se pudo acceder a la cámara.';
-        this.bMostrarAutorizacionManual = true;
+        this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
         await this.fn_logResultado('NO_DISPONIBLE', null, 0);
       }
 
@@ -236,7 +241,7 @@ export class FaceVerificationComponent implements OnDestroy {
       } else {
         this.mensaje = `No coincide con ${ this.nombrePersona || 'la persona esperada' } (similitud ${ (oResultado.similitud * 100).toFixed(0) }%).`;
         await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
-        this.bMostrarAutorizacionManual = true;
+        this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
         this.bCapturing = false;
       }
 
@@ -257,7 +262,7 @@ export class FaceVerificationComponent implements OnDestroy {
       } else {
         this.mensaje = 'No se encontró coincidencia con nadie enrolado.';
         await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
-        this.bMostrarAutorizacionManual = true;
+        this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
         this.bCapturing = false;
       }
 

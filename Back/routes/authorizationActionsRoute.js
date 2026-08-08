@@ -3,8 +3,9 @@ const { check } = require('express-validator')
 
 const { validarCampos } = require('../middlewares/validar-campos')
 
-const { 
+const {
   authorizationActionAPI
+  , authorizationActionByFace
   , getAutorizacionesByRelation
    } = require('../controllers/authorizationActionsController');
 
@@ -18,6 +19,13 @@ router.post('/authorizationActionAPI', [
   
   validarCampos
 ], authorizationActionAPI);
+
+router.post('/authorizationActionByFace', [
+  check('idUser','idUser obligatorio').not().isEmpty(),
+  check('actionName','Id acción obligatorio').not().isEmpty(),
+
+  validarCampos
+], authorizationActionByFace);
 
 router.post('/getAutorizacionesByRelation', [
 

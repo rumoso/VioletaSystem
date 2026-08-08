@@ -28,6 +28,11 @@ export class AuthorizationActionService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/authorizationActionAPI`, data );
   }
 
+  CAuthorizationActionByFace( data : any ): Observable<ResponseDB_CRUD> {
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/authorizationActionByFace`, data );
+  }
+
   CGetAutorizacionesByRelation( data : any ): Observable<ResponseGet> {
 
     data.idUserLogON = this.authServ.getIdUserSession();
