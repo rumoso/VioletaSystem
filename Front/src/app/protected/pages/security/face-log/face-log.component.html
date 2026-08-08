@@ -1,0 +1,98 @@
+<div class="fl-page">
+
+    <!-- ═══════════════ TÍTULO INTEGRADO (patrón de Inventario de Metal) ═══════════════ -->
+    <div class="fl-card fl-header-card">
+        <div class="fl-inline-title">
+            <div class="fl-inline-title-icon">
+                <mat-icon>face</mat-icon>
+            </div>
+            <div class="fl-inline-title-text">
+                <span class="fl-inline-title-name">Bitácora Facial</span>
+                <span class="fl-inline-title-desc">Historial de verificaciones e identificaciones faciales</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="fl-card">
+        <div class="fl-filters-row">
+
+            <div class="slim-field">
+                <span class="slim-label">Modo</span>
+                <select class="inline-input" [(ngModel)]="parametersForm.modo">
+                    <option value="">Todos</option>
+                    <option value="VERIFICAR">Verificar (1:1)</option>
+                    <option value="IDENTIFICAR">Identificar (1:N)</option>
+                </select>
+            </div>
+
+            <div class="slim-field">
+                <span class="slim-label">Resultado</span>
+                <select class="inline-input" [(ngModel)]="parametersForm.resultado">
+                    <option value="">Todos</option>
+                    <option value="EXITO">Éxito</option>
+                    <option value="FALLO">Fallo</option>
+                    <option value="NO_DISPONIBLE">Sin cámara</option>
+                    <option value="AUTORIZACION_MANUAL">Autorización manual</option>
+                </select>
+            </div>
+
+            <div class="slim-field">
+                <span class="slim-label">Desde</span>
+                <input class="inline-input" type="date" [(ngModel)]="parametersForm.startDate">
+            </div>
+
+            <div class="slim-field">
+                <span class="slim-label">Hasta</span>
+                <input class="inline-input" type="date" [(ngModel)]="parametersForm.endDate">
+            </div>
+
+            <button mat-raised-button color="primary" type="button" (click)="fn_getTrack()">
+                <mat-icon matPrefix class="my-icon">search</mat-icon>
+                Buscar</button>
+            <button mat-raised-button type="button" (click)="parametersForm_Clear()">
+                <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                Limpiar</button>
+        </div>
+
+        <div class="table-responsive top10px">
+            <table class="table table-hover fl-table">
+                <thead>
+                    <th class="textAlingCenter">Fecha</th>
+                    <th class="textAlingCenter">Modo</th>
+                    <th class="textAlingCenter">Resultado</th>
+                    <th class="textAlingLeft">Esperada</th>
+                    <th class="textAlingLeft">Identificada</th>
+                    <th class="textAlingRight">Similitud</th>
+                    <th class="textAlingLeft">Referencia</th>
+                    <th class="textAlingLeft">Usuario</th>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of trackList">
+                        <td class="textAlingCenter">{{ item.createDateDesc }}</td>
+                        <td class="textAlingCenter">{{ item.modo }}</td>
+                        <td class="textAlingCenter">
+                            <span class="badge fl-badge"
+                                [class.bg-success]="item.resultado === 'EXITO'"
+                                [class.bg-danger]="item.resultado === 'FALLO'"
+                                [class.bg-warning]="item.resultado === 'NO_DISPONIBLE'"
+                                [class.bg-primary]="item.resultado === 'AUTORIZACION_MANUAL'">
+                                {{ item.resultado }}
+                            </span>
+                        </td>
+                        <td class="textAlingLeft">{{ item.personaEsperadaDesc || '-' }}</td>
+                        <td class="textAlingLeft">{{ item.personaIdentificadaDesc || '-' }}</td>
+                        <td class="textAlingRight">{{ item.similitud != null ? (item.similitud * 100 | number:'1.0-0') + '%' : '-' }}</td>
+                        <td class="textAlingLeft">{{ item.referencia || '-' }}</td>
+                        <td class="textAlingLeft">{{ item.createUserDesc }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <app-pagination *ngIf="trackList" [IPagination]="pagination"
+                        (OPagination)="changePagination($event)">
+        </app-pagination>
+    </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -36,6 +36,7 @@ class Server{
             finanzas:'/api/finanzas',
             serviciosExternos:'/api/serviciosExternos',
             metalInventario:'/api/metalInventario',
+            faceRecognition:'/api/faceRecognition',
 
         }
 
@@ -126,6 +127,7 @@ class Server{
         this.app.use(this.paths.finanzas, require('../routes/finanzasRoute'));
         this.app.use(this.paths.serviciosExternos, require('../routes/serviciosExternosRoute'));
         this.app.use(this.paths.metalInventario, require('../routes/metalInventarioRoute'));
+        this.app.use(this.paths.faceRecognition, require('../routes/faceRecognitionRoute'));
     }
 
     listen(){

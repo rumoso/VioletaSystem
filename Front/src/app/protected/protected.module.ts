@@ -31,6 +31,8 @@ import { CortesCajaComponent } from './pages/sales/cortes-caja/cortes-caja.compo
 import { RoleComponent } from './pages/security/roles/role/role.component';
 import { RoleListComponent } from './pages/security/roles/role-list/role-list.component';
 import { ActionAuthorizationComponent } from './pages/security/users/mdl/action-authorization/action-authorization.component';
+import { FaceVerificationComponent } from './pages/security/mdl/face-verification/face-verification.component';
+import { FaceLogComponent } from './pages/security/face-log/face-log.component';
 import { CortecajadetailComponent } from './pages/sales/mdl/cortecajadetail/cortecajadetail.component';
 import { InventarylogComponent } from './pages/catssales/mdl/inventarylog/inventarylog.component';
 import { UtilidadComponent } from './pages/reports/utilidad/utilidad.component';
@@ -100,6 +102,8 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
     RoleComponent,
     RoleListComponent,
     ActionAuthorizationComponent,
+    FaceVerificationComponent,
+    FaceLogComponent,
     CortecajadetailComponent,
     InventarylogComponent,
     UtilidadComponent,

@@ -1,0 +1,128 @@
+.top10px { margin-top: 10px; }
+
+/* ---------- Página y título integrado ---------- */
+
+.fl-page {
+    padding: 20px 24px 40px;
+}
+
+.fl-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+    margin-bottom: 20px;
+    padding: 16px 24px;
+    overflow: hidden;
+}
+
+.fl-header-card {
+    padding: 0;
+    margin-bottom: 16px;
+}
+
+.fl-inline-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 24px;
+}
+
+.fl-inline-title-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6a1b9a, #8e24aa);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(106, 27, 154, .22);
+}
+
+.fl-inline-title-icon mat-icon {
+    font-size: 22px !important;
+    width: 22px;
+    height: 22px;
+    color: #fff;
+}
+
+.fl-inline-title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.fl-inline-title-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #4a148c;
+    letter-spacing: -0.2px;
+    line-height: 1.2;
+}
+
+.fl-inline-title-desc {
+    font-size: 12px;
+    color: #888;
+}
+
+/* ---------- Filtros slim ---------- */
+
+.fl-filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px;
+}
+
+.slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.slim-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #757575;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.inline-input {
+    height: 34px;
+    min-width: 150px;
+    padding: 0 10px;
+    border: 1px solid #bdbdbd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    background: white;
+    box-sizing: border-box;
+}
+
+.inline-input:focus {
+    outline: none;
+    border-color: #8e24aa;
+    box-shadow: 0 0 0 2px rgba(142, 36, 170, .15);
+}
+
+/* ---------- Tabla ---------- */
+
+.fl-table {
+    font-size: 13px;
+    margin-bottom: 0;
+}
+
+.fl-table th {
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.fl-table td {
+    padding: 4px 8px;
+    vertical-align: middle;
+}
+
+.fl-badge {
+    font-size: 11px;
+}

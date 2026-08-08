@@ -16,6 +16,7 @@ import { RoleListComponent } from "./pages/security/roles/role-list/role-list.co
 import { RoleComponent } from "./pages/security/roles/role/role.component";
 import { PhysicalInventoryListComponent } from "./pages/reports/physical-inventory-list/physical-inventory-list.component";
 import { MetalInventarioComponent } from "./pages/reports/metal-inventario/metal-inventario.component";
+import { FaceLogComponent } from "./pages/security/face-log/face-log.component";
 import { ComisionesComponent } from "./pages/operation/comisiones/comisiones.component";
 import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.component";
 import { RepcomprasproveedorComponent } from "./pages/reports/repcomprasproveedor/repcomprasproveedor.component";
@@ -106,6 +107,10 @@ const routes: Routes = [
         {
           path: 'inventarioMetal',
           component: MetalInventarioComponent
+        },
+        {
+          path: 'facialLog',
+          component: FaceLogComponent
         },
         {
           path: 'comisiones',

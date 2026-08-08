@@ -1,0 +1,71 @@
+<div class="fv-modal">
+
+    <div mat-dialog-title class="fv-header">
+        <div class="fv-header-title">
+            <mat-icon class="fv-header-icon">face</mat-icon>
+            <span>
+                {{ modo === 'ENROLAR' ? 'Registrar rostro de referencia'
+                    : modo === 'VERIFICAR' ? 'Verificar identidad'
+                    : 'Identificar persona' }}
+            </span>
+        </div>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="fv-content">
+
+        <div class="fv-persona" *ngIf="nombrePersona">
+            Se espera: <b>{{ nombrePersona }}</b>
+        </div>
+
+        <!-- Sin foto de referencia enrolada (modo VERIFICAR) -->
+        <div class="fv-estado" *ngIf="bSinReferencia">
+            <mat-icon class="fv-estado-icon warn">person_off</mat-icon>
+            <p>Esta persona no tiene un rostro de referencia registrado — no se puede verificar.</p>
+        </div>
+
+        <!-- Cargando modelos / cámara -->
+        <div class="fv-estado" *ngIf="bLoadingModels && !bSinReferencia">
+            <mat-icon class="fv-estado-icon spin">autorenew</mat-icon>
+            <p>Preparando cámara y reconocimiento local...</p>
+        </div>
+
+        <!-- Cámara -->
+        <div class="fv-camera-wrap" [hidden]="!bCameraReady || bLoadingModels">
+            <video #video class="fv-video" autoplay playsinline muted></video>
+        </div>
+
+        <div class="fv-mensaje" *ngIf="mensaje">
+            <mat-icon>info</mat-icon>
+            <span>{{ mensaje }}</span>
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="fv-actions">
+
+        <button mat-raised-button type="button"
+        *ngIf="bMostrarAutorizacionManual"
+        color="warn"
+        (click)="fn_autorizacionManual()">
+            <mat-icon matPrefix class="my-icon">vpn_key</mat-icon>
+            Autorización manual</button>
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cancelar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        *ngIf="bCameraReady && !bLoadingModels"
+        [disabled]="bCapturing"
+        (click)="fn_capturar()">
+            <mat-icon matPrefix class="my-icon">camera_alt</mat-icon>
+            {{ bCapturing ? 'Procesando...' : 'Capturar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>
