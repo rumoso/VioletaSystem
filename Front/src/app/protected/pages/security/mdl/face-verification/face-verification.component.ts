@@ -1,4 +1,4 @@
-import { Component, ElementRef, Inject, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, Inject, OnDestroy, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
@@ -355,6 +355,17 @@ export class FaceVerificationComponent implements OnDestroy {
 
     }
 
+  }
+
+  // Con el resultado ya mostrado ("Identificamos a: NOMBRE"), Enter
+  // equivale a darle clic a "Sí, aceptar" — no hay ningún input que
+  // enfocar en esa pantalla, por eso se escucha a nivel documento.
+  @HostListener('document:keydown.enter', ['$event'])
+  event_fn_EnterAceptar(event: KeyboardEvent) {
+    if (this.resultadoPendiente) {
+      event.preventDefault();
+      this.fn_aceptarIdentificacion();
+    }
   }
 
   async fn_aceptarIdentificacion() {
