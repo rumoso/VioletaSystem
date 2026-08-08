@@ -48,7 +48,7 @@
 
         <!-- Cámara + plantilla-guía: el óvalo cambia de color según la
              posición del rostro y la captura se dispara sola al alinearse. -->
-        <div class="fv-camera-wrap" [hidden]="!bCameraReady || bLoadingModels || resultadoPendiente">
+        <div class="fv-camera-wrap" [hidden]="!bCameraReady || bLoadingModels || resultadoPendiente || candidatosPendientes">
             <video #video class="fv-video" autoplay playsinline muted></video>
             <div class="fv-guia-ovalo"
                 [class.buscando]="guiaEstado === 'buscando'"
@@ -56,10 +56,23 @@
                 [class.alineado]="guiaEstado === 'alineado'"></div>
         </div>
 
-        <div class="fv-guia-hint" *ngIf="bCameraReady && !bLoadingModels && !resultadoPendiente">
+        <div class="fv-guia-hint" *ngIf="bCameraReady && !bLoadingModels && !resultadoPendiente && !candidatosPendientes">
             {{ guiaEstado === 'alineado' ? '¡Perfecto, no te muevas!'
                 : guiaEstado === 'reacomoda' ? 'Centra tu rostro dentro del óvalo'
                 : 'Coloca tu rostro dentro del óvalo' }}
+        </div>
+
+        <!-- Más de una persona plausible: hay que elegir cuál es -->
+        <div class="fv-candidatos" *ngIf="candidatosPendientes">
+            <p class="fv-candidatos-titulo">Encontramos más de una coincidencia, ¿quién es?</p>
+            <button type="button"
+            *ngFor="let c of candidatosPendientes"
+            class="fv-candidato-row"
+            (click)="fn_elegirCandidato(c)">
+                <mat-icon>person</mat-icon>
+                <span class="fv-candidato-nombre">{{ c.nombre }}</span>
+                <span class="fv-candidato-similitud">{{ (c.similitud * 100).toFixed(0) }}%</span>
+            </button>
         </div>
 
         <!-- Resultado encontrado: pide confirmación antes de aceptarlo -->
@@ -77,7 +90,7 @@
 
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end" class="fv-actions" *ngIf="!resultadoPendiente">
+    <mat-dialog-actions align="end" class="fv-actions" *ngIf="!resultadoPendiente && !candidatosPendientes">
 
         <button mat-raised-button type="button"
         *ngIf="bMostrarAutorizacionManual"
@@ -96,6 +109,15 @@
         (click)="fn_capturar()">
             <mat-icon matPrefix class="my-icon">camera_alt</mat-icon>
             {{ bCapturing ? 'Procesando...' : 'Capturar ahora' }}</button>
+
+    </mat-dialog-actions>
+
+    <mat-dialog-actions align="end" class="fv-actions" *ngIf="candidatosPendientes">
+
+        <button mat-raised-button type="button"
+        (click)="fn_cancelarCandidatos()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Ninguno es correcto</button>
 
     </mat-dialog-actions>
 

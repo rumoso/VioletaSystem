@@ -142,29 +142,29 @@ export class FaceRecognitionService {
     };
   }
 
-  // Busca la referencia mas parecida entre varias (modo identificacion
-  // 1:N). `referencias` trae idPersona/tipoPersona/descriptor.
-  identify(descriptor: number[], referencias: any[]): { match: boolean; referencia?: any; similitud: number } {
+  // Busca TODAS las referencias que coinciden dentro del umbral (modo
+  // identificacion 1:N), no solo la más parecida — si hay más de una
+  // persona plausible, quien invoque esto debe mostrar la lista y dejar
+  // que el operador elija, en vez de confiar a ciegas en "la más cercana".
+  // `referencias` trae idPersona/tipoPersona/descriptor. Ordenado de
+  // mayor a menor similitud.
+  identify(descriptor: number[], referencias: any[]): { candidatos: Array<{ referencia: any; similitud: number }> } {
 
-    let mejor: any = null;
-    let mejorDistancia = Infinity;
+    const candidatos: Array<{ referencia: any; similitud: number }> = [];
 
     for (const ref of referencias) {
       const oDescriptorRef: number[] = typeof ref.descriptor === 'string' ? JSON.parse(ref.descriptor) : ref.descriptor;
       const distancia = faceapi.euclideanDistance(descriptor, oDescriptorRef);
-      if (distancia < mejorDistancia) {
-        mejorDistancia = distancia;
-        mejor = ref;
+
+      if (distancia <= MATCH_THRESHOLD) {
+        const similitud = Math.max(0, 1 - distancia);
+        candidatos.push({ referencia: ref, similitud: Math.round(similitud * 10000) / 10000 });
       }
     }
 
-    const similitud = Math.max(0, 1 - mejorDistancia);
+    candidatos.sort((a, b) => b.similitud - a.similitud);
 
-    return {
-      match: mejor !== null && mejorDistancia <= MATCH_THRESHOLD,
-      referencia: mejor,
-      similitud: Math.round(similitud * 10000) / 10000
-    };
+    return { candidatos };
   }
 
   private fn_captureThumb(videoEl: HTMLVideoElement): string {

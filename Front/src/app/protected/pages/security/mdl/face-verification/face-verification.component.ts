@@ -45,6 +45,10 @@ export class FaceVerificationComponent implements OnDestroy {
   resultadoPendiente: { nombre: string; similitud: number; tipoPersona?: string; idPersona?: number } | null = null;
   bAceptando: boolean = false;
 
+  // IDENTIFICAR con más de una persona plausible: hay que elegir cuál
+  // es antes de pasar a la confirmación de arriba.
+  candidatosPendientes: Array<{ tipoPersona: string; idPersona: number; nombre: string; similitud: number }> | null = null;
+
   camaras: MediaDeviceInfo[] = [];
   deviceIdActivo: string | null = null;
   bCambiandoCamara: boolean = false;
@@ -231,7 +235,7 @@ export class FaceVerificationComponent implements OnDestroy {
 
       // Pausado mientras se procesa una captura, se confirma un
       // resultado, o la cámara todavía no está lista.
-      if (!this.bCameraReady || this.bCapturing || this.resultadoPendiente || this.bCambiandoCamara) {
+      if (!this.bCameraReady || this.bCapturing || this.resultadoPendiente || this.candidatosPendientes || this.bCambiandoCamara) {
         return;
       }
 
@@ -338,22 +342,57 @@ export class FaceVerificationComponent implements OnDestroy {
 
       const oResultado = this.faceRecognitionServ.identify(oCaptura.descriptor!, this.referenciasTodas);
 
-      if (oResultado.match) {
+      if (oResultado.candidatos.length === 1) {
+
+        const c = oResultado.candidatos[0];
         this.resultadoPendiente = {
-          nombre: oResultado.referencia.nombrePersona,
-          similitud: oResultado.similitud,
-          tipoPersona: oResultado.referencia.tipoPersona,
-          idPersona: oResultado.referencia.idPersona
+          nombre: c.referencia.nombrePersona,
+          similitud: c.similitud,
+          tipoPersona: c.referencia.tipoPersona,
+          idPersona: c.referencia.idPersona
         };
         this.bCapturing = false;
+
+      } else if (oResultado.candidatos.length > 1) {
+
+        // Más de una persona plausible: no se elige sola, se le
+        // pregunta al operador cuál de ellas es.
+        this.candidatosPendientes = oResultado.candidatos.map(c => ({
+          tipoPersona: c.referencia.tipoPersona,
+          idPersona: c.referencia.idPersona,
+          nombre: c.referencia.nombrePersona,
+          similitud: c.similitud
+        }));
+        this.bCapturing = false;
+
       } else {
         this.mensaje = 'No se encontró coincidencia con nadie enrolado.';
-        await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
+        await this.fn_logResultado('FALLO', null, 0, 0);
         this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
         this.bCapturing = false;
       }
 
     }
+
+  }
+
+  // El operador elige de la lista de candidatos plausibles: pasa a la
+  // misma confirmación de siempre ("Identificamos a: X, ¿aceptar?") en
+  // vez de darlo por bueno directamente.
+  fn_elegirCandidato(candidato: { tipoPersona: string; idPersona: number; nombre: string; similitud: number }) {
+    this.candidatosPendientes = null;
+    this.resultadoPendiente = { ...candidato };
+  }
+
+  async fn_cancelarCandidatos() {
+
+    const oCandidatos = this.candidatosPendientes;
+    this.candidatosPendientes = null;
+    this.mensaje = 'Ninguno de los candidatos era correcto. Puedes intentar de nuevo.';
+
+    const mejorSimilitud = oCandidatos && oCandidatos.length > 0 ? oCandidatos[0].similitud : 0;
+    await this.fn_logResultado('FALLO', null, 0, mejorSimilitud);
+    this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
 
   }
 
