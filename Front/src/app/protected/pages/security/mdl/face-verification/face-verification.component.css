@@ -181,10 +181,10 @@
     left: 50%;
     top: 45%;
     transform: translate(-50%, -50%);
-    width: 46%;
-    height: 68%;
-    max-width: 190px;
-    max-height: 260px;
+    width: 68%;
+    height: 88%;
+    max-width: 280px;
+    max-height: 340px;
     border-radius: 50%;
     border: 3px dashed rgba(255, 255, 255, 0.5);
     box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35);

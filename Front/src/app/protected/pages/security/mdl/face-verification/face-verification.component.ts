@@ -247,10 +247,12 @@ export class FaceVerificationComponent implements OnDestroy {
       const centroY = (box.y + box.height / 2) / box.videoHeight;
       const anchoRelativo = box.width / box.videoWidth;
 
-      const bAlineado = Math.abs(centroX - 0.5) <= 0.13
-        && Math.abs(centroY - 0.45) <= 0.15
-        && anchoRelativo >= 0.28
-        && anchoRelativo <= 0.65;
+      // anchoRelativo mínimo alto a propósito: obliga a acercarse a la
+      // cámara para llenar la plantilla, no solo a centrarse.
+      const bAlineado = Math.abs(centroX - 0.5) <= 0.15
+        && Math.abs(centroY - 0.45) <= 0.17
+        && anchoRelativo >= 0.48
+        && anchoRelativo <= 0.85;
 
       if (bAlineado) {
 
