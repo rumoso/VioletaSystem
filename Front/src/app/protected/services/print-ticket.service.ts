@@ -1739,7 +1739,7 @@ export class PrintTicketService {
         oLines.push( oLine );
         var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 25 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT", iWith: 20 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 20 }
         oLines.push( oLine );
         var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "VALOR", iWith: 30 }
         oLines.push( oLine );
@@ -1754,7 +1754,7 @@ export class PrintTicketService {
           oLines.push( oLine );
           var oLine: any = { aling: "Right", size: 7, text: (Number(mci.gramos) || 0).toFixed(1) + ' gr', iWith: 25 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: (Number(mci.kilates) || 0) + 'K', iWith: 20 }
+          var oLine: any = { aling: "Right", size: 7, text: ( mci.tipo === 'plata' ? 'Ley ' + (Number(mci.kilates) || 0) : (Number(mci.kilates) || 0) + 'K' ), iWith: 20 }
           oLines.push( oLine );
           var oLine: any = { aling: "Right", size: 7, text: USDollar.format( mci.valorMetal ), iWith: 30 }
           oLines.push( oLine );
@@ -1788,7 +1788,7 @@ export class PrintTicketService {
         oLines.push( oLine );
         var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 25 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT", iWith: 20 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 20 }
         oLines.push( oLine );
         var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "VALOR", iWith: 30 }
         oLines.push( oLine );
@@ -1803,7 +1803,7 @@ export class PrintTicketService {
           oLines.push( oLine );
           var oLine: any = { aling: "Right", size: 7, text: (Number(mai.gramos) || 0).toFixed(1) + ' gr', iWith: 25 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: (Number(mai.kilates) || 0) + 'K', iWith: 20 }
+          var oLine: any = { aling: "Right", size: 7, text: ( mai.tipo === 'plata' ? 'Ley ' + (Number(mai.kilates) || 0) : (Number(mai.kilates) || 0) + 'K' ), iWith: 20 }
           oLines.push( oLine );
           var oLine: any = { aling: "Right", size: 7, text: USDollar.format( mai.valorMetal ), iWith: 30 }
           oLines.push( oLine );

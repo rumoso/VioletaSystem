@@ -47,11 +47,11 @@ import { FxrateService } from 'src/app/protected/services/fxrate.service';
         type="number"
         step="0.01"
         [(ngModel)]="data.medicion"
-        placeholder="Ej: 8, 14, 18, 24"
-        matTooltip="Kilates u otra unidad de medida del metal. Usado en la fórmula: Costo = (Costo Metal Fino / Base) × Medición"
+        placeholder="Ej: oro 8-24 kilates / plata ley 925, 720"
+        matTooltip="Kilates (oro) o Ley (plata), u otra unidad de medida del metal. Usado en la fórmula: Costo = (Costo Metal Fino / Base) × Medición"
         matTooltipPosition="above">
         <mat-icon matSuffix
-          matTooltip="Kilates u otra unidad de medida del metal. Usado en la fórmula: Costo = (Costo Metal Fino / Base) × Medición"
+          matTooltip="Kilates (oro) o Ley (plata), u otra unidad de medida del metal. Usado en la fórmula: Costo = (Costo Metal Fino / Base) × Medición"
           matTooltipPosition="above"
           style="cursor:help; color: #888; font-size: 18px;">info_outline</mat-icon>
       </mat-form-field>

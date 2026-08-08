@@ -461,6 +461,7 @@ const searchFxRateTypes = async(req, res = response) => {
 const getPriceByKilataje = async(req, res = response) => {
   try {
     const FxRate = require('../models/FxRate');
+    const { Op } = require('sequelize');
 
     const { kilates } = req.params;
 
@@ -471,11 +472,11 @@ const getPriceByKilataje = async(req, res = response) => {
       });
     }
 
-    // Buscar el último registro de fxRate con este kilataje
+    // Buscar el último registro de fxRate con este kilataje (oro) o ley (plata)
     const fxRateRecord = await FxRate.findOne({
-      where: { 
+      where: {
         active: 1,
-        referencia: `${kilates} Kilates`
+        referencia: { [Op.in]: [`${kilates} Kilates`, `${kilates} Ley`] }
       },
       order: [['createDate', 'DESC']],
       attributes: ['fxRate', 'fxRateCost', 'porcentUtility', 'createDate']

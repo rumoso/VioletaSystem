@@ -2895,6 +2895,14 @@ const updateTallerStatus = async(req, res) => {
                 { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
             );
             await dbConnection.query(
+                `UPDATE taller_metal_cliente SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_metal_final SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
                 `UPDATE payments SET idRelation = :newIdSale WHERE idRelation = :oldIdSale`,
                 { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
             );
@@ -2919,6 +2927,57 @@ const updateTallerStatus = async(req, res) => {
                 return res.json({
                     status: 1,
                     message: 'No se puede asignar el taller: no tiene técnicos registrados en la lista de mano de obra.'
+                });
+            }
+
+            // Validar (SIN mover) que la sucursal cubra el fino del metal del
+            // folio: el movimiento real se hace cuando el técnico ACEPTA la
+            // asignación (firma del status 3). Si ya se movió antes
+            // (re-asignación), no se vuelve a exigir.
+            const [yaMovido] = await dbConnection.query(
+                `SELECT 1 AS ok FROM metal_inventario_track WHERE idTaller = :idTaller AND tipoMovimiento = 'ASIGNACION' LIMIT 1`,
+                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            if (!yaMovido) {
+                const [necesario] = await dbConnection.query(`
+                    SELECT
+                        IFNULL( SUM( CASE WHEN tipo = 'oro' THEN ROUND( gramos * kilates / 24, 2 ) ELSE 0 END ), 0 ) AS finoOro,
+                        IFNULL( SUM( CASE WHEN tipo = 'plata' THEN ROUND( gramos * kilates / 1000, 2 ) ELSE 0 END ), 0 ) AS finoPlata
+                    FROM taller_metal_agranel WHERE idTaller = :idTaller`,
+                    { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+
+                const finoOroNecesario = parseFloat(necesario.finoOro) || 0;
+                const finoPlataNecesario = parseFloat(necesario.finoPlata) || 0;
+                const finoOroDisponible = await _fn_getSaldoFinoSucursal('oro', tallerInfo.idSucursal, transaction);
+                const finoPlataDisponible = await _fn_getSaldoFinoSucursal('plata', tallerInfo.idSucursal, transaction);
+
+                if (finoOroDisponible < finoOroNecesario || finoPlataDisponible < finoPlataNecesario) {
+                    await transaction.rollback();
+                    let msg = 'No se puede asignar: inventario de la sucursal insuficiente. ';
+                    if (finoOroDisponible < finoOroNecesario) {
+                        msg += `Oro fino: necesita ${ finoOroNecesario } g y hay ${ finoOroDisponible } g. `;
+                    }
+                    if (finoPlataDisponible < finoPlataNecesario) {
+                        msg += `Plata fina: necesita ${ finoPlataNecesario } g y hay ${ finoPlataDisponible } g.`;
+                    }
+                    return res.json({ status: 1, message: msg });
+                }
+            }
+        }
+
+        // Status 4 (Finalizado/Mostrador): descontar el metal final del inventario del técnico
+        if (idTallerStatus === 4) {
+            const OSQL_Entregar = await dbConnection.query(
+                `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                { replacements: { oGetDateNow, idTaller, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
+            );
+            if (OSQL_Entregar[0].out_id == 0) {
+                await transaction.rollback();
+                return res.json({
+                    status: 1,
+                    message: OSQL_Entregar[0].message
                 });
             }
         }
@@ -3042,6 +3101,7 @@ const getTallerByID = async(req, res = response) => {
             var oServiciosExternos = await dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`)
             var oMetalesAgranel = await dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`)
             var oMetalesCliente = await dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`)
+            var oMetalesFinal = await dbConnection.query(`call getTallerMetalesFinal( '${ idTaller }' )`)
 
             var oManoObra = await dbConnection.query(`
             SELECT 
@@ -3136,6 +3196,7 @@ const getTallerByID = async(req, res = response) => {
                     serviciosExternos: oServiciosExternos,
                     metalesAgranel: oMetalesAgranel,
                     metalesCliente: oMetalesCliente,
+                    metalesFinal: oMetalesFinal,
                     oManoObra: oManoObra,
                     oFirmaStatus: oFirmaStatus.length > 0 ? oFirmaStatus[0] : null,
                     oPagos: oPagos
@@ -3443,6 +3504,54 @@ const cbxGetServiciosExternosCombo = async(req, res = response) => {
   
 };
 
+// Contexto de inventario de metal de un folio: estatus, sucursal y
+// técnico que recibe el metal (el primero de mano de obra, mismo
+// criterio que asignarMetalInventarioByTaller)
+const _fn_metalInventarioContext = async (idTaller, transaction) => {
+    const [row] = await dbConnection.query(`
+        SELECT T.idTallerStatus, T.idSucursal, T.idSale, T.idCustomer,
+            ( SELECT MO.idUserTecnico FROM taller_mano_obra AS MO
+              WHERE MO.idTaller = T.idTaller
+              ORDER BY MO.createDate ASC, MO.idManoObra ASC LIMIT 1 ) AS idUserTecnico,
+            EXISTS ( SELECT 1 FROM metal_inventario_track AS MT
+              WHERE MT.idTaller = T.idTaller AND MT.tipoMovimiento = 'ASIGNACION' ) AS bMetalMovido
+        FROM taller AS T WHERE T.idTaller = :idTaller LIMIT 1`,
+        { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    return row;
+};
+
+const _fn_resolveMetalProduct = async (tipo, kilates, transaction) => {
+    const [p] = await dbConnection.query(
+        `SELECT idProduct FROM products WHERE barCode = CONCAT( 'METAL-', UPPER(:tipo), '-', CAST(:kilates AS UNSIGNED) ) LIMIT 1`,
+        { replacements: { tipo, kilates }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    return p ? p.idProduct : null;
+};
+
+const _fn_getSaldoFinoSucursal = async (tipo, idSucursal, transaction) => {
+    const finoBarCode = tipo === 'plata' ? 'METAL-PLATA-1000' : 'METAL-ORO-24';
+    const [s] = await dbConnection.query(`
+        SELECT MI.gramos FROM metal_inventario AS MI
+        INNER JOIN products AS P ON P.idProduct = MI.idProduct AND P.barCode = :finoBarCode
+        WHERE MI.tipoPropietario = 'SUCURSAL' AND MI.idPropietario = :idSucursal LIMIT 1`,
+        { replacements: { finoBarCode, idSucursal }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    return s ? parseFloat(s.gramos) : 0;
+};
+
+const _fn_metalInventarioApply = async (oGetDateNow, tipoMovimiento, tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos, idTaller, idSale, referencia, idUserLogON, transaction) => {
+    await dbConnection.query(
+        `CALL metalInventario_apply(:oGetDateNow, :tipoMovimiento, :tipoOrigen, :idOrigen, :tipoDestino, :idDestino, :idProduct, :gramos, :idTaller, :idSale, :referencia, :idUserLogON)`,
+        { replacements: { oGetDateNow, tipoMovimiento, tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos, idTaller, idSale, referencia, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
+    );
+};
+
+const _fn_finoEquivalente = (tipo, gramos, kilates) => {
+    const base = tipo === 'plata' ? 1000 : 24;
+    return Math.round( ( parseFloat(gramos) * parseFloat(kilates) / base ) * 100 ) / 100;
+};
+
 const addMetalAgranel = async(req, res) => {
 
     var {
@@ -3456,7 +3565,7 @@ const addMetalAgranel = async(req, res) => {
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
-    var bOK = false;
+    const transaction = await dbConnection.transaction();
 
     try {
 
@@ -3468,6 +3577,28 @@ const addMetalAgranel = async(req, res) => {
             var gramos = metalAgranel.gramos || 0;
             var kilates = metalAgranel.kilates || 8;
             var valorMetal = metalAgranel.valorMetal || 0;
+            var costoMetal = metalAgranel.costoMetal || 0;
+
+            // Folio ya asignado: el inventario se mueve al momento.
+            // Modificación = reversa completa del movimiento anterior + alta nueva.
+            const ctx = await _fn_metalInventarioContext(idTaller, transaction);
+            const bAsignado = ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1;
+
+            if (bAsignado && idMetalAgranel > 0) {
+                const [oldRow] = await dbConnection.query(
+                    `SELECT tipo, gramos, kilates FROM taller_metal_agranel WHERE idMetalAgranel = :idMetalAgranel LIMIT 1`,
+                    { replacements: { idMetalAgranel }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+                if (oldRow) {
+                    const oldProduct = await _fn_resolveMetalProduct(oldRow.tipo, oldRow.kilates, transaction);
+                    if (oldProduct) {
+                        await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                            'TECNICO', ctx.idUserTecnico, 'SUCURSAL', ctx.idSucursal,
+                            oldProduct, oldRow.gramos, idTaller, idSale,
+                            'Reversa por modificación de metal de la empresa', idUserLogON, transaction);
+                    }
+                }
+            }
 
             var OSQL_InsertMetalAgranel = await dbConnection.query(`call insertUpdateTallerMetalAgranel(
                 ${ idMetalAgranel }
@@ -3478,18 +3609,45 @@ const addMetalAgranel = async(req, res) => {
                 , ${ gramos }
                 , ${ kilates }
                 , ${ valorMetal }
+                , ${ costoMetal }
                 , ${ idUserLogON }
-            )`);
+            )`, { transaction });
 
             if (OSQL_InsertMetalAgranel[0].out_id > 0) {
+
+                if (bAsignado) {
+                    const newProduct = await _fn_resolveMetalProduct(tipo, kilates, transaction);
+                    if (!newProduct) {
+                        await transaction.rollback();
+                        return res.json({ status: 1, message: 'No existe el producto de metal para ese kilataje/ley (ejecutar insert_productos_metal.sql).' });
+                    }
+                    const finoNecesario = _fn_finoEquivalente(tipo, gramos, kilates);
+                    const finoDisponible = await _fn_getSaldoFinoSucursal(tipo, ctx.idSucursal, transaction);
+                    if (finoDisponible < finoNecesario) {
+                        await transaction.rollback();
+                        return res.json({ status: 1, message: `Inventario de la sucursal insuficiente: necesita ${ finoNecesario } g de ${ tipo === 'plata' ? 'plata fina' : 'oro fino' } y hay ${ finoDisponible } g.` });
+                    }
+                    await _fn_metalInventarioApply(oGetDateNow, 'ASIGNACION',
+                        'SUCURSAL', ctx.idSucursal, 'TECNICO', ctx.idUserTecnico,
+                        newProduct, gramos, idTaller, idSale,
+                        'Metal de la empresa agregado con folio asignado', idUserLogON, transaction);
+                }
+
+                await transaction.commit();
                 await _fn_recalcularTotalSaleTaller(idSale, idTaller);
                 res.json({ status: 0, message: OSQL_InsertMetalAgranel[0].message });
             } else {
+                await transaction.rollback();
                 res.json({ status: 1, message: OSQL_InsertMetalAgranel[0].message });
             }
         }
+        else {
+            await transaction.rollback();
+            res.json({ status: 1, message: 'Folio inválido.' });
+        }
 
     } catch (error) {
+        await transaction.rollback();
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
@@ -3507,21 +3665,42 @@ const deleteMetalAgranel = async(req, res = response) => {
         idSucursalLogON
     } = req.body;
 
+    const transaction = await dbConnection.transaction();
+
     try {
 
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
         const oMetalInfo = await dbConnection.query(
-            `SELECT idTaller, idSale FROM taller_metal_agranel WHERE idMetalAgranel = :idMetalAgranel LIMIT 1`,
-            { replacements: { idMetalAgranel }, type: dbConnection.QueryTypes.SELECT }
+            `SELECT idTaller, idSale, tipo, gramos, kilates FROM taller_metal_agranel WHERE idMetalAgranel = :idMetalAgranel LIMIT 1`,
+            { replacements: { idMetalAgranel }, type: dbConnection.QueryTypes.SELECT, transaction }
         );
+
+        // Folio asignado: reingresar el metal al inventario (reversa)
+        if (oMetalInfo.length > 0) {
+            const ctx = await _fn_metalInventarioContext(oMetalInfo[0].idTaller, transaction);
+            if (ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1) {
+                const oldProduct = await _fn_resolveMetalProduct(oMetalInfo[0].tipo, oMetalInfo[0].kilates, transaction);
+                if (oldProduct) {
+                    await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                        'TECNICO', ctx.idUserTecnico, 'SUCURSAL', ctx.idSucursal,
+                        oldProduct, oMetalInfo[0].gramos, oMetalInfo[0].idTaller, oMetalInfo[0].idSale,
+                        'Reversa por eliminación de metal de la empresa', idUserLogON, transaction);
+                }
+            }
+        }
 
         var OSQL = await dbConnection.query(`call deleteMetalAgranel(
             ${ idMetalAgranel }
             , '${ oGetDateNow }'
             , ${ idUserLogON }
-        )`);
-        console.log(OSQL)
+        )`, { transaction });
+
+        if (OSQL[0].out_id > 0) {
+            await transaction.commit();
+        } else {
+            await transaction.rollback();
+        }
 
         if (OSQL[0].out_id > 0 && oMetalInfo.length > 0) {
             await _fn_recalcularTotalSaleTaller(oMetalInfo[0].idSale, oMetalInfo[0].idTaller);
@@ -3533,6 +3712,7 @@ const deleteMetalAgranel = async(req, res = response) => {
         });
 
     } catch (error) {
+        await transaction.rollback();
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
@@ -3567,6 +3747,119 @@ const getTallerMetalesAgranel = async(req, res = response) => {
     }
 };
 
+const addMetalFinal = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        metalFinal,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var OSQL = await dbConnection.query(
+                `call insertUpdateTallerMetalFinal(:idMetalFinal, :oGetDateNow, :idTaller, :idSale, :idUserTecnico, :descripcion, :tipo, :gramos, :kilates, :costoMetal, :precioFinal, :idUserLogON)`,
+                { replacements: {
+                    idMetalFinal: metalFinal.idMetalFinal || 0,
+                    oGetDateNow,
+                    idTaller,
+                    idSale,
+                    idUserTecnico: metalFinal.idUserTecnico || 0,
+                    descripcion: metalFinal.descripcion || '',
+                    tipo: metalFinal.tipo || 'oro',
+                    gramos: metalFinal.gramos || 0,
+                    kilates: metalFinal.kilates || 8,
+                    costoMetal: metalFinal.costoMetal || 0,
+                    precioFinal: metalFinal.precioFinal || 0,
+                    idUserLogON
+                }, type: dbConnection.QueryTypes.RAW }
+            );
+
+            res.json({
+                status: OSQL[0].out_id > 0 ? 0 : 1,
+                message: OSQL[0].message
+            });
+        }
+        else {
+            res.json({ status: 1, message: 'Folio inválido.' });
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteMetalFinal = async(req, res = response) => {
+
+    const {
+        idMetalFinal,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        var OSQL = await dbConnection.query(
+            `call deleteMetalFinal(:idMetalFinal, :oGetDateNow, :idUserLogON)`,
+            { replacements: { idMetalFinal, oGetDateNow, idUserLogON }, type: dbConnection.QueryTypes.RAW }
+        );
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerMetalesFinal = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+
+    try{
+        var oMetalesFinal = await dbConnection.query(
+            `call getTallerMetalesFinal(:idTaller)`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.RAW }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                metalesFinalDetail: oMetalesFinal
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
 const addMetalCliente = async(req, res) => {
 
     var {
@@ -3582,6 +3875,8 @@ const addMetalCliente = async(req, res) => {
 
     var bOK = false;
 
+    const transaction = await dbConnection.transaction();
+
     try {
 
         // Ahora insertar el metal cliente como detalle de la venta
@@ -3592,6 +3887,27 @@ const addMetalCliente = async(req, res) => {
             var gramos = metalCliente.gramos || 0;
             var kilates = metalCliente.kilates || 8;
             var valorMetal = metalCliente.valorMetal || 0;
+            var costoMetal = metalCliente.costoMetal || 0;
+
+            // Folio ya asignado: modificación = reversa completa + alta nueva
+            const ctx = await _fn_metalInventarioContext(idTaller, transaction);
+            const bAsignado = ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1;
+
+            if (bAsignado && idMetalCliente > 0) {
+                const [oldRow] = await dbConnection.query(
+                    `SELECT tipo, gramos, kilates FROM taller_metal_cliente WHERE idMetalCliente = :idMetalCliente LIMIT 1`,
+                    { replacements: { idMetalCliente }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+                if (oldRow) {
+                    const oldProduct = await _fn_resolveMetalProduct(oldRow.tipo, oldRow.kilates, transaction);
+                    if (oldProduct) {
+                        await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                            'TECNICO', ctx.idUserTecnico, 'CLIENTE', ctx.idCustomer,
+                            oldProduct, oldRow.gramos, idTaller, idSale,
+                            'Reversa por modificación de metal del cliente', idUserLogON, transaction);
+                    }
+                }
+            }
 
             var OSQL_InsertMetalCliente = await dbConnection.query(`call insertUpdateTallerMetalCliente(
                 ${ idMetalCliente }
@@ -3602,8 +3918,9 @@ const addMetalCliente = async(req, res) => {
                 , ${ gramos }
                 , ${ kilates }
                 , ${ valorMetal }
+                , ${ costoMetal }
                 , ${ idUserLogON }
-            )`);
+            )`, { transaction });
 
             if (OSQL_InsertMetalCliente[0].out_id > 0) {
                 bOK = true;
@@ -3611,7 +3928,20 @@ const addMetalCliente = async(req, res) => {
                 bOK = false;
             }
 
+            if (bOK && bAsignado) {
+                const newProduct = await _fn_resolveMetalProduct(tipo, kilates, transaction);
+                if (!newProduct) {
+                    await transaction.rollback();
+                    return res.json({ status: 1, message: 'No existe el producto de metal para ese kilataje/ley (ejecutar insert_productos_metal.sql).' });
+                }
+                await _fn_metalInventarioApply(oGetDateNow, 'ASIGNACION',
+                    'CLIENTE', ctx.idCustomer, 'TECNICO', ctx.idUserTecnico,
+                    newProduct, gramos, idTaller, idSale,
+                    'Metal del cliente agregado con folio asignado', idUserLogON, transaction);
+            }
+
             if (bOK) {
+                await transaction.commit();
                 res.json({
                     status: 0,
                     message: "Activo Cliente agregado con éxito.",
@@ -3621,14 +3951,20 @@ const addMetalCliente = async(req, res) => {
                     }
                 });
             } else {
+                await transaction.rollback();
                 res.json({
                     status: 1,
                     message: "No se registró el activo cliente."
                 });
             }
         }
+        else {
+            await transaction.rollback();
+            res.json({ status: 1, message: 'Folio inválido.' });
+        }
 
     } catch (error) {
+        await transaction.rollback();
         res.json({
             status: 2,
             message: "Sucedió un error inesperado",
@@ -3670,6 +4006,24 @@ const deleteMetalCliente = async(req, res = response) => {
 
         // Delete the metal client record
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        // Folio asignado: regresar el metal al cliente en el inventario (reversa)
+        const oMetalInfo = await dbConnection.query(
+            `SELECT idTaller, idSale, tipo, gramos, kilates FROM taller_metal_cliente WHERE idMetalCliente = :idMetalCliente LIMIT 1`,
+            { replacements: { idMetalCliente }, type: dbConnection.QueryTypes.SELECT }
+        );
+        if (oMetalInfo.length > 0) {
+            const ctx = await _fn_metalInventarioContext(oMetalInfo[0].idTaller);
+            if (ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1) {
+                const oldProduct = await _fn_resolveMetalProduct(oMetalInfo[0].tipo, oMetalInfo[0].kilates);
+                if (oldProduct) {
+                    await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                        'TECNICO', ctx.idUserTecnico, 'CLIENTE', ctx.idCustomer,
+                        oldProduct, oMetalInfo[0].gramos, oMetalInfo[0].idTaller, oMetalInfo[0].idSale,
+                        'Reversa por eliminación de metal del cliente', idUserLogON, null);
+                }
+            }
+        }
 
         var OSQL = await dbConnection.query(`call deleteMetalCliente(
             ${ idMetalCliente }
@@ -4342,11 +4696,12 @@ const getTallerByIDSeq = async(req, res = response) => {
             });
         }
 
-        const [oRefacciones, oServiciosExternos, oMetalesAgranel, oMetalesCliente, oManoObra, oFirmaStatusArr] = await Promise.all([
+        const [oRefacciones, oServiciosExternos, oMetalesAgranel, oMetalesCliente, oMetalesFinal, oManoObra, oFirmaStatusArr] = await Promise.all([
             dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`),
             dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`),
             dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`),
             dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerMetalesFinal( '${ idTaller }' )`),
             dbConnection.query(`
                 SELECT
                     tmo.idManoObra,
@@ -4403,6 +4758,7 @@ const getTallerByIDSeq = async(req, res = response) => {
                 serviciosExternos: oServiciosExternos,
                 metalesAgranel: oMetalesAgranel,
                 metalesCliente: oMetalesCliente,
+                metalesFinal: oMetalesFinal,
                 oManoObra: oManoObra,
                 oFirmaStatus: oFirmaStatusArr.length > 0 ? oFirmaStatusArr[0] : null
             }
@@ -4455,6 +4811,18 @@ const insertUpdateTallerFirmasMasivo = async(req, res = response) => {
 
                 if (!esTecnico) {
                     rechazados.push(`#${f.idSale}`);
+                    continue;
+                }
+
+                // Al aceptar la asignación, el metal del folio pasa al
+                // inventario del técnico; si no hay fino en la sucursal, la
+                // firma de ese folio se omite con su motivo
+                const OSQL_Asignar = await dbConnection.query(
+                    `CALL asignarMetalInventarioByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                    { replacements: { oGetDateNow, idTaller: f.idTaller, idUserLogON: idUserFirma }, type: dbConnection.QueryTypes.RAW }
+                );
+                if (OSQL_Asignar[0].out_id == 0) {
+                    rechazados.push(`#${f.idSale} (${ OSQL_Asignar[0].message })`);
                     continue;
                 }
             }
@@ -4554,22 +4922,55 @@ const insertUpdateTallerFirma = async(req, res = response) => {
         } else {
 
             // UPDATE — cuando el responsable firma (aprueba o rechaza)
-            await dbConnection.query(`
-                UPDATE taller_firmas_status
-                SET firma       = :firma,
-                    idUserFirma = :idUserFirma,
-                    comentario  = :comentario,
-                    firmaDate   = :firmaDate
-                WHERE idFirma = :idFirma
-            `, {
-                replacements: { firma, idUserFirma, comentario, firmaDate: oGetDateNow, idFirma },
-                type: dbConnection.QueryTypes.UPDATE
-            });
+            const transaction = await dbConnection.transaction();
 
-            res.json({
-                status: 0,
-                message: firma == 1 ? "Aprobación registrada correctamente." : "Rechazo registrado correctamente."
-            });
+            try {
+
+                const [oFirmaRow] = await dbConnection.query(
+                    `SELECT idTaller, idTallerStatus FROM taller_firmas_status WHERE idFirma = :idFirma LIMIT 1`,
+                    { replacements: { idFirma }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+
+                // Al ACEPTAR la asignación (status 3), el técnico recibe el
+                // metal del folio: aquí se mueve el inventario (no al asignar)
+                if (firma == 1 && oFirmaRow && oFirmaRow.idTallerStatus == 3) {
+                    const OSQL_Asignar = await dbConnection.query(
+                        `CALL asignarMetalInventarioByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                        { replacements: { oGetDateNow, idTaller: oFirmaRow.idTaller, idUserLogON: idUserFirma }, type: dbConnection.QueryTypes.RAW, transaction }
+                    );
+                    if (OSQL_Asignar[0].out_id == 0) {
+                        await transaction.rollback();
+                        return res.json({
+                            status: 1,
+                            message: OSQL_Asignar[0].message
+                        });
+                    }
+                }
+
+                await dbConnection.query(`
+                    UPDATE taller_firmas_status
+                    SET firma       = :firma,
+                        idUserFirma = :idUserFirma,
+                        comentario  = :comentario,
+                        firmaDate   = :firmaDate
+                    WHERE idFirma = :idFirma
+                `, {
+                    replacements: { firma, idUserFirma, comentario, firmaDate: oGetDateNow, idFirma },
+                    type: dbConnection.QueryTypes.UPDATE,
+                    transaction
+                });
+
+                await transaction.commit();
+
+                res.json({
+                    status: 0,
+                    message: firma == 1 ? "Aprobación registrada correctamente." : "Rechazo registrado correctamente."
+                });
+
+            } catch (error) {
+                await transaction.rollback();
+                throw error;
+            }
 
         }
 
@@ -4814,6 +5215,9 @@ module.exports = {
     , addMetalCliente
     , deleteMetalCliente
     , getTallerMetalesCliente
+    , addMetalFinal
+    , deleteMetalFinal
+    , getTallerMetalesFinal
     , uploadMetalClienteImage
     , getMetalClienteImages
     , deleteMetalClienteImage

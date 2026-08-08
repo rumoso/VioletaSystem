@@ -806,6 +806,62 @@ button:hover {
     background: #e8eaf6;
 }
 
+.metal-header.with-costo,
+.metal-row.with-costo {
+    grid-template-columns: 1fr 70px 70px 100px 100px 90px;
+}
+
+/* Grid de Metal Final (más columnas: técnico + descripción + precio) */
+.metal-final-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 80px 70px 90px 95px 70px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.metal-final-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 80px 70px 90px 95px 70px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    transition: background 0.2s;
+    align-items: center;
+}
+
+.metal-final-row:hover {
+    background: #e8eaf6;
+}
+
+.metal-final-header.with-costo,
+.metal-final-row.with-costo {
+    grid-template-columns: 1fr 1fr 80px 70px 90px 95px 95px 70px;
+}
+
+/* Alerta llamativa: sin inventario de fino en la sucursal */
+.metal-inventario-alerta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffebee;
+    border: 2px solid #f44336;
+    border-left-width: 6px;
+    border-radius: 6px;
+    color: #b71c1c;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 14px;
+    margin: 8px 0;
+}
+
+.metal-inventario-alerta mat-icon {
+    color: #f44336;
+    flex-shrink: 0;
+}
+
 .metal-tipo {
     display: flex;
     align-items: center;

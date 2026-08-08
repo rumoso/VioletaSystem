@@ -64,6 +64,9 @@ const {
   , getTallerMetalesAgranel
   , addMetalCliente
   , deleteMetalCliente
+  , addMetalFinal
+  , deleteMetalFinal
+  , getTallerMetalesFinal
   , getTallerMetalesCliente
   , uploadMetalClienteImage
   , getMetalClienteImages
@@ -502,6 +505,26 @@ router.post('/getTallerMetalesCliente', [
 
   validarCampos
 ], getTallerMetalesCliente);
+
+router.post('/addMetalFinal', [
+  check('metalFinal','Metal Final obligatorio').not().isEmpty(),
+  validarCampos
+], addMetalFinal);
+
+router.post('/deleteMetalFinal', [
+
+  check('idMetalFinal','id de Metal Final obligatorio').not().isEmpty(),
+  check('idMetalFinal','id de Metal Final debe ser numérico').isNumeric(),
+
+  validarCampos
+], deleteMetalFinal);
+
+router.post('/getTallerMetalesFinal', [
+
+  check('idTaller','id del Taller obligatorio').not().isEmpty(),
+
+  validarCampos
+], getTallerMetalesFinal);
 
 router.post('/uploadMetalClienteImage', uploadMetalCliente.single('file'), uploadMetalClienteImage);
 

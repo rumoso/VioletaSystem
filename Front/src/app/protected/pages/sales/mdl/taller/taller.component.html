@@ -798,6 +798,13 @@
                             </div>
 
                             <div class="body-refacciones body-refacciones-metal">
+
+                <!-- ALERTA: sin inventario de fino en la sucursal para cubrir el metal del folio -->
+                <div *ngIf="metalAgranelFaltanteMsg" class="metal-inventario-alerta">
+                    <mat-icon>warning</mat-icon>
+                    <span><b>SIN INVENTARIO EN LA SUCURSAL:</b> {{ metalAgranelFaltanteMsg }} No se podrá asignar el folio hasta surtir el metal.</span>
+                </div>
+
                                 <ng-container *ngIf="bShowMetalAgranelForm && tall_AddMetalAgranel && !bIsReadOnly">
                 <!-- Radio Oro / Plata (compacto, inline) -->
                 <div class="refaccion-tabs-row">
@@ -813,7 +820,7 @@
 
                 <!-- FORMULARIO METAL AGRANEL (formato slim) -->
                 <div class="agregar-row row g-2 align-items-end top10px">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
                         <label class="inline-label">Gramos</label>
                         <div class="inline-wrap">
                             <input #metalAgranelGramosInput
@@ -826,8 +833,8 @@
                                    placeholder="0.0">
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                                            <label class="inline-label">Kilataje</label>
+                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
+                                            <label class="inline-label">{{ metalTipo === 'plata' ? 'Ley' : 'Kilataje' }}</label>
                                             <mat-form-field class="field-kilates-slim" subscriptSizing="dynamic">
                                                 <mat-select #metalAgranelKilatesSelect
                                                         #metalAgranelKilatesSelectRef
@@ -835,12 +842,24 @@
                                                         [(ngModel)]="metalAgranelForm.kilates"
                                                         (selectionChange)="fn_onMetalAgranelKilatesChange()">
                                                     <mat-option *ngFor="let kilate of kilatajes" [value]="kilate">
-                                                        {{ kilate }} Kilates
+                                                        {{ metalTipo === 'plata' ? 'Ley ' + kilate : kilate + ' Kilates' }}
                                                     </mat-option>
                                                 </mat-select>
                                             </mat-form-field>
                                         </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3" *ngIf="tall_verCostos">
+                        <label class="inline-label">Costo del Metal</label>
+                        <div class="inline-wrap">
+                            <input class="inline-input with-suffix text-right"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalAgranelForm.costoMetal"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalAgranelForm, 'costoMetal', 2)"
+                                   placeholder="0.00"
+                                   (blur)="fn_normalizeDecimalBlur(metalAgranelForm, 'costoMetal', 2)">
+                            <span class="inline-suffix">$</span>
+                        </div>
+                    </div>
+                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
                         <label class="inline-label">Valor del Metal</label>
                         <div class="inline-wrap">
                             <input #metalAgranelValorMetalInput
@@ -859,20 +878,22 @@
 
                 <!-- GRID DE METAL AGRANEL -->
                 <div *ngIf="metalAgranelList.length > 0" class="metal-grid top15px">
-                    <div class="metal-header">
+                    <div class="metal-header" [class.with-costo]="tall_verCostos">
                         <div>Tipo</div>
                         <div class="text-right">Gramos</div>
-                        <div class="text-right">Kilates</div>
+                        <div class="text-right">Kilataje / Ley</div>
+                        <div class="text-right" *ngIf="tall_verCostos">Costo</div>
                         <div class="text-right">Valor</div>
                         <div></div>
                     </div>
-                    <div *ngFor="let item of metalAgranelList" class="metal-row">
+                    <div *ngFor="let item of metalAgranelList" class="metal-row" [class.with-costo]="tall_verCostos">
                         <div class="metal-tipo">
                             <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
                             <span>{{ item.tipo | uppercase }}</span>
                         </div>
                         <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-1' }}</div>
-                        <div class="metal-kilates text-right">{{ item.kilates | number:'1.0-0' }} K</div>
+                        <div class="metal-kilates text-right">{{ item.tipo === 'plata' ? 'Ley ' + ( item.kilates * 1 ) : (item.kilates | number:'1.0-0') + ' K' }}</div>
+                        <div class="metal-valor text-right" *ngIf="tall_verCostos">{{ item.costoMetal | currency }}</div>
                         <div class="metal-valor text-right">{{ item.valorMetal | currency }}</div>
                         <div class="metal-acciones">
                             <mat-icon *ngIf="!bIsReadOnly"
@@ -922,7 +943,7 @@
 
                 <!-- FORMULARIO METAL CLIENTE (formato slim) -->
                 <div class="agregar-row row g-2 align-items-end top10px">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
                         <label class="inline-label">Gramos</label>
                         <div class="inline-wrap">
                             <input #metalClienteGramosInput
@@ -935,8 +956,8 @@
                                    placeholder="0.0">
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                                            <label class="inline-label">Kilataje</label>
+                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
+                                            <label class="inline-label">{{ metalClienteTipo === 'plata' ? 'Ley' : 'Kilataje' }}</label>
                                             <mat-form-field class="field-kilates-slim" subscriptSizing="dynamic">
                                                 <mat-select #metalClienteKilatesSelect
                                                         #metalClienteKilatesSelectRef
@@ -944,12 +965,24 @@
                                                         [(ngModel)]="metalClienteForm.kilates"
                                                         (selectionChange)="fn_onMetalClienteKilatesChange()">
                                                     <mat-option *ngFor="let kilate of kilatajes_cliente" [value]="kilate">
-                                                        {{ kilate }} Kilates
+                                                        {{ metalClienteTipo === 'plata' ? 'Ley ' + kilate : kilate + ' Kilates' }}
                                                     </mat-option>
                                                 </mat-select>
                                             </mat-form-field>
                                         </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3" *ngIf="tall_verCostos">
+                        <label class="inline-label">Costo del Metal</label>
+                        <div class="inline-wrap">
+                            <input class="inline-input with-suffix text-right"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalClienteForm.costoMetal"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalClienteForm, 'costoMetal', 2)"
+                                   placeholder="0.00"
+                                   (blur)="fn_normalizeDecimalBlur(metalClienteForm, 'costoMetal', 2)">
+                            <span class="inline-suffix">$</span>
+                        </div>
+                    </div>
+                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
                         <label class="inline-label">Valor del Metal</label>
                         <div class="inline-wrap">
                             <input #metalClienteValorMetalInput
@@ -968,20 +1001,22 @@
 
                 <!-- GRID DE ACTIVO DEL CLIENTE -->
                 <div *ngIf="metalClienteList.length > 0" class="metal-grid top15px">
-                    <div class="metal-header">
+                    <div class="metal-header" [class.with-costo]="tall_verCostos">
                         <div>Tipo</div>
                         <div class="text-right">Gramos</div>
-                        <div class="text-right">Kilates</div>
+                        <div class="text-right">Kilataje / Ley</div>
+                        <div class="text-right" *ngIf="tall_verCostos">Costo</div>
                         <div class="text-right">Valor</div>
                         <div></div>
                     </div>
-                    <div *ngFor="let item of metalClienteList" class="metal-row">
+                    <div *ngFor="let item of metalClienteList" class="metal-row" [class.with-costo]="tall_verCostos">
                         <div class="metal-tipo">
                             <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
                             <span>{{ item.tipo | uppercase }}</span>
                         </div>
                         <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-1' }}</div>
-                        <div class="metal-kilates text-right">{{ item.kilates | number:'1.0-0' }} K</div>
+                        <div class="metal-kilates text-right">{{ item.tipo === 'plata' ? 'Ley ' + ( item.kilates * 1 ) : (item.kilates | number:'1.0-0') + ' K' }}</div>
+                        <div class="metal-valor text-right" *ngIf="tall_verCostos">{{ item.costoMetal | currency }}</div>
                         <div class="metal-valor text-right">{{ item.valorMetal | currency }}</div>
                         <div class="metal-acciones">
                             <mat-icon *ngIf="tall_AddMetalCliente && !bIsReadOnly"
@@ -1001,6 +1036,153 @@
                 </div>
             </div>
         </div>
+        <!-- SECCIÓN METAL FINAL: metal que quedó en la pieza terminada; se
+             cobra al cliente y se descuenta al técnico al entregar a mostrador. -->
+        <div class="card-refacciones top30px">
+            <div class="header-refacciones">
+                <h3 class="header-refacciones-h3">
+                    <button *ngIf="!bIsReadOnly"
+                            mat-icon-button
+                            type="button"
+                            class="btn-toggle-manoobra-icon"
+                            [matTooltip]="bShowMetalFinalForm ? 'Cerrar' : 'Agregar metal final'"
+                            (click)="fn_toggleMetalFinalForm()">
+                        <mat-icon>{{ bShowMetalFinalForm ? 'close' : 'add' }}</mat-icon>
+                    </button>
+                    Metal Final
+                </h3>
+                <span class="total-metal" style="margin-left:auto;">Total: {{ totalMetalFinal | currency }}</span>
+                            </div>
+
+                            <div class="body-refacciones body-refacciones-metal">
+                                <ng-container *ngIf="bShowMetalFinalForm && !bIsReadOnly">
+                <!-- Radio Oro / Plata (compacto, inline) -->
+                <div class="refaccion-tabs-row">
+                    <mat-radio-group [(ngModel)]="metalFinalTipo" (change)="fn_changeMetalFinalTipo(metalFinalTipo)" class="radio-group-inline">
+                        <mat-radio-button value="oro" class="radio-option-inline">
+                            <mat-icon style="color: gold;">circle</mat-icon> Oro
+                        </mat-radio-button>
+                        <mat-radio-button value="plata" class="radio-option-inline">
+                            <mat-icon style="color: silver;">circle</mat-icon> Plata
+                        </mat-radio-button>
+                    </mat-radio-group>
+                </div>
+
+                <!-- FORMULARIO METAL FINAL (formato slim) -->
+                <div class="agregar-row row g-2 align-items-end top10px">
+                    <div class="col-12 col-md-3">
+                        <label class="inline-label">Técnico</label>
+                        <div class="inline-wrap">
+                            <select class="inline-input" [(ngModel)]="metalFinalForm.idUserTecnico">
+                                <option [ngValue]="0" disabled>Selecciona...</option>
+                                <option *ngFor="let t of tecnicosDelFolio" [ngValue]="t.idUserTecnico">{{ t.tecnicoDesc }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="inline-label">Descripción</label>
+                        <div class="inline-wrap">
+                            <input class="inline-input"
+                                   type="text"
+                                   [(ngModel)]="metalFinalForm.descripcion"
+                                   placeholder="Pieza / trabajo entregado">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="inline-label">Gramos</label>
+                        <div class="inline-wrap">
+                            <input class="inline-input text-right"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalFinalForm.gramos"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalFinalForm, 'gramos', 1)"
+                                   (blur)="fn_normalizeDecimalBlur(metalFinalForm, 'gramos', 1); fn_calculateMetalFinalValue()"
+                                   placeholder="0.0">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                                            <label class="inline-label">{{ metalFinalTipo === 'plata' ? 'Ley' : 'Kilataje' }}</label>
+                                            <mat-form-field class="field-kilates-slim" subscriptSizing="dynamic">
+                                                <mat-select placeholder="Seleccionar..."
+                                                        [(ngModel)]="metalFinalForm.kilates"
+                                                        (selectionChange)="fn_calculateMetalFinalValue()">
+                                                    <mat-option *ngFor="let kilate of kilatajes_final" [value]="kilate">
+                                                        {{ metalFinalTipo === 'plata' ? 'Ley ' + kilate : kilate + ' Kilates' }}
+                                                    </mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+                    <div class="col-12 col-md-3" *ngIf="tall_verCostos">
+                        <label class="inline-label">Costo</label>
+                        <div class="inline-wrap">
+                            <input class="inline-input with-suffix text-right"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalFinalForm.costoMetal"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalFinalForm, 'costoMetal', 2)"
+                                   placeholder="0.00"
+                                   (blur)="fn_normalizeDecimalBlur(metalFinalForm, 'costoMetal', 2)">
+                            <span class="inline-suffix">$</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="inline-label">Precio Final</label>
+                        <div class="inline-wrap">
+                            <input class="inline-input with-suffix text-right"
+                                   type="text" inputmode="decimal"
+                                   [ngModel]="metalFinalForm.precioFinal"
+                                   (ngModelChange)="fn_onDecimalInputChange($event, metalFinalForm, 'precioFinal', 2)"
+                                   placeholder="0.00"
+                                   (blur)="fn_normalizeDecimalBlur(metalFinalForm, 'precioFinal', 2)"
+                                   (keyup.enter)="fn_agregarMetalFinal()">
+                            <span class="inline-suffix">$</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <button mat-raised-button color="primary" type="button" (click)="fn_agregarMetalFinal()">
+                            <mat-icon matPrefix class="my-icon">add</mat-icon>
+                            {{ metalFinalForm.idMetalFinal > 0 ? 'Actualizar' : 'Agregar' }}
+                        </button>
+                    </div>
+                </div>
+                </ng-container>
+
+                <!-- GRID DE METAL FINAL -->
+                <div *ngIf="metalFinalList.length > 0" class="metal-grid top15px">
+                    <div class="metal-final-header" [class.with-costo]="tall_verCostos">
+                        <div>Técnico</div>
+                        <div>Descripción</div>
+                        <div>Tipo</div>
+                        <div class="text-right">Gramos</div>
+                        <div class="text-right">Kilataje / Ley</div>
+                        <div class="text-right" *ngIf="tall_verCostos">Costo</div>
+                        <div class="text-right">Precio</div>
+                        <div></div>
+                    </div>
+                    <div *ngFor="let item of metalFinalList" class="metal-final-row" [class.with-costo]="tall_verCostos">
+                        <div>{{ item.tecnicoDesc }}</div>
+                        <div>{{ item.descripcion }}</div>
+                        <div class="metal-tipo">
+                            <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
+                            <span>{{ item.tipo | uppercase }}</span>
+                        </div>
+                        <div class="text-right">{{ item.gramos | number:'1.0-1' }}</div>
+                        <div class="text-right">{{ item.tipo === 'plata' ? 'Ley ' + ( item.kilates * 1 ) : (item.kilates | number:'1.0-0') + ' K' }}</div>
+                        <div class="text-right" *ngIf="tall_verCostos">{{ item.costoMetal | currency }}</div>
+                        <div class="text-right">{{ item.precioFinal | currency }}</div>
+                        <div class="metal-acciones">
+                            <mat-icon *ngIf="!bIsReadOnly"
+                                      class="metal-action-icon edit"
+                                      matTooltip="Editar Metal Final"
+                                      (click)="editMetalFinalGrid(item)">edit</mat-icon>
+                            <mat-icon *ngIf="!bIsReadOnly"
+                                      class="metal-action-icon delete"
+                                      matTooltip="Eliminar"
+                                      (click)="fn_eliminarMetalFinal(item.idMetalFinal)">delete_outline</mat-icon>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Botones de Acción -->
         <div class="row top30px">
             <div class="col-md-12" style="text-align: right;">

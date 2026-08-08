@@ -833,6 +833,33 @@ export class SalesService {
 
   }
 
+  CAddMetalFinal( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/addMetalFinal`, data );
+
+  }
+
+  CDeleteMetalFinal( data: any ): Observable<ResponseDB_CRUD> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteMetalFinal`, data );
+
+  }
+
+  getTallerMetalesFinal( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerMetalesFinal`, data);
+
+  }
+
   CAddMetalCliente( data: any ): Observable<ResponseGet> {
 
     data.idUserLogON = this.authServ.getIdUserSession();

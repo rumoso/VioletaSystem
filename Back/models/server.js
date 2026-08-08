@@ -35,6 +35,7 @@ class Server{
             comisiones:'/api/comisiones',
             finanzas:'/api/finanzas',
             serviciosExternos:'/api/serviciosExternos',
+            metalInventario:'/api/metalInventario',
 
         }
 
@@ -124,6 +125,7 @@ class Server{
         this.app.use(this.paths.comisiones, require('../routes/comisionesRoute'));
         this.app.use(this.paths.finanzas, require('../routes/finanzasRoute'));
         this.app.use(this.paths.serviciosExternos, require('../routes/serviciosExternosRoute'));
+        this.app.use(this.paths.metalInventario, require('../routes/metalInventarioRoute'));
     }
 
     listen(){

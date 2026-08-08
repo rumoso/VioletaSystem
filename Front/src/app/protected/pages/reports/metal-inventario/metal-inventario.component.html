@@ -1,0 +1,228 @@
+<div class="mi-page">
+
+    <!-- ═══════════════ TÍTULO INTEGRADO + SALDO DE SUCURSAL (misma card) ═══════════════ -->
+    <div class="mi-card mi-header-card">
+        <div class="mi-inline-title">
+            <div class="mi-inline-title-icon">
+                <mat-icon>toll</mat-icon>
+            </div>
+            <div class="mi-inline-title-text">
+                <span class="mi-inline-title-name">Inventario de Metal</span>
+                <span class="mi-inline-title-desc">Saldos y kardex de metal por sucursal y técnico</span>
+            </div>
+
+            <div class="mi-header-saldos" *ngIf="bCanVer">
+                <span class="mi-header-saldos-label">Sucursal (fino):</span>
+                <span *ngIf="saldosSucursal.length === 0" class="saldo-vacio">Sin saldos registrados</span>
+                <span *ngFor="let s of saldosSucursal" class="saldo-chip" [class.negativo]="s.gramos < 0">
+                    <mat-icon [style.color]="s.tipoMetal === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
+                    {{ s.productName }}: <b>{{ s.gramos | number:'1.0-2' }} g</b>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="!bCanVer" class="row">
+        <div class="col-md-12">
+            <h1>No tienes permiso para consultar el inventario de metal (tall_MetalInvVer).</h1>
+        </div>
+    </div>
+
+    <ng-container *ngIf="bCanVer">
+
+    <!-- ================= MOVIMIENTO MANUAL DE INVENTARIO ================= -->
+    <div class="row" *ngIf="bCanTransferir">
+        <div class="col-md-12">
+            <button mat-raised-button color="primary" type="button" (click)="fn_toggleTransferForm()">
+                <mat-icon matPrefix class="my-icon">{{ bShowTransferForm ? 'close' : 'swap_horiz' }}</mat-icon>
+                {{ bShowTransferForm ? 'Cerrar' : 'Movimiento manual de inventario' }}
+            </button>
+        </div>
+    </div>
+
+    <div class="transfer-card top10px" *ngIf="bShowTransferForm && bCanTransferir">
+
+        <div class="filters-row">
+
+            <div class="slim-field">
+                <span class="slim-label">Operación</span>
+                <select class="inline-input" [(ngModel)]="sOperacion">
+                    <option value="ENTRADA">Entrada a sucursal (compra/reposición)</option>
+                    <option value="TRASPASO_ST">Traspaso: sucursal → técnico</option>
+                    <option value="TRASPASO_TS">Devolución: técnico → sucursal</option>
+                </select>
+            </div>
+
+            <div class="slim-field field-tecnico" *ngIf="sOperacion !== 'ENTRADA'">
+                <span class="slim-label">Técnico</span>
+                <div class="inline-wrap">
+                    <input type="text"
+                            class="inline-input"
+                            placeholder="Buscar técnico..."
+                            [(ngModel)]="transferForm.tecnicoDesc"
+                            [matAutocomplete]="cbxTecnicoMetal"
+                            (input)="cbxTecnicos_Search()"
+                            (click)="cbxTecnicos_Click()">
+                    <mat-icon *ngIf="transferForm.tecnicoDesc" class="clear-icon manitaSobre" (click)="cbxTecnicos_Clear()">close</mat-icon>
+                    <mat-autocomplete autoActiveFirstOption
+                                        #cbxTecnicoMetal="matAutocomplete"
+                                        (optionSelected)="cbxTecnicos_SelectedOption( $event )">
+                        <mat-option *ngFor="let t of cbxTecnicos" [value]="t">
+                            {{ t.nombre }}
+                        </mat-option>
+                    </mat-autocomplete>
+                </div>
+            </div>
+
+            <div class="slim-field field-producto">
+                <span class="slim-label">Producto de metal</span>
+                <div class="inline-wrap">
+                    <input type="text"
+                            class="inline-input"
+                            placeholder="Buscar producto..."
+                            [(ngModel)]="transferForm.productoDesc"
+                            [matAutocomplete]="cbxProductoMetal"
+                            (click)="cbxProducto_Click()">
+                    <mat-icon *ngIf="transferForm.productoDesc" class="clear-icon manitaSobre" (click)="cbxProducto_Clear()">close</mat-icon>
+                    <mat-autocomplete autoActiveFirstOption
+                                        #cbxProductoMetal="matAutocomplete"
+                                        (optionSelected)="cbxProducto_SelectedOption( $event )">
+                        <mat-option *ngFor="let p of filteredProductosMetal" [value]="p">
+                            {{ p.name }}
+                        </mat-option>
+                    </mat-autocomplete>
+                </div>
+            </div>
+
+            <div class="slim-field field-gramos">
+                <span class="slim-label">Gramos</span>
+                <input class="inline-input text-right" type="number" step="0.1" [(ngModel)]="transferForm.gramos" placeholder="0.0">
+            </div>
+
+            <div class="slim-field field-referencia">
+                <span class="slim-label">Referencia</span>
+                <input class="inline-input" type="text" [(ngModel)]="transferForm.referencia" placeholder="Nota del movimiento...">
+            </div>
+
+        </div>
+
+        <div class="filters-row top10px">
+            <div class="equivalente-fino" *ngIf="equivalenteFino">
+                <mat-icon>calculate</mat-icon>
+                Equivale a <b>&nbsp;{{ equivalenteFino }}</b>
+            </div>
+            <button mat-raised-button color="primary" type="button" style="margin-left:auto;" (click)="fn_transferir()">
+                <mat-icon matPrefix class="my-icon">check</mat-icon>
+                Registrar movimiento
+            </button>
+        </div>
+
+    </div>
+
+    <!-- ================= KARDEX ================= -->
+    <div class="row top10px">
+        <div class="col-md-12">
+            <div class="saldo-card">
+                <div class="saldo-card-title">Kardex (historial de movimientos)</div>
+
+                <div class="filters-row top10px">
+                    <div class="slim-field">
+                        <span class="slim-label">Origen</span>
+                        <select class="inline-input" [(ngModel)]="parametersForm.tipoPropietario" (change)="fn_kardexPropietarioChange()">
+                            <option value="SUCURSAL">Sucursal</option>
+                            <option value="TECNICO">Técnico</option>
+                        </select>
+                    </div>
+                    <div class="slim-field field-tecnico" *ngIf="parametersForm.tipoPropietario === 'TECNICO'">
+                        <span class="slim-label">Técnico</span>
+                        <div class="inline-wrap">
+                            <input type="text"
+                                    class="inline-input"
+                                    placeholder="Buscar técnico..."
+                                    [(ngModel)]="parametersForm.tecnicoDesc"
+                                    [matAutocomplete]="cbxTecnicoKardex"
+                                    (input)="cbxTecnicosKardex_Search()"
+                                    (click)="cbxTecnicosKardex_Click()">
+                            <mat-icon *ngIf="parametersForm.tecnicoDesc" class="clear-icon manitaSobre" (click)="cbxTecnicosKardex_Clear()">close</mat-icon>
+                            <mat-autocomplete autoActiveFirstOption
+                                                #cbxTecnicoKardex="matAutocomplete"
+                                                (optionSelected)="cbxTecnicosKardex_SelectedOption( $event )">
+                                <mat-option *ngFor="let t of cbxTecnicosKardex" [value]="t">
+                                    {{ t.nombre }}
+                                </mat-option>
+                            </mat-autocomplete>
+                        </div>
+                    </div>
+                    <div class="slim-field">
+                        <span class="slim-label">Desde</span>
+                        <input class="inline-input" type="date" [(ngModel)]="parametersForm.startDate">
+                    </div>
+                    <div class="slim-field">
+                        <span class="slim-label">Hasta</span>
+                        <input class="inline-input" type="date" [(ngModel)]="parametersForm.endDate">
+                    </div>
+                    <button mat-raised-button color="primary" type="button" (click)="fn_getTrack()">
+                        <mat-icon matPrefix class="my-icon">search</mat-icon>
+                        Buscar</button>
+                    <button mat-raised-button type="button" (click)="parametersForm_Clear()">
+                        <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                        Limpiar</button>
+                </div>
+
+                <!-- Saldo del técnico consultado -->
+                <div class="saldo-tecnico-items top10px" *ngIf="parametersForm.tipoPropietario === 'TECNICO' && parametersForm.idTecnico > 0 && saldosTecnicoFiltro.length > 0">
+                    <span class="slim-label" style="align-self:center;">Saldo actual:</span>
+                    <span *ngFor="let s of saldosTecnicoFiltro" class="saldo-chip" [class.negativo]="s.gramos < 0">
+                        {{ s.productName }}: <b>{{ s.gramos | number:'1.0-2' }} g</b>
+                    </span>
+                </div>
+
+                <div class="table-responsive top10px">
+                    <table class="table table-hover kardex-table">
+                        <thead>
+                            <th class="textAlingCenter">Fecha</th>
+                            <th class="textAlingCenter">Movimiento</th>
+                            <th class="textAlingLeft">Origen</th>
+                            <th class="textAlingLeft">Destino</th>
+                            <th class="textAlingLeft">Producto</th>
+                            <th class="textAlingRight">Gramos</th>
+                            <th class="textAlingRight">Equiv. fino</th>
+                            <th class="textAlingCenter">Folio</th>
+                            <th class="textAlingLeft">Usuario</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of trackList">
+                                <td class="textAlingCenter">{{ item.createDateDesc }}</td>
+                                <td class="textAlingCenter">
+                                    <span class="badge mov-badge"
+                                        [class.bg-success]="item.tipoMovimiento === 'ENTRADA'"
+                                        [class.bg-primary]="item.tipoMovimiento === 'TRASPASO' || item.tipoMovimiento === 'ASIGNACION'"
+                                        [class.bg-warning]="item.tipoMovimiento === 'REVERSA'"
+                                        [class.bg-danger]="item.tipoMovimiento === 'METAL_FINAL'">
+                                        {{ item.tipoMovimiento }}
+                                    </span>
+                                </td>
+                                <td class="textAlingLeft">{{ item.origenDesc }}</td>
+                                <td class="textAlingLeft">{{ item.destinoDesc }}</td>
+                                <td class="textAlingLeft">{{ item.productName }}</td>
+                                <td class="textAlingRight">{{ item.gramos | number:'1.0-2' }} g</td>
+                                <td class="textAlingRight">{{ item.gramosFino | number:'1.0-2' }} g</td>
+                                <td class="textAlingCenter">{{ item.idSale || '-' }}</td>
+                                <td class="textAlingLeft">{{ item.createUserDesc }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <app-pagination *ngIf="trackList" [IPagination]="pagination"
+                                (OPagination)="changePagination($event)">
+                </app-pagination>
+
+            </div>
+        </div>
+    </div>
+
+    </ng-container>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

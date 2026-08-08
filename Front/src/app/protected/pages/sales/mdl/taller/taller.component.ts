@@ -26,6 +26,7 @@ import { TallerResponsablesDevolucionModalComponent } from './taller-responsable
 import { PaymentsComponent } from '../payments/payments.component';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
+import { MetalInventarioService } from 'src/app/protected/services/metal-inventario.service';
 
 @Component({
   selector: 'app-taller',
@@ -239,7 +240,8 @@ export class TallerComponent implements OnInit {
     tipo: 'oro',
     gramos: '',
     kilates: 0,
-    valorMetal: ''
+    valorMetal: '',
+    costoMetal: ''
   };
 
   kilatajes_oro: number[] = [8, 10, 12, 14, 16, 18, 20, 22, 24];
@@ -259,7 +261,8 @@ export class TallerComponent implements OnInit {
     tipo: 'oro',
     gramos: '',
     kilates: 0,
-    valorMetal: ''
+    valorMetal: '',
+    costoMetal: ''
   };
 
   kilatajes_oro_cliente: number[] = [8, 10, 12, 14, 16, 18, 20, 22, 24];
@@ -269,6 +272,74 @@ export class TallerComponent implements OnInit {
 
   get kilatajes_cliente(): number[] {
     return this.metalClienteTipo === 'plata' ? this.kilatajes_plata_cliente : this.kilatajes_oro_cliente;
+  }
+
+  // VARIABLES DE METAL FINAL
+  metalFinalTipo: string = 'oro'; // 'oro' o 'plata'
+  bShowMetalFinalForm: boolean = false;
+
+  metalFinalForm: any = {
+    idMetalFinal: 0,
+    idUserTecnico: 0,
+    descripcion: '',
+    tipo: 'oro',
+    gramos: '',
+    kilates: 0,
+    costoMetal: '',
+    precioFinal: ''
+  };
+
+  metalFinalList: any[] = [];
+  totalMetalFinal: number = 0;
+
+  get kilatajes_final(): number[] {
+    return this.metalFinalTipo === 'plata' ? this.kilatajes_plata : this.kilatajes_oro;
+  }
+
+  // Técnicos distintos del folio (de mano de obra); si hay más de uno,
+  // el renglón de Metal final debe especificar cuál
+  get tecnicosDelFolio(): any[] {
+    const seen: any = {};
+    const out: any[] = [];
+    for (const mo of this.manoObraList) {
+      if (mo.idUserTecnico && !seen[mo.idUserTecnico]) {
+        seen[mo.idUserTecnico] = true;
+        out.push({ idUserTecnico: mo.idUserTecnico, tecnicoDesc: mo.tecnicoDesc });
+      }
+    }
+    return out;
+  }
+
+  // Saldo de fino de la sucursal (para la alerta de "Poner metal")
+  saldoFinoOroSucursal: number = 0;
+  saldoFinoPlataSucursal: number = 0;
+
+  get metalAgranelFaltanteMsg(): string {
+    let finoOro = 0;
+    let finoPlata = 0;
+    for (const m of this.metalAgranelList) {
+      const gramos = parseFloat(m.gramos) || 0;
+      const kilates = parseFloat(m.kilates) || 0;
+      if (m.tipo === 'plata') finoPlata += gramos * kilates / 1000;
+      else finoOro += gramos * kilates / 24;
+    }
+    finoOro = Math.round(finoOro * 100) / 100;
+    finoPlata = Math.round(finoPlata * 100) / 100;
+
+    // El metal se mueve cuando el técnico ACEPTA la asignación (firma del
+    // status 3); la alerta aplica mientras eso no haya pasado
+    const bMetalMovido = this.tallerForm.idTallerStatus > 3
+      || ( this.tallerForm.idTallerStatus === 3 && this.oFirmaStatus?.firma === 1 );
+    if (bMetalMovido) return '';
+
+    let msg = '';
+    if (finoOro > this.saldoFinoOroSucursal) {
+      msg += `Oro fino: el folio necesita ${ finoOro } g y la sucursal tiene ${ this.saldoFinoOroSucursal } g. `;
+    }
+    if (finoPlata > this.saldoFinoPlataSucursal) {
+      msg += `Plata fina: el folio necesita ${ finoPlata } g y la sucursal tiene ${ this.saldoFinoPlataSucursal } g.`;
+    }
+    return msg;
   }
 
   // VARIABLES DE MANO DE OBRA
@@ -371,6 +442,7 @@ export class TallerComponent implements OnInit {
     , private productsServ: ProductsService
     , private dialog: MatDialog
     , private printTicketServ: PrintTicketService
+    , private metalInvServ: MetalInventarioService
 
   ) { }
 
@@ -567,6 +639,7 @@ export class TallerComponent implements OnInit {
         if (resp.status === 0) {
           this.metalAgranelList = resp.data.metalesAgranelDetail;
           this.fn_calcularTotalMetalAgranel();
+          this.fn_loadSaldoFinoSucursal();
         }
       },
       error: (ex: HttpErrorResponse) => {
@@ -639,6 +712,7 @@ export class TallerComponent implements OnInit {
           this.serviciosExternosList = resp.data.serviciosExternos || [];
           this.metalAgranelList = resp.data.metalesAgranel || [];
           this.metalClienteList = resp.data.metalesCliente || [];
+          this.metalFinalList = resp.data.metalesFinal || [];
           this.manoObraList = resp.data.oManoObra || [];
           this.oFirmaStatus = resp.data.oFirmaStatus || null;
           this.oPagos = resp.data.oPagos || [];
@@ -647,9 +721,11 @@ export class TallerComponent implements OnInit {
           this.fn_calcularTotalServiciosExternos();
           this.fn_calcularTotalMetalAgranel();
           this.fn_calcularTotalMetalCliente();
+          this.fn_calcularTotalMetalFinal();
           this.fn_calcularTotalManoObra();
           this.fn_calcularTotalTaller();
           this.fn_loadTallerHeaderImagesCount(idTaller);
+          this.fn_loadSaldoFinoSucursal();
         }
       },
       error: (ex: HttpErrorResponse) => {
@@ -1363,6 +1439,7 @@ export class TallerComponent implements OnInit {
       gramos: '',
       kilates: 0,
       valorMetal: '',
+      costoMetal: '',
       costPricePerGram: 0
     };
   }
@@ -1432,6 +1509,7 @@ export class TallerComponent implements OnInit {
         gramos: this.metalAgranelForm.gramos,
         kilates: this.metalAgranelForm.kilates,
         valorMetal: this.metalAgranelForm.valorMetal,
+        costoMetal: this.metalAgranelForm.costoMetal || 0,
         total: this.metalAgranelForm.gramos * this.metalAgranelForm.valorMetal
       }
     };
@@ -1493,14 +1571,17 @@ export class TallerComponent implements OnInit {
             const pricePerGram = resp.data.price;
             this.metalAgranelForm.costPricePerGram = parseFloat(resp.data.costPrice) || 0;
             this.metalAgranelForm.valorMetal = Math.round(this.metalAgranelForm.gramos * pricePerGram * 100) / 100;
+            this.metalAgranelForm.costoMetal = Math.round(this.metalAgranelForm.gramos * this.metalAgranelForm.costPricePerGram * 100) / 100;
           } else {
             this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
             this.metalAgranelForm.valorMetal = '';
+            this.metalAgranelForm.costoMetal = '';
           }
         },
         error: (ex: HttpErrorResponse) => {
           this.servicesGServ.showSnakbar('Error al obtener el precio: ' + (ex.error.message || 'Error desconocido'));
           this.metalAgranelForm.valorMetal = '';
+          this.metalAgranelForm.costoMetal = '';
         }
       });
   }
@@ -1555,6 +1636,7 @@ export class TallerComponent implements OnInit {
       gramos: Math.round(parseFloat(item.gramos) * 10) / 10,
       kilates: parseInt(item.kilates) || 8,
       valorMetal: parseFloat(item.valorMetal),
+      costoMetal: parseFloat(item.costoMetal) || 0,
       costPricePerGram: 0
     };
     // Abrir el form para que el usuario vea los datos cargados y pueda modificar
@@ -1593,7 +1675,8 @@ export class TallerComponent implements OnInit {
       tipo: this.metalClienteTipo,
       gramos: '',
       kilates: 0,
-      valorMetal: ''
+      valorMetal: '',
+      costoMetal: ''
     };
   }
 
@@ -1634,15 +1717,19 @@ export class TallerComponent implements OnInit {
           if (resp.status === 0 && resp.data) {
             // Calcular: gramos * precio, redondeado a 2 decimales (ej. 8957.25)
             const pricePerGram = resp.data.price;
+            const costPricePerGram = parseFloat(resp.data.costPrice) || 0;
             this.metalClienteForm.valorMetal = Math.round(this.metalClienteForm.gramos * pricePerGram * 100) / 100;
+            this.metalClienteForm.costoMetal = Math.round(this.metalClienteForm.gramos * costPricePerGram * 100) / 100;
           } else {
             this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
             this.metalClienteForm.valorMetal = '';
+            this.metalClienteForm.costoMetal = '';
           }
         },
         error: (ex: HttpErrorResponse) => {
           this.servicesGServ.showSnakbar('Error al obtener el precio: ' + (ex.error.message || 'Error desconocido'));
           this.metalClienteForm.valorMetal = '';
+          this.metalClienteForm.costoMetal = '';
         }
       });
   }
@@ -1669,6 +1756,7 @@ export class TallerComponent implements OnInit {
         gramos: this.metalClienteForm.gramos,
         kilates: this.metalClienteForm.kilates,
         valorMetal: this.metalClienteForm.valorMetal,
+        costoMetal: this.metalClienteForm.costoMetal || 0,
         total: this.metalClienteForm.gramos * this.metalClienteForm.valorMetal
       }
     };
@@ -1741,11 +1829,220 @@ export class TallerComponent implements OnInit {
       tipo: item.tipo,
       gramos: Math.round(parseFloat(item.gramos) * 10) / 10,
       kilates: parseInt(item.kilates) || 8,
-      valorMetal: parseFloat(item.valorMetal)
+      valorMetal: parseFloat(item.valorMetal),
+      costoMetal: parseFloat(item.costoMetal) || 0
     };
     // Abrir el form para que el usuario vea los datos cargados y pueda modificar
     this.bShowMetalClienteForm = true;
   }
+
+  //#region MÉTODOS DE METAL FINAL
+
+  fn_changeMetalFinalTipo(tipo: string) {
+    this.metalFinalTipo = tipo;
+    this.metalFinalForm.tipo = tipo;
+    this.fn_resetMetalFinalForm();
+  }
+
+  fn_resetMetalFinalForm() {
+    const tecnicos = this.tecnicosDelFolio;
+    this.metalFinalForm = {
+      idMetalFinal: 0,
+      idUserTecnico: tecnicos.length === 1 ? tecnicos[0].idUserTecnico : 0,
+      descripcion: '',
+      tipo: this.metalFinalTipo,
+      gramos: '',
+      kilates: 0,
+      costoMetal: '',
+      precioFinal: ''
+    };
+  }
+
+  fn_closeMetalFinalForm() {
+    this.fn_resetMetalFinalForm();
+    this.bShowMetalFinalForm = false;
+  }
+
+  fn_toggleMetalFinalForm(): void {
+    if (this.bShowMetalFinalForm) {
+      this.fn_closeMetalFinalForm();
+    } else {
+      this.fn_resetMetalFinalForm();
+      this.bShowMetalFinalForm = true;
+    }
+  }
+
+  fn_calculateMetalFinalValue() {
+    if (!this.metalFinalForm.gramos || this.metalFinalForm.gramos <= 0 || !this.metalFinalForm.kilates) {
+      this.metalFinalForm.precioFinal = '';
+      this.metalFinalForm.costoMetal = '';
+      return;
+    }
+
+    this.fxrateServ.CGetPriceByKilataje(this.metalFinalForm.kilates)
+      .subscribe({
+        next: (resp: any) => {
+          if (resp.status === 0 && resp.data) {
+            const pricePerGram = resp.data.price;
+            const costPricePerGram = parseFloat(resp.data.costPrice) || 0;
+            this.metalFinalForm.precioFinal = Math.round(this.metalFinalForm.gramos * pricePerGram * 100) / 100;
+            this.metalFinalForm.costoMetal = Math.round(this.metalFinalForm.gramos * costPricePerGram * 100) / 100;
+          } else {
+            this.servicesGServ.showSnakbar('No se encontró precio para este kilataje');
+            this.metalFinalForm.precioFinal = '';
+            this.metalFinalForm.costoMetal = '';
+          }
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar('Error al obtener el precio: ' + (ex.error.message || 'Error desconocido'));
+          this.metalFinalForm.precioFinal = '';
+          this.metalFinalForm.costoMetal = '';
+        }
+      });
+  }
+
+  fn_agregarMetalFinal() {
+    if (this.tecnicosDelFolio.length === 0) {
+      this.servicesGServ.showSnakbar('El folio no tiene técnicos en mano de obra');
+      return;
+    }
+
+    if (!this.metalFinalForm.idUserTecnico) {
+      this.servicesGServ.showSnakbar('Especifica el técnico del metal final');
+      return;
+    }
+
+    if (this.metalFinalForm.gramos <= 0) {
+      this.servicesGServ.showSnakbar('Los gramos deben ser mayor a 0');
+      return;
+    }
+
+    if (this.metalFinalForm.precioFinal <= 0) {
+      this.servicesGServ.showSnakbar('El precio final debe ser mayor a 0');
+      return;
+    }
+
+    const oParams: any = {
+      idTaller: this.tallerForm.idTaller,
+      idSale: this.tallerForm.idSale,
+      metalFinal: {
+        idMetalFinal: this.metalFinalForm.idMetalFinal,
+        idUserTecnico: this.metalFinalForm.idUserTecnico,
+        descripcion: this.metalFinalForm.descripcion,
+        tipo: this.metalFinalForm.tipo,
+        gramos: this.metalFinalForm.gramos,
+        kilates: this.metalFinalForm.kilates,
+        costoMetal: this.metalFinalForm.costoMetal || 0,
+        precioFinal: this.metalFinalForm.precioFinal
+      }
+    };
+
+    this.bShowSpinner = true;
+    this.salesServ.CAddMetalFinal(oParams)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.servicesGServ.showAlertIA(resp, false);
+          if (resp.status === 0) {
+            this.getTallerMetalesFinal(this.tallerForm.idTaller);
+            this.fn_closeMetalFinalForm();
+          }
+          this.bShowSpinner = false;
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar(ex.error.message || 'Error al guardar metal final');
+          this.bShowSpinner = false;
+        }
+      });
+  }
+
+  fn_eliminarMetalFinal(idMetalFinal: number) {
+    this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Está a punto de eliminar un metal final'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: async( resp ) =>{
+            if(resp){
+
+              this.bShowSpinner = true;
+
+              const oParams: any = {
+                idMetalFinal: idMetalFinal
+              };
+
+              this.salesServ.CDeleteMetalFinal(oParams)
+                .subscribe({
+                  next: (resp: any) => {
+                    this.servicesGServ.showAlertIA(resp, false);
+                    if (resp.status === 0) {
+                      this.getTallerMetalesFinal(this.tallerForm.idTaller);
+                    }
+                    this.bShowSpinner = false;
+                  },
+                  error: (ex: HttpErrorResponse) => {
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al eliminar metal final');
+                    this.bShowSpinner = false;
+                  }
+                });
+            }
+          }
+        });
+  }
+
+  editMetalFinalGrid( item: any ){
+    this.metalFinalTipo = item.tipo;
+    this.metalFinalForm = {
+      idMetalFinal: item.idMetalFinal,
+      idUserTecnico: item.idUserTecnico,
+      descripcion: item.descripcion || '',
+      tipo: item.tipo,
+      gramos: Math.round(parseFloat(item.gramos) * 10) / 10,
+      kilates: parseInt(item.kilates) || 8,
+      costoMetal: parseFloat(item.costoMetal) || 0,
+      precioFinal: parseFloat(item.precioFinal)
+    };
+    this.bShowMetalFinalForm = true;
+  }
+
+  getTallerMetalesFinal( idTaller: number ){
+    this.salesServ.getTallerMetalesFinal({ idTaller: idTaller })
+    .subscribe({
+      next: (resp: ResponseGet) => {
+        if( resp.status === 0 ){
+          this.metalFinalList = resp.data.metalesFinalDetail || [];
+          this.fn_calcularTotalMetalFinal();
+        }
+      },
+      error: (ex: HttpErrorResponse) => {
+        console.log( ex )
+      }
+    });
+  }
+
+  // El precio del Metal final NO se suma al total del folio todavía
+  // (pendiente de confirmar con el cliente cómo interactúa con Poner metal)
+  fn_calcularTotalMetalFinal() {
+    this.totalMetalFinal = this.metalFinalList.reduce((total, metal) => total + (parseFloat(metal.precioFinal) || 0), 0);
+  }
+
+  fn_loadSaldoFinoSucursal() {
+    const idSucursal = this.tallerForm.idSucursal || environment.idSucursal;
+    this.metalInvServ.CGetMetalInventarioSaldos('SUCURSAL', idSucursal)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          if (resp.status === 0) {
+            const rows = resp.data.rows || [];
+            const oro = rows.find((r: any) => r.barCode === 'METAL-ORO-24');
+            const plata = rows.find((r: any) => r.barCode === 'METAL-PLATA-1000');
+            this.saldoFinoOroSucursal = oro ? parseFloat(oro.gramos) : 0;
+            this.saldoFinoPlataSucursal = plata ? parseFloat(plata.gramos) : 0;
+          }
+        },
+        error: () => {}
+      });
+  }
+
+  //#endregion MÉTODOS DE METAL FINAL
 
   openMetalClienteImagesDialog(item: any) {
     let OParams: any = {
@@ -1923,8 +2220,10 @@ export class TallerComponent implements OnInit {
                       this.servicesGServ.showSnakbar('Pedido de taller asignado correctamente');
                       this.tallerForm.idTallerStatus = 3;
                       this.fn_insertFirmaStatus(3);
+                      this.fn_loadSaldoFinoSucursal();
                     } else {
-                      this.servicesGServ.showSnakbar(respUpdate.message || 'Error al asignar el pedido de taller');
+                      // Bloqueo (p. ej. inventario de metal insuficiente): alerta visible
+                      this.servicesGServ.showAlertIA(respUpdate);
                     }
                     this.bShowSpinner = false;
                   },
@@ -1981,7 +2280,8 @@ export class TallerComponent implements OnInit {
                       this.tallerForm.idTallerStatus = 4;
                       this.fn_insertFirmaStatus(4);
                     } else {
-                      this.servicesGServ.showSnakbar('Error al finalizar el pedido de taller');
+                      // Bloqueo (p. ej. el metal final excede el inventario del técnico)
+                      this.servicesGServ.showAlertIA(respUpdate);
                     }
                     this.bShowSpinner = false;
                   },

@@ -15,6 +15,7 @@ import { UtilidadComponent } from "./pages/reports/utilidad/utilidad.component";
 import { RoleListComponent } from "./pages/security/roles/role-list/role-list.component";
 import { RoleComponent } from "./pages/security/roles/role/role.component";
 import { PhysicalInventoryListComponent } from "./pages/reports/physical-inventory-list/physical-inventory-list.component";
+import { MetalInventarioComponent } from "./pages/reports/metal-inventario/metal-inventario.component";
 import { ComisionesComponent } from "./pages/operation/comisiones/comisiones.component";
 import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.component";
 import { RepcomprasproveedorComponent } from "./pages/reports/repcomprasproveedor/repcomprasproveedor.component";
@@ -101,6 +102,10 @@ const routes: Routes = [
         {
           path: 'inventarioFisicoList',
           component: PhysicalInventoryListComponent
+        },
+        {
+          path: 'inventarioMetal',
+          component: MetalInventarioComponent
         },
         {
           path: 'comisiones',
