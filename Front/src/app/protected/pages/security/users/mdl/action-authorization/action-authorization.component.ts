@@ -197,7 +197,15 @@ constructor(
   event_fn_Enter( event: any ){
 
     if(event.keyCode == 13) { // PRESS ENTER
-      this.fn_authorizationAction();
+
+      // Enter sin haber escrito ningún código: atajo para autorizar por
+      // rostro en vez de mandar el formulario vacío.
+      if( !this.actionForm?.authorizationCode?.trim()?.length ){
+        this.fn_authorizarPorRostro();
+      }else{
+        this.fn_authorizationAction();
+      }
+
     }
   }
 
