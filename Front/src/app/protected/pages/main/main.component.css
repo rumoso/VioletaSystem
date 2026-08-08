@@ -1,0 +1,99 @@
+/* ══════════════════════════════
+   TOPBAR — mismo patrón limpio que Diprolim
+══════════════════════════════ */
+.app-topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  box-shadow: 0 1px 0 #e2e8f0, 0 2px 12px rgba(0,0,0,0.05) !important;
+  height: 58px !important;
+  padding: 0 14px !important;
+  gap: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-menu-btn { color: #64748b !important; flex-shrink: 0; }
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.topbar-logo { width: 34px; height: auto; }
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4a148c;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.topbar-spacer { flex: 1; }
+
+/* Usuario pill */
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px 3px 4px;
+  background: #f8fafc;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.topbar-user:hover {
+  background: #f3e5f5;
+}
+
+.topbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6a1b9a, #8e24aa);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.topbar-user-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.topbar-logout-btn { color: #94a3b8 !important; flex-shrink: 0; }
+.topbar-logout-btn:hover { color: #ef4444 !important; }
+
+@media (max-width: 640px) {
+  .topbar-title  { display: none; }
+  .hide-on-small { display: none; }
+}
+
+/* ══════════════════════════════
+   CONTENIDO — altura centralizada aquí (no en cada página) para que
+   todas las pantallas aprovechen exactamente el espacio disponible
+   bajo el topbar (58px), en vez de que cada una calcule 100vh por su
+   cuenta y se pase de largo o deje huecos.
+══════════════════════════════ */
+.app-content {
+  min-height: calc(100vh - 58px);
+  margin-bottom: 50px;
+}

@@ -27,33 +27,32 @@
 
     </mat-sidenav>
 
-    <mat-toolbar id="headerApp">
-        <button mat-icon-button
-        (click)="sidenav.toggle()">
+    <!-- ══════════════════════ TOPBAR ══════════════════════ -->
+    <mat-toolbar id="headerApp" class="app-topbar">
+
+        <button mat-icon-button class="topbar-menu-btn" (click)="sidenav.toggle()">
             <mat-icon>menu</mat-icon>
         </button>
 
-        <img width="60"
-                class="manitaSobre"
-                [src]="_IconApp"
-                alt=""
-                routerLink="./dashboard">
-        <h1 routerLink="./dashboard"
-            class="manitaSobre">{{ _appName }}</h1>
-        <span class="spacer"></span>
+        <div class="topbar-brand manitaSobre" routerLink="./dashboard">
+            <img class="topbar-logo" [src]="_IconApp" alt="">
+            <span class="topbar-title">{{ _appName }}</span>
+        </div>
 
-        <span class="spacer"></span>
-        <img (click)="showChangePwdModal()" class="imgDashboard manitaSobre" style="width:50px !important" src="assets/img/icons/connectUser.gif"/>
+        <span class="topbar-spacer"></span>
 
-        <span>{{ userLogin!.name }}</span>
+        <div class="topbar-user manitaSobre" (click)="showChangePwdModal()" matTooltip="Mi cuenta">
+            <div class="topbar-avatar">{{ userLogin?.name?.charAt(0)?.toUpperCase() }}</div>
+            <span class="topbar-user-name hide-on-small">{{ userLogin?.name }}</span>
+        </div>
 
-        <button mat-button
-        (click)="logout()">
-            <mat-icon mat-list-icon>logout</mat-icon>
+        <button mat-icon-button class="topbar-logout-btn" (click)="logout()" matTooltip="Cerrar sesión">
+            <mat-icon>logout</mat-icon>
         </button>
+
     </mat-toolbar>
 
-    <div class="container-fluid" style="margin-bottom: 50px;">
+    <div class="container-fluid app-content">
         <router-outlet></router-outlet>
     </div>
 
