@@ -46,8 +46,10 @@ export class FaceVerificationComponent implements OnDestroy {
   bAceptando: boolean = false;
 
   // IDENTIFICAR con más de una persona plausible: hay que elegir cuál
-  // es antes de pasar a la confirmación de arriba.
-  candidatosPendientes: Array<{ tipoPersona: string; idPersona: number; nombre: string; similitud: number }> | null = null;
+  // es antes de pasar a la confirmación de arriba. Se guarda la
+  // referencia cruda (con descriptor) para poder re-verificar contra
+  // ella una vez elegida.
+  candidatosPendientes: Array<{ referencia: any; similitud: number }> | null = null;
 
   camaras: MediaDeviceInfo[] = [];
   deviceIdActivo: string | null = null;
@@ -62,6 +64,18 @@ export class FaceVerificationComponent implements OnDestroy {
   private referenciasTodas: any[] = [];
   private idUserLogON: number = 0;
   private deviceIdPreferido: string | null = null;
+
+  // Descriptor (128 números) de la última captura exitosa — se manda en
+  // el resultado por si quien invoca este modal necesita re-verificarlo
+  // del lado del servidor (ej. login facial).
+  private ultimoDescriptor: number[] | null = null;
+
+  // Cuando IDENTIFICAR encontró varias personas plausibles y el
+  // operador ya eligió una: la siguiente captura se compara SOLO contra
+  // esa persona (1:1), excluyendo a las demás — no se confía en la
+  // similitud ya calculada del primer intento ambiguo, se pide una
+  // foto nueva para confirmar de verdad.
+  private candidatoParaReverificar: any = null;
 
   private deteccionTimer: any = null;
   private ticksAlineado: number = 0;
@@ -312,8 +326,39 @@ export class FaceVerificationComponent implements OnDestroy {
       return;
     }
 
+    this.ultimoDescriptor = oCaptura.descriptor!;
+
     if (this.modo === 'ENROLAR') {
       this.fn_guardarReferencia(oCaptura.descriptor!, oCaptura.imgThumb!);
+      return;
+    }
+
+    // Re-verificación tras elegir de una lista de candidatos ambiguos:
+    // se compara la foto NUEVA solo contra la persona elegida, el resto
+    // queda excluido — así no puede "volver a salir" otra persona.
+    if (this.candidatoParaReverificar) {
+
+      const candidato = this.candidatoParaReverificar;
+      const refDescriptor: number[] = typeof candidato.descriptor === 'string' ? JSON.parse(candidato.descriptor) : candidato.descriptor;
+      const oResultado = this.faceRecognitionServ.compare(oCaptura.descriptor!, refDescriptor);
+
+      if (oResultado.match) {
+        this.resultadoPendiente = {
+          nombre: candidato.nombrePersona,
+          similitud: oResultado.similitud,
+          tipoPersona: candidato.tipoPersona,
+          idPersona: candidato.idPersona
+        };
+        this.candidatoParaReverificar = null;
+        this.bCapturing = false;
+      } else {
+        this.mensaje = `No se pudo confirmar a ${ candidato.nombrePersona } en la segunda verificación (similitud ${ (oResultado.similitud * 100).toFixed(0) }%). Intenta de nuevo o usa la autorización manual.`;
+        this.candidatoParaReverificar = null;
+        await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
+        this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
+        this.bCapturing = false;
+      }
+
       return;
     }
 
@@ -357,12 +402,7 @@ export class FaceVerificationComponent implements OnDestroy {
 
         // Más de una persona plausible: no se elige sola, se le
         // pregunta al operador cuál de ellas es.
-        this.candidatosPendientes = oResultado.candidatos.map(c => ({
-          tipoPersona: c.referencia.tipoPersona,
-          idPersona: c.referencia.idPersona,
-          nombre: c.referencia.nombrePersona,
-          similitud: c.similitud
-        }));
+        this.candidatosPendientes = oResultado.candidatos;
         this.bCapturing = false;
 
       } else {
@@ -376,12 +416,14 @@ export class FaceVerificationComponent implements OnDestroy {
 
   }
 
-  // El operador elige de la lista de candidatos plausibles: pasa a la
-  // misma confirmación de siempre ("Identificamos a: X, ¿aceptar?") en
-  // vez de darlo por bueno directamente.
-  fn_elegirCandidato(candidato: { tipoPersona: string; idPersona: number; nombre: string; similitud: number }) {
+  // El operador elige de la lista de candidatos plausibles: NO se toma
+  // por buena la similitud ya calculada — se pide una foto nueva y se
+  // vuelve a verificar 1:1 solo contra esta persona, excluyendo al resto,
+  // para evitar que la ambigüedad original se cuele como aceptación.
+  fn_elegirCandidato(candidato: { referencia: any; similitud: number }) {
     this.candidatosPendientes = null;
-    this.resultadoPendiente = { ...candidato };
+    this.candidatoParaReverificar = candidato.referencia;
+    this.mensaje = `Verifica de nuevo para confirmar a ${ candidato.referencia.nombrePersona }`;
   }
 
   async fn_cancelarCandidatos() {
@@ -423,7 +465,8 @@ export class FaceVerificationComponent implements OnDestroy {
       tipoPersona: r.tipoPersona,
       idPersona: r.idPersona,
       nombre: r.nombre,
-      similitud: r.similitud
+      similitud: r.similitud,
+      descriptor: this.ultimoDescriptor
     });
 
   }

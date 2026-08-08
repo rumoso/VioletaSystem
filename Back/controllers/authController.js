@@ -1,10 +1,24 @@
 const bcryptjs = require('bcryptjs');
 const { response } = require('express');
 const { json } = require('express/lib/response');
+const moment = require('moment');
 const { generarJWT } = require('../helpers/generar-jwt');
 const { googleVerify } = require('../helpers/google-verify');
 
 const { createConexion, dbConnection } = require('../database/config');
+
+// Debe ser el MISMO valor que MATCH_THRESHOLD en
+// Front/src/app/protected/services/face-recognition.service.ts
+const FACE_MATCH_THRESHOLD = 0.5;
+
+const _fn_euclideanDistance = (a, b) => {
+    let suma = 0;
+    for (let i = 0; i < a.length; i++) {
+        const d = a[i] - b[i];
+        suma += d * d;
+    }
+    return Math.sqrt(suma);
+};
 
 const login = async(req, res = response)=>{
 
@@ -81,6 +95,102 @@ const login = async(req, res = response)=>{
         });
     }
 }
+
+// Login por reconocimiento facial. El navegador ya identificó "creo que
+// es idUser X" y capturó un descriptor fresco — aquí se vuelve a
+// comparar ESE descriptor contra el guardado para ese usuario de forma
+// independiente (nunca se confía ciegamente en lo que dice el cliente:
+// sin este recálculo, cualquiera podría llamar este endpoint pasando
+// cualquier idUser sin haber mostrado ningún rostro).
+const loginByFace = async(req, res = response) => {
+
+    const {
+        idUser
+        , descriptor
+    } = req.body;
+
+    try{
+
+        const refRows = await dbConnection.query(
+            `SELECT descriptor FROM face_reference WHERE tipoPersona = 'USUARIO' AND idPersona = :idUser LIMIT 1`,
+            { replacements: { idUser }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        if (refRows.length === 0) {
+            return res.json({
+                status: 1,
+                message: "Este usuario no tiene un rostro registrado.",
+                data: null
+            });
+        }
+
+        const storedDescriptor = JSON.parse(refRows[0].descriptor);
+        const distancia = _fn_euclideanDistance(descriptor, storedDescriptor);
+        const similitud = Math.max(0, 1 - distancia);
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        if (distancia > FACE_MATCH_THRESHOLD) {
+
+            await dbConnection.query(
+                `INSERT INTO face_verification_log (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, resultado, similitud, referencia, idCreateUser)
+                 VALUES (:createDate, 'VERIFICAR', 'USUARIO', :idUser, 'FALLO', :similitud, 'Login', :idUser)`,
+                { replacements: { createDate: oGetDateNow, idUser, similitud }, type: dbConnection.QueryTypes.INSERT }
+            );
+
+            return res.json({
+                status: 1,
+                message: "No se pudo verificar la identidad.",
+                data: null
+            });
+        }
+
+        var OSQL = await dbConnection.query(`call getUserByID(${ idUser })`);
+
+        if (OSQL.length == 0) {
+            return res.json({
+                status: 1,
+                message: "Usuario no encontrado.",
+                data: null
+            });
+        }
+
+        var user = OSQL[0];
+
+        if (!user.active) {
+            return res.json({
+                status: 1,
+                message: "Usuario / Password no son correctos",
+                data: null
+            });
+        }
+
+        const token = await generarJWT(user.idUser);
+
+        await dbConnection.query(
+            `INSERT INTO face_verification_log (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, resultado, similitud, referencia, idCreateUser)
+             VALUES (:createDate, 'VERIFICAR', 'USUARIO', :idUser, 'EXITO', :similitud, 'Login', :idUser)`,
+            { replacements: { createDate: oGetDateNow, idUser, similitud }, type: dbConnection.QueryTypes.INSERT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Conectado correctamente.",
+            data: {
+                user,
+                token
+            }
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
 
 const getMenuByPermissions = async(req, res = response)=>{
 
@@ -448,6 +558,7 @@ const insertMenusPermisionsByIdRelation = async(req, res) => {
 
 module.exports={
     login
+    , loginByFace
     , getMenuByPermissions
 
     , getActionsPermissionByUser

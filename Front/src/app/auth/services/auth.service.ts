@@ -27,19 +27,36 @@ export class AuthService {
 
       return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/login`, login )
         .pipe(
-          tap( async userLogin => {
-            if(userLogin.status == 0){
-              this._userLogin = userLogin.data!.user;
-              localStorage.setItem('idUser', JSON.stringify( userLogin.data.user.idUser ));
-              localStorage.setItem('user', JSON.stringify( userLogin.data.user ));
-              localStorage.setItem('token', JSON.stringify( userLogin.data.token ));
-
-              var oActions = await this.CGetActionsPermissionPromise(userLogin.data.user.idUser)
-              if(oActions)
-                localStorage.setItem('oActions', JSON.stringify(oActions));
-            }
-          })
+          tap( async userLogin => this.fn_persistirSesion( userLogin ) )
         );
+    }
+
+    // Login con reconocimiento facial: el navegador ya identificó y
+    // confirmó con el operador quién es (idUser) y capturó un descriptor
+    // fresco; el Back vuelve a comparar ese descriptor contra el
+    // guardado antes de emitir el token — nunca se confía solo en lo
+    // que dice el cliente.
+    CLoginByFace( idUser: number, descriptor: number[] ): Observable<ResponseGet> {
+
+      const data = { idUser, descriptor };
+
+      return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/loginByFace`, data )
+        .pipe(
+          tap( async userLogin => this.fn_persistirSesion( userLogin ) )
+        );
+    }
+
+    private async fn_persistirSesion( userLogin: ResponseGet ) {
+      if(userLogin.status == 0){
+        this._userLogin = userLogin.data!.user;
+        localStorage.setItem('idUser', JSON.stringify( userLogin.data.user.idUser ));
+        localStorage.setItem('user', JSON.stringify( userLogin.data.user ));
+        localStorage.setItem('token', JSON.stringify( userLogin.data.token ));
+
+        var oActions = await this.CGetActionsPermissionPromise(userLogin.data.user.idUser)
+        if(oActions)
+          localStorage.setItem('oActions', JSON.stringify(oActions));
+      }
     }
 
     get userLogin(): any | undefined{

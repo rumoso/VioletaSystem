@@ -39,4 +39,16 @@ autocomplete="off"
 
 </form>
 
+<div class="row top10px">
+    <div class="col-md-12">
+        <button mat-stroked-button
+                type="button"
+                style="width: 90%;"
+                (click)="fn_loginByFace()">
+            <mat-icon matPrefix class="my-icon">face</mat-icon>
+            Iniciar sesión con reconocimiento facial
+        </button>
+    </div>
+</div>
+
 <app-spinner *ngIf="bShowSpinner"></app-spinner>

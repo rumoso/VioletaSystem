@@ -70,7 +70,7 @@
             class="fv-candidato-row"
             (click)="fn_elegirCandidato(c)">
                 <mat-icon>person</mat-icon>
-                <span class="fv-candidato-nombre">{{ c.nombre }}</span>
+                <span class="fv-candidato-nombre">{{ c.referencia.nombrePersona }}</span>
                 <span class="fv-candidato-similitud">{{ (c.similitud * 100).toFixed(0) }}%</span>
             </button>
         </div>

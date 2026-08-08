@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FaceVerificationComponent } from 'src/app/protected/pages/security/mdl/face-verification/face-verification.component';
 
 @Component({
   selector: 'app-login',
@@ -58,6 +59,45 @@ export class LoginComponent {
             }
           })
       }
+    }
+
+    fn_loginByFace() {
+
+      this.servicesGServ.showModalWithParams( FaceVerificationComponent, {
+        modo: 'IDENTIFICAR',
+        tipoPersona: 'USUARIO', // el login solo busca entre usuarios del sistema, nunca clientes
+        referencia: 'Login',
+        ocultarAutorizacionManual: true // sin sesión todavía no aplica el respaldo de código de autorización
+      }, '480px')
+      .afterClosed().subscribe({
+        next: ( resp: any ) => {
+
+          if( !resp?.ok || resp.autorizacionManual ){
+            return; // canceló, no identificó a nadie, o pidió respaldo manual (no aplica aquí)
+          }
+
+          this.bShowSpinner = true;
+
+          this.authServ.CLoginByFace( resp.idPersona, resp.descriptor )
+            .subscribe({
+              next: (resp2) => {
+                if( resp2.status === 0 ){
+                  this.servicesGServ.changeRoute( '/VioletaSistem/dashboard' );
+                }else{
+                  this.servicesGServ.showSnakbar(resp2.message);
+                }
+                this.bShowSpinner = false;
+              },
+              error: (ex) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+                this.bShowSpinner = false;
+              }
+            });
+
+        }
+      });
+
     }
 
 }

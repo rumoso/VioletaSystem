@@ -3,8 +3,9 @@ const { check } = require('express-validator');
 
 const { validarCampos } = require('../middlewares/validar-campos');
 
-const { 
+const {
     login
+    , loginByFace
     , getMenuByPermissions
     , getActionsPermissionByUser
 
@@ -20,6 +21,13 @@ router.post('/login',[
     validarCampos
 
 ], login );
+
+router.post('/loginByFace',[
+    check('idUser','El usuario es obligatorio').not().isEmpty(),
+    check('descriptor','El descriptor facial es obligatorio').isArray({ min: 1 }),
+    validarCampos
+
+], loginByFace );
 
 router.post('/getMenuByPermissions',[
     check('idUser','Usuario obligatorio').not().isEmpty(),
