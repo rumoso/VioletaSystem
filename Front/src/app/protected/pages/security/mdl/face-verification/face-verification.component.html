@@ -16,6 +16,20 @@
 
     <mat-dialog-content class="fv-content">
 
+        <!-- Cámaras disponibles: solo tiene sentido elegir si hay más de una -->
+        <div class="fv-camaras" *ngIf="camaras.length > 1">
+            <button type="button"
+            *ngFor="let cam of camaras; let i = index"
+            class="fv-camara-tag"
+            [class.active]="cam.deviceId === deviceIdActivo"
+            [disabled]="bCambiandoCamara"
+            [matTooltip]="cam.label || ''"
+            (click)="fn_seleccionarCamara(cam.deviceId)">
+                <mat-icon>videocam</mat-icon>
+                {{ fn_camaraLabel(cam, i) }}
+            </button>
+        </div>
+
         <div class="fv-persona" *ngIf="nombrePersona">
             Se espera: <b>{{ nombrePersona }}</b>
         </div>

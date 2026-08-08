@@ -273,10 +273,77 @@ const getFaceVerificationLogTrack = async(req, res = response) => {
     }
 };
 
+const getCameraPreference = async(req, res = response) => {
+
+    const {
+        idUser
+    } = req.body;
+
+    try{
+
+        const row = await dbConnection.query(
+            `SELECT idUser, deviceId, label FROM face_camera_preference WHERE idUser = :idUser LIMIT 1`,
+            { replacements: { idUser }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: row.length > 0 ? row[0] : null
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const saveCameraPreference = async(req, res = response) => {
+
+    const {
+        idUser,
+        deviceId,
+        label = null
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        await dbConnection.query(
+            `INSERT INTO face_camera_preference (idUser, deviceId, label, updateDate)
+             VALUES (:idUser, :deviceId, :label, :updateDate)
+             ON DUPLICATE KEY UPDATE deviceId = :deviceId, label = :label, updateDate = :updateDate`,
+            { replacements: { idUser, deviceId, label, updateDate: oGetDateNow }, type: dbConnection.QueryTypes.INSERT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Cámara preferida guardada."
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
 module.exports = {
     saveFaceReference
     , getFaceReference
     , getFaceReferences
     , logFaceVerification
     , getFaceVerificationLogTrack
+    , getCameraPreference
+    , saveCameraPreference
 }

@@ -51,6 +51,20 @@ export class FaceReferenceService {
 
   }
 
+  CGetCameraPreference( idUser: number ): Observable<ResponseGet> {
+
+    const data = { idUser };
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getCameraPreference`, data );
+
+  }
+
+  CSaveCameraPreference( data: any ): Observable<ResponseDB_CRUD> {
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/saveCameraPreference`, data );
+
+  }
+
   CGetFaceVerificationLogTrack( pagination: Pagination, parametersForm: any ): Observable<ResponseGet> {
 
     const data = {

@@ -1,5 +1,6 @@
 import { Component, ElementRef, Inject, OnDestroy, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { FaceReferenceService } from 'src/app/protected/services/face-reference.service';
 import { FaceRecognitionService } from 'src/app/protected/services/face-recognition.service';
@@ -38,9 +39,15 @@ export class FaceVerificationComponent implements OnDestroy {
   mensaje: string = '';
   bMostrarAutorizacionManual: boolean = false;
 
+  camaras: MediaDeviceInfo[] = [];
+  deviceIdActivo: string | null = null;
+  bCambiandoCamara: boolean = false;
+
   private stream: MediaStream | null = null;
   private referenciaEsperada: any = null;
   private referenciasTodas: any[] = [];
+  private idUserLogON: number = 0;
+  private deviceIdPreferido: string | null = null;
 
   constructor(
     private dialogRef: MatDialogRef<FaceVerificationComponent>
@@ -49,6 +56,7 @@ export class FaceVerificationComponent implements OnDestroy {
     , private servicesGServ: ServicesGService
     , private faceRecognitionServ: FaceRecognitionService
     , private faceReferenceServ: FaceReferenceService
+    , private authServ: AuthService
     ) { }
 
   async ngOnInit() {
@@ -58,6 +66,16 @@ export class FaceVerificationComponent implements OnDestroy {
     this.idPersona = this.ODataP.idPersona || 0;
     this.nombrePersona = this.ODataP.nombrePersona || '';
     this.referencia = this.ODataP.referencia || '';
+
+    this.idUserLogON = await this.authServ.getIdUserSession();
+
+    this.faceReferenceServ.CGetCameraPreference(this.idUserLogON)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.deviceIdPreferido = (resp.status === 0 && resp.data) ? resp.data.deviceId : null;
+        },
+        error: () => { this.deviceIdPreferido = null; }
+      });
 
     if (this.modo === 'VERIFICAR') {
 
@@ -109,6 +127,8 @@ export class FaceVerificationComponent implements OnDestroy {
 
     setTimeout(async () => {
 
+      // Primero se abre la cámara por default: el navegador solo entrega
+      // los nombres (labels) de las cámaras después de conceder permiso.
       const oCam = await this.faceRecognitionServ.startCamera(this.videoRef.nativeElement);
 
       this.bLoadingModels = false;
@@ -116,6 +136,18 @@ export class FaceVerificationComponent implements OnDestroy {
       if (oCam.ok) {
         this.stream = oCam.stream || null;
         this.bCameraReady = true;
+        this.deviceIdActivo = this.faceRecognitionServ.getActiveDeviceId(this.stream);
+
+        this.camaras = await this.faceRecognitionServ.listCameras();
+
+        // Si hay una cámara preferida guardada y sigue disponible en esta
+        // máquina, y no es la que ya quedó activa, se cambia a ella sola.
+        if (this.deviceIdPreferido
+          && this.deviceIdPreferido !== this.deviceIdActivo
+          && this.camaras.some(c => c.deviceId === this.deviceIdPreferido)) {
+          await this.fn_seleccionarCamara(this.deviceIdPreferido, false);
+        }
+
       } else {
         this.mensaje = oCam.error || 'No se pudo acceder a la cámara.';
         this.bMostrarAutorizacionManual = true;
@@ -124,6 +156,42 @@ export class FaceVerificationComponent implements OnDestroy {
 
     }, 0);
 
+  }
+
+  async fn_seleccionarCamara(deviceId: string, bGuardarPreferencia: boolean = true) {
+
+    if (this.bCambiandoCamara || deviceId === this.deviceIdActivo) {
+      return;
+    }
+
+    this.bCambiandoCamara = true;
+
+    this.faceRecognitionServ.stopCamera(this.stream);
+
+    const oCam = await this.faceRecognitionServ.startCamera(this.videoRef.nativeElement, deviceId);
+
+    if (oCam.ok) {
+      this.stream = oCam.stream || null;
+      this.deviceIdActivo = deviceId;
+
+      if (bGuardarPreferencia) {
+        const oCamara = this.camaras.find(c => c.deviceId === deviceId);
+        this.faceReferenceServ.CSaveCameraPreference({
+          idUser: this.idUserLogON,
+          deviceId,
+          label: oCamara?.label || null
+        }).subscribe({ next: () => {}, error: () => {} });
+      }
+    } else {
+      this.servicesGServ.showSnakbar(oCam.error || 'No se pudo cambiar de cámara');
+    }
+
+    this.bCambiandoCamara = false;
+
+  }
+
+  fn_camaraLabel(cam: MediaDeviceInfo, index: number): string {
+    return cam.label || `Cámara ${ index + 1 }`;
   }
 
   ngOnDestroy(): void {

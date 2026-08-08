@@ -40,11 +40,15 @@ export class FaceRecognitionService {
     return this.modelsLoadingPromise;
   }
 
-  async startCamera(videoEl: HTMLVideoElement): Promise<{ ok: boolean; stream?: MediaStream; error?: string }> {
+  async startCamera(videoEl: HTMLVideoElement, deviceId?: string): Promise<{ ok: boolean; stream?: MediaStream; error?: string }> {
 
     try {
+      const videoConstraints: MediaTrackConstraints = deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: 480 }, height: { ideal: 360 } }
+        : { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 } };
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 } },
+        video: videoConstraints,
         audio: false
       });
 
@@ -59,6 +63,21 @@ export class FaceRecognitionService {
 
   stopCamera(stream: MediaStream | null | undefined): void {
     stream?.getTracks().forEach(track => track.stop());
+  }
+
+  // Lista las cámaras (video inputs) disponibles en el navegador. Los
+  // labels solo vienen poblados si ya se concedió permiso de cámara
+  // (por eso se llama DESPUÉS de startCamera, nunca antes).
+  async listCameras(): Promise<MediaDeviceInfo[]> {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter(d => d.kind === 'videoinput');
+  }
+
+  // deviceId del track de video activo en el stream actual (para saber
+  // cuál tag de cámara marcar como seleccionado).
+  getActiveDeviceId(stream: MediaStream | null | undefined): string | null {
+    const track = stream?.getVideoTracks()[0];
+    return track?.getSettings().deviceId || null;
   }
 
   // Detecta un rostro en el frame actual del video y regresa su

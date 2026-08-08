@@ -38,6 +38,59 @@
     text-align: center;
 }
 
+.fv-camaras {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.fv-camara-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    border: 1px solid #d1c4e9;
+    background: #f5f0fa;
+    color: #6a1b9a;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    max-width: 180px;
+}
+
+.fv-camara-tag mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+}
+
+.fv-camara-tag span,
+.fv-camara-tag {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fv-camara-tag:hover {
+    background: #ede0f5;
+}
+
+.fv-camara-tag.active {
+    background: #6a1b9a;
+    border-color: #6a1b9a;
+    color: #fff;
+    font-weight: 600;
+}
+
+.fv-camara-tag:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .fv-persona {
     font-size: 13px;
     color: #555;

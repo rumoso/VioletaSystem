@@ -9,6 +9,8 @@ const {
     , getFaceReferences
     , logFaceVerification
     , getFaceVerificationLogTrack
+    , getCameraPreference
+    , saveCameraPreference
 
    } = require('../controllers/faceRecognitionController');
 
@@ -43,5 +45,20 @@ router.post('/logFaceVerification', [
 ], logFaceVerification);
 
 router.post('/getFaceVerificationLogTrack', getFaceVerificationLogTrack);
+
+router.post('/getCameraPreference', [
+
+  check('idUser','idUser obligatorío').not().isEmpty(),
+
+  validarCampos
+], getCameraPreference);
+
+router.post('/saveCameraPreference', [
+
+  check('idUser','idUser obligatorío').not().isEmpty(),
+  check('deviceId','deviceId obligatorío').not().isEmpty(),
+
+  validarCampos
+], saveCameraPreference);
 
 module.exports = router;

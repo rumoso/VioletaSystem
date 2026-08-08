@@ -20,6 +20,18 @@ CREATE TABLE IF NOT EXISTS `face_reference` (
   UNIQUE KEY `ux_persona` (`tipoPersona`, `idPersona`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Cámara preferida por usuario para el reconocimiento facial. El deviceId
+-- lo asigna el navegador (no es un catálogo del sistema como `printers`);
+-- si al cargar no existe entre las cámaras disponibles de esa máquina, el
+-- Front cae de vuelta a la cámara por default.
+CREATE TABLE IF NOT EXISTS `face_camera_preference` (
+  `idUser`     BIGINT NOT NULL,
+  `deviceId`   VARCHAR(500) NOT NULL,
+  `label`      VARCHAR(500) NULL,
+  `updateDate` DATETIME NOT NULL,
+  PRIMARY KEY (`idUser`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `face_verification_log` (
   `idFaceVerificationLog`   BIGINT NOT NULL AUTO_INCREMENT,
   `createDate`              DATETIME NOT NULL,
