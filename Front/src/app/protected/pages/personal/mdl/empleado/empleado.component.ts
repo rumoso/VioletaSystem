@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, debounceTime } from 'rxjs';
@@ -56,12 +56,16 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
 
   sucursales: any[] = [];
 
-  // Conceptos base
+  // Conceptos base. El mismo formulario combo+monto sirve para agregar
+  // y para editar: el lapicito de un renglón lo llena y pasa a modo
+  // edición (conceptoEditando).
   conceptosBase: any[] = [];
   conceptosDisponibles: any[] = [];
   nuevoConceptoControl: FormControl = new FormControl(null);
   nuevoMontoControl: FormControl = new FormControl('');
-  montoEditando: { [id: number]: FormControl } = {};
+  conceptoEditando: any = null;
+
+  @ViewChild('montoInput') montoInputRef!: ElementRef<HTMLInputElement>;
 
   constructor(
     private dialogRef: MatDialogRef<EmpleadoComponent>
@@ -244,13 +248,6 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (resp: ResponseGet) => {
           this.conceptosBase = resp.status === 0 ? (resp.data || []) : [];
-          this.montoEditando = {};
-          for (const c of this.conceptosBase) {
-            this.montoEditando[c.id] = new FormControl(c.monto);
-            if (this.bSoloLectura) {
-              this.montoEditando[c.id].disable();
-            }
-          }
         },
         error: () => { this.conceptosBase = []; }
       });
@@ -264,7 +261,42 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
       });
   }
 
-  fn_agregarConcepto() {
+  // El combo excluye los conceptos que el empleado ya tiene; al editar
+  // se agrega el del renglón editado para poder mostrarlo/cambiarlo.
+  get conceptosParaCombo(): any[] {
+    if (!this.conceptoEditando) {
+      return this.conceptosDisponibles;
+    }
+    const actual = {
+      id: this.conceptoEditando.idNominaConcepto,
+      name: this.conceptoEditando.conceptoDesc,
+      tipo: this.conceptoEditando.tipo
+    };
+    return [actual, ...this.conceptosDisponibles];
+  }
+
+  fn_focusMonto() {
+    setTimeout(() => this.montoInputRef?.nativeElement?.focus(), 0);
+  }
+
+  // Lapicito de un renglón: llena el combo y el monto con sus valores,
+  // pasa el formulario a modo edición y manda el foco al monto.
+  fn_editarConcepto( item: any ) {
+
+    this.banner = null;
+    this.conceptoEditando = item;
+    this.nuevoConceptoControl.setValue(this.conceptosParaCombo.find(c => c.id === item.idNominaConcepto) || null);
+    this.nuevoMontoControl.setValue(item.monto);
+    this.fn_focusMonto();
+  }
+
+  fn_cancelarEdicion() {
+    this.conceptoEditando = null;
+    this.nuevoConceptoControl.setValue(null);
+    this.nuevoMontoControl.setValue('');
+  }
+
+  fn_guardarConcepto() {
 
     this.banner = null;
 
@@ -272,7 +304,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     const monto = Number(this.nuevoMontoControl.value);
 
     if (!concepto) {
-      this.banner = { tipo: 'error', mensaje: 'Selecciona el concepto a agregar.' };
+      this.banner = { tipo: 'error', mensaje: 'Selecciona el concepto.' };
       return;
     }
     if (!(monto > 0)) {
@@ -281,7 +313,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     }
 
     this.empleadosServ.CInsertUpdateConceptoBase({
-      id: 0,
+      id: this.conceptoEditando ? this.conceptoEditando.id : 0,
       idEmpleado: this.id,
       idNominaConcepto: concepto.id,
       monto
@@ -289,40 +321,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
       next: (resp: any) => {
         if (resp.status === 0) {
           this.huboCambios = true;
-          this.nuevoConceptoControl.setValue(null);
-          this.nuevoMontoControl.setValue('');
-          this.fn_cargarConceptosBase();
-        } else {
-          this.banner = { tipo: 'error', mensaje: resp.message };
-        }
-      },
-      error: () => {
-        this.banner = { tipo: 'error', mensaje: 'Problemas con el servicio.' };
-      }
-    });
-  }
-
-  fn_guardarMonto( item: any ) {
-
-    this.banner = null;
-
-    const monto = Number(this.montoEditando[item.id]?.value);
-
-    if (!(monto > 0)) {
-      this.banner = { tipo: 'error', mensaje: 'El monto debe ser mayor a cero.' };
-      return;
-    }
-
-    this.empleadosServ.CInsertUpdateConceptoBase({
-      id: item.id,
-      idEmpleado: this.id,
-      idNominaConcepto: item.idNominaConcepto,
-      monto
-    }).subscribe({
-      next: (resp: any) => {
-        if (resp.status === 0) {
-          this.huboCambios = true;
-          this.servicesGServ.showSnakbar(resp.message);
+          this.fn_cancelarEdicion();
           this.fn_cargarConceptosBase();
         } else {
           this.banner = { tipo: 'error', mensaje: resp.message };
@@ -348,6 +347,9 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
               next: (resp2: any) => {
                 if (resp2.status === 0) {
                   this.huboCambios = true;
+                  if (this.conceptoEditando?.id === item.id) {
+                    this.fn_cancelarEdicion();
+                  }
                   this.fn_cargarConceptosBase();
                 }
                 this.servicesGServ.showSnakbar(resp2.message);

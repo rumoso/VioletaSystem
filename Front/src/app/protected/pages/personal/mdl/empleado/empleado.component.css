@@ -196,9 +196,19 @@
     color: #c62828;
 }
 
-.pcm-concepto-input {
-    width: 110px;
+.pcm-concepto-monto-texto {
+    min-width: 90px;
     text-align: right;
+    font-weight: 600;
+    font-size: 13px;
+    color: #212121;
+}
+
+.pcm-concepto-row-editando {
+    background: #f3e5f5;
+    border-radius: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
 }
 
 .pcm-actions {

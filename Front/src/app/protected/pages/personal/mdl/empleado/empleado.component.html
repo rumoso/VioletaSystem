@@ -135,29 +135,40 @@
                         Guarda primero los datos del empleado para capturar sus conceptos.
                     </p>
 
-                    <!-- Agregar concepto -->
+                    <!-- Agregar / editar concepto: el lapicito de un
+                         renglón llena este mismo formulario -->
                     <div class="pcm-concepto-agregar" *ngIf="!bSoloLectura">
                         <div class="pcm-slim-field pcm-concepto-select">
-                            <label class="pcm-slim-label">Concepto</label>
-                            <select class="pcm-slim-input" [formControl]="nuevoConceptoControl">
+                            <label class="pcm-slim-label">
+                                {{ conceptoEditando ? 'Editando: ' + conceptoEditando.conceptoDesc : 'Concepto' }}
+                            </label>
+                            <select class="pcm-slim-input" [formControl]="nuevoConceptoControl"
+                                (change)="fn_focusMonto()">
                                 <option [ngValue]="null">— Selecciona —</option>
-                                <option *ngFor="let c of conceptosDisponibles" [ngValue]="c">
+                                <option *ngFor="let c of conceptosParaCombo" [ngValue]="c">
                                     {{ c.name }} ({{ c.tipo === 'PERCEPCION' ? 'Percepción' : 'Deducción' }})
                                 </option>
                             </select>
                         </div>
                         <div class="pcm-slim-field pcm-concepto-monto">
                             <label class="pcm-slim-label">Monto</label>
-                            <input class="pcm-slim-input" type="number" min="0.01" step="0.01"
-                                placeholder="0.00" [formControl]="nuevoMontoControl">
+                            <input #montoInput class="pcm-slim-input" type="number" min="0.01" step="0.01"
+                                placeholder="0.00" [formControl]="nuevoMontoControl"
+                                (keydown.enter)="fn_guardarConcepto()">
                         </div>
-                        <button mat-raised-button color="accent" type="button" (click)="fn_agregarConcepto()">
-                            <mat-icon matPrefix class="my-icon">add</mat-icon>
-                            Agregar</button>
+                        <button mat-raised-button color="accent" type="button" (click)="fn_guardarConcepto()">
+                            <mat-icon matPrefix class="my-icon">{{ conceptoEditando ? 'save' : 'add' }}</mat-icon>
+                            {{ conceptoEditando ? 'Guardar' : 'Agregar' }}</button>
+                        <button mat-icon-button type="button" *ngIf="conceptoEditando"
+                            matTooltip="Cancelar edición"
+                            (click)="fn_cancelarEdicion()">
+                            <mat-icon>close</mat-icon>
+                        </button>
                     </div>
 
                     <!-- Listado base -->
-                    <div class="pcm-concepto-row" *ngFor="let item of conceptosBase">
+                    <div class="pcm-concepto-row" *ngFor="let item of conceptosBase"
+                        [class.pcm-concepto-row-editando]="conceptoEditando?.id === item.id">
                         <div class="pcm-persona-datos pcm-concepto-nombre">
                             <span class="pcm-principal">{{ item.conceptoDesc }}</span>
                             <span class="pcm-secundario">
@@ -170,12 +181,11 @@
                             [class.pcm-chip-deduccion]="item.tipo === 'DEDUCCION'">
                             {{ item.tipo === 'PERCEPCION' ? '+' : '−' }}
                         </span>
-                        <input class="pcm-slim-input pcm-concepto-input" type="number" min="0.01" step="0.01"
-                            [formControl]="montoEditando[item.id]">
+                        <span class="pcm-concepto-monto-texto">{{ item.monto | currency }}</span>
                         <button mat-icon-button *ngIf="!bSoloLectura"
-                            matTooltip="Guardar monto"
-                            (click)="fn_guardarMonto(item)">
-                            <mat-icon class="colorGreen">save</mat-icon>
+                            matTooltip="Editar"
+                            (click)="fn_editarConcepto(item)">
+                            <mat-icon class="colorGreen">edit</mat-icon>
                         </button>
                         <button mat-icon-button *ngIf="!bSoloLectura"
                             matTooltip="Quitar del listado"
