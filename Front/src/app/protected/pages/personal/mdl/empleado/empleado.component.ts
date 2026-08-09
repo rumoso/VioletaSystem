@@ -275,8 +275,16 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     return [actual, ...this.conceptosDisponibles];
   }
 
+  // Enfoca el monto con el texto seleccionado: se sobreescribe
+  // tecleando directo, sin mouse ni borrar.
   fn_focusMonto() {
-    setTimeout(() => this.montoInputRef?.nativeElement?.focus(), 0);
+    setTimeout(() => {
+      const input = this.montoInputRef?.nativeElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 0);
   }
 
   // Lapicito de un renglón: llena el combo y el monto con sus valores,
