@@ -1,0 +1,86 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">
+            {{ modo === 'BAJA' ? 'Baja laboral' : 'Reactivar empleado' }}
+        </span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <p class="eb-nombre">{{ nombre }}</p>
+
+        <div class="pcm-banner pcm-banner-error" *ngIf="mensajeError">
+            <mat-icon>error</mat-icon>
+            <span>{{ mensajeError }}</span>
+        </div>
+
+        <!-- BAJA: aviso de todo lo que se desactivará en cascada -->
+        <ng-container *ngIf="modo === 'BAJA'">
+
+            <div class="eb-impacto" *ngIf="!bCargandoImpacto">
+                <p class="eb-impacto-titulo">
+                    <mat-icon>warning</mat-icon>
+                    Al confirmar la baja también se desactivará en automático:
+                </p>
+                <ul *ngIf="impacto.length > 0">
+                    <li *ngFor="let i of impacto">{{ i }}</li>
+                </ul>
+                <p class="pcm-slim-hint" *ngIf="impacto.length === 0">
+                    (Nada adicional: no tiene usuario activo ni registros en otros catálogos.)
+                </p>
+                <p class="pcm-slim-hint">
+                    El historial (ventas, talleres, nóminas) queda intacto. La reactivación será manual, catálogo por catálogo.
+                </p>
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Fecha de baja *</label>
+                <input class="pcm-slim-input" type="date" [formControl]="fechaControl">
+                <span class="pcm-slim-error" *ngIf="fechaControl.touched && fechaControl.invalid">
+                    La fecha de baja es obligatoria
+                </span>
+            </div>
+
+        </ng-container>
+
+        <!-- REACTIVAR -->
+        <ng-container *ngIf="modo === 'REACTIVAR'">
+
+            <p class="pcm-slim-hint">
+                Solo se reactiva el empleado. Su usuario del sistema y sus registros
+                de vendedor/técnico NO se reactivan en automático — hazlo a mano en
+                cada catálogo si aplica.
+            </p>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Nueva fecha de ingreso *</label>
+                <input class="pcm-slim-input" type="date" [formControl]="fechaControl">
+                <span class="pcm-slim-error" *ngIf="fechaControl.touched && fechaControl.invalid">
+                    La fecha de ingreso es obligatoria
+                </span>
+            </div>
+
+        </ng-container>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cancelar</button>
+
+        <button mat-raised-button type="button"
+        [color]="modo === 'BAJA' ? 'warn' : 'primary'"
+        [disabled]="bEjecutando || bCargandoImpacto"
+        (click)="fn_confirmar()">
+            <mat-icon matPrefix class="my-icon">{{ modo === 'BAJA' ? 'person_off' : 'how_to_reg' }}</mat-icon>
+            {{ bEjecutando ? 'Procesando...' : (modo === 'BAJA' ? 'Confirmar baja' : 'Reactivar') }}</button>
+
+    </mat-dialog-actions>
+
+</div>

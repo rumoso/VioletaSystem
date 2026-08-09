@@ -1,0 +1,60 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">{{ titulo }}</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <div class="pcm-banner" *ngIf="banner"
+            [class.pcm-banner-ok]="banner.tipo === 'ok'"
+            [class.pcm-banner-error]="banner.tipo === 'error'">
+            <mat-icon>{{ banner.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+            <span>{{ banner.mensaje }}</span>
+        </div>
+
+        <form [formGroup]="myForm" autocomplete="off" (ngSubmit)="fn_guardar()">
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Nombre del concepto *</label>
+                <input class="pcm-slim-input"
+                    type="text"
+                    maxlength="100"
+                    placeholder="Ej. Bono de puntualidad"
+                    formControlName="name">
+                <span class="pcm-slim-error"
+                    *ngIf="myForm.get('name')?.touched && myForm.get('name')?.hasError('required')">
+                    El nombre es obligatorio
+                </span>
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Tipo *</label>
+                <select class="pcm-slim-input" formControlName="tipo">
+                    <option value="PERCEPCION">Percepción (suma al pago)</option>
+                    <option value="DEDUCCION">Deducción (resta al pago)</option>
+                </select>
+            </div>
+
+        </form>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        [disabled]="bGuardando"
+        (click)="fn_guardar()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            {{ bGuardando ? 'Guardando...' : 'Guardar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>

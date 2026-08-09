@@ -33,6 +33,13 @@ import { RoleListComponent } from './pages/security/roles/role-list/role-list.co
 import { ActionAuthorizationComponent } from './pages/security/users/mdl/action-authorization/action-authorization.component';
 import { FaceVerificationComponent } from './pages/security/mdl/face-verification/face-verification.component';
 import { FaceLogComponent } from './pages/security/face-log/face-log.component';
+import { PersonalCatalogoListComponent } from './pages/personal/personal-catalogo-list/personal-catalogo-list.component';
+import { PersonalCatalogoComponent } from './pages/personal/mdl/personal-catalogo/personal-catalogo.component';
+import { EmpleadoListComponent } from './pages/personal/empleado-list/empleado-list.component';
+import { EmpleadoComponent } from './pages/personal/mdl/empleado/empleado.component';
+import { EmpleadoBajaComponent } from './pages/personal/mdl/empleado-baja/empleado-baja.component';
+import { NominaConceptosListComponent } from './pages/personal/nomina-conceptos-list/nomina-conceptos-list.component';
+import { NominaConceptoComponent } from './pages/personal/mdl/nomina-concepto/nomina-concepto.component';
 import { CortecajadetailComponent } from './pages/sales/mdl/cortecajadetail/cortecajadetail.component';
 import { InventarylogComponent } from './pages/catssales/mdl/inventarylog/inventarylog.component';
 import { UtilidadComponent } from './pages/reports/utilidad/utilidad.component';
@@ -104,6 +111,13 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
     ActionAuthorizationComponent,
     FaceVerificationComponent,
     FaceLogComponent,
+    PersonalCatalogoListComponent,
+    PersonalCatalogoComponent,
+    EmpleadoListComponent,
+    EmpleadoComponent,
+    EmpleadoBajaComponent,
+    NominaConceptosListComponent,
+    NominaConceptoComponent,
     CortecajadetailComponent,
     InventarylogComponent,
     UtilidadComponent,

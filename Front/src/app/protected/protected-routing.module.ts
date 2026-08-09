@@ -17,6 +17,9 @@ import { RoleComponent } from "./pages/security/roles/role/role.component";
 import { PhysicalInventoryListComponent } from "./pages/reports/physical-inventory-list/physical-inventory-list.component";
 import { MetalInventarioComponent } from "./pages/reports/metal-inventario/metal-inventario.component";
 import { FaceLogComponent } from "./pages/security/face-log/face-log.component";
+import { PersonalCatalogoListComponent } from "./pages/personal/personal-catalogo-list/personal-catalogo-list.component";
+import { EmpleadoListComponent } from "./pages/personal/empleado-list/empleado-list.component";
+import { NominaConceptosListComponent } from "./pages/personal/nomina-conceptos-list/nomina-conceptos-list.component";
 import { ComisionesComponent } from "./pages/operation/comisiones/comisiones.component";
 import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.component";
 import { RepcomprasproveedorComponent } from "./pages/reports/repcomprasproveedor/repcomprasproveedor.component";
@@ -163,6 +166,24 @@ const routes: Routes = [
         {
           path: 'tallerList',
           component: TallerListComponent
+        },
+        {
+          path: 'tecnicosList',
+          component: PersonalCatalogoListComponent,
+          data: { catalogo: 'tecnicos' }
+        },
+        {
+          path: 'vendedoresList',
+          component: PersonalCatalogoListComponent,
+          data: { catalogo: 'vendedores' }
+        },
+        {
+          path: 'empleadosList',
+          component: EmpleadoListComponent
+        },
+        {
+          path: 'nominaConceptosList',
+          component: NominaConceptosListComponent
         },
 
       ]

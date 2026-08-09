@@ -1,0 +1,123 @@
+<div class="divMain pcl-main">
+
+    <div class="pcl-header">
+        <h2 class="pcl-titulo">Conceptos de Nómina</h2>
+    </div>
+
+    <div class="pcl-filtros">
+        <div class="pcl-slim-field pcl-filtro-buscar">
+            <label class="pcl-slim-label">Buscar</label>
+            <input class="pcl-slim-input"
+                type="text"
+                placeholder="Nombre del concepto..."
+                [formControl]="searchControl"
+                (keydown.enter)="fn_buscar()">
+        </div>
+
+        <div class="pcl-slim-field">
+            <label class="pcl-slim-label">Tipo</label>
+            <select class="pcl-slim-input" [formControl]="tipoControl" (change)="fn_buscar()">
+                <option value="">Todos</option>
+                <option value="PERCEPCION">Percepción</option>
+                <option value="DEDUCCION">Deducción</option>
+            </select>
+        </div>
+
+        <div class="pcl-filtro-botones">
+            <button mat-raised-button color="primary" type="button" (click)="fn_buscar()">
+                <mat-icon matPrefix class="my-icon">search</mat-icon>
+                Buscar</button>
+
+            <button mat-raised-button type="button" (click)="fn_limpiar()">
+                <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                Limpiar</button>
+
+            <button mat-raised-button color="accent" type="button"
+            *ngIf="bPuedeAdministrar"
+            (click)="fn_showModal(null)">
+                <mat-icon matPrefix class="my-icon">add</mat-icon>
+                Nuevo</button>
+        </div>
+    </div>
+
+    <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
+        <mat-icon class="pcl-vacio-icon">receipt_long</mat-icon>
+        <p>No hay conceptos con ese filtro.</p>
+    </div>
+
+    <div class="table-responsive" *ngIf="catlist.length > 0">
+        <table class="pcl-tabla">
+            <thead>
+                <tr>
+                    <th class="textAlingLeft">Concepto</th>
+                    <th class="textAlingCenter">Tipo</th>
+                    <th class="textAlingCenter">Origen</th>
+                    <th class="textAlingCenter">En uso</th>
+                    <th class="textAlingCenter">Estatus</th>
+                    <th class="textAlingCenter" *ngIf="bPuedeAdministrar">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let item of catlist">
+                    <td>
+                        <span class="pcl-principal">{{ item.name }}</span>
+                    </td>
+
+                    <td class="textAlingCenter">
+                        <span class="pcl-chip"
+                            [class.pcl-chip-activo]="item.tipo === 'PERCEPCION'"
+                            [class.pcl-chip-inactivo]="item.tipo === 'DEDUCCION'">
+                            {{ item.tipo === 'PERCEPCION' ? '+ Percepción' : '− Deducción' }}
+                        </span>
+                    </td>
+
+                    <td class="textAlingCenter">
+                        <span class="pcl-secundario">{{ item.bSistema ? 'Sistema' : 'Propio' }}</span>
+                    </td>
+
+                    <td class="textAlingCenter">
+                        <span class="pcl-secundario">{{ item.iUsos }} empleado(s)</span>
+                    </td>
+
+                    <td class="textAlingCenter">
+                        <span class="pcl-chip" [class.pcl-chip-activo]="item.active" [class.pcl-chip-inactivo]="!item.active">
+                            {{ item.active ? 'Activo' : 'Inactivo' }}
+                        </span>
+                    </td>
+
+                    <td class="textAlingCenter" *ngIf="bPuedeAdministrar">
+                        <div class="pcl-acciones">
+                            <button mat-icon-button
+                            *ngIf="!item.bSistema"
+                            matTooltip="Editar"
+                            (click)="fn_showModal(item)">
+                                <mat-icon class="colorGreen">edit</mat-icon>
+                            </button>
+
+                            <button mat-icon-button
+                            [matTooltip]="item.active ? 'Inactivar' : 'Activar'"
+                            (click)="fn_setActive(item)">
+                                <mat-icon [class.colorOrange]="item.active" [class.colorGreen]="!item.active">
+                                    {{ item.active ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+                            </button>
+
+                            <button mat-icon-button
+                            *ngIf="!item.bSistema"
+                            matTooltip="Eliminar"
+                            (click)="fn_delete(item)">
+                                <mat-icon class="colorRed">delete_forever</mat-icon>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
+                    (OPagination)="changePagination($event)">
+    </app-pagination>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

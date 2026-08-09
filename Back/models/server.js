@@ -37,6 +37,10 @@ class Server{
             serviciosExternos:'/api/serviciosExternos',
             metalInventario:'/api/metalInventario',
             faceRecognition:'/api/faceRecognition',
+            tecnicos:'/api/tecnicos',
+            vendedores:'/api/vendedores',
+            empleados:'/api/empleados',
+            nominaConceptos:'/api/nominaConceptos',
 
         }
 
@@ -128,6 +132,10 @@ class Server{
         this.app.use(this.paths.serviciosExternos, require('../routes/serviciosExternosRoute'));
         this.app.use(this.paths.metalInventario, require('../routes/metalInventarioRoute'));
         this.app.use(this.paths.faceRecognition, require('../routes/faceRecognitionRoute'));
+        this.app.use(this.paths.tecnicos, require('../routes/tecnicosRoute'));
+        this.app.use(this.paths.vendedores, require('../routes/vendedoresRoute'));
+        this.app.use(this.paths.empleados, require('../routes/empleadosRoute'));
+        this.app.use(this.paths.nominaConceptos, require('../routes/nominaConceptosRoute'));
     }
 
     listen(){

@@ -14,6 +14,8 @@ const {
   , cbxGetTecnicosCombo
   , updateAuthorizationCode
   , cbxGetAllUsersCombo
+  , getUserPreferences
+  , insertUpdateUserPreferences
    } = require('../controllers/usersController');
 
    
@@ -81,5 +83,19 @@ router.post('/updateAuthorizationCode', [
 router.post('/cbxGetAllUsersCombo', [
   validarCampos
 ], cbxGetAllUsersCombo);
+
+router.post('/getUserPreferences', [
+  check('idUser','El usuario es obligatorio').not().isEmpty(),
+  check('scope','El scope es obligatorio').not().isEmpty(),
+  validarCampos
+], getUserPreferences);
+
+router.post('/insertUpdateUserPreferences', [
+  check('idUser','El usuario es obligatorio').not().isEmpty(),
+  check('scope','El scope es obligatorio').not().isEmpty(),
+  check('prefKey','La clave es obligatoria').not().isEmpty(),
+  check('prefValue','El valor es obligatorio').not().isEmpty(),
+  validarCampos
+], insertUpdateUserPreferences);
 
 module.exports = router;

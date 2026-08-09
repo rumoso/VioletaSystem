@@ -1,0 +1,85 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">{{ titulo }}</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <!-- Banner interno de resultado: el modal no se cierra al guardar -->
+        <div class="pcm-banner" *ngIf="banner"
+            [class.pcm-banner-ok]="banner.tipo === 'ok'"
+            [class.pcm-banner-error]="banner.tipo === 'error'">
+            <mat-icon>{{ banner.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+            <span>{{ banner.mensaje }}</span>
+        </div>
+
+        <form [formGroup]="myForm" autocomplete="off" (ngSubmit)="fn_guardar()">
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Nombre *</label>
+                <input class="pcm-slim-input"
+                    type="text"
+                    maxlength="150"
+                    placeholder="Nombre completo"
+                    formControlName="nombre">
+                <span class="pcm-slim-error"
+                    *ngIf="myForm.get('nombre')?.touched && myForm.get('nombre')?.hasError('required')">
+                    El nombre es obligatorio
+                </span>
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Usuario del sistema *</label>
+                <input class="pcm-slim-input"
+                    type="text"
+                    placeholder="Busca por nombre o usuario..."
+                    [formControl]="usuarioSearchControl"
+                    [matAutocomplete]="autoUsuarios">
+                <mat-autocomplete #autoUsuarios="matAutocomplete"
+                    [displayWith]="fn_displayUsuario"
+                    (optionSelected)="fn_usuarioSeleccionado($event.option.value)">
+                    <mat-option *ngIf="bBuscandoUsuarios" disabled>Buscando...</mat-option>
+                    <mat-option *ngFor="let u of usuariosEncontrados" [value]="u">
+                        {{ u.userName }} — {{ u.nombre }}
+                    </mat-option>
+                </mat-autocomplete>
+                <span class="pcm-slim-hint" *ngIf="!usuarioSeleccionado && !bSoloLectura">
+                    Si la persona no tiene usuario, créalo primero en Seguridad → Usuarios (sin accesos si no entrará al sistema).
+                </span>
+            </div>
+
+            <div class="pcm-slim-field pcm-activo" *ngIf="id > 0">
+                <label class="pcm-slim-label">Activo</label>
+                <label class="pcm-switch">
+                    <input type="checkbox" formControlName="active">
+                    <span class="pcm-switch-slider"></span>
+                    <span class="pcm-switch-texto">{{ myForm.value.active ? 'Activo' : 'Inactivo' }}</span>
+                </label>
+            </div>
+
+        </form>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        *ngIf="!bSoloLectura"
+        [disabled]="bGuardando"
+        (click)="fn_guardar()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            {{ bGuardando ? 'Guardando...' : 'Guardar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -1,0 +1,268 @@
+/* Lista de catálogo de personal — diseño según imagen de referencia:
+   avatares con inicial, chips de estatus, dato secundario gris. */
+
+.pcl-main {
+    padding: 16px;
+}
+
+.pcl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.pcl-titulo {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* Toggle tabla/cards */
+.pcl-vista-toggle {
+    display: flex;
+    border: 1px solid #bdbdbd;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.pcl-vista-toggle button {
+    border: none;
+    background: transparent;
+    padding: 4px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: #757575;
+}
+
+.pcl-vista-toggle button.active {
+    background: #7B1FA2;
+    color: #fff;
+}
+
+/* Filtros */
+.pcl-filtros {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.pcl-filtro-buscar {
+    min-width: 260px;
+    flex: 0 1 320px;
+}
+
+.pcl-filtro-botones {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Formato slim (patrón de referencia) */
+.pcl-slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.pcl-slim-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #757575;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.pcl-slim-input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #bdbdbd;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+}
+
+.pcl-slim-input:focus {
+    border-color: #7B1FA2;
+    box-shadow: 0 0 0 3px rgba(123, 31, 162, .15);
+}
+
+/* Tabla */
+.pcl-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.pcl-tabla thead th {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .4px;
+    color: #757575;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.pcl-tabla tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eeeeee;
+    vertical-align: middle;
+}
+
+.pcl-tabla tbody tr:hover {
+    background: #fafafa;
+}
+
+.pcl-td-id {
+    font-weight: 600;
+    color: #1565C0;
+    white-space: nowrap;
+}
+
+/* Persona: avatar + principal + secundario */
+.pcl-persona {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pcl-avatar {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pcl-persona-datos {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.pcl-principal {
+    font-weight: 500;
+    color: #212121;
+}
+
+.pcl-secundario {
+    font-size: 12px;
+    color: #9e9e9e;
+}
+
+/* Chip de estatus */
+.pcl-chip {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pcl-chip-activo {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.pcl-chip-inactivo {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.pcl-chip-neutro {
+    background: #ede7f6;
+    color: #5e35b1;
+}
+
+.pcl-acciones {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+}
+
+/* Cards */
+.pcl-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.pcl-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pcl-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pcl-card-header .pcl-persona-datos {
+    flex: 1;
+    min-width: 0;
+}
+
+.pcl-card-header .pcl-principal {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pcl-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pcl-card-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 2px;
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 6px;
+}
+
+/* Estado vacío */
+.pcl-vacio {
+    text-align: center;
+    padding: 40px 0;
+    color: #9e9e9e;
+}
+
+.pcl-vacio-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+}
+
+.colorOrange {
+    color: #EF6C00;
+}
+
+/* Responsivo: filtros apilados */
+@media (max-width: 767.98px) {
+    .pcl-filtros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pcl-filtro-buscar {
+        flex: 1 1 auto;
+    }
+}

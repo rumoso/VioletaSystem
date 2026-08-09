@@ -1,0 +1,143 @@
+/* Modal de catálogo de personal — formato slim compacto. */
+
+.pcm-modal {
+    display: flex;
+    flex-direction: column;
+}
+
+.pcm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 0;
+}
+
+.pcm-titulo {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.pcm-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 4px !important;
+}
+
+/* Banner interno de resultado */
+.pcm-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.pcm-banner-ok {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.pcm-banner-error {
+    background: #ffebee;
+    color: #c62828;
+}
+
+/* Formato slim */
+.pcm-slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 14px;
+}
+
+.pcm-slim-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #757575;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.pcm-slim-input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #bdbdbd;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+}
+
+.pcm-slim-input:focus {
+    border-color: #7B1FA2;
+    box-shadow: 0 0 0 3px rgba(123, 31, 162, .15);
+}
+
+.pcm-slim-input:disabled {
+    background: #f5f5f5;
+    color: #9e9e9e;
+}
+
+.pcm-slim-error {
+    font-size: 11px;
+    color: #c62828;
+}
+
+.pcm-slim-hint {
+    font-size: 11px;
+    color: #9e9e9e;
+    font-style: italic;
+}
+
+/* Switch de activo (checkbox estilizado, sin módulos nuevos) */
+.pcm-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pcm-switch input {
+    display: none;
+}
+
+.pcm-switch-slider {
+    width: 36px;
+    height: 20px;
+    background: #bdbdbd;
+    border-radius: 10px;
+    position: relative;
+    transition: background .15s;
+}
+
+.pcm-switch-slider::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left .15s;
+}
+
+.pcm-switch input:checked + .pcm-switch-slider {
+    background: #2e7d32;
+}
+
+.pcm-switch input:checked + .pcm-switch-slider::after {
+    left: 18px;
+}
+
+.pcm-switch-texto {
+    font-size: 13px;
+}
+
+.pcm-actions {
+    padding-top: 6px;
+    gap: 8px;
+}

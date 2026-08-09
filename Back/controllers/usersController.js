@@ -1,5 +1,6 @@
 const { response } = require('express');
 const bcryptjs = require('bcryptjs');
+const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
 
@@ -442,6 +443,58 @@ const cbxGetAllUsersCombo = async(req, res = response) => {
     }
 };
 
+// Preferencias genéricas por usuario y pantalla (scope) — primer uso:
+// vista tabla/cards de los catálogos de personal. Queries directas
+// sobre dbConnection (sin SPs).
+const getUserPreferences = async(req, res = response) => {
+
+    const {
+        idUser
+        , scope
+    } = req.body;
+
+    try {
+
+        const rows = await dbConnection.query(
+            `SELECT prefKey, prefValue FROM user_preferences
+             WHERE idUser = :idUser AND scope = :scope`,
+            { replacements: { idUser, scope }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({ status: 0, message: 'Ejecutado correctamente.', data: rows });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+const insertUpdateUserPreferences = async(req, res = response) => {
+
+    const {
+        idUser
+        , scope
+        , prefKey
+        , prefValue
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        await dbConnection.query(
+            `INSERT INTO user_preferences (idUser, scope, prefKey, prefValue, updateDate)
+             VALUES (:idUser, :scope, :prefKey, :prefValue, :updateDate)
+             ON DUPLICATE KEY UPDATE prefValue = :prefValue, updateDate = :updateDate`,
+            { replacements: { idUser, scope, prefKey, prefValue, updateDate: oGetDateNow }, type: dbConnection.QueryTypes.INSERT }
+        );
+
+        res.json({ status: 0, message: 'Preferencia guardada.' });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
 module.exports = {
     getUsersListWithPage
     , getUserByID
@@ -453,4 +506,6 @@ module.exports = {
     , cbxGetTecnicosCombo
     , updateAuthorizationCode
     , cbxGetAllUsersCombo
+    , getUserPreferences
+    , insertUpdateUserPreferences
 }

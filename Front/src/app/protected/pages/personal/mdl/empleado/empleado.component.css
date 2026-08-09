@@ -1,0 +1,217 @@
+/* Modal de empleado — formato slim, dos pestañas. */
+
+.pcm-modal {
+    display: flex;
+    flex-direction: column;
+}
+
+.pcm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 0;
+}
+
+.pcm-header-titulo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pcm-titulo {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.pcm-chip-baja {
+    background: #ffebee;
+    color: #c62828;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.pcm-content {
+    padding-top: 4px !important;
+}
+
+.pcm-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.pcm-banner-ok {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.pcm-banner-error {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.pcm-form {
+    padding-top: 14px;
+}
+
+.pcm-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 14px;
+}
+
+.pcm-col-2 {
+    grid-column: span 2;
+}
+
+/* Formato slim */
+.pcm-slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 14px;
+}
+
+.pcm-slim-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #757575;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.pcm-slim-input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #bdbdbd;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+    background: #fff;
+}
+
+.pcm-slim-input:focus {
+    border-color: #7B1FA2;
+    box-shadow: 0 0 0 3px rgba(123, 31, 162, .15);
+}
+
+.pcm-slim-input:disabled {
+    background: #f5f5f5;
+    color: #9e9e9e;
+}
+
+.pcm-slim-error {
+    font-size: 11px;
+    color: #c62828;
+}
+
+.pcm-slim-hint {
+    font-size: 11px;
+    color: #9e9e9e;
+    font-style: italic;
+}
+
+/* Conceptos base */
+.pcm-conceptos {
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pcm-concepto-agregar {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.pcm-concepto-agregar button {
+    margin-bottom: 14px;
+}
+
+.pcm-concepto-select {
+    flex: 1;
+}
+
+.pcm-concepto-monto {
+    width: 120px;
+}
+
+.pcm-concepto-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.pcm-concepto-nombre {
+    flex: 1;
+    min-width: 0;
+}
+
+.pcm-persona-datos {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.pcm-principal {
+    font-weight: 500;
+    color: #212121;
+    font-size: 13px;
+}
+
+.pcm-secundario {
+    font-size: 12px;
+    color: #9e9e9e;
+}
+
+.pcm-chip-tipo {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.pcm-chip-percepcion {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.pcm-chip-deduccion {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.pcm-concepto-input {
+    width: 110px;
+    text-align: right;
+}
+
+.pcm-actions {
+    padding-top: 6px;
+    gap: 8px;
+}
+
+@media (max-width: 599.98px) {
+    .pcm-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pcm-col-2 {
+        grid-column: span 1;
+    }
+}

@@ -1,0 +1,216 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <div class="pcm-header-titulo">
+            <span class="pcm-titulo">{{ titulo }}</span>
+            <span class="pcm-chip-baja" *ngIf="id > 0 && !bActivo">
+                De baja{{ fechaBajaDesc ? ' desde ' + (fechaBajaDesc | date:'dd-MM-yyyy') : '' }}
+            </span>
+        </div>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <div class="pcm-banner" *ngIf="banner"
+            [class.pcm-banner-ok]="banner.tipo === 'ok'"
+            [class.pcm-banner-error]="banner.tipo === 'error'">
+            <mat-icon>{{ banner.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+            <span>{{ banner.mensaje }}</span>
+        </div>
+
+        <mat-tab-group>
+
+            <mat-tab label="Datos">
+
+                <form [formGroup]="myForm" autocomplete="off" class="pcm-form">
+
+                    <div class="pcm-grid">
+
+                        <div class="pcm-slim-field pcm-col-2">
+                            <label class="pcm-slim-label">Nombre *</label>
+                            <input class="pcm-slim-input" type="text" maxlength="150"
+                                placeholder="Nombre completo" formControlName="nombre">
+                            <span class="pcm-slim-error"
+                                *ngIf="myForm.get('nombre')?.touched && myForm.get('nombre')?.hasError('required')">
+                                El nombre es obligatorio
+                            </span>
+                        </div>
+
+                        <div class="pcm-slim-field pcm-col-2">
+                            <label class="pcm-slim-label">Usuario del sistema *</label>
+                            <input class="pcm-slim-input" type="text"
+                                placeholder="Busca por nombre o usuario..."
+                                [formControl]="usuarioSearchControl"
+                                [matAutocomplete]="autoUsuarios">
+                            <mat-autocomplete #autoUsuarios="matAutocomplete"
+                                [displayWith]="fn_displayUsuario"
+                                (optionSelected)="fn_usuarioSeleccionado($event.option.value)">
+                                <mat-option *ngIf="bBuscandoUsuarios" disabled>Buscando...</mat-option>
+                                <mat-option *ngFor="let u of usuariosEncontrados" [value]="u">
+                                    {{ u.userName }} — {{ u.nombre }}
+                                </mat-option>
+                            </mat-autocomplete>
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">Fecha de ingreso *</label>
+                            <input class="pcm-slim-input" type="date" formControlName="fechaIngreso">
+                            <span class="pcm-slim-error"
+                                *ngIf="myForm.get('fechaIngreso')?.touched && myForm.get('fechaIngreso')?.hasError('required')">
+                                La fecha de ingreso es obligatoria
+                            </span>
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">Puesto</label>
+                            <input class="pcm-slim-input" type="text" maxlength="100"
+                                placeholder="Ej. Cajera, Joyero..." formControlName="puesto">
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">Sucursal</label>
+                            <select class="pcm-slim-input" formControlName="idSucursal">
+                                <option [ngValue]="null">— Sin sucursal —</option>
+                                <option *ngFor="let s of sucursales" [ngValue]="s.idSucursal">{{ s.name }}</option>
+                            </select>
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">Teléfono</label>
+                            <input class="pcm-slim-input" type="text" maxlength="20"
+                                formControlName="telefono">
+                        </div>
+
+                        <div class="pcm-slim-field pcm-col-2">
+                            <label class="pcm-slim-label">Contacto de emergencia</label>
+                            <input class="pcm-slim-input" type="text" maxlength="200"
+                                placeholder="Nombre y teléfono" formControlName="contactoEmergencia">
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">RFC</label>
+                            <input class="pcm-slim-input" type="text" maxlength="13" formControlName="rfc">
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">CURP</label>
+                            <input class="pcm-slim-input" type="text" maxlength="18" formControlName="curp">
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">NSS</label>
+                            <input class="pcm-slim-input" type="text" maxlength="11" formControlName="nss">
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">Comisiones se pagan por *</label>
+                            <select class="pcm-slim-input" formControlName="periodicidadComisiones">
+                                <option value="SEMANA">Semana</option>
+                                <option value="QUINCENA">Quincena</option>
+                                <option value="MES">Mes</option>
+                            </select>
+                        </div>
+
+                        <div class="pcm-slim-field">
+                            <label class="pcm-slim-label">Horas de trabajo por semana *</label>
+                            <input class="pcm-slim-input" type="number" min="1" step="0.5"
+                                formControlName="horasSemana">
+                            <span class="pcm-slim-hint">Lo usará el control de horas (timeCard)</span>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </mat-tab>
+
+            <mat-tab label="Conceptos base" [disabled]="id === 0">
+
+                <div class="pcm-conceptos">
+
+                    <p class="pcm-slim-hint" *ngIf="id === 0">
+                        Guarda primero los datos del empleado para capturar sus conceptos.
+                    </p>
+
+                    <!-- Agregar concepto -->
+                    <div class="pcm-concepto-agregar" *ngIf="!bSoloLectura">
+                        <div class="pcm-slim-field pcm-concepto-select">
+                            <label class="pcm-slim-label">Concepto</label>
+                            <select class="pcm-slim-input" [formControl]="nuevoConceptoControl">
+                                <option [ngValue]="null">— Selecciona —</option>
+                                <option *ngFor="let c of conceptosDisponibles" [ngValue]="c">
+                                    {{ c.name }} ({{ c.tipo === 'PERCEPCION' ? 'Percepción' : 'Deducción' }})
+                                </option>
+                            </select>
+                        </div>
+                        <div class="pcm-slim-field pcm-concepto-monto">
+                            <label class="pcm-slim-label">Monto</label>
+                            <input class="pcm-slim-input" type="number" min="0.01" step="0.01"
+                                placeholder="0.00" [formControl]="nuevoMontoControl">
+                        </div>
+                        <button mat-raised-button color="accent" type="button" (click)="fn_agregarConcepto()">
+                            <mat-icon matPrefix class="my-icon">add</mat-icon>
+                            Agregar</button>
+                    </div>
+
+                    <!-- Listado base -->
+                    <div class="pcm-concepto-row" *ngFor="let item of conceptosBase">
+                        <div class="pcm-persona-datos pcm-concepto-nombre">
+                            <span class="pcm-principal">{{ item.conceptoDesc }}</span>
+                            <span class="pcm-secundario">
+                                {{ item.tipo === 'PERCEPCION' ? 'Percepción (suma)' : 'Deducción (resta)' }}
+                                <ng-container *ngIf="!item.conceptoActive"> · concepto inactivo</ng-container>
+                            </span>
+                        </div>
+                        <span class="pcm-chip-tipo"
+                            [class.pcm-chip-percepcion]="item.tipo === 'PERCEPCION'"
+                            [class.pcm-chip-deduccion]="item.tipo === 'DEDUCCION'">
+                            {{ item.tipo === 'PERCEPCION' ? '+' : '−' }}
+                        </span>
+                        <input class="pcm-slim-input pcm-concepto-input" type="number" min="0.01" step="0.01"
+                            [formControl]="montoEditando[item.id]">
+                        <button mat-icon-button *ngIf="!bSoloLectura"
+                            matTooltip="Guardar monto"
+                            (click)="fn_guardarMonto(item)">
+                            <mat-icon class="colorGreen">save</mat-icon>
+                        </button>
+                        <button mat-icon-button *ngIf="!bSoloLectura"
+                            matTooltip="Quitar del listado"
+                            (click)="fn_quitarConcepto(item)">
+                            <mat-icon class="colorRed">delete_outline</mat-icon>
+                        </button>
+                    </div>
+
+                    <p class="pcm-slim-hint" *ngIf="id > 0 && conceptosBase.length === 0">
+                        Sin conceptos base — agrega al menos el sueldo base.
+                    </p>
+
+                </div>
+
+            </mat-tab>
+
+        </mat-tab-group>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        *ngIf="!bSoloLectura"
+        [disabled]="bGuardando"
+        (click)="fn_guardar()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            {{ bGuardando ? 'Guardando...' : 'Guardar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

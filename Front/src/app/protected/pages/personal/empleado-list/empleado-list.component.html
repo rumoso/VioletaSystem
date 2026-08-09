@@ -1,0 +1,207 @@
+<div class="divMain pcl-main">
+
+    <div class="pcl-header">
+        <h2 class="pcl-titulo">Catálogo de Empleados</h2>
+
+        <div class="pcl-vista-toggle" *ngIf="!bEsMovil">
+            <button type="button"
+            [class.active]="vistaActual === 'tabla'"
+            matTooltip="Vista de tabla"
+            (click)="fn_setVista('tabla')">
+                <mat-icon>table_rows</mat-icon>
+            </button>
+            <button type="button"
+            [class.active]="vistaActual === 'cards'"
+            matTooltip="Vista de tarjetas"
+            (click)="fn_setVista('cards')">
+                <mat-icon>grid_view</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <div class="pcl-filtros">
+        <div class="pcl-slim-field pcl-filtro-buscar">
+            <label class="pcl-slim-label">Buscar</label>
+            <input class="pcl-slim-input"
+                type="text"
+                placeholder="Nombre, usuario o puesto..."
+                [formControl]="searchControl"
+                (keydown.enter)="fn_buscar()">
+        </div>
+
+        <div class="pcl-filtro-botones">
+            <button mat-raised-button color="primary" type="button" (click)="fn_buscar()">
+                <mat-icon matPrefix class="my-icon">search</mat-icon>
+                Buscar</button>
+
+            <button mat-raised-button type="button" (click)="fn_limpiar()">
+                <mat-icon matPrefix class="my-icon">clear</mat-icon>
+                Limpiar</button>
+
+            <button mat-raised-button type="button" (click)="fn_getList()">
+                <mat-icon matPrefix class="my-icon">refresh</mat-icon>
+                Actualizar</button>
+
+            <button mat-raised-button color="accent" type="button"
+            *ngIf="fn_hasPermission('empleados_CrearModificar')"
+            (click)="fn_showModal(0)">
+                <mat-icon matPrefix class="my-icon">add</mat-icon>
+                Nuevo</button>
+        </div>
+    </div>
+
+    <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
+        <mat-icon class="pcl-vacio-icon">group_off</mat-icon>
+        <p>No hay empleados{{ pagination.search ? ' con ese filtro' : '' }}.</p>
+        <button mat-raised-button color="primary" type="button"
+        *ngIf="!pagination.search && fn_hasPermission('empleados_CrearModificar')"
+        (click)="fn_showModal(0)">
+            Crear el primero</button>
+    </div>
+
+    <!-- Vista TABLA -->
+    <div class="table-responsive" *ngIf="vistaActual === 'tabla' && catlist.length > 0">
+        <table class="pcl-tabla">
+            <thead>
+                <tr>
+                    <th class="textAlingLeft">ID</th>
+                    <th class="textAlingLeft">Empleado</th>
+                    <th class="textAlingLeft">Usuario del sistema</th>
+                    <th class="textAlingLeft">Puesto / Sucursal</th>
+                    <th class="textAlingCenter">Comisiones</th>
+                    <th class="textAlingCenter">Hrs/sem</th>
+                    <th class="textAlingCenter">Estatus</th>
+                    <th class="textAlingCenter">Ingreso</th>
+                    <th class="textAlingCenter">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let item of catlist">
+                    <td class="pcl-td-id">#{{ item.id }}</td>
+
+                    <td>
+                        <div class="pcl-persona">
+                            <div class="pcl-avatar" [style.background-color]="fn_avatarColor(item.nombre)">
+                                {{ fn_inicial(item.nombre) }}
+                            </div>
+                            <div class="pcl-persona-datos">
+                                <span class="pcl-principal">{{ item.nombre }}</span>
+                                <span class="pcl-secundario">{{ item.telefono || 'Sin teléfono' }}</span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="pcl-persona-datos">
+                            <span class="pcl-principal">{{ item.userName }}</span>
+                            <span class="pcl-secundario">{{ item.userNombre }}</span>
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="pcl-persona-datos">
+                            <span class="pcl-principal">{{ item.puesto || '—' }}</span>
+                            <span class="pcl-secundario">{{ item.sucursalDesc || 'Sin sucursal' }}</span>
+                        </div>
+                    </td>
+
+                    <td class="textAlingCenter">
+                        <span class="pcl-chip pcl-chip-neutro">{{ item.periodicidadComisiones | titlecase }}</span>
+                    </td>
+
+                    <td class="textAlingCenter">{{ item.horasSemana }}</td>
+
+                    <td class="textAlingCenter">
+                        <span class="pcl-chip" [class.pcl-chip-activo]="item.active" [class.pcl-chip-inactivo]="!item.active">
+                            {{ item.active ? 'Activo' : 'Baja' }}
+                        </span>
+                    </td>
+
+                    <td class="textAlingCenter">
+                        <div class="pcl-persona-datos">
+                            <span class="pcl-secundario">{{ item.fechaIngresoDesc }}</span>
+                            <span class="pcl-secundario" *ngIf="!item.active">Baja: {{ item.fechaBajaDesc }}</span>
+                        </div>
+                    </td>
+
+                    <td class="textAlingCenter">
+                        <div class="pcl-acciones">
+                            <button mat-icon-button
+                            [matTooltip]="fn_hasPermission('empleados_CrearModificar') ? 'Editar' : 'Ver'"
+                            (click)="fn_showModal(item.id)">
+                                <mat-icon class="colorGreen">{{ fn_hasPermission('empleados_CrearModificar') ? 'edit' : 'visibility' }}</mat-icon>
+                            </button>
+
+                            <button mat-icon-button
+                            *ngIf="fn_hasPermission('empleados_Baja')"
+                            [matTooltip]="item.active ? 'Dar de baja' : 'Reactivar'"
+                            (click)="fn_bajaReactivar(item)">
+                                <mat-icon [class.colorOrange]="item.active" [class.colorGreen]="!item.active">
+                                    {{ item.active ? 'person_off' : 'how_to_reg' }}</mat-icon>
+                            </button>
+
+                            <button mat-icon-button
+                            *ngIf="fn_hasPermission('empleados_Eliminar')"
+                            matTooltip="Eliminar definitivamente"
+                            (click)="fn_delete(item)">
+                                <mat-icon class="colorRed">delete_forever</mat-icon>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Vista CARDS -->
+    <div class="pcl-cards" *ngIf="vistaActual === 'cards' && catlist.length > 0">
+        <div class="pcl-card" *ngFor="let item of catlist">
+            <div class="pcl-card-header">
+                <div class="pcl-avatar" [style.background-color]="fn_avatarColor(item.nombre)">
+                    {{ fn_inicial(item.nombre) }}
+                </div>
+                <div class="pcl-persona-datos">
+                    <span class="pcl-principal">{{ item.nombre }}</span>
+                    <span class="pcl-secundario">#{{ item.id }} · {{ item.userName }}</span>
+                </div>
+                <span class="pcl-chip" [class.pcl-chip-activo]="item.active" [class.pcl-chip-inactivo]="!item.active">
+                    {{ item.active ? 'Activo' : 'Baja' }}
+                </span>
+            </div>
+            <div class="pcl-card-body">
+                <span class="pcl-secundario">{{ item.puesto || 'Sin puesto' }} · {{ item.sucursalDesc || 'Sin sucursal' }}</span>
+                <span class="pcl-secundario">Comisiones: {{ item.periodicidadComisiones | titlecase }} · {{ item.horasSemana }} hrs/sem</span>
+                <span class="pcl-secundario">Ingreso: {{ item.fechaIngresoDesc }}<ng-container *ngIf="!item.active"> · Baja: {{ item.fechaBajaDesc }}</ng-container></span>
+            </div>
+            <div class="pcl-card-acciones">
+                <button mat-icon-button
+                [matTooltip]="fn_hasPermission('empleados_CrearModificar') ? 'Editar' : 'Ver'"
+                (click)="fn_showModal(item.id)">
+                    <mat-icon class="colorGreen">{{ fn_hasPermission('empleados_CrearModificar') ? 'edit' : 'visibility' }}</mat-icon>
+                </button>
+
+                <button mat-icon-button
+                *ngIf="fn_hasPermission('empleados_Baja')"
+                [matTooltip]="item.active ? 'Dar de baja' : 'Reactivar'"
+                (click)="fn_bajaReactivar(item)">
+                    <mat-icon [class.colorOrange]="item.active" [class.colorGreen]="!item.active">
+                        {{ item.active ? 'person_off' : 'how_to_reg' }}</mat-icon>
+                </button>
+
+                <button mat-icon-button
+                *ngIf="fn_hasPermission('empleados_Eliminar')"
+                matTooltip="Eliminar definitivamente"
+                (click)="fn_delete(item)">
+                    <mat-icon class="colorRed">delete_forever</mat-icon>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
+                    (OPagination)="changePagination($event)">
+    </app-pagination>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>
