@@ -25,7 +25,8 @@
                     type="text"
                     maxlength="150"
                     placeholder="Nombre completo"
-                    formControlName="nombre">
+                    formControlName="nombre"
+                    (keydown.enter)="fn_focusUsuario()">
                 <span class="pcm-slim-error"
                     *ngIf="myForm.get('nombre')?.touched && myForm.get('nombre')?.hasError('required')">
                     El nombre es obligatorio
@@ -34,7 +35,7 @@
 
             <div class="pcm-slim-field">
                 <label class="pcm-slim-label">Usuario del sistema *</label>
-                <input class="pcm-slim-input"
+                <input #usuarioInput class="pcm-slim-input"
                     type="text"
                     placeholder="Busca por nombre o usuario..."
                     [formControl]="usuarioSearchControl"
@@ -71,7 +72,7 @@
             <mat-icon matPrefix class="my-icon">close</mat-icon>
             Cerrar</button>
 
-        <button mat-raised-button color="primary" type="button"
+        <button #guardarBtn mat-raised-button color="primary" type="button"
         *ngIf="!bSoloLectura"
         [disabled]="bGuardando"
         (click)="fn_guardar()">

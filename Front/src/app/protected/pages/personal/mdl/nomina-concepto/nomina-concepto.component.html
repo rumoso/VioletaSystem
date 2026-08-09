@@ -24,7 +24,8 @@
                     type="text"
                     maxlength="100"
                     placeholder="Ej. Bono de puntualidad"
-                    formControlName="name">
+                    formControlName="name"
+                    (keydown.enter)="fn_guardar()">
                 <span class="pcm-slim-error"
                     *ngIf="myForm.get('name')?.touched && myForm.get('name')?.hasError('required')">
                     El nombre es obligatorio

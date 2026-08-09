@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, debounceTime } from 'rxjs';
@@ -44,6 +44,26 @@ export class PersonalCatalogoComponent implements OnInit, OnDestroy {
   usuarioSeleccionado: any = null;
   bBuscandoUsuarios: boolean = false;
   private usuarioSearchSub: Subscription | null = null;
+
+  @ViewChild('usuarioInput') usuarioInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('guardarBtn', { read: ElementRef }) guardarBtnRef!: ElementRef<HTMLElement>;
+
+  // Captura sin mouse: Enter en nombre pasa al usuario (texto
+  // seleccionado); al elegir usuario el foco cae en Guardar, donde
+  // Enter ejecuta el guardado.
+  fn_focusUsuario() {
+    setTimeout(() => {
+      const input = this.usuarioInputRef?.nativeElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 0);
+  }
+
+  fn_focusGuardar() {
+    setTimeout(() => this.guardarBtnRef?.nativeElement?.focus(), 0);
+  }
 
   constructor(
     private dialogRef: MatDialogRef<PersonalCatalogoComponent>
@@ -147,6 +167,7 @@ export class PersonalCatalogoComponent implements OnInit, OnDestroy {
 
   fn_usuarioSeleccionado( usuario: any ) {
     this.usuarioSeleccionado = usuario;
+    this.fn_focusGuardar();
   }
 
   fn_guardar() {

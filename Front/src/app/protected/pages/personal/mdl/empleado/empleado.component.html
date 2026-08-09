@@ -32,7 +32,8 @@
                         <div class="pcm-slim-field pcm-col-2">
                             <label class="pcm-slim-label">Nombre *</label>
                             <input class="pcm-slim-input" type="text" maxlength="150"
-                                placeholder="Nombre completo" formControlName="nombre">
+                                placeholder="Nombre completo" formControlName="nombre"
+                                (keydown.enter)="fn_focusUsuario()">
                             <span class="pcm-slim-error"
                                 *ngIf="myForm.get('nombre')?.touched && myForm.get('nombre')?.hasError('required')">
                                 El nombre es obligatorio
@@ -41,7 +42,7 @@
 
                         <div class="pcm-slim-field pcm-col-2">
                             <label class="pcm-slim-label">Usuario del sistema *</label>
-                            <input class="pcm-slim-input" type="text"
+                            <input #usuarioInput class="pcm-slim-input" type="text"
                                 placeholder="Busca por nombre o usuario..."
                                 [formControl]="usuarioSearchControl"
                                 [matAutocomplete]="autoUsuarios">
@@ -57,7 +58,7 @@
 
                         <div class="pcm-slim-field">
                             <label class="pcm-slim-label">Fecha de ingreso *</label>
-                            <input class="pcm-slim-input" type="date" formControlName="fechaIngreso">
+                            <input #fechaIngresoInput class="pcm-slim-input" type="date" formControlName="fechaIngreso">
                             <span class="pcm-slim-error"
                                 *ngIf="myForm.get('fechaIngreso')?.touched && myForm.get('fechaIngreso')?.hasError('required')">
                                 La fecha de ingreso es obligatoria
@@ -117,7 +118,8 @@
                         <div class="pcm-slim-field">
                             <label class="pcm-slim-label">Horas de trabajo por semana *</label>
                             <input class="pcm-slim-input" type="number" min="1" step="0.5"
-                                formControlName="horasSemana">
+                                formControlName="horasSemana"
+                                (keydown.enter)="fn_guardar()">
                             <span class="pcm-slim-hint">Lo usará el control de horas (timeCard)</span>
                         </div>
 

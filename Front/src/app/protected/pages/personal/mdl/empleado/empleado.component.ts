@@ -66,6 +66,25 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
   conceptoEditando: any = null;
 
   @ViewChild('montoInput') montoInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('usuarioInput') usuarioInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('fechaIngresoInput') fechaIngresoInputRef!: ElementRef<HTMLInputElement>;
+
+  // Captura sin mouse en la pestaña Datos: Enter en nombre pasa al
+  // usuario (texto seleccionado); al elegir usuario el foco sigue a la
+  // fecha de ingreso; Enter en el último campo (horas/semana) guarda.
+  fn_focusUsuario() {
+    setTimeout(() => {
+      const input = this.usuarioInputRef?.nativeElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 0);
+  }
+
+  fn_focusFechaIngreso() {
+    setTimeout(() => this.fechaIngresoInputRef?.nativeElement?.focus(), 0);
+  }
 
   constructor(
     private dialogRef: MatDialogRef<EmpleadoComponent>
@@ -189,6 +208,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
 
   fn_usuarioSeleccionado( usuario: any ) {
     this.usuarioSeleccionado = usuario;
+    this.fn_focusFechaIngreso();
   }
 
   fn_guardar() {
