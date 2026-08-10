@@ -25,8 +25,12 @@ const getComisionesTrackList = async(req, res = response) => {
 
     try{
 
-        const sStart = startDate.substring(0, 10);
-        const sEnd = endDate.substring(0, 10);
+        // NULL en vez de '' para las fechas: MySQL rechaza comparar una
+        // columna DATE contra '' (error "Incorrect DATE value") aunque
+        // esté detrás de un OR — con NULL la comparación simplemente da
+        // NULL/false y el OR jala del lado de "sin filtro" sin tronar.
+        const sStart = startDate ? startDate.substring(0, 10) : null;
+        const sEnd = endDate ? endDate.substring(0, 10) : null;
         const iLimit = Number(pageSize);
         const iOffset = Number(pageIndex) * iLimit;
 
@@ -36,8 +40,8 @@ const getComisionesTrackList = async(req, res = response) => {
              WHERE ( :idUser = 0 OR C.idUser = :idUser )
              AND ( :tipo = '' OR C.tipo = :tipo )
              AND ( :estatus = '' OR C.estatus = :estatus )
-             AND ( :startDate = '' OR C.fecha >= :startDate )
-             AND ( :endDate = '' OR C.fecha <= :endDate )`,
+             AND ( :startDate IS NULL OR C.fecha >= :startDate )
+             AND ( :endDate IS NULL OR C.fecha <= :endDate )`,
             { replacements: { idUser, tipo, estatus, startDate: sStart, endDate: sEnd }, type: dbConnection.QueryTypes.SELECT }
         );
 
@@ -62,8 +66,8 @@ const getComisionesTrackList = async(req, res = response) => {
              WHERE ( :idUser = 0 OR C.idUser = :idUser )
              AND ( :tipo = '' OR C.tipo = :tipo )
              AND ( :estatus = '' OR C.estatus = :estatus )
-             AND ( :startDate = '' OR C.fecha >= :startDate )
-             AND ( :endDate = '' OR C.fecha <= :endDate )
+             AND ( :startDate IS NULL OR C.fecha >= :startDate )
+             AND ( :endDate IS NULL OR C.fecha <= :endDate )
              ORDER BY C.fecha DESC, C.idComisionTrack DESC
              LIMIT :offset, :limit`,
             { replacements: { idUser, tipo, estatus, startDate: sStart, endDate: sEnd, offset: iOffset, limit: iLimit }, type: dbConnection.QueryTypes.SELECT }
