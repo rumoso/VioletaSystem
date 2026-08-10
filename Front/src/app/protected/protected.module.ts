@@ -40,6 +40,8 @@ import { EmpleadoComponent } from './pages/personal/mdl/empleado/empleado.compon
 import { EmpleadoBajaComponent } from './pages/personal/mdl/empleado-baja/empleado-baja.component';
 import { NominaConceptosListComponent } from './pages/personal/nomina-conceptos-list/nomina-conceptos-list.component';
 import { NominaConceptoComponent } from './pages/personal/mdl/nomina-concepto/nomina-concepto.component';
+import { ComisionesTrackListComponent } from './pages/personal/comisiones-track-list/comisiones-track-list.component';
+import { ComisionManualComponent } from './pages/personal/mdl/comision-manual/comision-manual.component';
 import { CortecajadetailComponent } from './pages/sales/mdl/cortecajadetail/cortecajadetail.component';
 import { InventarylogComponent } from './pages/catssales/mdl/inventarylog/inventarylog.component';
 import { UtilidadComponent } from './pages/reports/utilidad/utilidad.component';
@@ -118,6 +120,8 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
     EmpleadoBajaComponent,
     NominaConceptosListComponent,
     NominaConceptoComponent,
+    ComisionesTrackListComponent,
+    ComisionManualComponent,
     CortecajadetailComponent,
     InventarylogComponent,
     UtilidadComponent,

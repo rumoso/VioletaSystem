@@ -20,6 +20,7 @@ import { FaceLogComponent } from "./pages/security/face-log/face-log.component";
 import { PersonalCatalogoListComponent } from "./pages/personal/personal-catalogo-list/personal-catalogo-list.component";
 import { EmpleadoListComponent } from "./pages/personal/empleado-list/empleado-list.component";
 import { NominaConceptosListComponent } from "./pages/personal/nomina-conceptos-list/nomina-conceptos-list.component";
+import { ComisionesTrackListComponent } from "./pages/personal/comisiones-track-list/comisiones-track-list.component";
 import { ComisionesComponent } from "./pages/operation/comisiones/comisiones.component";
 import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.component";
 import { RepcomprasproveedorComponent } from "./pages/reports/repcomprasproveedor/repcomprasproveedor.component";
@@ -184,6 +185,10 @@ const routes: Routes = [
         {
           path: 'nominaConceptosList',
           component: NominaConceptosListComponent
+        },
+        {
+          path: 'comisionesTrackList',
+          component: ComisionesTrackListComponent
         },
 
       ]

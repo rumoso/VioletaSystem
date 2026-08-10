@@ -84,7 +84,9 @@
                             </div>
                             <div class="pcl-persona-datos">
                                 <span class="pcl-principal">{{ item.nombre }}</span>
-                                <span class="pcl-secundario">{{ config.entidad | titlecase }}</span>
+                                <span class="pcl-secundario">
+                                    {{ config.catalogo === 'tecnicos' ? (item.destajoPorcentaje + '% destajo') : (config.entidad | titlecase) }}
+                                </span>
                             </div>
                         </div>
                     </td>

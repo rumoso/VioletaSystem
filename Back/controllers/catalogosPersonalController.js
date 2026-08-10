@@ -16,6 +16,10 @@ const CATALOGOS = {
         tabla: 'tecnicos',
         idCampo: 'idTecnico',
         etiqueta: 'técnico',
+        // % de destajo (0-100) — solo técnicos, no vendedores. Usado
+        // por la bitácora de comisiones (analisis/008) para calcular
+        // la comisión destajo sobre la mano de obra de cada taller.
+        bTieneDestajo: true,
         // Referencias históricas por idUser que bloquean la eliminación física
         referencias: [
             { sql: `SELECT COUNT(*) AS n FROM taller_mano_obra WHERE idUserTecnico = :idUser`, desc: 'mano de obra de taller' },
@@ -69,6 +73,7 @@ const _fn_getList = (config) => async(req, res = response) => {
                 U.userName,
                 U.name AS userNombre,
                 U.active AS userActive
+                ${ config.bTieneDestajo ? ', C.destajoPorcentaje' : '' }
              FROM ${ config.tabla } AS C
              INNER JOIN users AS U ON U.idUser = C.idUser
              WHERE ( :search = '%%' OR C.nombre LIKE :search OR U.userName LIKE :search )
@@ -108,6 +113,7 @@ const _fn_getById = (config) => async(req, res = response) => {
             `SELECT
                 C.${ config.idCampo } AS id, C.idUser, C.nombre, C.active,
                 U.userName, U.name AS userNombre
+                ${ config.bTieneDestajo ? ', C.destajoPorcentaje' : '' }
              FROM ${ config.tabla } AS C
              INNER JOIN users AS U ON U.idUser = C.idUser
              WHERE C.${ config.idCampo } = :id
@@ -139,6 +145,7 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
         , idUser
         , nombre
         , active = 1
+        , destajoPorcentaje = 0
 
         , idUserLogON
     } = req.body;
@@ -146,6 +153,13 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     try{
+
+        if (config.bTieneDestajo && (Number(destajoPorcentaje) < 0 || Number(destajoPorcentaje) > 100)) {
+            return res.json({
+                status: 1,
+                message: "El % de destajo debe estar entre 0 y 100."
+            });
+        }
 
         // idUser no puede estar ligado a otro registro del mismo catálogo
         const [dupUser] = await dbConnection.query(
@@ -180,8 +194,9 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
             await dbConnection.query(
                 `UPDATE ${ config.tabla }
                  SET idUser = :idUser, nombre = :nombre, active = :active, updateDate = :updateDate
+                 ${ config.bTieneDestajo ? ', destajoPorcentaje = :destajoPorcentaje' : '' }
                  WHERE ${ config.idCampo } = :id`,
-                { replacements: { idUser, nombre, active: active ? 1 : 0, updateDate: oGetDateNow, id }, type: dbConnection.QueryTypes.UPDATE }
+                { replacements: { idUser, nombre, active: active ? 1 : 0, updateDate: oGetDateNow, destajoPorcentaje, id }, type: dbConnection.QueryTypes.UPDATE }
             );
 
             return res.json({
@@ -192,10 +207,13 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
 
         }
 
-        const [ , metaInsert ] = await dbConnection.query(
-            `INSERT INTO ${ config.tabla } (idUser, nombre, active, createDate, idCreateUser)
-             VALUES (:idUser, :nombre, 1, :createDate, :idCreateUser)`,
-            { replacements: { idUser, nombre, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT }
+        const sColumnasDestajo = config.bTieneDestajo ? ', destajoPorcentaje' : '';
+        const sValoresDestajo = config.bTieneDestajo ? ', :destajoPorcentaje' : '';
+
+        await dbConnection.query(
+            `INSERT INTO ${ config.tabla } (idUser, nombre, active, createDate, idCreateUser ${ sColumnasDestajo })
+             VALUES (:idUser, :nombre, 1, :createDate, :idCreateUser ${ sValoresDestajo })`,
+            { replacements: { idUser, nombre, createDate: oGetDateNow, idCreateUser: idUserLogON, destajoPorcentaje }, type: dbConnection.QueryTypes.INSERT }
         );
 
         const [nuevoRow] = await dbConnection.query(

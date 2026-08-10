@@ -1,0 +1,90 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">Captura manual de comisión</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <div class="pcm-banner" *ngIf="banner"
+            [class.pcm-banner-ok]="banner.tipo === 'ok'"
+            [class.pcm-banner-error]="banner.tipo === 'error'">
+            <mat-icon>{{ banner.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+            <span>{{ banner.mensaje }}</span>
+        </div>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Empleado *</label>
+            <input class="pcm-slim-input"
+                type="text"
+                placeholder="Busca por nombre o usuario..."
+                [formControl]="empleadoSearchControl"
+                [matAutocomplete]="autoEmpleados">
+            <mat-autocomplete #autoEmpleados="matAutocomplete"
+                [displayWith]="fn_displayEmpleado"
+                (optionSelected)="fn_empleadoSeleccionado($event.option.value)">
+                <mat-option *ngIf="bBuscandoEmpleados" disabled>Buscando...</mat-option>
+                <mat-option *ngFor="let e of empleadosEncontrados" [value]="e">
+                    {{ e.userName }} — {{ e.nombre }}
+                </mat-option>
+            </mat-autocomplete>
+        </div>
+
+        <form [formGroup]="myForm" autocomplete="off">
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Tipo *</label>
+                <select class="pcm-slim-input" formControlName="tipo">
+                    <option value="MANUAL">Manual</option>
+                    <option value="DESTAJO">Destajo</option>
+                    <option value="VENTA">Venta</option>
+                </select>
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Concepto *</label>
+                <input #conceptoInput class="pcm-slim-input"
+                    type="text"
+                    maxlength="200"
+                    placeholder="Ej. Comisión especial acordada"
+                    formControlName="concepto"
+                    (keydown.enter)="fn_focusMonto()">
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Monto * (negativo = deducción)</label>
+                <input #montoInput class="pcm-slim-input"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    formControlName="monto"
+                    (keydown.enter)="fn_guardar()">
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Fecha *</label>
+                <input class="pcm-slim-input" type="date" formControlName="fecha">
+            </div>
+
+        </form>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        [disabled]="bGuardando"
+        (click)="fn_guardar()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            {{ bGuardando ? 'Guardando...' : 'Guardar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>

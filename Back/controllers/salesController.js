@@ -7,6 +7,7 @@ const path = require('path');
 
 const { dbConnection } = require('../database/config');
 const { Console } = require('console');
+const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen } = require('./comisionesTrackController');
 
 const insertSale = async(req, res) => {
 
@@ -1278,13 +1279,27 @@ const disabledSale = async(req, res) => {
 
         }else{
 
+            // La venta ya se canceló (la SP no expone transacción JS
+            // para anidar); si tenía comisión de venta ya generada,
+            // se reversa aparte — cancela si seguía pendiente, o
+            // genera una deducción en negativo si ya se había pagado
+            // en una nómina (analisis/008). No bloquea la respuesta de
+            // cancelación si esto falla: la venta ya quedó cancelada.
+            if (OSQL[0].bOK > 0) {
+                try {
+                    await fn_reversarComisionByOrigen(idSale, idUserLogON, `Venta #${ idSale } cancelada`);
+                } catch (comisionError) {
+                    console.log('No se pudo reversar la comisión de la venta cancelada:', comisionError.message);
+                }
+            }
+
             res.json({
                 status: OSQL[0].bOK > 0 ? 0 : 1,
                 message: OSQL[0].message
             });
 
         }
-      
+
     }catch(error){
 
         res.json({
@@ -2968,6 +2983,8 @@ const updateTallerStatus = async(req, res) => {
         }
 
         // Status 4 (Finalizado/Mostrador): descontar el metal final del inventario del técnico
+        // y registrar la comisión destajo de cada técnico con mano de obra en el folio
+        // (analisis/008) — mismo evento, misma transacción: o pasan juntos, o no pasa ninguno.
         if (idTallerStatus === 4) {
             const OSQL_Entregar = await dbConnection.query(
                 `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
@@ -2980,6 +2997,8 @@ const updateTallerStatus = async(req, res) => {
                     message: OSQL_Entregar[0].message
                 });
             }
+
+            await fn_registrarDestajoByTaller(idTaller, oGetDateNow, idUserLogON, transaction);
         }
 
         // Construir la consulta dinámicamente

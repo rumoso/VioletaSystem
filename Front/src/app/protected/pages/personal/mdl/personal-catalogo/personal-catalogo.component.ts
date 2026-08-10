@@ -35,8 +35,13 @@ export class PersonalCatalogoComponent implements OnInit, OnDestroy {
 
   myForm: FormGroup = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(150)]],
-    active: [true]
+    active: [true],
+    destajoPorcentaje: [0, [Validators.min(0), Validators.max(100)]]
   });
+
+  get bEsTecnico(): boolean {
+    return this.catalogo === 'tecnicos';
+  }
 
   // Autocompletado del usuario vinculado (obligatorio)
   usuarioSearchControl: FormControl = new FormControl('');
@@ -127,7 +132,8 @@ export class PersonalCatalogoComponent implements OnInit, OnDestroy {
           if (resp.status === 0 && resp.data) {
             this.myForm.patchValue({
               nombre: resp.data.nombre,
-              active: !!resp.data.active
+              active: !!resp.data.active,
+              destajoPorcentaje: resp.data.destajoPorcentaje ?? 0
             });
             this.usuarioSeleccionado = {
               id: resp.data.idUser,
@@ -190,7 +196,8 @@ export class PersonalCatalogoComponent implements OnInit, OnDestroy {
       id: this.id,
       idUser: this.usuarioSeleccionado.id,
       nombre: this.myForm.value.nombre,
-      active: this.id > 0 ? this.myForm.value.active : true
+      active: this.id > 0 ? this.myForm.value.active : true,
+      destajoPorcentaje: this.bEsTecnico ? (this.myForm.value.destajoPorcentaje || 0) : 0
     };
 
     this.catalogosServ.CInsertUpdate(this.catalogo, data)

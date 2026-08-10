@@ -41,6 +41,7 @@ class Server{
             vendedores:'/api/vendedores',
             empleados:'/api/empleados',
             nominaConceptos:'/api/nominaConceptos',
+            comisionesTrack:'/api/comisionesTrack',
 
         }
 
@@ -136,6 +137,7 @@ class Server{
         this.app.use(this.paths.vendedores, require('../routes/vendedoresRoute'));
         this.app.use(this.paths.empleados, require('../routes/empleadosRoute'));
         this.app.use(this.paths.nominaConceptos, require('../routes/nominaConceptosRoute'));
+        this.app.use(this.paths.comisionesTrack, require('../routes/comisionesTrackRoute'));
     }
 
     listen(){

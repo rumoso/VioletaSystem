@@ -53,6 +53,20 @@
                 </span>
             </div>
 
+            <div class="pcm-slim-field" *ngIf="bEsTecnico">
+                <label class="pcm-slim-label">% de destajo</label>
+                <input class="pcm-slim-input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    placeholder="0"
+                    formControlName="destajoPorcentaje">
+                <span class="pcm-slim-hint">
+                    Comisión sobre la mano de obra de cada taller que llega a mostrador (0 = no gana destajo).
+                </span>
+            </div>
+
             <div class="pcm-slim-field pcm-activo" *ngIf="id > 0">
                 <label class="pcm-slim-label">Activo</label>
                 <label class="pcm-switch">
