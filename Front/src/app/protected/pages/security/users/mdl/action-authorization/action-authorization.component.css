@@ -1,0 +1,15 @@
+/* Modal de autorización por código/rostro. */
+
+.aa-modal {
+    padding: 30px;
+    position: relative;
+}
+
+/* X de cierre en la esquina superior derecha (reemplaza al botón
+   "Cerrar" del pie) */
+.aa-cerrar {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    color: #757575;
+}

@@ -1,4 +1,8 @@
-<div style="padding: 30px;">
+<div class="aa-modal">
+
+    <button mat-icon-button class="aa-cerrar" (click)="fn_CerrarMDL( 0 )">
+        <mat-icon>close</mat-icon>
+    </button>
 
     <div class="row">
 
@@ -41,12 +45,6 @@
                 (click)="fn_authorizarPorRostro()">
                 <mat-icon matPrefix class="my-icon">face</mat-icon>
                 Por rostro</button>
-
-                <button mat-raised-button
-                type="button"
-                (click)="fn_CerrarMDL( 0 )">
-                <mat-icon matPrefix class="my-icon">close</mat-icon>
-                Cerrar</button>
 
             </div>
         </div>
