@@ -29,17 +29,23 @@
       </div>
 
       <div class="tll-field">
-        <label class="tll-label">Desde</label>
-        <input type="date"
-          class="tll-slim-input"
-          [(ngModel)]="parametersForm.createDateStart">
+        <label class="tll-label">Creado desde</label>
+        <div class="inline-wrap">
+          <input type="date"
+            class="tll-slim-input"
+            [class.tll-date-vacia]="!parametersForm.createDateStart"
+            [(ngModel)]="parametersForm.createDateStart">
+        </div>
       </div>
 
       <div class="tll-field">
-        <label class="tll-label">Hasta</label>
-        <input type="date"
-          class="tll-slim-input"
-          [(ngModel)]="parametersForm.createDateEnd">
+        <label class="tll-label">Creado hasta</label>
+        <div class="inline-wrap">
+          <input type="date"
+            class="tll-slim-input"
+            [class.tll-date-vacia]="!parametersForm.createDateEnd"
+            [(ngModel)]="parametersForm.createDateEnd">
+        </div>
       </div>
 
       <div class="tll-field tll-field--customer">
