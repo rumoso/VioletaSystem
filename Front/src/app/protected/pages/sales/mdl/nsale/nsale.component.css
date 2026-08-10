@@ -1,0 +1,274 @@
+/* Modal de ventas — rediseño con el lenguaje visual de los catálogos
+   de personal (formato slim, chips, secciones con título, tabla plana). */
+
+.ns-modal {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Encabezado */
+.ns-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ns-header-titulo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ns-titulo {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* Chips */
+.ns-chip {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ns-chip-folio {
+    background: #ede7f6;
+    color: #5e35b1;
+}
+
+.ns-chip-pagado {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.ns-chip-pendiente {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+/* Grid de campos */
+.ns-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: 14px;
+    row-gap: 2px;
+}
+
+.ns-col-1 { grid-column: span 2; }
+.ns-col-2 { grid-column: span 2; }
+.ns-col-3 { grid-column: span 3; }
+.ns-col-4 { grid-column: span 4; }
+.ns-col-5 { grid-column: span 5; }
+.ns-col-6 { grid-column: span 12; }
+.ns-col-7 { grid-column: span 7; }
+.ns-col-8 { grid-column: span 8; }
+
+/* Formato slim */
+.ns-slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 10px;
+    min-width: 0;
+}
+
+.ns-slim-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #757575;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ns-label-icon {
+    font-size: 17px;
+}
+
+.ns-slim-input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #bdbdbd;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ns-slim-input:focus {
+    border-color: #7B1FA2;
+    box-shadow: 0 0 0 3px rgba(123, 31, 162, .15);
+}
+
+.ns-slim-input[readonly] {
+    background: #fafafa;
+}
+
+.ns-slim-textarea {
+    height: auto;
+    min-height: 36px;
+    padding: 8px 10px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+/* Wrapper con botón de limpiar / prefijo / toggle de fecha */
+.ns-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.ns-input-clear {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) scale(.75);
+}
+
+.ns-input-prefix {
+    position: absolute;
+    left: 8px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #9e9e9e;
+    pointer-events: none;
+}
+
+.ns-input-con-prefix {
+    padding-left: 32px;
+}
+
+.ns-datepicker-toggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) scale(.85);
+}
+
+/* Secciones */
+.ns-seccion {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+
+.ns-seccion-titulo {
+    font-size: 11px;
+    font-weight: 600;
+    color: #7B1FA2;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    margin-bottom: 10px;
+}
+
+/* Barra de acciones */
+.ns-acciones {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Tabla */
+.ns-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.ns-tabla thead th {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .4px;
+    color: #757575;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.ns-tabla tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eeeeee;
+    vertical-align: middle;
+}
+
+.ns-tabla tbody tr:hover {
+    background: #fafafa;
+}
+
+.ns-tabla-acciones {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ns-acciones-pago {
+    min-width: 130px;
+}
+
+.ns-celda-icono {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.ns-icono-mini {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+    color: #9e9e9e;
+}
+
+.ns-input-mini {
+    width: 70px;
+    height: 30px;
+    padding: 0 6px;
+}
+
+/* Total */
+.ns-total-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px solid #e0e0e0;
+}
+
+.ns-total-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    text-align: right;
+    font-size: 24px;
+    font-weight: 700;
+    color: #2e7d32;
+    width: 220px;
+}
+
+/* Responsivo */
+@media (max-width: 767.98px) {
+    .ns-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ns-col-1, .ns-col-2, .ns-col-3, .ns-col-4,
+    .ns-col-5, .ns-col-6, .ns-col-7, .ns-col-8 {
+        grid-column: span 1;
+    }
+}

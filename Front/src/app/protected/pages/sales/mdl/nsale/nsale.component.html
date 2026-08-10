@@ -1,832 +1,600 @@
-<!-- <div style="width: 100%; margin-top: -10px !important;"> -->
-<div style="padding: 30px;">
+<div class="ns-modal">
 
-    <button mat-icon-button
-            style="position: absolute; top: 10px; right: 10px;"
-            (click)="fn_CerrarMDL()">
-        <mat-icon>close</mat-icon>
-    </button>
+    <!-- Encabezado: título + folio/estatus + cerrar -->
+    <div class="ns-header">
+        <div class="ns-header-titulo">
+            <h2 class="ns-titulo">Venta</h2>
 
-    <div class="divTitle-center" style="margin-top: 0px;"
-    *ngIf="salesHeaderForm.idSale.length> 0">
-        <h4 *ngIf="salesHeaderForm.idSaleType == 6">#{{ salesHeaderForm.idSale }}</h4>
-        <h4 *ngIf="salesHeaderForm.idSaleType != 6">#{{ salesHeaderForm.idSale }} {{ ( salesHeaderForm.pendingAmount == 0 ? ' - PAGADO' : '- PENDIENTE: ' + ( salesHeaderForm.pendingAmount | currency ) ) }}</h4>
-    </div>
+            <ng-container *ngIf="salesHeaderForm.idSale.length > 0">
+                <span class="ns-chip ns-chip-folio">#{{ salesHeaderForm.idSale }}</span>
 
-    <div class="row">
-        <div class="col-md-12">
-
-            <div class="row">
-
-                <div class="col-md-12">
-                    <mat-label>Vendedor: </mat-label>
-                    <mat-form-field
-                    style="width: 100%;">
-                        <input #cbxSellerCBX
-                        type="text"
-                                id="cbxSeller"
-                                style="width: 100%;"
-                                placeholder="Selecciona..."
-                                aria-label="Number"
-                                matInput
-                                [(ngModel)]="salesHeaderForm.sellerDesc"
-                                [matAutocomplete]="cbxSeller"
-
-                                (keyup)="CBXskeyup( 2, cbxSellerCBX.value )"
-
-                                (click)="cbxSellers_Clear()">
-                                <button *ngIf="salesHeaderForm.sellerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSellers_Clear()">
-                                    <mat-icon>close</mat-icon>
-                                </button>
-                        <mat-autocomplete autoActiveFirstOption
-                                            #cbxSeller="matAutocomplete"
-                                            (optionSelected)="cbxSellers_SelectedOption( $event )">
-                            <mat-option *ngFor="let item of cbxSellers" [value]="item">
-                                {{ item.name }}
-                            </mat-option>
-
-                            <mat-option value="" *ngIf="salesHeaderForm.sellerDesc.length > 0 && salesHeaderForm.sellerResp.length > 0">
-                                {{ salesHeaderForm.sellerResp }}
-                            </mat-option>
-
-                        </mat-autocomplete>
-                    </mat-form-field>
-                </div>
-
-            </div>
-
-            <div class="row">
-
-                <div class="col-md-10">
-                    <mat-label>Cliente: </mat-label>
-                    <span class="material-icons manitaSobre colorGreen"
-                        (click)="showCustomerCat( 0 )">
-                        add_circle_outline
+                <ng-container *ngIf="salesHeaderForm.idSaleType != 6">
+                    <span class="ns-chip ns-chip-pagado" *ngIf="salesHeaderForm.pendingAmount == 0">PAGADO</span>
+                    <span class="ns-chip ns-chip-pendiente" *ngIf="salesHeaderForm.pendingAmount != 0">
+                        PENDIENTE: {{ salesHeaderForm.pendingAmount | currency }}
                     </span>
-                    <span class="material-icons manitaSobre colorGreen"
-                        (click)="showCustomerCat( salesHeaderForm.idCustomer )"
-                        *ngIf="salesHeaderForm.idCustomer > 0 && salesHeaderForm.idCustomer != 1160">
-                        edit
-                    </span>
-                    <mat-form-field
-                    style="width: 100%;">
-                        <input #cbxCustomerCBX
-                        type="text"
-                                style="width: 100%;"
-                                placeholder="Selecciona..."
-                                aria-label="Number"
-                                matInput
-                                [(ngModel)]="salesHeaderForm.customerDesc"
-                                [matAutocomplete]="cbxCustomer"
-
-                                (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
-
-                                (click)="cbxCustomers_Clear()">
-                                <button *ngIf="salesHeaderForm.customerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
-                                    <mat-icon>close</mat-icon>
-                                </button>
-                        <mat-autocomplete autoActiveFirstOption
-                                            #cbxCustomer="matAutocomplete"
-                                            (optionSelected)="cbxCustomers_SelectedOption( $event, cbxSaleTypeCBX )">
-                            <mat-option *ngFor="let item of cbxCustomers" [value]="item">
-                                {{ item.name }}
-                            </mat-option>
-
-                            <mat-option value="" *ngIf="salesHeaderForm.customerResp.length > 0 && salesHeaderForm.customerResp.length > 0">
-                                {{ salesHeaderForm.customerResp }}
-                            </mat-option>
-
-                        </mat-autocomplete>
-                    </mat-form-field>
-                </div>
-
-                <div class="col-md-2">
-                    <mat-label>Tipo de venta: </mat-label>
-                    <mat-form-field
-                    style="width: 100%;"
-                    (click)="cbxSalesType_Clear(); cbxSalesType_Search()">
-                        <input #cbxSaleTypeCBX
-                                type="text"
-                                style="width: 100%;"
-                                placeholder="Selecciona..."
-                                aria-label="Number"
-                                matInput
-                                [(ngModel)]="salesHeaderForm.saleTypeDesc"
-                                [matAutocomplete]="cbxSaleType"
-
-                                (input)="cbxSalesType_Search()"
-                                (click)="cbxSalesType_Clear()"
-                                (focus)="cbxSalesType_Clear(); cbxSalesType_Search()">
-                                <button *ngIf="salesHeaderForm.saleTypeDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxSalesType_Clear()">
-                                    <mat-icon>close</mat-icon>
-                                </button>
-                        <mat-autocomplete autoActiveFirstOption
-                                            #cbxSaleType="matAutocomplete"
-                                            (optionSelected)="cbxSalesType_SelectedOption( $event )">
-                            <mat-option *ngFor="let item of cbxSalesType" [value]="item">
-                                {{ item.name }}
-                            </mat-option>
-
-                            <mat-option value="" *ngIf="cbxSalesType.length == 0 && salesHeaderForm.saleTypeDesc">
-                                No se encontró nada...
-                            </mat-option>
-
-                        </mat-autocomplete>
-                    </mat-form-field>
-                </div>
-
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
-
-                    <div class="row" *ngIf="salesHeaderForm.idSaleType == 5 || salesHeaderForm.idSaleType == 6">
-
-                      <div class="row" style="margin-top: -15px;">
-                        <div class="col-md-12">
-                            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
-                                Taller
-                            </div>
-                        </div>
-                      </div>
-                        <div class="col-md-7">
-                            <mat-form-field class="example-full-width with100">
-                                <mat-label>Descripción</mat-label>
-                                <textarea id="tbxDescription"
-                                matInput
-                                cdkTextareaAutosize
-                                placeholder="Ingrese una descripción"
-                                [(ngModel)]="salesDetailForm.description"></textarea>
-                            </mat-form-field>
-                        </div>
-
-                        <div class="col-md-3" style="text-align: center;">
-                          <mat-form-field class="">
-                          <mat-label>Fecha de entrega:</mat-label>
-                          <input class="textAlingCenter" matInput [matDatepicker]="picker" placeholder="Seleccione una fecha" [(ngModel)]="salesHeaderForm.fechaEntrega">
-                          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                          <mat-datepicker #picker></mat-datepicker>
-                          </mat-form-field>
-                        </div>
-
-                        <div class="col-md-2">
-                            <mat-form-field class="with100">
-                                <mat-label>Precio del sobre</mat-label>
-                                <input id="tbxPrecioSobre"
-                                matInput currencyMask placeholder="Ingrese el precio unitario"
-                                class="textAlingRight"
-                                [(ngModel)]="salesDetailForm.precioSobre"
-                                (keyup.enter)="addSaleDetail(true)">
-                            </mat-form-field>
-                        </div>
-
-                    </div>
-
-                    <div class="row" *ngIf="salesHeaderForm.idSale.length == 0 && salesHeaderForm.idSaleType != 5">
-
-                      <div class="row" style="margin-top: -15px;" *ngIf="salesHeaderForm.idSaleType == 6">
-                        <div class="col-md-12">
-                            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
-                                Producto
-                            </div>
-                        </div>
-                      </div>
-
-                        <div class="col-md-4">
-                            <mat-form-field fxLayout.xs="column" class="with100">
-                                <mat-label>Código de barras</mat-label>
-                                <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
-                                <input #barCode
-                                matInput
-                                placeholder="Ingrese un Código de barras"
-                                [(ngModel)]="salesDetailForm.barCode"
-                                (keyup.enter)="ev_fn_barCode_keyup_enter($event)"
-                                (click)="cbxProducts_Clear()">
-                            </mat-form-field>
-                        </div>
-
-                        <div class="col-md-8">
-                            <mat-form-field
-                            style="width: 100%;"
-                            (click)="cbxProducts_Search()">
-                                <input #cbxProductss
-                                        type="text"
-                                        id="cbxProduct"
-                                        style="width: 100%;"
-                                        placeholder="Selecciona un producto..."
-                                        aria-label="Number"
-                                        matInput
-                                        [(ngModel)]="salesDetailForm.productDesc"
-                                        [matAutocomplete]="cbxProduct"
-
-                                        (input)="cbxProducts_Search()"
-                                        (click)="cbxProducts_Clear()">
-                                        <button *ngIf="salesDetailForm.productDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxProducts_Clear()">
-                                            <mat-icon>close</mat-icon>
-                                        </button>
-                                <mat-autocomplete autoActiveFirstOption
-                                                    #cbxProduct="matAutocomplete"
-                                                    (optionSelected)="cbxProducts_SelectedOption( $event )">
-                                    <mat-option *ngFor="let item of cbxProducts" [value]="item">
-                                        <mat-icon matPrefix class="my-icon">qr_code</mat-icon>{{ item.nameConcat }}
-                                    </mat-option>
-
-                                    <mat-option value="" *ngIf="cbxProducts.length == 0 && salesDetailForm.productDesc">
-                                        No se encontró nada...
-                                    </mat-option>
-
-                                </mat-autocomplete>
-                            </mat-form-field>
-                        </div>
-
-                    </div>
-
-                    <div class="row" *ngIf="salesHeaderForm.idSale.length == 0 && salesHeaderForm.idSaleType != 5">
-
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Cantidad</mat-label>
-                                <input #tbxCantidad
-                                matInput
-                                placeholder="Ingrese la cantidad"
-                                type="number"
-                                class="textAlingRight"
-                                [(ngModel)]="salesDetailForm.cantidad"
-                                (keyup.enter)="ev_fn_cbxCantidad_keyup_enter($event)">
-                            </mat-form-field>
-                        </div>
-
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Precio unitario</mat-label>
-                                <input matInput currencyMask placeholder="Ingrese el precio unitario"
-                                #precioUnitario
-                                class="textAlingRight"
-                                [(ngModel)]="salesDetailForm.precioUnitario"
-                                (click)="fn_habilitarPrice()"
-                                (keyup.enter)="ev_fn_cbxPrecio_keyup_enter($event)"
-                                [readOnly]="!isPrecioUnitarioEditable">
-                            </mat-form-field>
-                        </div>
-
-                        <div class="col-md-3">
-                            <mat-form-field class="with100">
-                                <mat-label>Descuento en %</mat-label>
-                                <input #cbxDescuentoEnPorcentaje
-                                matInput
-                                placeholder="Ingrese un descuento en %"
-                                type="number"
-                                class="textAlingRight"
-                                [(ngModel)]="salesDetailForm.descuento"
-                                (keyup.enter)="ev_fn_cbxDescuentoEnPorcentaje_keyup_enter($event)"
-                                appDecimalNumber>
-                            </mat-form-field>
-                        </div>
-
-                        <div class="col-md-3">
-                          <mat-form-field class="with100">
-                              <mat-label>Descuento en $</mat-label>
-                              <input #cbxDescuentoEnPesos
-                              matInput
-                              placeholder="Ingrese un descuento en $"
-                              type="number"
-                              class="textAlingRight"
-                              [(ngModel)]="salesDetailForm.descuentoEnPesos"
-                              (keyup.enter)="fn_changeDescuentoEnPesos()"
-                              (blur)="fn_changeDescuentoEnPesos()"
-                              appDecimalNumberNeg>
-                          </mat-form-field>
-                      </div>
-
-                    </div>
-
-                    <div class="row top10px">
-                        <div class="col-md-12">
-                            <div style="float: left;">
-
-                                <button mat-raised-button
-                                #btnAdd
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="addSaleDetail()"
-                                [disabled]="!ev_fnShowBtnAddSaleDetail()"
-                                *ngIf="salesHeaderForm.idSale.length == 0">
-                                <mat-icon matPrefix class="my-icon">add</mat-icon>
-                                Agregar</button>
-
-                                <button mat-raised-button
-                                type="button"
-                                class="marginRight10px top10px"
-                                (click)="fnClearSalesDetailForm()"
-                                *ngIf="salesHeaderForm.idSale.length == 0">
-                                <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                                limpiar</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="fn_ShowPaymentCreateSale( false )"
-                                [disabled]="_idSucursal == 0 || !ev_fnShowBtnGuardarSinAnticipo()"
-                                *ngIf="salesHeaderForm.idSale.length == 0 && hasPermissionAction('ventas_Crear')">
-                                <mat-icon matPrefix class="my-icon">save</mat-icon>
-                                Guardar</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="fn_ShowPayments()"
-                                [disabled]="_idSucursal == 0 || !ev_fnShowBtnPagar()"
-                                *ngIf="hasPermissionAction('ventas_RegistrarPagos') && salesHeaderForm.idSale.length > 0 && salesHeaderForm.pendingAmount > 0 && dataStone.idSaleType != 4 && salesHeaderForm.idSaleType != 4 && selectCajas.idCaja > 0">
-                                Pagar {{ ( salesHeaderForm.pendingAmount | currency ) }}</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="fn_NuevaVenta()"
-                                *ngIf="hasPermissionAction('ventas_Crear')">
-                                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                                Nueva venta</button>
-
-                                <button mat-raised-button
-                                type="button"
-                                class="marginRight10px top10px"
-                                (click)="fn_CerrarMDL()">
-                                <mat-icon matPrefix class="my-icon">close</mat-icon>
-                                Cerrar</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="fn_CrearVentaApartirDeConsignacion( 1 )"
-                                [disabled]="_idSucursal == 0"
-                                *ngIf="dataStone.idSaleType == 4">
-                                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                                Crear venta a crédito</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="fn_CrearVentaApartirDeConsignacion( 2 )"
-                                [disabled]="_idSucursal == 0"
-                                *ngIf="dataStone.idSaleType == 4">
-                                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                                Crear venta de contado</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="fn_CrearVentaApartirDeConsignacion( 3 )"
-                                [disabled]="_idSucursal == 0"
-                                *ngIf="dataStone.idSaleType == 4">
-                                <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
-                                Crear venta de apartado</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="fn_RegresarProductoDeConsignacion()"
-                                [disabled]="_idSucursal == 0"
-                                *ngIf="dataStone.idSaleType == 4">
-                                <mat-icon matPrefix class="my-icon">arrow_back</mat-icon>
-                                Regresar producto</button>
-
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px top10px"
-                                (click)="ev_PrintTicket()"
-                                *ngIf="idSale.length > 0 && selectPrinter.idPrinter > 0">
-                                <mat-icon matPrefix class="my-icon">print</mat-icon>
-                                Imprimir</button>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="divSection">
-
-                        <div class="row top20px">
-
-                            <div class="col-md-12">
-
-                                <div class="row" style="margin-top: -55px;">
-                                    <div class="col-md-12">
-                                        <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                                            Lista de productos
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <th class="textAlingCenter padding-th">Acciones</th>
-                                            <th class="textAlingCenter padding-th" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">Cantidad</th>
-                                            <th class="textAlingCenter padding-th" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">Descuento</th>
-                                            <th class="textAlingLeft padding-th">Código</th>
-                                            <th class="textAlingLeft padding-th">Descripción</th>
-                                            <th class="textAlingRight padding-th">Cantidad</th>
-                                            <th class="textAlingRight padding-th"
-                                            *ngIf="interface.showDescuento">Precio Unitario</th>
-                                            <th class="textAlingRight padding-th"
-                                            *ngIf="interface.showDescuento">Descuento</th>
-                                            <th class="textAlingRight padding-th">Precio</th>
-                                            <th class="textAlingRight padding-th">Importe</th>
-                                        </thead>
-
-                                        <tbody>
-                                            <tr *ngFor="let item of salesHeaderForm.saleDetail; let i = index">
-
-
-                                                <td class="textAlingCenter padding-th">
-                                                    <div style="width: 80px;">
-                                                        <mat-checkbox style="margin-top: -50px;"
-                                                        *ngIf="dataStone.idSaleType == 4
-                                                        && item.cantidad >= item.consCantidad
-                                                        && item.consCantidad > 0"
-                                                        class="manitaSobre"
-                                                        [(ngModel)]="item.select"></mat-checkbox>
-
-                                                        <span *ngIf="idSale.length == 0" class="material-icons manitaSobre colorRed"
-                                                            (click)="event_fnClick_DeleteProductFromList( i )">
-                                                            delete_outline
-                                                        </span>
-
-                                                        <span *ngIf="idSale.length > 0" class="material-icons manitaSobre colorRed"
-                                                            (click)="fn_disableSaleDetail( item )">
-                                                            delete_outline
-                                                        </span>
-
-                                                        <span class="material-icons manitaSobre colorGreen"
-                                                        (click)="fn_EditDetalle( item, i )"
-                                                        matTooltip="Editar sobre de taller"
-                                                        *ngIf="idSale.length == 0">
-                                                        edit
-                                                        </span>
-
-                                                    </div>
-                                                </td>
-
-                                                <td class="textAlingCenter padding-th" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">
-
-                                                    <input
-                                                    class="textAlingCenter colorGreen"
-                                                    style="width: 60px;"
-                                                    matInput
-                                                    type="number"
-                                                    [(ngModel)]="item.consCantidad"
-                                                    >
-
-                                                </td>
-
-                                                <td class="textAlingCenter padding-th" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">
-
-                                                    <input
-                                                    class="textAlingCenter colorGreen"
-                                                    style="width: 50px;"
-                                                    matInput
-                                                    type="number"
-                                                    [(ngModel)]="item.consDescuento"
-                                                    (ngModelChange)="onConsDescuentoChange($event, item)"
-                                                    >
-
-                                                </td>
-
-                                                <td class="textAlingLeft padding-th">
-                                                    <div class="row">
-                                                        <div class="col-md-1">
-                                                            <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">qr_code</mat-icon>
-                                                        </div>
-                                                        <div class="col-md-10">
-                                                            <label style="margin-left: 10px;">{{ item.barCode }}</label>
-                                                        </div>
-                                                    </div>
-
-                                                </td>
-                                                <td class="textAlingLeft padding-th">{{ item.productDesc }}</td>
-                                                <td class="textAlingRight padding-th">{{ item.cantidad }}</td>
-                                                <td class="textAlingRight padding-th"
-                                                *ngIf="interface.showDescuento">{{ item.precioUnitario | currency }}</td>
-                                                <td class="textAlingRight padding-th"
-                                                *ngIf="interface.showDescuento">{{ item.descuento | currency }}</td>
-                                                <td class="textAlingRight padding-th">{{ item.precio | currency }}</td>
-                                                <td class="textAlingRight padding-th">{{ item.importe | currency }}</td>
-                                            </tr>
-
-                                        </tbody>
-
-                                    </table>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <div class="row">
-
-                            <div class="col-md-8">
-
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <mat-form-field class="with100">
-                                            <mat-label>TOTAL</mat-label>
-                                            <input #total
-                                            class="textAlingRight colorGreen fontSize"
-                                            matInput
-                                            currencyMask
-                                            placeholder="TOTAL"
-
-                                            [(ngModel)]="salesHeaderForm.total"
-
-                                            readonly="true">
-                                        </mat-form-field>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="row divSection" *ngIf="salesHeaderForm.paymentList?.length > 0">
-
-                        <div class="col-md-12">
-
-                            <div class="row" style="margin-top: -30px;">
-                                <div class="col-md-12">
-                                    <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                                        Lista de pagos
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <th class="textAlingLeft padding-th">Número #</th>
-                                        <th class="textAlingLeft padding-th">Forma de pago</th>
-                                        <th class="textAlingRight padding-th">Pago</th>
-                                        <th class="textAlingRight padding-th" *ngIf="interface.showFxRate">Pago EXT</th>
-                                        <th class="textAlingRight padding-th" *ngIf="interface.showFxRate">Tipo de cambio</th>
-                                        <th class="textAlingRight padding-th" *ngIf="interface.showReferencia">Referencia</th>
-                                        <th class="textAlingLeft padding-th">Vendedor</th>
-                                        <th class="textAlingCenter padding-th">Fecha</th>
-
-                                    </thead>
-
-                                    <tbody>
-                                        <tr *ngFor="let item of salesHeaderForm.paymentList; let i = index">
-
-                                            <td class="textAlingLeft">
-                                                <div style="width: 150px;">
-
-                                                    <span class="material-icons manitaSobre colorRed"
-                                                        matTooltip="Cancelar pago"
-                                                        *ngIf="item.active && item.iPagoCortado == 0"
-                                                        (click)="fn_disablePayment( item )">
-                                                            delete_outline
-                                                    </span>
-                                                    <span class="material-icons manitaSobre colorRed"
-                                                        matTooltip="Devolución de pago"
-                                                        *ngIf="item.active && item.iPagoCortado > 0"
-                                                        (click)="fn_disablePayment( item )">
-                                                        backspace
-                                                    </span>
-
-                                                    <span *ngIf="item.active" class="material-icons manitaSobre colorGreen"
-                                                        matTooltip="Imprimir"
-                                                        (click)="fn_btnRePrinter(item.idPayment)">
-                                                        print
-                                                    </span>
-
-                                                    {{ item.idPayment }}
-
-                                                </div>
-                                            </td>
-
-                                            <td style="text-align:left;">{{ item.formaPagoDesc }}</td>
-                                            <td style="text-align: right;">{{ item.pago | currency }}</td>
-
-                                            <td style="text-align: right;" *ngIf="interface.showFxRate">{{ item.pagoF | currency }}</td>
-                                            <td style="text-align: right;" *ngIf="interface.showFxRate">{{ item.fxRate | currency }}</td>
-                                            <td style="text-align: right;" *ngIf="interface.showReferencia">{{ item.referencia }}</td>
-
-                                            <td style="text-align:left;">{{ item.sellerName }}</td>
-
-                                            <td class="textAlingCenter">
-
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                                        <label style="margin-left: 10px;">{{ item.createDateString }}</label>
-                                                    </div>
-                                                </div>
-
-                                            </td>
-
-                                        </tr>
-
-                                    </tbody>
-
-                                </table>
-                            </div>
-
-                            <app-pagination *ngIf="salesHeaderForm.paymentList " [IPagination]="pagination"
-                                (OPagination)="changePagination($event)">
-                            </app-pagination>
-                        </div>
-
-                    </div>
-
-                    <div class="row divSection" *ngIf="salesHeaderForm.ConsHistoryList?.length > 0">
-
-                        <div class="col-md-12">
-
-                            <div class="row" style="margin-top: -30px;">
-                                <div class="col-md-12">
-                                    <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                                        Movimientos de consignación
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row top10px">
-                                <div class="col-md-12">
-                                    <div style="float: left;">
-
-                                        <button mat-raised-button
-                                        color="primary"
-                                        type="submit"
-                                        class="marginRight10px top10px"
-                                        (click)="ev_PrintTicketConsHistoryList()"
-                                        *ngIf="idSale.length > 0 && selectPrinter.idPrinter > 0">
-                                        <mat-icon matPrefix class="my-icon">print</mat-icon>
-                                        Imprimir</button>
-
-
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            <div class="table-responsive top10px">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <th class="textAlingLeft padding-th">Producto</th>
-                                        <th class="textAlingRight padding-th">Cantidad</th>
-                                        <th class="textAlingLeft padding-th">Descripción</th>
-                                        <th class="textAlingCenter padding-th">Fecha</th>
-
-                                    </thead>
-
-                                    <tbody>
-                                        <tr *ngFor="let item of salesHeaderForm.ConsHistoryList; let i = index">
-
-                                            <td class="textAlingLeft padding-th">{{ item.name }}</td>
-
-                                            <td class="textAlingRight padding-th">{{ item.consCantidad }}</td>
-                                            <td class="textAlingLeft padding-th">{{ item.description }}</td>
-
-                                            <td class="textAlingCenter padding-th">
-
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                                        <label style="margin-left: 10px;">{{ item.createDateString }}</label>
-                                                    </div>
-                                                </div>
-
-                                            </td>
-
-                                        </tr>
-
-                                    </tbody>
-
-                                </table>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="row divSection" *ngIf="salesHeaderForm.autorizacionesList?.length > 0">
-
-                      <div class="col-md-12">
-
-                          <div class="row" style="margin-top: -30px;">
-                              <div class="col-md-12">
-                                  <div class="badge bg-primary text-wrap" style="font-size: 15px; background-color: #3f51b5 !important;">
-                                      Autorizaciones
-                                  </div>
-                              </div>
-                          </div>
-
-                          <div class="table-responsive top10px">
-                              <table class="table table-hover">
-                                  <thead>
-                                      <th class="textAlingLeft padding-th">Descripción</th>
-                                      <th class="textAlingLeft padding-th">Usuario</th>
-                                      <th class="textAlingCenter padding-th">Fecha</th>
-
-                                  </thead>
-
-                                  <tbody>
-                                      <tr *ngFor="let item of salesHeaderForm.autorizacionesList; let i = index">
-
-                                          <td class="textAlingLeft padding-th">{{ item.description }}</td>
-
-                                          <td class="textAlingLeft padding-th">{{ item.userName }}</td>
-
-                                          <td class="textAlingCenter padding-th">
-
-                                              <div class="row">
-                                                  <div class="col-md-12">
-                                                      <mat-icon style="margin-top: -5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                                      <label style="margin-left: 10px;">{{ item.createDateString }}</label>
-                                                  </div>
-                                              </div>
-
-                                          </td>
-
-                                      </tr>
-
-                                  </tbody>
-
-                              </table>
-                          </div>
-
-                      </div>
-
-                  </div>
-
-                </div>
-            </div>
-
-            <!-- <div class="row top20px">
-                <div class="col-md-4">
-                    <mat-form-field fxLayout.xs="column" class="with100">
-                        <mat-label>Código de barras</mat-label>
-                        <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
-                        <input matInput placeholder="Ingrese un Código de barras"
-                        formControlName="barCode">
-                        </mat-form-field>
-                </div>
-
-                <div class="col-md-4">
-                    <mat-form-field class="with100">
-                        <mat-label>Nombre</mat-label>
-                        <input matInput placeholder="Ingrese un nombre"
-                        formControlName="name">
-                        </mat-form-field>
-                </div>
-
-                <div class="col-md-4">
-                    <mat-form-field class="with100">
-                        <mat-label>Descripción</mat-label>
-                        <input matInput placeholder="Ingrese una descripción"
-                        formControlName="description">
-                        </mat-form-field>
-                </div>
-
-
-            </div> -->
-
-            <!-- <div class="row top10px">
-                <div class="col-md-12">
-                    <div style="float: left;">
-
-                        <button mat-raised-button
-                        color="primary"
-                        type="submit"
-                        class="marginRight10px"
-                        (click)="fn_getProductsListWithPage()">
-                        <mat-icon matPrefix class="my-icon">search</mat-icon>
-                        Buscar</button>
-
-                        <button mat-raised-button
-                        type="button"
-                        (click)="parametersForm_Clear()">
-                        <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                        limpiar</button>
-
-                    </div>
-                </div>
-            </div> -->
-
+                </ng-container>
+            </ng-container>
         </div>
 
+        <button mat-icon-button (click)="fn_CerrarMDL()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Datos generales -->
+    <div class="ns-grid">
+
+        <div class="ns-slim-field ns-col-6">
+            <label class="ns-slim-label">Vendedor</label>
+            <div class="ns-input-wrap">
+                <input #cbxSellerCBX
+                    type="text"
+                    id="cbxSeller"
+                    class="ns-slim-input"
+                    placeholder="Selecciona..."
+                    aria-label="Number"
+                    [(ngModel)]="salesHeaderForm.sellerDesc"
+                    [matAutocomplete]="cbxSeller"
+                    (keyup)="CBXskeyup( 2, cbxSellerCBX.value )"
+                    (click)="cbxSellers_Clear()">
+                <button *ngIf="salesHeaderForm.sellerDesc" class="ns-input-clear" mat-icon-button aria-label="Clear" (click)="cbxSellers_Clear()">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+            <mat-autocomplete autoActiveFirstOption
+                                #cbxSeller="matAutocomplete"
+                                (optionSelected)="cbxSellers_SelectedOption( $event )">
+                <mat-option *ngFor="let item of cbxSellers" [value]="item">
+                    {{ item.name }}
+                </mat-option>
+
+                <mat-option value="" *ngIf="salesHeaderForm.sellerDesc.length > 0 && salesHeaderForm.sellerResp.length > 0">
+                    {{ salesHeaderForm.sellerResp }}
+                </mat-option>
+            </mat-autocomplete>
+        </div>
+
+        <div class="ns-slim-field ns-col-5">
+            <label class="ns-slim-label">
+                Cliente
+                <span class="material-icons manitaSobre colorGreen ns-label-icon"
+                    (click)="showCustomerCat( 0 )">
+                    add_circle_outline
+                </span>
+                <span class="material-icons manitaSobre colorGreen ns-label-icon"
+                    (click)="showCustomerCat( salesHeaderForm.idCustomer )"
+                    *ngIf="salesHeaderForm.idCustomer > 0 && salesHeaderForm.idCustomer != 1160">
+                    edit
+                </span>
+            </label>
+            <div class="ns-input-wrap">
+                <input #cbxCustomerCBX
+                    type="text"
+                    class="ns-slim-input"
+                    placeholder="Selecciona..."
+                    aria-label="Number"
+                    [(ngModel)]="salesHeaderForm.customerDesc"
+                    [matAutocomplete]="cbxCustomer"
+                    (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
+                    (click)="cbxCustomers_Clear()">
+                <button *ngIf="salesHeaderForm.customerDesc" class="ns-input-clear" mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+            <mat-autocomplete autoActiveFirstOption
+                                #cbxCustomer="matAutocomplete"
+                                (optionSelected)="cbxCustomers_SelectedOption( $event, cbxSaleTypeCBX )">
+                <mat-option *ngFor="let item of cbxCustomers" [value]="item">
+                    {{ item.name }}
+                </mat-option>
+
+                <mat-option value="" *ngIf="salesHeaderForm.customerResp.length > 0 && salesHeaderForm.customerResp.length > 0">
+                    {{ salesHeaderForm.customerResp }}
+                </mat-option>
+            </mat-autocomplete>
+        </div>
+
+        <div class="ns-slim-field ns-col-1" (click)="cbxSalesType_Clear(); cbxSalesType_Search()">
+            <label class="ns-slim-label">Tipo de venta</label>
+            <div class="ns-input-wrap">
+                <input #cbxSaleTypeCBX
+                    type="text"
+                    class="ns-slim-input"
+                    placeholder="Selecciona..."
+                    aria-label="Number"
+                    [(ngModel)]="salesHeaderForm.saleTypeDesc"
+                    [matAutocomplete]="cbxSaleType"
+                    (input)="cbxSalesType_Search()"
+                    (click)="cbxSalesType_Clear()"
+                    (focus)="cbxSalesType_Clear(); cbxSalesType_Search()">
+                <button *ngIf="salesHeaderForm.saleTypeDesc" class="ns-input-clear" mat-icon-button aria-label="Clear" (click)="cbxSalesType_Clear()">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+            <mat-autocomplete autoActiveFirstOption
+                                #cbxSaleType="matAutocomplete"
+                                (optionSelected)="cbxSalesType_SelectedOption( $event )">
+                <mat-option *ngFor="let item of cbxSalesType" [value]="item">
+                    {{ item.name }}
+                </mat-option>
+
+                <mat-option value="" *ngIf="cbxSalesType.length == 0 && salesHeaderForm.saleTypeDesc">
+                    No se encontró nada...
+                </mat-option>
+            </mat-autocomplete>
+        </div>
+
+    </div>
+
+    <!-- Sección Taller -->
+    <div class="ns-seccion" *ngIf="salesHeaderForm.idSaleType == 5 || salesHeaderForm.idSaleType == 6">
+        <div class="ns-seccion-titulo">Taller</div>
+
+        <div class="ns-grid">
+            <div class="ns-slim-field ns-col-7">
+                <label class="ns-slim-label">Descripción</label>
+                <textarea id="tbxDescription"
+                    class="ns-slim-input ns-slim-textarea"
+                    cdkTextareaAutosize
+                    placeholder="Ingrese una descripción"
+                    [(ngModel)]="salesDetailForm.description"></textarea>
+            </div>
+
+            <div class="ns-slim-field ns-col-3">
+                <label class="ns-slim-label">Fecha de entrega</label>
+                <div class="ns-input-wrap">
+                    <input class="ns-slim-input textAlingCenter"
+                        [matDatepicker]="picker"
+                        placeholder="Seleccione una fecha"
+                        [(ngModel)]="salesHeaderForm.fechaEntrega">
+                    <mat-datepicker-toggle class="ns-datepicker-toggle" [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                </div>
+            </div>
+
+            <div class="ns-slim-field ns-col-2">
+                <label class="ns-slim-label">Precio del sobre</label>
+                <input id="tbxPrecioSobre"
+                    class="ns-slim-input textAlingRight"
+                    currencyMask placeholder="Ingrese el precio unitario"
+                    [(ngModel)]="salesDetailForm.precioSobre"
+                    (keyup.enter)="addSaleDetail(true)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Producto (captura) -->
+    <div class="ns-seccion" *ngIf="salesHeaderForm.idSale.length == 0 && salesHeaderForm.idSaleType != 5">
+        <div class="ns-seccion-titulo">Producto</div>
+
+        <div class="ns-grid">
+            <div class="ns-slim-field ns-col-4">
+                <label class="ns-slim-label">Código de barras</label>
+                <div class="ns-input-wrap">
+                    <mat-icon class="ns-input-prefix">qr_code</mat-icon>
+                    <input #barCode
+                        class="ns-slim-input ns-input-con-prefix"
+                        placeholder="Ingrese un Código de barras"
+                        [(ngModel)]="salesDetailForm.barCode"
+                        (keyup.enter)="ev_fn_barCode_keyup_enter($event)"
+                        (click)="cbxProducts_Clear()">
+                </div>
+            </div>
+
+            <div class="ns-slim-field ns-col-8" (click)="cbxProducts_Search()">
+                <label class="ns-slim-label">Producto</label>
+                <div class="ns-input-wrap">
+                    <input #cbxProductss
+                        type="text"
+                        id="cbxProduct"
+                        class="ns-slim-input"
+                        placeholder="Selecciona un producto..."
+                        aria-label="Number"
+                        [(ngModel)]="salesDetailForm.productDesc"
+                        [matAutocomplete]="cbxProduct"
+                        (input)="cbxProducts_Search()"
+                        (click)="cbxProducts_Clear()">
+                    <button *ngIf="salesDetailForm.productDesc" class="ns-input-clear" mat-icon-button aria-label="Clear" (click)="cbxProducts_Clear()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+                <mat-autocomplete autoActiveFirstOption
+                                    #cbxProduct="matAutocomplete"
+                                    (optionSelected)="cbxProducts_SelectedOption( $event )">
+                    <mat-option *ngFor="let item of cbxProducts" [value]="item">
+                        <mat-icon matPrefix class="my-icon">qr_code</mat-icon>{{ item.nameConcat }}
+                    </mat-option>
+
+                    <mat-option value="" *ngIf="cbxProducts.length == 0 && salesDetailForm.productDesc">
+                        No se encontró nada...
+                    </mat-option>
+                </mat-autocomplete>
+            </div>
+
+            <div class="ns-slim-field ns-col-3">
+                <label class="ns-slim-label">Cantidad</label>
+                <input #tbxCantidad
+                    class="ns-slim-input textAlingRight"
+                    placeholder="Ingrese la cantidad"
+                    type="number"
+                    [(ngModel)]="salesDetailForm.cantidad"
+                    (keyup.enter)="ev_fn_cbxCantidad_keyup_enter($event)">
+            </div>
+
+            <div class="ns-slim-field ns-col-3">
+                <label class="ns-slim-label">Precio unitario</label>
+                <input #precioUnitario
+                    class="ns-slim-input textAlingRight"
+                    currencyMask placeholder="Ingrese el precio unitario"
+                    [(ngModel)]="salesDetailForm.precioUnitario"
+                    (click)="fn_habilitarPrice()"
+                    (keyup.enter)="ev_fn_cbxPrecio_keyup_enter($event)"
+                    [readOnly]="!isPrecioUnitarioEditable">
+            </div>
+
+            <div class="ns-slim-field ns-col-3">
+                <label class="ns-slim-label">Descuento en %</label>
+                <input #cbxDescuentoEnPorcentaje
+                    class="ns-slim-input textAlingRight"
+                    placeholder="Ingrese un descuento en %"
+                    type="number"
+                    [(ngModel)]="salesDetailForm.descuento"
+                    (keyup.enter)="ev_fn_cbxDescuentoEnPorcentaje_keyup_enter($event)"
+                    appDecimalNumber>
+            </div>
+
+            <div class="ns-slim-field ns-col-3">
+                <label class="ns-slim-label">Descuento en $</label>
+                <input #cbxDescuentoEnPesos
+                    class="ns-slim-input textAlingRight"
+                    placeholder="Ingrese un descuento en $"
+                    type="number"
+                    [(ngModel)]="salesDetailForm.descuentoEnPesos"
+                    (keyup.enter)="fn_changeDescuentoEnPesos()"
+                    (blur)="fn_changeDescuentoEnPesos()"
+                    appDecimalNumberNeg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de acciones -->
+    <div class="ns-acciones">
+
+        <button mat-raised-button
+        #btnAdd
+        color="primary"
+        type="submit"
+        (click)="addSaleDetail()"
+        [disabled]="!ev_fnShowBtnAddSaleDetail()"
+        *ngIf="salesHeaderForm.idSale.length == 0">
+        <mat-icon matPrefix class="my-icon">add</mat-icon>
+        Agregar</button>
+
+        <button mat-raised-button
+        type="button"
+        (click)="fnClearSalesDetailForm()"
+        *ngIf="salesHeaderForm.idSale.length == 0">
+        <mat-icon matPrefix class="my-icon">clear</mat-icon>
+        limpiar</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="fn_ShowPaymentCreateSale( false )"
+        [disabled]="_idSucursal == 0 || !ev_fnShowBtnGuardarSinAnticipo()"
+        *ngIf="salesHeaderForm.idSale.length == 0 && hasPermissionAction('ventas_Crear')">
+        <mat-icon matPrefix class="my-icon">save</mat-icon>
+        Guardar</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="fn_ShowPayments()"
+        [disabled]="_idSucursal == 0 || !ev_fnShowBtnPagar()"
+        *ngIf="hasPermissionAction('ventas_RegistrarPagos') && salesHeaderForm.idSale.length > 0 && salesHeaderForm.pendingAmount > 0 && dataStone.idSaleType != 4 && salesHeaderForm.idSaleType != 4 && selectCajas.idCaja > 0">
+        Pagar {{ ( salesHeaderForm.pendingAmount | currency ) }}</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="fn_NuevaVenta()"
+        *ngIf="hasPermissionAction('ventas_Crear')">
+        <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+        Nueva venta</button>
+
+        <button mat-raised-button
+        type="button"
+        (click)="fn_CerrarMDL()">
+        <mat-icon matPrefix class="my-icon">close</mat-icon>
+        Cerrar</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="fn_CrearVentaApartirDeConsignacion( 1 )"
+        [disabled]="_idSucursal == 0"
+        *ngIf="dataStone.idSaleType == 4">
+        <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+        Crear venta a crédito</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="fn_CrearVentaApartirDeConsignacion( 2 )"
+        [disabled]="_idSucursal == 0"
+        *ngIf="dataStone.idSaleType == 4">
+        <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+        Crear venta de contado</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="fn_CrearVentaApartirDeConsignacion( 3 )"
+        [disabled]="_idSucursal == 0"
+        *ngIf="dataStone.idSaleType == 4">
+        <mat-icon matPrefix class="my-icon">add_circle_outline</mat-icon>
+        Crear venta de apartado</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="fn_RegresarProductoDeConsignacion()"
+        [disabled]="_idSucursal == 0"
+        *ngIf="dataStone.idSaleType == 4">
+        <mat-icon matPrefix class="my-icon">arrow_back</mat-icon>
+        Regresar producto</button>
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="ev_PrintTicket()"
+        *ngIf="idSale.length > 0 && selectPrinter.idPrinter > 0">
+        <mat-icon matPrefix class="my-icon">print</mat-icon>
+        Imprimir</button>
+
+    </div>
+
+    <!-- Lista de productos -->
+    <div class="ns-seccion">
+        <div class="ns-seccion-titulo">Lista de productos</div>
+
+        <div class="table-responsive">
+            <table class="ns-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingCenter">Acciones</th>
+                        <th class="textAlingCenter" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">Cantidad</th>
+                        <th class="textAlingCenter" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">Descuento</th>
+                        <th class="textAlingLeft">Código</th>
+                        <th class="textAlingLeft">Descripción</th>
+                        <th class="textAlingRight">Cantidad</th>
+                        <th class="textAlingRight" *ngIf="interface.showDescuento">Precio Unitario</th>
+                        <th class="textAlingRight" *ngIf="interface.showDescuento">Descuento</th>
+                        <th class="textAlingRight">Precio</th>
+                        <th class="textAlingRight">Importe</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let item of salesHeaderForm.saleDetail; let i = index">
+
+                        <td class="textAlingCenter">
+                            <div class="ns-tabla-acciones">
+                                <mat-checkbox
+                                *ngIf="dataStone.idSaleType == 4
+                                && item.cantidad >= item.consCantidad
+                                && item.consCantidad > 0"
+                                class="manitaSobre"
+                                [(ngModel)]="item.select"></mat-checkbox>
+
+                                <span *ngIf="idSale.length == 0" class="material-icons manitaSobre colorRed"
+                                    (click)="event_fnClick_DeleteProductFromList( i )">
+                                    delete_outline
+                                </span>
+
+                                <span *ngIf="idSale.length > 0" class="material-icons manitaSobre colorRed"
+                                    (click)="fn_disableSaleDetail( item )">
+                                    delete_outline
+                                </span>
+
+                                <span class="material-icons manitaSobre colorGreen"
+                                (click)="fn_EditDetalle( item, i )"
+                                matTooltip="Editar sobre de taller"
+                                *ngIf="idSale.length == 0">
+                                edit
+                                </span>
+                            </div>
+                        </td>
+
+                        <td class="textAlingCenter" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">
+                            <input
+                            class="ns-slim-input ns-input-mini textAlingCenter colorGreen"
+                            type="number"
+                            [(ngModel)]="item.consCantidad"
+                            >
+                        </td>
+
+                        <td class="textAlingCenter" *ngIf="idSale.length > 0 && this.salesHeaderForm.idSaleType == 4">
+                            <input
+                            class="ns-slim-input ns-input-mini textAlingCenter colorGreen"
+                            type="number"
+                            [(ngModel)]="item.consDescuento"
+                            (ngModelChange)="onConsDescuentoChange($event, item)"
+                            >
+                        </td>
+
+                        <td class="textAlingLeft">
+                            <div class="ns-celda-icono">
+                                <mat-icon class="ns-icono-mini">qr_code</mat-icon>
+                                <span>{{ item.barCode }}</span>
+                            </div>
+                        </td>
+                        <td class="textAlingLeft">{{ item.productDesc }}</td>
+                        <td class="textAlingRight">{{ item.cantidad }}</td>
+                        <td class="textAlingRight" *ngIf="interface.showDescuento">{{ item.precioUnitario | currency }}</td>
+                        <td class="textAlingRight" *ngIf="interface.showDescuento">{{ item.descuento | currency }}</td>
+                        <td class="textAlingRight">{{ item.precio | currency }}</td>
+                        <td class="textAlingRight">{{ item.importe | currency }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ns-total-row">
+            <label class="ns-slim-label">Total</label>
+            <input #total
+            class="ns-total-input"
+            currencyMask
+            placeholder="TOTAL"
+            [(ngModel)]="salesHeaderForm.total"
+            readonly="true">
+        </div>
+    </div>
+
+    <!-- Lista de pagos -->
+    <div class="ns-seccion" *ngIf="salesHeaderForm.paymentList?.length > 0">
+        <div class="ns-seccion-titulo">Lista de pagos</div>
+
+        <div class="table-responsive">
+            <table class="ns-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingLeft">Número #</th>
+                        <th class="textAlingLeft">Forma de pago</th>
+                        <th class="textAlingRight">Pago</th>
+                        <th class="textAlingRight" *ngIf="interface.showFxRate">Pago EXT</th>
+                        <th class="textAlingRight" *ngIf="interface.showFxRate">Tipo de cambio</th>
+                        <th class="textAlingRight" *ngIf="interface.showReferencia">Referencia</th>
+                        <th class="textAlingLeft">Vendedor</th>
+                        <th class="textAlingCenter">Fecha</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let item of salesHeaderForm.paymentList; let i = index">
+
+                        <td class="textAlingLeft">
+                            <div class="ns-tabla-acciones ns-acciones-pago">
+                                <span class="material-icons manitaSobre colorRed"
+                                    matTooltip="Cancelar pago"
+                                    *ngIf="item.active && item.iPagoCortado == 0"
+                                    (click)="fn_disablePayment( item )">
+                                        delete_outline
+                                </span>
+                                <span class="material-icons manitaSobre colorRed"
+                                    matTooltip="Devolución de pago"
+                                    *ngIf="item.active && item.iPagoCortado > 0"
+                                    (click)="fn_disablePayment( item )">
+                                    backspace
+                                </span>
+
+                                <span *ngIf="item.active" class="material-icons manitaSobre colorGreen"
+                                    matTooltip="Imprimir"
+                                    (click)="fn_btnRePrinter(item.idPayment)">
+                                    print
+                                </span>
+
+                                <span>{{ item.idPayment }}</span>
+                            </div>
+                        </td>
+
+                        <td class="textAlingLeft">{{ item.formaPagoDesc }}</td>
+                        <td class="textAlingRight">{{ item.pago | currency }}</td>
+
+                        <td class="textAlingRight" *ngIf="interface.showFxRate">{{ item.pagoF | currency }}</td>
+                        <td class="textAlingRight" *ngIf="interface.showFxRate">{{ item.fxRate | currency }}</td>
+                        <td class="textAlingRight" *ngIf="interface.showReferencia">{{ item.referencia }}</td>
+
+                        <td class="textAlingLeft">{{ item.sellerName }}</td>
+
+                        <td class="textAlingCenter">
+                            <div class="ns-celda-icono">
+                                <mat-icon class="ns-icono-mini">calendar_today</mat-icon>
+                                <span>{{ item.createDateString }}</span>
+                            </div>
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <app-pagination *ngIf="salesHeaderForm.paymentList " [IPagination]="pagination"
+            (OPagination)="changePagination($event)">
+        </app-pagination>
+    </div>
+
+    <!-- Movimientos de consignación -->
+    <div class="ns-seccion" *ngIf="salesHeaderForm.ConsHistoryList?.length > 0">
+        <div class="ns-seccion-titulo">Movimientos de consignación</div>
+
+        <div class="ns-acciones">
+            <button mat-raised-button
+            color="primary"
+            type="submit"
+            (click)="ev_PrintTicketConsHistoryList()"
+            *ngIf="idSale.length > 0 && selectPrinter.idPrinter > 0">
+            <mat-icon matPrefix class="my-icon">print</mat-icon>
+            Imprimir</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="ns-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingLeft">Producto</th>
+                        <th class="textAlingRight">Cantidad</th>
+                        <th class="textAlingLeft">Descripción</th>
+                        <th class="textAlingCenter">Fecha</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let item of salesHeaderForm.ConsHistoryList; let i = index">
+                        <td class="textAlingLeft">{{ item.name }}</td>
+                        <td class="textAlingRight">{{ item.consCantidad }}</td>
+                        <td class="textAlingLeft">{{ item.description }}</td>
+                        <td class="textAlingCenter">
+                            <div class="ns-celda-icono">
+                                <mat-icon class="ns-icono-mini">calendar_today</mat-icon>
+                                <span>{{ item.createDateString }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Autorizaciones -->
+    <div class="ns-seccion" *ngIf="salesHeaderForm.autorizacionesList?.length > 0">
+        <div class="ns-seccion-titulo">Autorizaciones</div>
+
+        <div class="table-responsive">
+            <table class="ns-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingLeft">Descripción</th>
+                        <th class="textAlingLeft">Usuario</th>
+                        <th class="textAlingCenter">Fecha</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let item of salesHeaderForm.autorizacionesList; let i = index">
+                        <td class="textAlingLeft">{{ item.description }}</td>
+                        <td class="textAlingLeft">{{ item.userName }}</td>
+                        <td class="textAlingCenter">
+                            <div class="ns-celda-icono">
+                                <mat-icon class="ns-icono-mini">calendar_today</mat-icon>
+                                <span>{{ item.createDateString }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
