@@ -1,47 +1,45 @@
-<div style="padding: 10px;">
+<div class="ns-modal">
 
-    <button mat-icon-button
-            style="position: absolute; top: 10px; right: 10px;"
-            (click)="fn_CerrarMDL()">
-        <mat-icon>close</mat-icon>
-    </button>
-
-    <div class="row">
-
-        <div class="col-md-12">
-
-            <h1>Venta de {{ ODataP.saleTypeDesc }} por {{ ODataP.total | currency }}, Saldo a cubrir {{ pendingAmount | currency }}</h1>
-
+    <!-- Encabezado: título + chips de venta/total/saldo + cerrar -->
+    <div class="ns-header">
+        <div class="ns-header-titulo">
+            <h2 class="ns-titulo">Registrar pago</h2>
+            <span class="ns-chip ns-chip-folio">{{ ODataP.saleTypeDesc }}</span>
+            <span class="ns-chip ns-chip-pagado">Total: {{ ODataP.total | currency }}</span>
+            <span class="ns-chip ns-chip-pendiente">Saldo a cubrir: {{ pendingAmount | currency }}</span>
         </div>
 
+        <button mat-icon-button (click)="fn_CerrarMDL()">
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
 
-    <div class="row">
+    <!-- Captura del pago -->
+    <div class="ns-seccion">
+        <div class="ns-seccion-titulo">Pago</div>
 
-        <div class="col-md-3">
+        <div class="ns-grid">
 
-            <mat-label>Forma de pago:
-                <strong>{{ ( paymentForm.needFxRate ? " TC: " + paymentForm.fxRate : "" ) }}</strong>
-                <strong>{{ ( paymentForm.electronicMoneySum > 0 ? " D.E: " + ( ev_getSumElectronicCurrency() | currency ) : "" ) }}</strong>
-            </mat-label>
-            <mat-form-field
-            style="width: 100%;"
-            (click)="cbxFormasPago_Search()">
-                <input #cbxFormasPagoC
-                        class="colorGreen fontSize"
+            <div class="ns-slim-field ns-col-3" (click)="cbxFormasPago_Search()">
+                <label class="ns-slim-label">
+                    Forma de pago
+                    <strong>{{ ( paymentForm.needFxRate ? " TC: " + paymentForm.fxRate : "" ) }}</strong>
+                    <strong>{{ ( paymentForm.electronicMoneySum > 0 ? " D.E: " + ( ev_getSumElectronicCurrency() | currency ) : "" ) }}</strong>
+                </label>
+                <div class="ns-input-wrap">
+                    <input #cbxFormasPagoC
                         type="text"
-                        style="width: 100%;"
+                        class="ns-slim-input pay-input"
                         placeholder="Selecciona..."
                         aria-label="Number"
-                        matInput
                         [(ngModel)]="paymentForm.formaPagoDesc"
                         [matAutocomplete]="cbxFormaPago"
-
                         (input)="cbxFormasPago_Search()"
                         (focus)="cbxFormasPago_Search()">
-                        <button *ngIf="paymentForm.formaPagoDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxFormasPago_Clear()">
-                            <mat-icon>close</mat-icon>
-                        </button>
+                    <button *ngIf="paymentForm.formaPagoDesc" class="ns-input-clear" mat-icon-button aria-label="Clear" (click)="cbxFormasPago_Clear()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
                 <mat-autocomplete autoActiveFirstOption
                                     #cbxFormaPago="matAutocomplete"
                                     (optionSelected)="cbxFormasPago_SelectedOption( $event )">
@@ -52,162 +50,122 @@
                     <mat-option value="" *ngIf="cbxFormasPago.length == 0 && paymentForm.formaPagoDesc">
                         No se encontró nada...
                     </mat-option>
-
                 </mat-autocomplete>
-            </mat-form-field>
+            </div>
 
-        </div>
-
-
-        <div class="col-md-3">
-
-            <mat-form-field class="with100 top20px">
-                <mat-label>PAGA</mat-label>
+            <div class="ns-slim-field ns-col-3">
+                <label class="ns-slim-label">Paga</label>
                 <input #tbxPaga
-                class="textAlingRight colorGreen fontSize"
+                    class="ns-slim-input pay-input textAlingRight"
+                    currencyMask
+                    placeholder="PAGA"
+                    [(ngModel)]="paymentForm.paga"
+                    (keyup)="event_fn_Paga( $event )">
+            </div>
 
-                matInput
-                currencyMask
-                placeholder="PAGA"
-                [(ngModel)]="paymentForm.paga"
-                (keyup)="event_fn_Paga( $event )">
-            </mat-form-field>
-
-        </div>
-
-        <div class="col-md-3" *ngIf="paymentForm.needRef == 1">
-
-            <mat-form-field class="with100 top20px">
-                <mat-label>Referencia</mat-label>
+            <div class="ns-slim-field ns-col-3" *ngIf="paymentForm.needRef == 1">
+                <label class="ns-slim-label">Referencia</label>
                 <input #tbxReferencia
-                type="text"
-                class="textAlingRight colorGreen fontSize"
+                    type="text"
+                    class="ns-slim-input pay-input textAlingRight"
+                    placeholder="Referencia"
+                    [(ngModel)]="paymentForm.referencia"
+                    (keyup)="event_fn_Referencia( $event )">
+            </div>
 
-                matInput
-                placeholder="Referencia"
-                [(ngModel)]="paymentForm.referencia"
-                (keyup)="event_fn_Referencia( $event )">
-            </mat-form-field>
-
-        </div>
-
-        <div class="col-md-3" *ngIf="paymentForm.idFormaPago == 1 || paymentForm.idFormaPago == 3">
-
-            <mat-form-field class="with100 top20px">
-                <mat-label>PAGA CON <strong>{{ ( paymentForm.needFxRate ? " TC: " + paymentForm.fxRate : "" ) }}</strong></mat-label>
+            <div class="ns-slim-field ns-col-3" *ngIf="paymentForm.idFormaPago == 1 || paymentForm.idFormaPago == 3">
+                <label class="ns-slim-label">Paga con <strong>{{ ( paymentForm.needFxRate ? " TC: " + paymentForm.fxRate : "" ) }}</strong></label>
                 <input #tbxPagaCon
-                class="textAlingRight colorGreen fontSize"
+                    class="ns-slim-input pay-input textAlingRight"
+                    currencyMask
+                    placeholder="PAGA CON"
+                    [(ngModel)]="paymentForm.pagaCon"
+                    (keyup)="event_fn_PagaCon_GetCambio( $event )">
+            </div>
 
-                matInput
-                currencyMask
-                placeholder="PAGA CON"
-                [(ngModel)]="paymentForm.pagaCon"
-                (keyup)="event_fn_PagaCon_GetCambio( $event )">
-            </mat-form-field>
-
-        </div>
-
-        <div class="col-md-3" *ngIf="paymentForm.idFormaPago == 1 || paymentForm.idFormaPago == 3">
-
-            <mat-form-field class="with100 top20px">
-                <mat-label>CAMBIO</mat-label>
+            <div class="ns-slim-field ns-col-3" *ngIf="paymentForm.idFormaPago == 1 || paymentForm.idFormaPago == 3">
+                <label class="ns-slim-label">Cambio</label>
                 <input #tbxCambio
-                style="font-size: 25px;"
-                class="textAlingRight colorGreen"
-
-                [ngClass]="{ 'colorRed': paymentForm.cambio < 0 }"
-                matInput
-                currencyMask
-                placeholder="CAMBIO"
-
-                [(ngModel)]="paymentForm.cambio"
-
-                (keyup)="event_fn_Cambio( $event )"
-
-                readonly="true">
-            </mat-form-field>
-
-        </div>
-
-
-    </div>
-
-    <div class="row top10px">
-        <div class="col-md-12">
-            <div style="float: left;">
-
-                <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px"
-                *ngIf="paymentList.length > 0"
-                (click)="fn_savePayment()">
-                <mat-icon matPrefix class="my-icon">save</mat-icon>
-                Guardar e imprimir ticket</button>
-
-                <button mat-raised-button
-                type="button"
-                class="marginRight10px"
-                (click)="fn_CerrarMDL()">
-                <mat-icon matPrefix class="my-icon">close</mat-icon>
-                Cerrar</button>
-
-            </div>
-        </div>
-    </div>
-
-    <div class="row top20px">
-        <div class="col-md-12">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <th class="textAlingCenter padding-th">Acciones</th>
-                        <th class="textAlingLeft padding-th">Forma de pago</th>
-                        <th class="textAlingCenter padding-th">Paga</th>
-                        <th class="textAlingCenter padding-th" *ngIf="interface.showFxRate">Paga EXT</th>
-                        <th class="textAlingCenter padding-th" *ngIf="interface.showFxRate">Tipo de cambio</th>
-                        <th class="textAlingCenter padding-th" *ngIf="interface.showReferencia">Referencia</th>
-                        <th class="textAlingCenter padding-th">Cambio</th>
-                    </thead>
-
-                    <tbody>
-                        <tr *ngFor="let item of paymentList; let i = index">
-                            <td class="textAlingCenter">
-                                <div style="width: 50px;">
-                                    <span class="material-icons manitaSobre colorRed"
-                                        (click)="event_fnClick_DeleteSalesPaymentFromList( i )">
-                                        delete_outline
-                                    </span>
-                                </div>
-                            </td>
-
-                            <td style="text-align:left;">{{ item.formaPagoDesc }}</td>
-                            <td style="text-align: right;">{{ item.paga | currency }}</td>
-                            <td style="text-align: right;" *ngIf="interface.showFxRate">{{ item.pagaF | currency }}</td>
-                            <td style="text-align: right;" *ngIf="interface.showFxRate">{{ item.fxRate | currency }}</td>
-                            <td style="text-align: right;" *ngIf="interface.showReferencia">{{ item.referencia }}</td>
-                            <td style="text-align: right;">{{ item.cambio | currency }}</td>
-                        </tr>
-
-                    </tbody>
-
-                </table>
+                    class="ns-slim-input pay-cambio textAlingRight"
+                    [ngClass]="{ 'colorRed': paymentForm.cambio < 0 }"
+                    currencyMask
+                    placeholder="CAMBIO"
+                    [(ngModel)]="paymentForm.cambio"
+                    (keyup)="event_fn_Cambio( $event )"
+                    readonly="true">
             </div>
 
         </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="ns-acciones">
+
+        <button mat-raised-button
+        color="primary"
+        type="submit"
+        *ngIf="paymentList.length > 0"
+        (click)="fn_savePayment()">
+        <mat-icon matPrefix class="my-icon">save</mat-icon>
+        Guardar e imprimir ticket</button>
+
+        <button mat-raised-button
+        type="button"
+        (click)="fn_CerrarMDL()">
+        <mat-icon matPrefix class="my-icon">close</mat-icon>
+        Cerrar</button>
 
     </div>
 
-    <div class="row top20px">
-        <div class="col-md-12">
+    <!-- Lista de pagos capturados -->
+    <div class="ns-seccion" *ngIf="paymentList.length > 0">
+        <div class="ns-seccion-titulo">Pagos capturados</div>
 
-           <div *ngIf="paymentForm.saldoACubrir == 0">
-                <button mat-button #btnSaveSale (click)="saveAndPrint()" color="warn">Guardar e imprimir ticket</button>
-                <button mat-button (click)="close()">Salir</button>
-            </div>
+        <div class="table-responsive">
+            <table class="ns-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingCenter">Acciones</th>
+                        <th class="textAlingLeft">Forma de pago</th>
+                        <th class="textAlingRight">Paga</th>
+                        <th class="textAlingRight" *ngIf="interface.showFxRate">Paga EXT</th>
+                        <th class="textAlingRight" *ngIf="interface.showFxRate">Tipo de cambio</th>
+                        <th class="textAlingRight" *ngIf="interface.showReferencia">Referencia</th>
+                        <th class="textAlingRight">Cambio</th>
+                    </tr>
+                </thead>
 
+                <tbody>
+                    <tr *ngFor="let item of paymentList; let i = index">
+                        <td class="textAlingCenter">
+                            <div class="ns-tabla-acciones">
+                                <span class="material-icons manitaSobre colorRed"
+                                    (click)="event_fnClick_DeleteSalesPaymentFromList( i )">
+                                    delete_outline
+                                </span>
+                            </div>
+                        </td>
+
+                        <td class="textAlingLeft">{{ item.formaPagoDesc }}</td>
+                        <td class="textAlingRight">{{ item.paga | currency }}</td>
+                        <td class="textAlingRight" *ngIf="interface.showFxRate">{{ item.pagaF | currency }}</td>
+                        <td class="textAlingRight" *ngIf="interface.showFxRate">{{ item.fxRate | currency }}</td>
+                        <td class="textAlingRight" *ngIf="interface.showReferencia">{{ item.referencia }}</td>
+                        <td class="textAlingRight">{{ item.cambio | currency }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
+    </div>
 
+    <!-- Saldo cubierto: guardar o salir -->
+    <div class="ns-acciones" *ngIf="paymentForm.saldoACubrir == 0">
+        <button mat-raised-button color="warn" #btnSaveSale (click)="saveAndPrint()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            Guardar e imprimir ticket</button>
+        <button mat-raised-button (click)="close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Salir</button>
     </div>
 
 </div>

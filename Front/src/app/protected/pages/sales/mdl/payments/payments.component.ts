@@ -12,7 +12,7 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 @Component({
   selector: 'app-payments',
   templateUrl: './payments.component.html',
-  styleUrls: ['./payments.component.css']
+  styleUrls: ['../nsale/nsale.component.css', './payments.component.css']
 })
 export class PaymentsComponent {
 
