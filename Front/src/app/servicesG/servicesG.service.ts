@@ -137,7 +137,7 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
       }
     }
 
-    showDialog( header: string, message: string, question: string, buttonYes: string, buttonNo: string, sWidth: string = '250px' ){
+    showDialog( header: string, message: string, question: string, buttonYes: string, buttonNo: string, sWidth: string = '380px' ){
 
       this._dDialog.header = header;
       this._dDialog.message = message;

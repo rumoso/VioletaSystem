@@ -1,0 +1,66 @@
+/* Diálogo de confirmación — jerarquía clara: icono, título, mensaje,
+   pregunta y acciones (la afirmativa resaltada a la derecha). */
+
+.cfm-modal {
+    padding: 8px 6px 2px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Icono en círculo ámbar: señal de "detente y confirma" */
+.cfm-icono-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff8e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.cfm-icono {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #f9a825;
+}
+
+.cfm-titulo {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #212121;
+}
+
+.cfm-mensaje {
+    margin: 0 0 4px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #616161;
+}
+
+.cfm-pregunta {
+    margin: 0 0 18px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #212121;
+}
+
+.cfm-acciones {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+}
+
+.cfm-btn-no {
+    min-width: 96px;
+    color: #616161;
+}
+
+.cfm-btn-si {
+    min-width: 96px;
+}

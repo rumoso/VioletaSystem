@@ -1,15 +1,18 @@
-<div style="padding: 10px;">
-    <h1>{{ data.header }}</h1>
-    <hr>
-    <p>
-        {{ data.message }}
-        <br>
-        {{ data.question }}
-    </p>
-    
-    <div>
-        <button mat-button (click)="delete()" color="warn">{{ data.buttonYes }}</button>
-        <button mat-button (click)="close()">{{ data.buttonNo }}</button>
+<div class="cfm-modal">
+
+    <div class="cfm-icono-wrap">
+        <mat-icon class="cfm-icono">help_outline</mat-icon>
     </div>
-    
+
+    <h2 class="cfm-titulo">{{ data.header }}</h2>
+
+    <p class="cfm-mensaje">{{ data.message }}</p>
+
+    <p class="cfm-pregunta">{{ data.question }}</p>
+
+    <div class="cfm-acciones">
+        <button mat-stroked-button class="cfm-btn-no" (click)="close()">{{ data.buttonNo }}</button>
+        <button mat-raised-button color="warn" class="cfm-btn-si" (click)="delete()">{{ data.buttonYes }}</button>
+    </div>
+
 </div>
