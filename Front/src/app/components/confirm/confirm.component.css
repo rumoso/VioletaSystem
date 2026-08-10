@@ -2,6 +2,15 @@
    línea separadora, mensaje, pregunta y acciones a la derecha (la
    afirmativa resaltada). */
 
+/* El contenedor MDC del diálogo trae overflow-y auto y con cualquier
+   desborde de unos píxeles pinta scrollbar; este diálogo es chico y
+   nunca debe scrollear. Scopeado con :has para no afectar otros
+   modales que sí lo necesitan. */
+::ng-deep .mat-mdc-dialog-container:has(.cfm-modal) .mdc-dialog__surface,
+::ng-deep .mat-dialog-container:has(.cfm-modal) {
+    overflow: hidden !important;
+}
+
 .cfm-modal {
     padding: 10px 8px 4px 8px;
     display: flex;
