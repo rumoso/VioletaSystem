@@ -28,14 +28,19 @@
         </div>
       </div>
 
-      <mat-form-field class="tll-field tll-field--date" appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Fecha de creación</mat-label>
-              <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
-                <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Inicio">
-                <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="Fin">
-              </mat-date-range-input>
-              <mat-date-range-picker #picker></mat-date-range-picker>
-            </mat-form-field>
+      <div class="tll-field">
+        <label class="tll-label">Desde</label>
+        <input type="date"
+          class="tll-slim-input"
+          [(ngModel)]="parametersForm.createDateStart">
+      </div>
+
+      <div class="tll-field">
+        <label class="tll-label">Hasta</label>
+        <input type="date"
+          class="tll-slim-input"
+          [(ngModel)]="parametersForm.createDateEnd">
+      </div>
 
       <div class="tll-field tll-field--customer">
         <label class="tll-label">Cliente</label>
