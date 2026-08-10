@@ -44,21 +44,9 @@ export class ComisionesTrackListComponent implements OnInit {
 
   ngOnInit(): void {
     this.authServ.checkSession();
-    this.fn_rangoInicial();
+    // Rango default VACÍO: se muestra TODO lo pendiente sin acotar por
+    // fechas; el rango es solo un filtro opcional.
     this.fn_getList();
-  }
-
-  // Rango default: la semana en curso (lunes a hoy)
-  private fn_rangoInicial() {
-    const hoy = new Date();
-    const lunes = new Date(hoy);
-    lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
-    this.startDateControl.setValue(this.fn_fmt(lunes));
-    this.endDateControl.setValue(this.fn_fmt(hoy));
-  }
-
-  private fn_fmt(d: Date): string {
-    return `${ d.getFullYear() }-${ String(d.getMonth() + 1).padStart(2, '0') }-${ String(d.getDate()).padStart(2, '0') }`;
   }
 
   fn_avatarColor( nombre: string ): string {
@@ -79,7 +67,8 @@ export class ComisionesTrackListComponent implements OnInit {
   }
 
   fn_limpiar() {
-    this.fn_rangoInicial();
+    this.startDateControl.setValue('');
+    this.endDateControl.setValue('');
     this.fn_buscar();
   }
 
