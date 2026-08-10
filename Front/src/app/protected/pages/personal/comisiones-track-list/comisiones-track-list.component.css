@@ -6,3 +6,7 @@
 .ctl-monto-negativo {
     color: #c62828;
 }
+
+.ctl-row {
+    cursor: pointer;
+}

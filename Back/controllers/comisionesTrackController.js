@@ -11,6 +11,73 @@ const { dbConnection } = require('../database/config');
 // directas sobre `dbConnection` compartida — nunca createConexion();
 // multi-statement siempre con `dbConnection.transaction()`.
 
+// Resumen por empleado: total PENDIENTE (sin cobrar) dentro del rango
+// de fechas, un renglón por empleado con al menos un movimiento en el
+// rango. El detalle/tracking se consulta aparte (getComisionesTrackList
+// filtrado por idUser).
+const getComisionesResumen = async(req, res = response) => {
+
+    const {
+        startDate = ''
+        , endDate = ''
+        , pageSize = 10
+        , pageIndex = 0
+    } = req.body;
+
+    try{
+
+        const sStart = startDate ? startDate.substring(0, 10) : null;
+        const sEnd = endDate ? endDate.substring(0, 10) : null;
+        const iLimit = Number(pageSize);
+        const iOffset = Number(pageIndex) * iLimit;
+
+        const [countRow] = await dbConnection.query(
+            `SELECT COUNT(DISTINCT C.idUser) AS iRows
+             FROM comisiones_track AS C
+             WHERE C.estatus <> 'CANCELADA'
+             AND ( :startDate IS NULL OR C.fecha >= :startDate )
+             AND ( :endDate IS NULL OR C.fecha <= :endDate )`,
+            { replacements: { startDate: sStart, endDate: sEnd }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        const rows = await dbConnection.query(
+            `SELECT
+                C.idUser,
+                U.name AS nombreEmpleado,
+                SUM( CASE WHEN C.estatus = 'PENDIENTE' THEN C.monto ELSE 0 END ) AS totalPendiente,
+                SUM( CASE WHEN C.estatus = 'PENDIENTE' THEN 1 ELSE 0 END ) AS iPendientes,
+                COUNT(*) AS iMovimientos
+             FROM comisiones_track AS C
+             INNER JOIN users AS U ON U.idUser = C.idUser
+             WHERE C.estatus <> 'CANCELADA'
+             AND ( :startDate IS NULL OR C.fecha >= :startDate )
+             AND ( :endDate IS NULL OR C.fecha <= :endDate )
+             GROUP BY C.idUser, U.name
+             ORDER BY totalPendiente DESC, U.name ASC
+             LIMIT :offset, :limit`,
+            { replacements: { startDate: sStart, endDate: sEnd, offset: iOffset, limit: iLimit }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                count: countRow.iRows,
+                rows
+            }
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
 const getComisionesTrackList = async(req, res = response) => {
 
     const {
@@ -101,6 +168,7 @@ const insertComisionManual = async(req, res = response) => {
         , concepto
         , monto
         , fecha
+        , auth_idUser = 0
 
         , idUserLogON
     } = req.body;
@@ -108,6 +176,13 @@ const insertComisionManual = async(req, res = response) => {
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     try{
+
+        // Acción especial (nSpecial): exige el idUser del autorizador que
+        // el Front obtiene con ActionAuthorizationComponent (código o
+        // rostro) al momento de la acción — igual que cancelar ventas.
+        if (auth_idUser == 0) {
+            return res.json({ status: 1, message: "No se pudo registrar la comisión porque no fue autorizada la acción." });
+        }
 
         if (Number(monto) === 0) {
             return res.json({ status: 1, message: "El monto no puede ser cero." });
@@ -117,8 +192,8 @@ const insertComisionManual = async(req, res = response) => {
             `INSERT INTO comisiones_track
                 (idUser, tipo, concepto, monto, fecha, referencia, estatus, createDate, idCreateUser)
              VALUES
-                (:idUser, :tipo, :concepto, :monto, :fecha, 'Captura manual', 'PENDIENTE', :createDate, :idCreateUser)`,
-            { replacements: { idUser, tipo, concepto, monto, fecha: fecha.substring(0, 10), createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT }
+                (:idUser, :tipo, :concepto, :monto, :fecha, :referencia, 'PENDIENTE', :createDate, :idCreateUser)`,
+            { replacements: { idUser, tipo, concepto, monto, fecha: fecha.substring(0, 10), referencia: `Captura manual — autorizó idUser ${ auth_idUser }`, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT }
         );
 
         res.json({
@@ -142,6 +217,7 @@ const cancelarComisionTrack = async(req, res = response) => {
     const {
         id
         , motivo
+        , auth_idUser = 0
 
         , idUserLogON
     } = req.body;
@@ -149,6 +225,11 @@ const cancelarComisionTrack = async(req, res = response) => {
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     try{
+
+        // Acción especial (nSpecial): exige autorización al momento
+        if (auth_idUser == 0) {
+            return res.json({ status: 1, message: "No se pudo cancelar la comisión porque no fue autorizada la acción." });
+        }
 
         if (!motivo || !motivo.trim()) {
             return res.json({ status: 1, message: "El motivo es obligatorio." });
@@ -454,7 +535,8 @@ const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancela
 };
 
 module.exports = {
-    getComisionesTrackList
+    getComisionesResumen
+    , getComisionesTrackList
     , insertComisionManual
     , cancelarComisionTrack
     , generarComisionesVenta

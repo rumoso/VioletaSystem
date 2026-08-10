@@ -5,10 +5,15 @@ import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ComisionesTrackService } from 'src/app/protected/services/comisiones-track.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
-import { ComisionManualComponent } from '../mdl/comision-manual/comision-manual.component';
+import { ComisionesTrackDetalleComponent } from '../mdl/comisiones-track-detalle/comisiones-track-detalle.component';
 
-// Bitácora de comisiones por empleado (analisis/008). Reemplaza la
-// pantalla del módulo `comisiones` viejo (solo ventas).
+// Comisiones (analisis/008) — pantalla principal: RESUMEN por empleado
+// del total pendiente (sin cobrar) dentro del rango de fechas. El
+// tracking detallado (con captura manual y cancelación, ambas bajo
+// autorización especial) se abre por empleado en
+// ComisionesTrackDetalleComponent.
+
+const AVATAR_COLORS = ['#5C6BC0', '#26A69A', '#7E57C2', '#EF5350', '#42A5F5', '#8D6E63', '#EC407A', '#66BB6A'];
 
 @Component({
   selector: 'app-comisiones-track-list',
@@ -20,9 +25,6 @@ export class ComisionesTrackListComponent implements OnInit {
   bShowSpinner: boolean = false;
   catlist: any[] = [];
 
-  searchControl: FormControl = new FormControl(''); // no se usa en el back (sin campo texto libre en la bitácora), reservado para futuro
-  tipoControl: FormControl = new FormControl('');
-  estatusControl: FormControl = new FormControl('');
   startDateControl: FormControl = new FormControl('');
   endDateControl: FormControl = new FormControl('');
 
@@ -42,15 +44,33 @@ export class ComisionesTrackListComponent implements OnInit {
 
   ngOnInit(): void {
     this.authServ.checkSession();
+    this.fn_rangoInicial();
     this.fn_getList();
   }
 
-  get bPuedeCapturar(): boolean {
-    return this.authServ.hasPermissionAction('comisiones_Capturar');
+  // Rango default: la semana en curso (lunes a hoy)
+  private fn_rangoInicial() {
+    const hoy = new Date();
+    const lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+    this.startDateControl.setValue(this.fn_fmt(lunes));
+    this.endDateControl.setValue(this.fn_fmt(hoy));
   }
 
-  get bPuedeCancelar(): boolean {
-    return this.authServ.hasPermissionAction('comisiones_Cancelar');
+  private fn_fmt(d: Date): string {
+    return `${ d.getFullYear() }-${ String(d.getMonth() + 1).padStart(2, '0') }-${ String(d.getDate()).padStart(2, '0') }`;
+  }
+
+  fn_avatarColor( nombre: string ): string {
+    let hash = 0;
+    for (let i = 0; i < (nombre || '').length; i++) {
+      hash = (hash * 31 + nombre.charCodeAt(i)) | 0;
+    }
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  }
+
+  fn_inicial( nombre: string ): string {
+    return (nombre || '?').trim().charAt(0).toUpperCase();
   }
 
   fn_buscar() {
@@ -59,10 +79,7 @@ export class ComisionesTrackListComponent implements OnInit {
   }
 
   fn_limpiar() {
-    this.tipoControl.setValue('');
-    this.estatusControl.setValue('');
-    this.startDateControl.setValue('');
-    this.endDateControl.setValue('');
+    this.fn_rangoInicial();
     this.fn_buscar();
   }
 
@@ -74,61 +91,12 @@ export class ComisionesTrackListComponent implements OnInit {
   fn_getList() {
 
     this.bShowSpinner = true;
-    this.comisionesServ.CGetList(this.pagination, {
-      tipo: this.tipoControl.value || '',
-      estatus: this.estatusControl.value || '',
-      startDate: this.startDateControl.value || '',
-      endDate: this.endDateControl.value || ''
-    }).subscribe({
-      next: (resp: ResponseGet) => {
-        this.catlist = resp.data.rows;
-        this.pagination.length = resp.data.count;
-        this.bShowSpinner = false;
-      },
-      error: (ex: HttpErrorResponse) => {
-        console.log(ex)
-        this.servicesGServ.showSnakbar('Problemas con el servicio');
-        this.bShowSpinner = false;
-      }
-    });
-  }
-
-  fn_capturarManual() {
-
-    this.servicesGServ.showModalWithParams(ComisionManualComponent, {}, '440px')
-    .afterClosed().subscribe({
-      next: (huboCambios: any) => {
-        if (huboCambios) {
-          this.fn_getList();
-        }
-      }
-    });
-  }
-
-  // No hay un dialog de texto genérico en el sistema (solo confirm
-  // sí/no); se usa el prompt nativo del navegador para capturar el
-  // motivo, igual de válido para un texto corto y obligatorio.
-  fn_cancelar( item: any ) {
-
-    const motivo = window.prompt(`Motivo para cancelar "${ item.concepto }":`);
-
-    if (motivo === null) {
-      return; // canceló el prompt
-    }
-    if (!motivo.trim()) {
-      this.servicesGServ.showSnakbar('El motivo es obligatorio.');
-      return;
-    }
-
-    this.bShowSpinner = true;
-    this.comisionesServ.CCancelar(item.id, motivo.trim())
+    this.comisionesServ.CGetResumen(this.pagination, this.startDateControl.value || '', this.endDateControl.value || '')
       .subscribe({
-        next: (resp: any) => {
-          this.servicesGServ.showSnakbar(resp.message);
+        next: (resp: ResponseGet) => {
+          this.catlist = resp.data.rows;
+          this.pagination.length = resp.data.count;
           this.bShowSpinner = false;
-          if (resp.status === 0) {
-            this.fn_getList();
-          }
         },
         error: (ex: HttpErrorResponse) => {
           console.log(ex)
@@ -136,6 +104,21 @@ export class ComisionesTrackListComponent implements OnInit {
           this.bShowSpinner = false;
         }
       });
+  }
+
+  fn_abrirTracking( item: any ) {
+
+    this.servicesGServ.showModalWithParams(ComisionesTrackDetalleComponent, {
+      idUser: item ? item.idUser : 0,
+      nombreEmpleado: item ? item.nombreEmpleado : '',
+      startDate: this.startDateControl.value || '',
+      endDate: this.endDateControl.value || ''
+    }, '950px')
+    .afterClosed().subscribe({
+      next: () => {
+        this.fn_getList();
+      }
+    });
   }
 
 }

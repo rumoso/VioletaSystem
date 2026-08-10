@@ -6,26 +6,6 @@
 
     <div class="pcl-filtros">
         <div class="pcl-slim-field">
-            <label class="pcl-slim-label">Tipo</label>
-            <select class="pcl-slim-input" [formControl]="tipoControl" (change)="fn_buscar()">
-                <option value="">Todos</option>
-                <option value="DESTAJO">Destajo</option>
-                <option value="VENTA">Venta</option>
-                <option value="MANUAL">Manual</option>
-            </select>
-        </div>
-
-        <div class="pcl-slim-field">
-            <label class="pcl-slim-label">Estatus</label>
-            <select class="pcl-slim-input" [formControl]="estatusControl" (change)="fn_buscar()">
-                <option value="">Todos</option>
-                <option value="PENDIENTE">Pendiente</option>
-                <option value="INCLUIDA_EN_NOMINA">Incluida en nómina</option>
-                <option value="CANCELADA">Cancelada</option>
-            </select>
-        </div>
-
-        <div class="pcl-slim-field">
             <label class="pcl-slim-label">Desde</label>
             <input class="pcl-slim-input" type="date" [formControl]="startDateControl" (change)="fn_buscar()">
         </div>
@@ -45,75 +25,51 @@
                 Actualizar</button>
 
             <button mat-raised-button color="accent" type="button"
-            *ngIf="bPuedeCapturar"
-            (click)="fn_capturarManual()">
-                <mat-icon matPrefix class="my-icon">add</mat-icon>
-                Captura manual</button>
+            (click)="fn_abrirTracking(null)">
+                <mat-icon matPrefix class="my-icon">manage_search</mat-icon>
+                Ver todo el tracking</button>
         </div>
     </div>
 
     <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
         <mat-icon class="pcl-vacio-icon">payments</mat-icon>
-        <p>No hay comisiones con ese filtro.</p>
+        <p>Sin comisiones en ese rango de fechas.</p>
     </div>
 
+    <!-- Resumen por empleado: total sin cobrar en el rango -->
     <div class="table-responsive" *ngIf="catlist.length > 0">
         <table class="pcl-tabla">
             <thead>
                 <tr>
                     <th class="textAlingLeft">Empleado</th>
-                    <th class="textAlingLeft">Concepto</th>
-                    <th class="textAlingCenter">Tipo</th>
-                    <th class="textAlingCenter">Fecha</th>
-                    <th class="textAlingRight">Monto</th>
-                    <th class="textAlingCenter">Estatus</th>
+                    <th class="textAlingCenter">Movimientos</th>
+                    <th class="textAlingCenter">Pendientes</th>
+                    <th class="textAlingRight">Total sin cobrar</th>
                     <th class="textAlingCenter">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let item of catlist">
+                <tr *ngFor="let item of catlist" class="ctl-row" (click)="fn_abrirTracking(item)">
                     <td>
                         <div class="pcl-persona">
-                            <div class="pcl-avatar" [style.background-color]="'#5C6BC0'">
-                                {{ (item.nombreEmpleado || '?').charAt(0).toUpperCase() }}
+                            <div class="pcl-avatar" [style.background-color]="fn_avatarColor(item.nombreEmpleado)">
+                                {{ fn_inicial(item.nombreEmpleado) }}
                             </div>
                             <span class="pcl-principal">{{ item.nombreEmpleado }}</span>
                         </div>
                     </td>
-
-                    <td>
-                        <span class="pcl-principal">{{ item.concepto }}</span>
-                        <div class="pcl-secundario" *ngIf="item.referencia">{{ item.referencia }}</div>
-                        <div class="pcl-secundario" *ngIf="item.estatus === 'CANCELADA' && item.motivoCancelacion">
-                            Motivo: {{ item.motivoCancelacion }}
-                        </div>
-                    </td>
-
+                    <td class="textAlingCenter pcl-secundario">{{ item.iMovimientos }}</td>
                     <td class="textAlingCenter">
-                        <span class="pcl-chip pcl-chip-neutro">{{ item.tipo }}</span>
-                    </td>
-
-                    <td class="textAlingCenter pcl-secundario">{{ item.fechaDesc }}</td>
-
-                    <td class="textAlingRight ctl-monto" [class.ctl-monto-negativo]="item.monto < 0">
-                        {{ item.monto | currency }}
-                    </td>
-
-                    <td class="textAlingCenter">
-                        <span class="pcl-chip"
-                            [class.pcl-chip-activo]="item.estatus === 'PENDIENTE'"
-                            [class.pcl-chip-neutro]="item.estatus === 'INCLUIDA_EN_NOMINA'"
-                            [class.pcl-chip-inactivo]="item.estatus === 'CANCELADA'">
-                            {{ item.estatus === 'PENDIENTE' ? 'Pendiente' : (item.estatus === 'INCLUIDA_EN_NOMINA' ? 'En nómina' : 'Cancelada') }}
+                        <span class="pcl-chip" [class.pcl-chip-activo]="item.iPendientes > 0" [class.pcl-chip-neutro]="item.iPendientes == 0">
+                            {{ item.iPendientes }}
                         </span>
                     </td>
-
+                    <td class="textAlingRight ctl-monto" [class.ctl-monto-negativo]="item.totalPendiente < 0">
+                        {{ item.totalPendiente | currency }}
+                    </td>
                     <td class="textAlingCenter">
-                        <button mat-icon-button
-                        *ngIf="bPuedeCancelar && item.estatus === 'PENDIENTE'"
-                        matTooltip="Cancelar"
-                        (click)="fn_cancelar(item)">
-                            <mat-icon class="colorRed">cancel</mat-icon>
+                        <button mat-icon-button matTooltip="Ver tracking" (click)="$event.stopPropagation(); fn_abrirTracking(item)">
+                            <mat-icon class="colorGreen">manage_search</mat-icon>
                         </button>
                     </td>
                 </tr>

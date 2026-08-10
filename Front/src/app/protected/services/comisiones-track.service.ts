@@ -22,6 +22,16 @@ export class ComisionesTrackService {
     , private authServ: AuthService
     ) { }
 
+  CGetResumen( pagination: Pagination, startDate: string = '', endDate: string = '' ): Observable<ResponseGet> {
+    const data = {
+      pageSize: pagination.pageSize,
+      pageIndex: pagination.pageIndex,
+      startDate,
+      endDate
+    };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getComisionesResumen`, data );
+  }
+
   CGetList( pagination: Pagination, filtros: { idUser?: number; tipo?: string; estatus?: string; startDate?: string; endDate?: string } = {} ): Observable<ResponseGet> {
     const data = {
       search: pagination.search,
@@ -41,8 +51,8 @@ export class ComisionesTrackService {
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/insertComisionManual`, data );
   }
 
-  CCancelar( id: number, motivo: string ): Observable<any> {
-    const data: any = { id, motivo };
+  CCancelar( id: number, motivo: string, auth_idUser: number ): Observable<any> {
+    const data: any = { id, motivo, auth_idUser };
     data.idUserLogON = this.authServ.getIdUserSession();
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/cancelarComisionTrack`, data );
   }

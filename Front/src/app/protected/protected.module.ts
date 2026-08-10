@@ -42,6 +42,7 @@ import { NominaConceptosListComponent } from './pages/personal/nomina-conceptos-
 import { NominaConceptoComponent } from './pages/personal/mdl/nomina-concepto/nomina-concepto.component';
 import { ComisionesTrackListComponent } from './pages/personal/comisiones-track-list/comisiones-track-list.component';
 import { ComisionManualComponent } from './pages/personal/mdl/comision-manual/comision-manual.component';
+import { ComisionesTrackDetalleComponent } from './pages/personal/mdl/comisiones-track-detalle/comisiones-track-detalle.component';
 import { NominaListComponent } from './pages/personal/nomina-list/nomina-list.component';
 import { NominaGenerarComponent } from './pages/personal/mdl/nomina-generar/nomina-generar.component';
 import { NominaDetalleComponent } from './pages/personal/mdl/nomina-detalle/nomina-detalle.component';
@@ -127,6 +128,7 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
     NominaConceptoComponent,
     ComisionesTrackListComponent,
     ComisionManualComponent,
+    ComisionesTrackDetalleComponent,
     NominaListComponent,
     NominaGenerarComponent,
     NominaDetalleComponent,

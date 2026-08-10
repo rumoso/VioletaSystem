@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, debounceTime } from 'rxjs';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ComisionesTrackService } from 'src/app/protected/services/comisiones-track.service';
@@ -10,7 +10,9 @@ import { UsersService } from 'src/app/protected/services/users.service';
 // Captura manual de un renglón en la bitácora de comisiones
 // (analisis/008): empleado, tipo, concepto, monto (puede ser negativo
 // — un ajuste), fecha. Mecánica de foco automático + Enter, igual que
-// el resto de la captura rápida del sistema.
+// el resto de la captura rápida del sistema. Requiere `auth_idUser`
+// (autorización especial ya obtenida por quien lo abre) — el Back lo
+// exige, sin él no registra.
 
 @Component({
   selector: 'app-comision-manual',
@@ -39,8 +41,12 @@ export class ComisionManualComponent implements OnInit, OnDestroy {
   @ViewChild('conceptoInput') conceptoInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('montoInput') montoInputRef!: ElementRef<HTMLInputElement>;
 
+  auth_idUser: number = 0;
+
   constructor(
     private dialogRef: MatDialogRef<ComisionManualComponent>
+    , @Inject(MAT_DIALOG_DATA) public ODataP: any
+
     , private fb: FormBuilder
     , private comisionesServ: ComisionesTrackService
     , private usersServ: UsersService
@@ -49,6 +55,19 @@ export class ComisionManualComponent implements OnInit, OnDestroy {
     }
 
   ngOnInit(): void {
+
+    this.auth_idUser = this.ODataP?.auth_idUser || 0;
+
+    // Si se abre desde el tracking de un empleado específico, viene
+    // preseleccionado.
+    if (this.ODataP?.idUser > 0) {
+      this.empleadoSeleccionado = {
+        id: this.ODataP.idUser,
+        nombre: this.ODataP.nombreEmpleado,
+        userName: ''
+      };
+      this.empleadoSearchControl.setValue(this.empleadoSeleccionado, { emitEvent: false });
+    }
 
     this.empleadoSearchSub = this.empleadoSearchControl.valueChanges
       .pipe(debounceTime(600))
@@ -87,7 +106,10 @@ export class ComisionManualComponent implements OnInit, OnDestroy {
   }
 
   fn_displayEmpleado( empleado: any ): string {
-    return empleado ? `${ empleado.userName } — ${ empleado.nombre }` : '';
+    if (!empleado) {
+      return '';
+    }
+    return empleado.userName ? `${ empleado.userName } — ${ empleado.nombre }` : empleado.nombre;
   }
 
   fn_empleadoSeleccionado( empleado: any ) {
@@ -130,6 +152,7 @@ export class ComisionManualComponent implements OnInit, OnDestroy {
 
     const data: any = {
       idUser: this.empleadoSeleccionado.id,
+      auth_idUser: this.auth_idUser,
       ...this.myForm.value
     };
 

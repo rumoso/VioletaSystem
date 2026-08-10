@@ -1,0 +1,25 @@
+.ctd-modal {
+    display: flex;
+    flex-direction: column;
+}
+
+.ctd-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 0;
+}
+
+.ctd-titulo {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.ctd-content {
+    padding-top: 4px !important;
+}
+
+.ctd-actions {
+    padding-top: 6px;
+    gap: 8px;
+}

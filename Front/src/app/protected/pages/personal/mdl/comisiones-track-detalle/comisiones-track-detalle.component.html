@@ -1,0 +1,133 @@
+<div class="ctd-modal">
+
+    <div mat-dialog-title class="ctd-header">
+        <span class="ctd-titulo">{{ titulo }}</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="ctd-content">
+
+        <div class="pcl-filtros">
+            <div class="pcl-slim-field">
+                <label class="pcl-slim-label">Tipo</label>
+                <select class="pcl-slim-input" [formControl]="tipoControl" (change)="fn_buscar()">
+                    <option value="">Todos</option>
+                    <option value="DESTAJO">Destajo</option>
+                    <option value="VENTA">Venta</option>
+                    <option value="MANUAL">Manual</option>
+                </select>
+            </div>
+
+            <div class="pcl-slim-field">
+                <label class="pcl-slim-label">Estatus</label>
+                <select class="pcl-slim-input" [formControl]="estatusControl" (change)="fn_buscar()">
+                    <option value="">Todos</option>
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="INCLUIDA_EN_NOMINA">Incluida en nómina</option>
+                    <option value="CANCELADA">Cancelada</option>
+                </select>
+            </div>
+
+            <div class="pcl-slim-field">
+                <label class="pcl-slim-label">Desde</label>
+                <input class="pcl-slim-input" type="date" [formControl]="startDateControl" (change)="fn_buscar()">
+            </div>
+
+            <div class="pcl-slim-field">
+                <label class="pcl-slim-label">Hasta</label>
+                <input class="pcl-slim-input" type="date" [formControl]="endDateControl" (change)="fn_buscar()">
+            </div>
+
+            <div class="pcl-filtro-botones">
+                <button mat-raised-button type="button" (click)="fn_getList()">
+                    <mat-icon matPrefix class="my-icon">refresh</mat-icon>
+                    Actualizar</button>
+
+                <button mat-raised-button color="accent" type="button"
+                (click)="fn_capturarManual()">
+                    <mat-icon matPrefix class="my-icon">add</mat-icon>
+                    Captura manual</button>
+            </div>
+        </div>
+
+        <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
+            <mat-icon class="pcl-vacio-icon">payments</mat-icon>
+            <p>No hay comisiones con ese filtro.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="catlist.length > 0">
+            <table class="pcl-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingLeft" *ngIf="idUser === 0">Empleado</th>
+                        <th class="textAlingLeft">Concepto</th>
+                        <th class="textAlingCenter">Tipo</th>
+                        <th class="textAlingCenter">Fecha</th>
+                        <th class="textAlingRight">Monto</th>
+                        <th class="textAlingCenter">Estatus</th>
+                        <th class="textAlingCenter">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of catlist">
+                        <td *ngIf="idUser === 0">
+                            <span class="pcl-principal">{{ item.nombreEmpleado }}</span>
+                        </td>
+
+                        <td>
+                            <span class="pcl-principal">{{ item.concepto }}</span>
+                            <div class="pcl-secundario" *ngIf="item.referencia">{{ item.referencia }}</div>
+                            <div class="pcl-secundario" *ngIf="item.estatus === 'CANCELADA' && item.motivoCancelacion">
+                                Motivo: {{ item.motivoCancelacion }}
+                            </div>
+                        </td>
+
+                        <td class="textAlingCenter">
+                            <span class="pcl-chip pcl-chip-neutro">{{ item.tipo }}</span>
+                        </td>
+
+                        <td class="textAlingCenter pcl-secundario">{{ item.fechaDesc }}</td>
+
+                        <td class="textAlingRight ctl-monto" [class.ctl-monto-negativo]="item.monto < 0">
+                            {{ item.monto | currency }}
+                        </td>
+
+                        <td class="textAlingCenter">
+                            <span class="pcl-chip"
+                                [class.pcl-chip-activo]="item.estatus === 'PENDIENTE'"
+                                [class.pcl-chip-neutro]="item.estatus === 'INCLUIDA_EN_NOMINA'"
+                                [class.pcl-chip-inactivo]="item.estatus === 'CANCELADA'">
+                                {{ item.estatus === 'PENDIENTE' ? 'Pendiente' : (item.estatus === 'INCLUIDA_EN_NOMINA' ? 'En nómina' : 'Cancelada') }}
+                            </span>
+                        </td>
+
+                        <td class="textAlingCenter">
+                            <button mat-icon-button
+                            *ngIf="item.estatus === 'PENDIENTE'"
+                            matTooltip="Cancelar (requiere autorización)"
+                            (click)="fn_cancelar(item)">
+                                <mat-icon class="colorRed">cancel</mat-icon>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
+                        (OPagination)="changePagination($event)">
+        </app-pagination>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="ctd-actions">
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>
