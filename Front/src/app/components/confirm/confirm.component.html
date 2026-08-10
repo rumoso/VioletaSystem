@@ -1,10 +1,13 @@
 <div class="cfm-modal">
 
-    <div class="cfm-icono-wrap">
-        <mat-icon class="cfm-icono">help_outline</mat-icon>
+    <div class="cfm-header">
+        <div class="cfm-icono-wrap">
+            <mat-icon class="cfm-icono">question_mark</mat-icon>
+        </div>
+        <h2 class="cfm-titulo">{{ data.header }}</h2>
     </div>
 
-    <h2 class="cfm-titulo">{{ data.header }}</h2>
+    <div class="cfm-separador"></div>
 
     <p class="cfm-mensaje">{{ data.message }}</p>
 
