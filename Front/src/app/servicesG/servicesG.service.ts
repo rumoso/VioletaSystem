@@ -147,7 +147,11 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
 
       const dialog = this.dialog.open( ConfirmComponent,{
         width: sWidth,
-        data: this._dDialog
+        data: this._dDialog,
+        // El propio ConfirmComponent controla el foco inicial (en el
+        // botón "Sí", una vez que la animación de apertura terminó) —
+        // se desactiva el autoFocus de Material para que no compita.
+        autoFocus: false
       } )
 
       return dialog;

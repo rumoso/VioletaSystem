@@ -88,3 +88,12 @@
     border-radius: 6px;
     font-weight: 600;
 }
+
+/* Anillo azul en el botón con el foco — "Sí" lo trae por default al
+   abrir (Enter confirma de una); flecha izq/der lo mueve entre
+   ambos botones y el anillo indica cuál va a disparar el Enter. */
+.cfm-btn-no:focus,
+.cfm-btn-si:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, .6);
+}
