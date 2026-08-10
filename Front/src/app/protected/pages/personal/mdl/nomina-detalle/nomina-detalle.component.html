@@ -1,0 +1,87 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <div class="pcm-header-titulo">
+            <span class="pcm-titulo">Nómina — {{ nomina?.fechaInicio | date:'dd-MM-yyyy' }} a {{ nomina?.fechaFin | date:'dd-MM-yyyy' }}</span>
+            <span class="pcl-chip" *ngIf="nomina"
+                [class.pcl-chip-activo]="nomina.estatus === 'PAGADA'"
+                [class.pcl-chip-neutro]="nomina.estatus === 'BORRADOR'"
+                [class.pcl-chip-inactivo]="nomina.estatus === 'CANCELADA'">
+                {{ nomina.estatus }}
+            </span>
+        </div>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content" *ngIf="nomina">
+
+        <div class="nd-totales">
+            <div><span>Empleados</span><strong>{{ recibos.length }}</strong></div>
+            <div><span>Percepciones</span><strong>{{ nomina.totalPercepciones | currency }}</strong></div>
+            <div><span>Deducciones</span><strong>{{ nomina.totalDeducciones | currency }}</strong></div>
+            <div class="nd-neto" [class.nr-monto-negativo]="nomina.totalNeto < 0"><span>Neto</span><strong>{{ nomina.totalNeto | currency }}</strong></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="pcl-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingLeft">Empleado</th>
+                        <th class="textAlingRight">Percepciones</th>
+                        <th class="textAlingRight">Deducciones</th>
+                        <th class="textAlingRight">Neto</th>
+                        <th class="textAlingCenter">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let r of recibos">
+                        <td>
+                            <span class="pcl-principal">{{ r.nombreEmpleado }}</span>
+                            <span class="pcl-secundario" *ngIf="r.bSinListadoBase"> · sin conceptos</span>
+                        </td>
+                        <td class="textAlingRight">{{ r.totalPercepciones | currency }}</td>
+                        <td class="textAlingRight">{{ r.totalDeducciones | currency }}</td>
+                        <td class="textAlingRight" [class.nr-monto-negativo]="r.neto < 0">{{ r.neto | currency }}</td>
+                        <td class="textAlingCenter">
+                            <button mat-icon-button matTooltip="Ver recibo" (click)="fn_abrirRecibo(r)">
+                                <mat-icon class="colorGreen">receipt_long</mat-icon>
+                            </button>
+                            <button mat-icon-button
+                            *ngIf="nomina.estatus === 'BORRADOR' && fn_hasPermission('nomina_Generar')"
+                            matTooltip="Excluir de la nómina"
+                            (click)="fn_excluir(r)">
+                                <mat-icon class="colorRed">person_remove</mat-icon>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+        <button mat-raised-button color="warn" type="button"
+        *ngIf="nomina?.estatus === 'PAGADA' && fn_hasPermission('nomina_Cancelar')"
+        (click)="fn_cancelar()">
+            <mat-icon matPrefix class="my-icon">cancel</mat-icon>
+            Cancelar nómina</button>
+
+        <button mat-raised-button color="primary" type="button"
+        *ngIf="nomina?.estatus === 'BORRADOR' && fn_hasPermission('nomina_Pagar')"
+        (click)="fn_pagar()">
+            <mat-icon matPrefix class="my-icon">payments</mat-icon>
+            Pagar nómina</button>
+
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

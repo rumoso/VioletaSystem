@@ -1,0 +1,59 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">Historial de nómina — {{ nombreEmpleado }}</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <div class="pcl-vacio" *ngIf="historial.length === 0 && !bShowSpinner">
+            <mat-icon class="pcl-vacio-icon">history</mat-icon>
+            <p>Sin nóminas registradas.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="historial.length > 0">
+            <table class="pcl-tabla">
+                <thead>
+                    <tr>
+                        <th class="textAlingLeft">Periodo</th>
+                        <th class="textAlingCenter">Estatus</th>
+                        <th class="textAlingRight">Neto</th>
+                        <th class="textAlingCenter">Recibo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of historial">
+                        <td>{{ item.fechaInicioDesc }} — {{ item.fechaFinDesc }}</td>
+                        <td class="textAlingCenter">
+                            <span class="pcl-chip"
+                                [class.pcl-chip-activo]="item.estatus === 'PAGADA'"
+                                [class.pcl-chip-neutro]="item.estatus === 'BORRADOR'"
+                                [class.pcl-chip-inactivo]="item.estatus === 'CANCELADA'">
+                                {{ item.estatus }}
+                            </span>
+                        </td>
+                        <td class="textAlingRight" [class.nl-neto-negativo]="item.neto < 0">{{ item.neto | currency }}</td>
+                        <td class="textAlingCenter">
+                            <button mat-icon-button matTooltip="Ver recibo" (click)="fn_abrirRecibo(item)">
+                                <mat-icon class="colorGreen">receipt_long</mat-icon>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

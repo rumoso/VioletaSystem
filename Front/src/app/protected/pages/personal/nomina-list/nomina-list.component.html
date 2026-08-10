@@ -1,0 +1,82 @@
+<div class="divMain pcl-main">
+
+    <div class="pcl-header">
+        <h2 class="pcl-titulo">Nómina</h2>
+    </div>
+
+    <div class="pcl-filtros">
+        <div class="pcl-slim-field">
+            <label class="pcl-slim-label">Estatus</label>
+            <select class="pcl-slim-input" [formControl]="estatusControl" (change)="fn_buscar()">
+                <option value="">Todos</option>
+                <option value="BORRADOR">Borrador</option>
+                <option value="PAGADA">Pagada</option>
+                <option value="CANCELADA">Cancelada</option>
+            </select>
+        </div>
+
+        <div class="pcl-filtro-botones">
+            <button mat-raised-button type="button" (click)="fn_getList()">
+                <mat-icon matPrefix class="my-icon">refresh</mat-icon>
+                Actualizar</button>
+
+            <button mat-raised-button color="accent" type="button"
+            *ngIf="bPuedeGenerar"
+            (click)="fn_generar()">
+                <mat-icon matPrefix class="my-icon">receipt_long</mat-icon>
+                Generar nómina</button>
+        </div>
+    </div>
+
+    <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
+        <mat-icon class="pcl-vacio-icon">payments</mat-icon>
+        <p>No hay nóminas generadas{{ estatusControl.value ? ' con ese estatus' : '' }}.</p>
+    </div>
+
+    <div class="table-responsive" *ngIf="catlist.length > 0">
+        <table class="pcl-tabla">
+            <thead>
+                <tr>
+                    <th class="textAlingLeft">Periodo</th>
+                    <th class="textAlingCenter">Tipo</th>
+                    <th class="textAlingCenter">Empleados</th>
+                    <th class="textAlingRight">Neto</th>
+                    <th class="textAlingCenter">Estatus</th>
+                    <th class="textAlingCenter">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let item of catlist" class="nl-row" (click)="fn_abrirDetalle(item)">
+                    <td>
+                        <span class="pcl-principal">{{ item.fechaInicioDesc }} — {{ item.fechaFinDesc }}</span>
+                    </td>
+                    <td class="textAlingCenter">
+                        <span class="pcl-chip pcl-chip-neutro">{{ item.tipoPeriodo | titlecase }}</span>
+                    </td>
+                    <td class="textAlingCenter">{{ item.iEmpleados }}</td>
+                    <td class="textAlingRight" [class.nl-neto-negativo]="item.totalNeto < 0">{{ item.totalNeto | currency }}</td>
+                    <td class="textAlingCenter">
+                        <span class="pcl-chip"
+                            [class.pcl-chip-activo]="item.estatus === 'PAGADA'"
+                            [class.pcl-chip-neutro]="item.estatus === 'BORRADOR'"
+                            [class.pcl-chip-inactivo]="item.estatus === 'CANCELADA'">
+                            {{ item.estatus }}
+                        </span>
+                    </td>
+                    <td class="textAlingCenter">
+                        <button mat-icon-button matTooltip="Ver detalle" (click)="$event.stopPropagation(); fn_abrirDetalle(item)">
+                            <mat-icon class="colorGreen">visibility</mat-icon>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
+                    (OPagination)="changePagination($event)">
+    </app-pagination>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

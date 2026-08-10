@@ -1,0 +1,76 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
+import { AuthService } from 'src/app/auth/services/auth.service';
+import { environment } from 'src/environments/environment';
+
+// Pago de nómina (analisis/007).
+
+@Injectable({
+  providedIn: 'root'
+})
+export class NominaService {
+
+  private baseURL: string = environment.baseUrl;
+
+  _api: string = 'api/nomina';
+
+  constructor(
+    private http: HttpClient
+    , private authServ: AuthService
+    ) { }
+
+  CGenerar( tipoPeriodo: string, fechaInicio: string, fechaFin: string ): Observable<any> {
+    const data: any = { tipoPeriodo, fechaInicio, fechaFin };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/generarNomina`, data );
+  }
+
+  CGetList( pagination: Pagination, estatus: string = '' ): Observable<ResponseGet> {
+    const data = {
+      pageSize: pagination.pageSize,
+      pageIndex: pagination.pageIndex,
+      estatus
+    };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getNominasList`, data );
+  }
+
+  CGetDetalle( id: number ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getNominaDetalle`, { id } );
+  }
+
+  CGetRecibo( idNominaRecibo: number ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getRecibo`, { idNominaRecibo } );
+  }
+
+  CInsertUpdateReciboDetalle( data: any ): Observable<any> {
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/insertUpdateReciboDetalle`, data );
+  }
+
+  CDeleteReciboDetalle( id: number ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/deleteReciboDetalle`, { id } );
+  }
+
+  CExcluirRecibo( idNominaRecibo: number ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/excluirRecibo`, { idNominaRecibo } );
+  }
+
+  CPagar( id: number ): Observable<any> {
+    const data: any = { id };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/pagarNomina`, data );
+  }
+
+  CCancelar( id: number, motivo: string ): Observable<any> {
+    const data: any = { id, motivo };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/cancelarNomina`, data );
+  }
+
+  CGetNominasByEmpleado( idEmpleado: number ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getNominasByEmpleado`, { idEmpleado } );
+  }
+
+}

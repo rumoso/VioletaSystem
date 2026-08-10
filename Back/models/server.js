@@ -42,6 +42,7 @@ class Server{
             empleados:'/api/empleados',
             nominaConceptos:'/api/nominaConceptos',
             comisionesTrack:'/api/comisionesTrack',
+            nomina:'/api/nomina',
 
         }
 
@@ -138,6 +139,7 @@ class Server{
         this.app.use(this.paths.empleados, require('../routes/empleadosRoute'));
         this.app.use(this.paths.nominaConceptos, require('../routes/nominaConceptosRoute'));
         this.app.use(this.paths.comisionesTrack, require('../routes/comisionesTrackRoute'));
+        this.app.use(this.paths.nomina, require('../routes/nominaRoute'));
     }
 
     listen(){

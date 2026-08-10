@@ -10,6 +10,7 @@ import { NominaConceptosService } from 'src/app/protected/services/nomina-concep
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { NominaHistorialEmpleadoComponent } from '../nomina-historial-empleado/nomina-historial-empleado.component';
 
 // Modal de alta/modificación de empleado (analisis/006). Dos pestañas:
 // Datos laborales y Conceptos base de nómina. NO se cierra al guardar
@@ -389,6 +390,13 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  fn_verHistorialNomina() {
+    this.servicesGServ.showModalWithParams(NominaHistorialEmpleadoComponent, {
+      idEmpleado: this.id,
+      nombreEmpleado: this.myForm.value.nombre
+    }, '700px');
   }
 
   fn_close() {

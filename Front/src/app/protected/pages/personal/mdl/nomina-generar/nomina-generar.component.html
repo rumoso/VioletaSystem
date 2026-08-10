@@ -1,0 +1,62 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">Generar nómina</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <div class="pcm-banner" *ngIf="banner"
+            [class.pcm-banner-ok]="banner.tipo === 'ok'"
+            [class.pcm-banner-error]="banner.tipo === 'error'">
+            <mat-icon>{{ banner.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+            <span>{{ banner.mensaje }}</span>
+        </div>
+
+        <p class="pcm-slim-hint">
+            Se creará un recibo por cada empleado activo, con su listado base de conceptos y las comisiones pendientes del rango.
+        </p>
+
+        <form [formGroup]="myForm" autocomplete="off">
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Tipo de periodo *</label>
+                <select class="pcm-slim-input" formControlName="tipoPeriodo">
+                    <option value="SEMANA">Semana</option>
+                    <option value="QUINCENA">Quincena</option>
+                    <option value="MES">Mes</option>
+                </select>
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Fecha de inicio *</label>
+                <input class="pcm-slim-input" type="date" formControlName="fechaInicio">
+            </div>
+
+            <div class="pcm-slim-field">
+                <label class="pcm-slim-label">Fecha final *</label>
+                <input class="pcm-slim-input" type="date" formControlName="fechaFin">
+            </div>
+
+        </form>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cancelar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        [disabled]="bGenerando"
+        (click)="fn_generar()">
+            <mat-icon matPrefix class="my-icon">receipt_long</mat-icon>
+            {{ bGenerando ? 'Generando...' : 'Generar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>

@@ -42,6 +42,11 @@ import { NominaConceptosListComponent } from './pages/personal/nomina-conceptos-
 import { NominaConceptoComponent } from './pages/personal/mdl/nomina-concepto/nomina-concepto.component';
 import { ComisionesTrackListComponent } from './pages/personal/comisiones-track-list/comisiones-track-list.component';
 import { ComisionManualComponent } from './pages/personal/mdl/comision-manual/comision-manual.component';
+import { NominaListComponent } from './pages/personal/nomina-list/nomina-list.component';
+import { NominaGenerarComponent } from './pages/personal/mdl/nomina-generar/nomina-generar.component';
+import { NominaDetalleComponent } from './pages/personal/mdl/nomina-detalle/nomina-detalle.component';
+import { NominaReciboComponent } from './pages/personal/mdl/nomina-recibo/nomina-recibo.component';
+import { NominaHistorialEmpleadoComponent } from './pages/personal/mdl/nomina-historial-empleado/nomina-historial-empleado.component';
 import { CortecajadetailComponent } from './pages/sales/mdl/cortecajadetail/cortecajadetail.component';
 import { InventarylogComponent } from './pages/catssales/mdl/inventarylog/inventarylog.component';
 import { UtilidadComponent } from './pages/reports/utilidad/utilidad.component';
@@ -122,6 +127,11 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
     NominaConceptoComponent,
     ComisionesTrackListComponent,
     ComisionManualComponent,
+    NominaListComponent,
+    NominaGenerarComponent,
+    NominaDetalleComponent,
+    NominaReciboComponent,
+    NominaHistorialEmpleadoComponent,
     CortecajadetailComponent,
     InventarylogComponent,
     UtilidadComponent,

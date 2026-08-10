@@ -21,6 +21,7 @@ import { PersonalCatalogoListComponent } from "./pages/personal/personal-catalog
 import { EmpleadoListComponent } from "./pages/personal/empleado-list/empleado-list.component";
 import { NominaConceptosListComponent } from "./pages/personal/nomina-conceptos-list/nomina-conceptos-list.component";
 import { ComisionesTrackListComponent } from "./pages/personal/comisiones-track-list/comisiones-track-list.component";
+import { NominaListComponent } from "./pages/personal/nomina-list/nomina-list.component";
 import { ComisionesComponent } from "./pages/operation/comisiones/comisiones.component";
 import { EgresosListComponent } from "./pages/sales/egresos-list/egresos-list.component";
 import { RepcomprasproveedorComponent } from "./pages/reports/repcomprasproveedor/repcomprasproveedor.component";
@@ -189,6 +190,10 @@ const routes: Routes = [
         {
           path: 'comisionesTrackList',
           component: ComisionesTrackListComponent
+        },
+        {
+          path: 'nominaList',
+          component: NominaListComponent
         },
 
       ]
