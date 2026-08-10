@@ -7,12 +7,16 @@
     <div class="pcl-filtros">
         <div class="pcl-slim-field">
             <label class="pcl-slim-label">Desde</label>
-            <input class="pcl-slim-input" type="date" [formControl]="startDateControl" (change)="fn_buscar()">
+            <input class="pcl-slim-input" type="date"
+                [class.pcl-date-vacia]="!startDateControl.value"
+                [formControl]="startDateControl" (change)="fn_buscar()">
         </div>
 
         <div class="pcl-slim-field">
             <label class="pcl-slim-label">Hasta</label>
-            <input class="pcl-slim-input" type="date" [formControl]="endDateControl" (change)="fn_buscar()">
+            <input class="pcl-slim-input" type="date"
+                [class.pcl-date-vacia]="!endDateControl.value"
+                [formControl]="endDateControl" (change)="fn_buscar()">
         </div>
 
         <div class="pcl-filtro-botones">

@@ -90,6 +90,14 @@
     box-shadow: 0 0 0 3px rgba(123, 31, 162, .15);
 }
 
+/* Fecha sin valor: el dd/mm/aaaa nativo se atenúa como un placeholder
+   (los input date no soportan ::placeholder) */
+.pcl-date-vacia,
+.pcl-date-vacia::-webkit-datetime-edit {
+    color: #9e9e9e;
+    font-weight: 400;
+}
+
 /* Tabla */
 .pcl-tabla {
     width: 100%;
