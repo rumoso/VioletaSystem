@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, Inject, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { DDialog } from 'src/app/interfaces/general.interfaces';
 
@@ -21,18 +21,16 @@ export class ConfirmComponent implements OnInit {
   }
 
   // El foco inicial en "Sí" lo pone `cdkFocusInitial` en el propio botón
-  // (ver confirm.component.html) — es el mecanismo del CDK diseñado
-  // para esto, ya sincronizado con la apertura del dialog (a diferencia
-  // de un setTimeout o de suscribirse a afterOpened() a mano, que puede
-  // perderse la emisión si el dialog ya abrió antes de suscribirse).
-  // Flecha izquierda/derecha mueve el foco entre los dos botones, y el
-  // CSS marca con un anillo azul cuál lo tiene en cada momento.
-  @HostListener('keydown.arrowleft')
+  // (ver confirm.component.html) — mecanismo nativo del CDK. Flecha
+  // izquierda/derecha mueve el foco entre los dos botones — atado
+  // directo en cada botón con (keydown.arrowleft/right) en vez de un
+  // HostListener del componente, mismo patrón ya usado en el resto del
+  // sistema para atajos de teclado. El CSS marca con un anillo azul
+  // cuál botón tiene el foco en cada momento.
   fn_focusNo() {
     this.btnNoRef?.nativeElement?.focus();
   }
 
-  @HostListener('keydown.arrowright')
   fn_focusSi() {
     this.btnSiRef?.nativeElement?.focus();
   }

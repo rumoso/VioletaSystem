@@ -14,8 +14,12 @@
     <p class="cfm-pregunta">{{ data.question }}</p>
 
     <div class="cfm-acciones">
-        <button #btnNo mat-stroked-button class="cfm-btn-no" (click)="close()">{{ data.buttonNo }}</button>
-        <button #btnSi cdkFocusInitial mat-raised-button color="warn" class="cfm-btn-si" (click)="delete()">{{ data.buttonYes }}</button>
+        <button #btnNo mat-stroked-button class="cfm-btn-no"
+            (click)="close()"
+            (keydown.arrowright)="fn_focusSi()">{{ data.buttonNo }}</button>
+        <button #btnSi cdkFocusInitial mat-raised-button color="warn" class="cfm-btn-si"
+            (click)="delete()"
+            (keydown.arrowleft)="fn_focusNo()">{{ data.buttonYes }}</button>
     </div>
 
 </div>
