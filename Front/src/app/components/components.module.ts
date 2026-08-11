@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { A11yModule } from '@angular/cdk/a11y';
 import { ConfirmComponent } from './confirm/confirm.component';
 import { PaginationComponent } from './pagination/pagination.component';
 import { SpinnerComponent } from './spinner/spinner.component';
@@ -35,7 +36,8 @@ import { BarChartComponent } from './bar-chart/bar-chart.component';
   imports: [
     CommonModule,
     FormsModule,
-    MaterialModule
+    MaterialModule,
+    A11yModule
   ]
 })
 export class ComponentsModule { }

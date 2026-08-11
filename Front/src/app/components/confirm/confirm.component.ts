@@ -1,6 +1,5 @@
-import { Component, ElementRef, HostListener, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, Inject, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
 import { DDialog } from 'src/app/interfaces/general.interfaces';
 
 @Component({
@@ -8,36 +7,26 @@ import { DDialog } from 'src/app/interfaces/general.interfaces';
   templateUrl: './confirm.component.html',
   styleUrls: ['./confirm.component.css']
 })
-export class ConfirmComponent implements OnInit, OnDestroy {
+export class ConfirmComponent implements OnInit {
 
   @ViewChild('btnSi') btnSiRef!: ElementRef<HTMLButtonElement>;
   @ViewChild('btnNo') btnNoRef!: ElementRef<HTMLButtonElement>;
-
-  private afterOpenedSub: Subscription | null = null;
 
   constructor(
     private dialogRef: MatDialogRef<ConfirmComponent>
     ,@Inject(MAT_DIALOG_DATA) public data: DDialog
   ) { }
 
-  // "Sí" enfocado por default: Enter confirma de una — es la acción más
-  // común. Flecha izquierda/derecha mueve el foco entre los dos
-  // botones (mismo patrón que un grupo de opciones), y el CSS marca
-  // con un anillo azul cuál tiene el foco en cada momento. El autoFocus
-  // de Material está desactivado (ver servicesG.service.ts) — se
-  // espera a `afterOpened()` en vez de un timer a ciegas, porque la
-  // animación de apertura del dialog puede tardar más que un
-  // setTimeout(0) y pisar el foco si se pone antes de tiempo.
   ngOnInit(): void {
-    this.afterOpenedSub = this.dialogRef.afterOpened().subscribe(() => {
-      this.btnSiRef?.nativeElement?.focus();
-    });
   }
 
-  ngOnDestroy(): void {
-    this.afterOpenedSub?.unsubscribe();
-  }
-
+  // El foco inicial en "Sí" lo pone `cdkFocusInitial` en el propio botón
+  // (ver confirm.component.html) — es el mecanismo del CDK diseñado
+  // para esto, ya sincronizado con la apertura del dialog (a diferencia
+  // de un setTimeout o de suscribirse a afterOpened() a mano, que puede
+  // perderse la emisión si el dialog ya abrió antes de suscribirse).
+  // Flecha izquierda/derecha mueve el foco entre los dos botones, y el
+  // CSS marca con un anillo azul cuál lo tiene en cada momento.
   @HostListener('keydown.arrowleft')
   fn_focusNo() {
     this.btnNoRef?.nativeElement?.focus();

@@ -15,7 +15,7 @@
 
     <div class="cfm-acciones">
         <button #btnNo mat-stroked-button class="cfm-btn-no" (click)="close()">{{ data.buttonNo }}</button>
-        <button #btnSi mat-raised-button color="warn" class="cfm-btn-si" (click)="delete()">{{ data.buttonYes }}</button>
+        <button #btnSi cdkFocusInitial mat-raised-button color="warn" class="cfm-btn-si" (click)="delete()">{{ data.buttonYes }}</button>
     </div>
 
 </div>

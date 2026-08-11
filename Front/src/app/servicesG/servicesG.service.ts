@@ -145,13 +145,12 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
       this._dDialog.buttonYes = buttonYes;
       this._dDialog.buttonNo = buttonNo;
 
+      // autoFocus (default) respeta el atributo cdkFocusInitial puesto
+      // en el botón "Sí" del propio ConfirmComponent — no hace falta
+      // desactivarlo ni fijar el foco a mano.
       const dialog = this.dialog.open( ConfirmComponent,{
         width: sWidth,
-        data: this._dDialog,
-        // El propio ConfirmComponent controla el foco inicial (en el
-        // botón "Sí", una vez que la animación de apertura terminó) —
-        // se desactiva el autoFocus de Material para que no compita.
-        autoFocus: false
+        data: this._dDialog
       } )
 
       return dialog;
