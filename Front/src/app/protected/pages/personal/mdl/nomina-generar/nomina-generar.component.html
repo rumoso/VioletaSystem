@@ -17,27 +17,18 @@
         </div>
 
         <p class="pcm-slim-hint">
-            Se creará un recibo por cada empleado incluido, con su listado base de conceptos y las comisiones pendientes del rango.
+            Se creará un recibo por cada empleado incluido, con su listado base de conceptos y las comisiones pendientes (todas, o solo las del rango si indicas fechas).
         </p>
 
         <form [formGroup]="myForm" autocomplete="off">
 
             <div class="pcm-slim-field">
-                <label class="pcm-slim-label">Tipo de periodo *</label>
-                <select class="pcm-slim-input" formControlName="tipoPeriodo">
-                    <option value="SEMANA">Semana</option>
-                    <option value="QUINCENA">Quincena</option>
-                    <option value="MES">Mes</option>
-                </select>
-            </div>
-
-            <div class="pcm-slim-field">
-                <label class="pcm-slim-label">Fecha de inicio *</label>
+                <label class="pcm-slim-label">Fecha de inicio (opcional)</label>
                 <input class="pcm-slim-input" type="date" formControlName="fechaInicio">
             </div>
 
             <div class="pcm-slim-field">
-                <label class="pcm-slim-label">Fecha final *</label>
+                <label class="pcm-slim-label">Fecha final (opcional)</label>
                 <input class="pcm-slim-input" type="date" formControlName="fechaFin">
             </div>
 

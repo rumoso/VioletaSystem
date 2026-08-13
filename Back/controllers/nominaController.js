@@ -105,26 +105,27 @@ const _fn_validarBorrador = async(idNomina, transaction) => {
 const generarNomina = async(req, res = response) => {
 
     const {
-        tipoPeriodo
-        , fechaInicio
-        , fechaFin
+        fechaInicio = null
+        , fechaFin = null
         , idsEmpleados = []
 
         , idUserLogON
     } = req.body;
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
-    const sFechaInicio = fechaInicio.substring(0, 10);
-    const sFechaFin = fechaFin.substring(0, 10);
+    // El rango de fechas es opcional: solo acota qué comisiones
+    // pendientes se suman a cada recibo. Sin fechas, se toman todas.
+    const sFechaInicio = fechaInicio ? fechaInicio.substring(0, 10) : null;
+    const sFechaFin = fechaFin ? fechaFin.substring(0, 10) : null;
 
     const transaction = await dbConnection.transaction();
 
     try{
 
         await dbConnection.query(
-            `INSERT INTO nomina (tipoPeriodo, fechaInicio, fechaFin, estatus, createDate, idCreateUser)
-             VALUES (:tipoPeriodo, :fechaInicio, :fechaFin, 'BORRADOR', :createDate, :idCreateUser)`,
-            { replacements: { tipoPeriodo, fechaInicio: sFechaInicio, fechaFin: sFechaFin, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
+            `INSERT INTO nomina (fechaInicio, fechaFin, estatus, createDate, idCreateUser)
+             VALUES (:fechaInicio, :fechaFin, 'BORRADOR', :createDate, :idCreateUser)`,
+            { replacements: { fechaInicio: sFechaInicio, fechaFin: sFechaFin, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
         );
 
         const [idResult] = await dbConnection.query(`SELECT LAST_INSERT_ID() AS id`, { type: dbConnection.QueryTypes.SELECT, transaction });
@@ -142,7 +143,44 @@ const generarNomina = async(req, res = response) => {
             { replacements: bFiltrarEmpleados ? { idsEmpleados } : {}, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
-        for (const emp of empleados) {
+        // Un empleado nunca puede tener dos nóminas BORRADOR a la vez
+        // (evita duplicar). Si el empleado se eligió explícitamente se
+        // rechaza toda la operación con su nombre; sin elegir empleados
+        // (todos los activos) simplemente se omite de la corrida.
+        const pendientesRows = await dbConnection.query(
+            `SELECT DISTINCT R.idEmpleado FROM nomina_recibos AS R
+             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+             WHERE N.estatus = 'BORRADOR'`,
+            { type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+        const idsConPendiente = new Set(pendientesRows.map(r => r.idEmpleado));
+
+        let empleadosOmitidos = [];
+        let empleadosAGenerar = empleados;
+
+        if (bFiltrarEmpleados) {
+            const conflicto = empleados.filter(e => idsConPendiente.has(e.idEmpleado));
+            if (conflicto.length > 0) {
+                await transaction.rollback();
+                return res.json({
+                    status: 1,
+                    message: `Ya tienen una nómina pendiente sin pagar: ${ conflicto.map(e => e.nombre).join(', ') }. Págala o cancélala antes de generar otra.`
+                });
+            }
+        } else {
+            empleadosAGenerar = empleados.filter(e => !idsConPendiente.has(e.idEmpleado));
+            empleadosOmitidos = empleados.filter(e => idsConPendiente.has(e.idEmpleado));
+        }
+
+        if (empleadosAGenerar.length === 0) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Todos los empleados activos ya tienen una nómina pendiente sin pagar. Págala o cancélala antes de generar otra.'
+            });
+        }
+
+        for (const emp of empleadosAGenerar) {
 
             await dbConnection.query(
                 `INSERT INTO nomina_recibos (idNomina, idEmpleado, idUser, nombreEmpleado, createDate, idCreateUser)
@@ -175,10 +213,14 @@ const generarNomina = async(req, res = response) => {
                 );
             }
 
-            // Comisiones pendientes del periodo (bitácora analisis/008) — puede resultar negativa
+            // Comisiones pendientes (bitácora analisis/008) — sin fechas
+            // se toman TODAS las pendientes del empleado; con fechas,
+            // solo las del rango. Puede resultar negativa.
             const [comisionesRow] = await dbConnection.query(
                 `SELECT IFNULL(SUM(monto), 0) AS total FROM comisiones_track
-                 WHERE idUser = :idUser AND estatus = 'PENDIENTE' AND fecha BETWEEN :fechaInicio AND :fechaFin`,
+                 WHERE idUser = :idUser AND estatus = 'PENDIENTE'
+                 AND ( :fechaInicio IS NULL OR fecha >= :fechaInicio )
+                 AND ( :fechaFin IS NULL OR fecha <= :fechaFin )`,
                 { replacements: { idUser: emp.idUser, fechaInicio: sFechaInicio, fechaFin: sFechaFin }, type: dbConnection.QueryTypes.SELECT, transaction }
             );
 
@@ -199,9 +241,13 @@ const generarNomina = async(req, res = response) => {
 
         await transaction.commit();
 
+        const sOmitidos = empleadosOmitidos.length > 0
+            ? ` (${ empleadosOmitidos.length } omitido(s) por tener una nómina pendiente: ${ empleadosOmitidos.map(e => e.nombre).join(', ') })`
+            : '';
+
         res.json({
             status: 0,
-            message: `Nómina generada con ${ empleados.length } empleado(s).`,
+            message: `Nómina generada con ${ empleadosAGenerar.length } empleado(s).${ sOmitidos }`,
             data: { id: idNomina }
         });
 
@@ -222,29 +268,41 @@ const getNominasList = async(req, res = response) => {
 
     const {
         estatus = ''
+        , idsEmpleados = []
         , pageSize = 10
         , pageIndex = 0
     } = req.body;
 
+    // Filtro opcional por empleados: corridas que incluyan a
+    // cualquiera de los elegidos (combobox de búsqueda bajo demanda).
+    const bFiltrarEmpleados = Array.isArray(idsEmpleados) && idsEmpleados.length > 0;
+    const sJoinEmpleados = bFiltrarEmpleados
+        ? `INNER JOIN ( SELECT DISTINCT idNomina FROM nomina_recibos WHERE idEmpleado IN (:idsEmpleados) ) AS RF ON RF.idNomina = N.idNomina`
+        : '';
+
     try{
 
         const [countRow] = await dbConnection.query(
-            `SELECT COUNT(*) AS iRows FROM nomina WHERE ( :estatus = '' OR estatus = :estatus )`,
-            { replacements: { estatus }, type: dbConnection.QueryTypes.SELECT }
+            `SELECT COUNT(*) AS iRows FROM nomina AS N
+             ${ sJoinEmpleados }
+             WHERE ( :estatus = '' OR N.estatus = :estatus )`,
+            { replacements: { estatus, idsEmpleados }, type: dbConnection.QueryTypes.SELECT }
         );
 
         const rows = await dbConnection.query(
             `SELECT
-                N.idNomina AS id, N.tipoPeriodo, N.fechaInicio, N.fechaFin, N.estatus,
+                N.idNomina AS id, N.fechaInicio, N.fechaFin, N.estatus,
                 DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
                 DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
                 N.totalPercepciones, N.totalDeducciones, N.totalNeto,
-                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina ) AS iEmpleados
+                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina ) AS iEmpleados,
+                ( SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = N.idNomina LIMIT 1 ) AS idNominaReciboUnico
              FROM nomina AS N
+             ${ sJoinEmpleados }
              WHERE ( :estatus = '' OR N.estatus = :estatus )
              ORDER BY N.idNomina DESC
              LIMIT :offset, :limit`,
-            { replacements: { estatus, offset: Number(pageIndex) * Number(pageSize), limit: Number(pageSize) }, type: dbConnection.QueryTypes.SELECT }
+            { replacements: { estatus, idsEmpleados, offset: Number(pageIndex) * Number(pageSize), limit: Number(pageSize) }, type: dbConnection.QueryTypes.SELECT }
         );
 
         res.json({
@@ -580,13 +638,16 @@ const pagarNomina = async(req, res = response) => {
 
         // Liga (set-based, sin loop) los renglones PENDIENTE de la
         // bitácora de comisiones cuyo idUser tenga recibo en esta
-        // nómina y cuya fecha caiga dentro del rango del periodo.
+        // nómina — dentro del rango de fechas si la nómina tiene uno,
+        // o todos si se generó sin acotar fechas.
         await dbConnection.query(
             `UPDATE comisiones_track AS CT
              INNER JOIN nomina_recibos AS R ON R.idUser = CT.idUser AND R.idNomina = :id
              INNER JOIN nomina AS N ON N.idNomina = R.idNomina
              SET CT.estatus = 'INCLUIDA_EN_NOMINA', CT.idNomina = :id
-             WHERE CT.estatus = 'PENDIENTE' AND CT.fecha BETWEEN N.fechaInicio AND N.fechaFin`,
+             WHERE CT.estatus = 'PENDIENTE'
+             AND ( N.fechaInicio IS NULL OR CT.fecha >= N.fechaInicio )
+             AND ( N.fechaFin IS NULL OR CT.fecha <= N.fechaFin )`,
             { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
         );
 
@@ -746,7 +807,7 @@ const getNominasByEmpleado = async(req, res = response) => {
 
         const rows = await dbConnection.query(
             `SELECT
-                N.idNomina AS id, N.tipoPeriodo, N.fechaInicio, N.fechaFin, N.estatus,
+                N.idNomina AS id, N.fechaInicio, N.fechaFin, N.estatus,
                 DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
                 DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
                 R.idNominaRecibo, R.neto

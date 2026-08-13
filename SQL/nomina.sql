@@ -9,9 +9,8 @@
 
 CREATE TABLE IF NOT EXISTS `nomina` (
   `idNomina`             BIGINT NOT NULL AUTO_INCREMENT,
-  `tipoPeriodo`          VARCHAR(10) NOT NULL COMMENT 'SEMANA | QUINCENA | MES, informativo',
-  `fechaInicio`          DATE NOT NULL,
-  `fechaFin`             DATE NOT NULL,
+  `fechaInicio`          DATE NULL COMMENT 'opcional, acota que comisiones pendientes se suman al generar',
+  `fechaFin`             DATE NULL COMMENT 'opcional, acota que comisiones pendientes se suman al generar',
   `estatus`              VARCHAR(20) NOT NULL DEFAULT 'BORRADOR' COMMENT 'BORRADOR | PAGADA | CANCELADA',
   `totalPercepciones`    DECIMAL(12,2) NOT NULL DEFAULT 0,
   `totalDeducciones`     DECIMAL(12,2) NOT NULL DEFAULT 0,

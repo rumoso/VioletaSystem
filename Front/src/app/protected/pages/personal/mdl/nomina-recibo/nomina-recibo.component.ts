@@ -1,7 +1,10 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
+import { ColumnFormat } from 'src/app/protected/interfaces/global.interfaces';
 import { NominaConceptosService } from 'src/app/protected/services/nomina-conceptos.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
@@ -15,11 +18,16 @@ import { ActionAuthorizationComponent } from '../../../security/users/mdl/action
 // si la nómina sigue en BORRADOR y, además, con autorización especial
 // por código/rostro (permiso nomina_EditarConceptos) — se pide una vez
 // al empezar a editar, válida mientras el modal siga abierto.
+//
+// Trae también Pagar/Cancelar/Eliminar de la nómina completa (mismas
+// acciones que nomina-detalle) porque, cuando una corrida tiene un
+// solo empleado, nomina-list abre este recibo directo sin pasar por
+// el detalle — así no se pierde acceso a esas acciones.
 
 @Component({
   selector: 'app-nomina-recibo',
   templateUrl: './nomina-recibo.component.html',
-  styleUrls: ['../empleado/empleado.component.css', './nomina-recibo.component.css']
+  styleUrls: ['../empleado/empleado.component.css', '../../personal-catalogo-list/personal-catalogo-list.component.css', './nomina-recibo.component.css']
 })
 export class NominaReciboComponent implements OnInit {
 
@@ -41,12 +49,17 @@ export class NominaReciboComponent implements OnInit {
   bAutorizado: boolean = false;
   authIdUser: number = 0;
 
+  // Fecha en que se está viendo/generando este recibo (para el
+  // encabezado y para el Excel exportado).
+  fechaGeneracion: Date = new Date();
+
   @ViewChild('montoInput') montoInputRef!: ElementRef<HTMLInputElement>;
 
   constructor(
     private dialogRef: MatDialogRef<NominaReciboComponent>
     , @Inject(MAT_DIALOG_DATA) public ODataP: any
 
+    , private authServ: AuthService
     , private servicesGServ: ServicesGService
     , private nominaServ: NominaService
     , private nominaConceptosServ: NominaConceptosService
@@ -57,6 +70,10 @@ export class NominaReciboComponent implements OnInit {
   ngOnInit(): void {
     this.idNominaRecibo = this.ODataP.idNominaRecibo;
     this.fn_cargar();
+  }
+
+  fn_hasPermission( name: string ): boolean {
+    return this.authServ.hasPermissionAction(name);
   }
 
   get bSoloLectura(): boolean {
@@ -202,6 +219,126 @@ export class NominaReciboComponent implements OnInit {
                 }
               },
               error: () => { this.servicesGServ.showSnakbar('Problemas con el servicio'); }
+            });
+        }
+      }
+    });
+  }
+
+  fn_exportarExcel() {
+
+    const filas: any[] = [];
+
+    this.percepciones.forEach(item => {
+      filas.push({ Concepto: item.conceptoDesc, Tipo: 'Percepción', Monto: item.monto });
+    });
+    this.deducciones.forEach(item => {
+      filas.push({ Concepto: item.conceptoDesc, Tipo: 'Deducción', Monto: item.bEsComisiones ? -item.monto : item.monto });
+    });
+
+    filas.push({ Concepto: '', Tipo: '', Monto: null });
+    filas.push({ Concepto: 'TOTAL DE PERCEPCIONES', Tipo: '', Monto: this.recibo.totalPercepciones });
+    filas.push({ Concepto: 'TOTAL DE DEDUCCIONES', Tipo: '', Monto: -this.recibo.totalDeducciones });
+    filas.push({ Concepto: 'TOTAL NETO', Tipo: '', Monto: this.recibo.neto });
+
+    const columnFormats: ColumnFormat[] = [
+      { col: 0, currencyFormat: false, textAlignment: 'left' },
+      { col: 1, currencyFormat: false, textAlignment: 'left' },
+      { col: 2, currencyFormat: true, textAlignment: 'right' }
+    ];
+
+    const sFecha = this.fechaGeneracion.toISOString().replace(/[:.]/g, '-');
+    const sNombre = (this.recibo.nombreEmpleado || 'recibo').replace(/\s+/g, '_');
+    this.servicesGServ.exportToExcel(filas, `Recibo_${ sNombre }_${ sFecha }.xlsx`, columnFormats);
+  }
+
+  // ---- Pagar / cancelar / eliminar la nómina completa (mismas
+  // acciones y permisos que nomina-detalle) ----
+
+  fn_pagar() {
+
+    this.servicesGServ.showDialog('¿Confirmar pago?'
+      , `Está a punto de pagar esta nómina por un total de ${ this.recibo.neto } (neto). Después de pagar no se puede editar.`
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: (resp) => {
+        if (resp) {
+          this.bShowSpinner = true;
+          this.nominaServ.CPagar(this.recibo.idNomina)
+            .subscribe({
+              next: (resp2: any) => {
+                this.servicesGServ.showSnakbar(resp2.message);
+                this.bShowSpinner = false;
+                if (resp2.status === 0) {
+                  this.fn_cargar();
+                }
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar('Problemas con el servicio');
+                this.bShowSpinner = false;
+              }
+            });
+        }
+      }
+    });
+  }
+
+  fn_cancelar() {
+
+    const motivo = window.prompt('Motivo para cancelar esta nómina pagada:');
+
+    if (motivo === null) {
+      return;
+    }
+    if (!motivo.trim()) {
+      this.servicesGServ.showSnakbar('El motivo es obligatorio.');
+      return;
+    }
+
+    this.bShowSpinner = true;
+    this.nominaServ.CCancelar(this.recibo.idNomina, motivo.trim())
+      .subscribe({
+        next: (resp2: any) => {
+          this.servicesGServ.showSnakbar(resp2.message);
+          this.bShowSpinner = false;
+          if (resp2.status === 0) {
+            this.fn_cargar();
+          }
+        },
+        error: (ex: HttpErrorResponse) => {
+          console.log(ex)
+          this.servicesGServ.showSnakbar('Problemas con el servicio');
+          this.bShowSpinner = false;
+        }
+      });
+  }
+
+  fn_eliminar() {
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+      , `Está a punto de ELIMINAR POR COMPLETO esta nómina. Esta acción no se puede deshacer.`
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: (resp) => {
+        if (resp) {
+          this.bShowSpinner = true;
+          this.nominaServ.CDelete(this.recibo.idNomina)
+            .subscribe({
+              next: (resp2: any) => {
+                this.servicesGServ.showSnakbar(resp2.message);
+                this.bShowSpinner = false;
+                if (resp2.status === 0) {
+                  this.dialogRef.close(true);
+                }
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar('Problemas con el servicio');
+                this.bShowSpinner = false;
+              }
             });
         }
       }

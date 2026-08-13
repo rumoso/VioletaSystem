@@ -20,15 +20,18 @@ const {
 const router = Router();
 
 router.post('/generarNomina',[
-    check('tipoPeriodo','El tipo de periodo es obligatorio').isIn(['SEMANA','QUINCENA','MES']),
-    check('fechaInicio','La fecha de inicio es obligatoria').not().isEmpty(),
-    check('fechaFin','La fecha final es obligatoria').not().isEmpty(),
+    check('fechaInicio','La fecha de inicio debe ser una fecha válida').optional({ checkFalsy: true }).isISO8601(),
+    check('fechaFin','La fecha final debe ser una fecha válida').optional({ checkFalsy: true }).isISO8601(),
     check('idsEmpleados','Los empleados elegidos deben ser una lista').optional().isArray(),
     validarCampos
 
 ], generarNomina );
 
-router.post('/getNominasList', getNominasList );
+router.post('/getNominasList',[
+    check('idsEmpleados','Los empleados elegidos deben ser una lista').optional().isArray(),
+    validarCampos
+
+], getNominasList );
 
 router.post('/getNominaDetalle',[
     check('id','El id es obligatorio').not().isEmpty(),

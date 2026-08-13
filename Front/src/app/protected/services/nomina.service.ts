@@ -21,17 +21,18 @@ export class NominaService {
     , private authServ: AuthService
     ) { }
 
-  CGenerar( tipoPeriodo: string, fechaInicio: string, fechaFin: string, idsEmpleados: number[] = [] ): Observable<any> {
-    const data: any = { tipoPeriodo, fechaInicio, fechaFin, idsEmpleados };
+  CGenerar( fechaInicio: string, fechaFin: string, idsEmpleados: number[] = [] ): Observable<any> {
+    const data: any = { fechaInicio, fechaFin, idsEmpleados };
     data.idUserLogON = this.authServ.getIdUserSession();
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/generarNomina`, data );
   }
 
-  CGetList( pagination: Pagination, estatus: string = '' ): Observable<ResponseGet> {
+  CGetList( pagination: Pagination, estatus: string = '', idsEmpleados: number[] = [] ): Observable<ResponseGet> {
     const data = {
       pageSize: pagination.pageSize,
       pageIndex: pagination.pageIndex,
-      estatus
+      estatus,
+      idsEmpleados
     };
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getNominasList`, data );
   }

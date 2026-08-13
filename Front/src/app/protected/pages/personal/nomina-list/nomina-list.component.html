@@ -15,6 +15,23 @@
             </select>
         </div>
 
+        <div class="pcl-slim-field">
+            <label class="pcl-slim-label">Empleados</label>
+            <input class="pcl-slim-input"
+                type="text"
+                placeholder="Busca por nombre o usuario..."
+                [formControl]="empleadoSearchControl"
+                [matAutocomplete]="autoEmpleadosFiltro">
+            <mat-autocomplete autoActiveFirstOption
+                                #autoEmpleadosFiltro="matAutocomplete"
+                                (optionSelected)="fn_agregarEmpleadoFiltro($event.option.value)">
+                <mat-option *ngIf="bBuscandoEmpleados" disabled>Buscando...</mat-option>
+                <mat-option *ngFor="let e of empleadosEncontrados" [value]="e">
+                    {{ e.nombre }} <span *ngIf="e.userName">— {{ e.userName }}</span>
+                </mat-option>
+            </mat-autocomplete>
+        </div>
+
         <div class="pcl-filtro-botones">
             <button mat-raised-button type="button" (click)="fn_getList()">
                 <mat-icon matPrefix class="my-icon">refresh</mat-icon>
@@ -28,6 +45,13 @@
         </div>
     </div>
 
+    <div class="ng-chips" *ngIf="empleadosFiltro.length > 0">
+        <span class="ng-chip" *ngFor="let e of empleadosFiltro">
+            {{ e.nombre }}
+            <mat-icon (click)="fn_quitarEmpleadoFiltro(e)">close</mat-icon>
+        </span>
+    </div>
+
     <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
         <mat-icon class="pcl-vacio-icon">payments</mat-icon>
         <p>No hay nóminas generadas{{ estatusControl.value ? ' con ese estatus' : '' }}.</p>
@@ -38,7 +62,6 @@
             <thead>
                 <tr>
                     <th class="textAlingLeft">Periodo</th>
-                    <th class="textAlingCenter">Tipo</th>
                     <th class="textAlingCenter">Empleados</th>
                     <th class="textAlingRight">Percepciones</th>
                     <th class="textAlingRight">Deducciones</th>
@@ -50,10 +73,7 @@
             <tbody>
                 <tr *ngFor="let item of catlist" class="nl-row" (click)="fn_abrirDetalle(item)">
                     <td>
-                        <span class="pcl-principal">{{ item.fechaInicioDesc }} — {{ item.fechaFinDesc }}</span>
-                    </td>
-                    <td class="textAlingCenter">
-                        <span class="pcl-chip pcl-chip-neutro">{{ item.tipoPeriodo | titlecase }}</span>
+                        <span class="pcl-principal">{{ fn_periodoDesc(item) }}</span>
                     </td>
                     <td class="textAlingCenter">{{ item.iEmpleados }}</td>
                     <td class="textAlingRight">{{ item.totalPercepciones | currency }}</td>
@@ -70,6 +90,12 @@
                     <td class="textAlingCenter">
                         <button mat-icon-button matTooltip="Ver detalle" (click)="$event.stopPropagation(); fn_abrirDetalle(item)">
                             <mat-icon class="colorGreen">visibility</mat-icon>
+                        </button>
+                        <button mat-icon-button
+                        *ngIf="item.estatus === 'BORRADOR' && bPuedeEliminar"
+                        matTooltip="Eliminar nómina"
+                        (click)="$event.stopPropagation(); fn_eliminar(item)">
+                            <mat-icon class="colorRed">delete_forever</mat-icon>
                         </button>
                     </td>
                 </tr>

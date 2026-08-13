@@ -40,6 +40,15 @@ export class NominaHistorialEmpleadoComponent implements OnInit {
       });
   }
 
+  // El rango de fechas es opcional (analisis/007): sin fechas, la
+  // corrida tomó todas las comisiones pendientes al generarse.
+  fn_periodoDesc( item: any ): string {
+    if (item.fechaInicioDesc && item.fechaFinDesc) { return `${ item.fechaInicioDesc } — ${ item.fechaFinDesc }`; }
+    if (item.fechaInicioDesc) { return `Desde ${ item.fechaInicioDesc }`; }
+    if (item.fechaFinDesc) { return `Hasta ${ item.fechaFinDesc }`; }
+    return 'Todas las comisiones pendientes';
+  }
+
   fn_abrirRecibo( item: any ) {
     this.servicesGServ.showModalWithParams(NominaReciboComponent, { idNominaRecibo: item.idNominaRecibo }, '620px');
   }

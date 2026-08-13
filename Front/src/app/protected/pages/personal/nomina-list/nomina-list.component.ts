@@ -1,12 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
+import { debounceTime } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
+import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { NominaGenerarComponent } from '../mdl/nomina-generar/nomina-generar.component';
 import { NominaDetalleComponent } from '../mdl/nomina-detalle/nomina-detalle.component';
+import { NominaReciboComponent } from '../mdl/nomina-recibo/nomina-recibo.component';
 
 // Lista de corridas de nómina (analisis/007) — patrón maestro-detalle:
 // esta pantalla es el maestro, el detalle de cada corrida se abre en
@@ -24,6 +27,11 @@ export class NominaListComponent implements OnInit {
 
   estatusControl: FormControl = new FormControl('');
 
+  empleadoSearchControl: FormControl = new FormControl('');
+  empleadosEncontrados: any[] = [];
+  bBuscandoEmpleados: boolean = false;
+  empleadosFiltro: any[] = [];
+
   pagination: Pagination = {
     search: '',
     length: 10,
@@ -36,7 +44,18 @@ export class NominaListComponent implements OnInit {
     private authServ: AuthService
     , private servicesGServ: ServicesGService
     , private nominaServ: NominaService
-    ) { }
+    , private empleadosServ: EmpleadosService
+    ) {
+      this.empleadoSearchControl.valueChanges
+        .pipe(debounceTime(500))
+        .subscribe((valor: any) => {
+          if (typeof valor === 'string' && valor.trim().length > 0) {
+            this.fn_buscarEmpleados(valor);
+          } else {
+            this.empleadosEncontrados = [];
+          }
+        });
+    }
 
   ngOnInit(): void {
     this.authServ.checkSession();
@@ -45,6 +64,40 @@ export class NominaListComponent implements OnInit {
 
   get bPuedeGenerar(): boolean {
     return this.authServ.hasPermissionAction('nomina_Generar');
+  }
+
+  get bPuedeEliminar(): boolean {
+    return this.authServ.hasPermissionAction('nomina_Eliminar');
+  }
+
+  private fn_buscarEmpleados( search: string ) {
+
+    this.bBuscandoEmpleados = true;
+    this.empleadosServ.CGetList({ search, length: 0, pageSize: 10, pageIndex: 0, pageSizeOptions: [] })
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          const rows = resp.status === 0 ? (resp.data.rows || []) : [];
+          const idsYaElegidos = new Set(this.empleadosFiltro.map(e => e.id));
+          this.empleadosEncontrados = rows.filter((e: any) => !idsYaElegidos.has(e.id));
+          this.bBuscandoEmpleados = false;
+        },
+        error: () => {
+          this.empleadosEncontrados = [];
+          this.bBuscandoEmpleados = false;
+        }
+      });
+  }
+
+  fn_agregarEmpleadoFiltro( empleado: any ) {
+    this.empleadosFiltro.push(empleado);
+    this.empleadosEncontrados = this.empleadosEncontrados.filter(e => e.id !== empleado.id);
+    this.empleadoSearchControl.setValue('', { emitEvent: false });
+    this.fn_buscar();
+  }
+
+  fn_quitarEmpleadoFiltro( empleado: any ) {
+    this.empleadosFiltro = this.empleadosFiltro.filter(e => e.id !== empleado.id);
+    this.fn_buscar();
   }
 
   fn_buscar() {
@@ -60,7 +113,7 @@ export class NominaListComponent implements OnInit {
   fn_getList() {
 
     this.bShowSpinner = true;
-    this.nominaServ.CGetList(this.pagination, this.estatusControl.value || '')
+    this.nominaServ.CGetList(this.pagination, this.estatusControl.value || '', this.empleadosFiltro.map(e => e.id))
       .subscribe({
         next: (resp: ResponseGet) => {
           this.catlist = resp.data.rows;
@@ -88,13 +141,65 @@ export class NominaListComponent implements OnInit {
     });
   }
 
+  // El rango de fechas es opcional (analisis/007): sin fechas, la
+  // corrida tomó todas las comisiones pendientes al generarse.
+  fn_periodoDesc( item: any ): string {
+    if (item.fechaInicioDesc && item.fechaFinDesc) { return `${ item.fechaInicioDesc } — ${ item.fechaFinDesc }`; }
+    if (item.fechaInicioDesc) { return `Desde ${ item.fechaInicioDesc }`; }
+    if (item.fechaFinDesc) { return `Hasta ${ item.fechaFinDesc }`; }
+    return 'Todas las comisiones pendientes';
+  }
+
+  // Con un solo empleado en la corrida, el paso intermedio de
+  // nomina-detalle no aporta nada — se abre el recibo directo (que ya
+  // trae sus propias acciones de Pagar/Cancelar/Eliminar).
   fn_abrirDetalle( item: any ) {
+
+    if (item.iEmpleados === 1 && item.idNominaReciboUnico) {
+      this.servicesGServ.showModalWithParams(NominaReciboComponent, { idNominaRecibo: item.idNominaReciboUnico }, '620px')
+      .afterClosed().subscribe({
+        next: () => { this.fn_getList(); }
+      });
+      return;
+    }
 
     this.servicesGServ.showModalWithParams(NominaDetalleComponent, { id: item.id }, '900px')
     .afterClosed().subscribe({
       next: (huboCambios: any) => {
         if (huboCambios) {
           this.fn_getList();
+        }
+      }
+    });
+  }
+
+  // Eliminación física (permiso especial nomina_Eliminar, solo
+  // BORRADOR) directamente desde el listado, sin entrar al detalle.
+  fn_eliminar( item: any ) {
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+      , `Está a punto de ELIMINAR POR COMPLETO la nómina "${ this.fn_periodoDesc(item) }". Esta acción no se puede deshacer.`
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: (resp) => {
+        if (resp) {
+          this.bShowSpinner = true;
+          this.nominaServ.CDelete(item.id)
+            .subscribe({
+              next: (resp2: any) => {
+                this.servicesGServ.showSnakbar(resp2.message);
+                this.bShowSpinner = false;
+                if (resp2.status === 0) {
+                  this.fn_getList();
+                }
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar('Problemas con el servicio');
+                this.bShowSpinner = false;
+              }
+            });
         }
       }
     });

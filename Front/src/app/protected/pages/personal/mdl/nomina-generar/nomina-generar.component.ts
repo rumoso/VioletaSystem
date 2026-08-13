@@ -1,17 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { debounceTime } from 'rxjs';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
 
-// Modal de generación de nómina (analisis/007): captura tipo de
-// periodo + rango de fechas + opcionalmente qué empleados incluir.
-// Sin empleados elegidos, se genera para todos los activos (avisado
-// explícitamente en pantalla). Genera el borrador y cierra devolviendo
-// el id creado para abrir su detalle de inmediato.
+// Modal de generación de nómina (analisis/007): opcionalmente un
+// rango de fechas (solo para acotar qué comisiones pendientes se
+// suman — sin fechas se toman todas) y opcionalmente qué empleados
+// incluir. Sin empleados elegidos, se genera para todos los activos
+// (avisado explícitamente en pantalla). Genera el borrador y cierra
+// devolviendo el id creado para abrir su detalle de inmediato.
 
 @Component({
   selector: 'app-nomina-generar',
@@ -24,9 +25,8 @@ export class NominaGenerarComponent {
   banner: { tipo: 'ok' | 'error'; mensaje: string } | null = null;
 
   myForm: FormGroup = this.fb.group({
-    tipoPeriodo: ['SEMANA', [Validators.required]],
-    fechaInicio: ['', [Validators.required]],
-    fechaFin: ['', [Validators.required]]
+    fechaInicio: [''],
+    fechaFin: ['']
   });
 
   empleadoSearchControl: FormControl = new FormControl('');
@@ -85,12 +85,10 @@ export class NominaGenerarComponent {
 
     this.banner = null;
 
-    if (this.myForm.invalid) {
-      this.myForm.markAllAsTouched();
-      return;
-    }
+    const fechaInicio = this.myForm.value.fechaInicio;
+    const fechaFin = this.myForm.value.fechaFin;
 
-    if (this.myForm.value.fechaFin < this.myForm.value.fechaInicio) {
+    if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
       this.banner = { tipo: 'error', mensaje: 'La fecha final no puede ser anterior a la inicial.' };
       return;
     }
@@ -99,7 +97,7 @@ export class NominaGenerarComponent {
 
     const idsEmpleados = this.empleadosElegidos.map(e => e.id);
 
-    this.nominaServ.CGenerar(this.myForm.value.tipoPeriodo, this.myForm.value.fechaInicio, this.myForm.value.fechaFin, idsEmpleados)
+    this.nominaServ.CGenerar(fechaInicio, fechaFin, idsEmpleados)
       .subscribe({
         next: (resp: any) => {
           this.bGenerando = false;

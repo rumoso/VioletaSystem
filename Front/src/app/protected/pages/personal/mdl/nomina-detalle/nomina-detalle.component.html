@@ -2,7 +2,10 @@
 
     <div mat-dialog-title class="pcm-header">
         <div class="pcm-header-titulo">
-            <span class="pcm-titulo">Nómina — {{ nomina?.fechaInicio | date:'dd-MM-yyyy' }} a {{ nomina?.fechaFin | date:'dd-MM-yyyy' }}</span>
+            <span class="pcm-titulo" *ngIf="nomina?.fechaInicio && nomina?.fechaFin">Nómina — {{ nomina.fechaInicio | date:'dd-MM-yyyy' }} a {{ nomina.fechaFin | date:'dd-MM-yyyy' }}</span>
+            <span class="pcm-titulo" *ngIf="nomina?.fechaInicio && !nomina?.fechaFin">Nómina — desde {{ nomina.fechaInicio | date:'dd-MM-yyyy' }}</span>
+            <span class="pcm-titulo" *ngIf="!nomina?.fechaInicio && nomina?.fechaFin">Nómina — hasta {{ nomina.fechaFin | date:'dd-MM-yyyy' }}</span>
+            <span class="pcm-titulo" *ngIf="nomina && !nomina.fechaInicio && !nomina.fechaFin">Nómina — creada el {{ nomina.createDate | date:'dd-MM-yyyy' }}</span>
             <span class="pcl-chip" *ngIf="nomina"
                 [class.pcl-chip-activo]="nomina.estatus === 'PAGADA'"
                 [class.pcl-chip-neutro]="nomina.estatus === 'BORRADOR'"

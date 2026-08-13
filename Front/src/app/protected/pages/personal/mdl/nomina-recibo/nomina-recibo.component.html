@@ -1,13 +1,23 @@
 <div class="pcm-modal">
 
     <div mat-dialog-title class="pcm-header">
-        <span class="pcm-titulo">Recibo — {{ recibo?.nombreEmpleado }}</span>
+        <div class="pcm-header-titulo">
+            <span class="pcm-titulo">Recibo — {{ recibo?.nombreEmpleado }}</span>
+            <span class="pcl-chip" *ngIf="recibo"
+                [class.pcl-chip-activo]="recibo.estatusNomina === 'PAGADA'"
+                [class.pcl-chip-neutro]="recibo.estatusNomina === 'BORRADOR'"
+                [class.pcl-chip-inactivo]="recibo.estatusNomina === 'CANCELADA'">
+                {{ recibo.estatusNomina }}
+            </span>
+        </div>
         <button mat-icon-button (click)="fn_close()">
             <mat-icon>close</mat-icon>
         </button>
     </div>
 
     <mat-dialog-content class="pcm-content" *ngIf="recibo">
+
+        <p class="pcm-slim-hint rc-fecha-generacion">Generado el {{ fechaGeneracion | date:'dd/MM/yyyy HH:mm' }}</p>
 
         <div class="pcm-banner" *ngIf="banner"
             [class.pcm-banner-ok]="banner.tipo === 'ok'"
@@ -117,6 +127,29 @@
     </mat-dialog-content>
 
     <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-stroked-button type="button" *ngIf="recibo" (click)="fn_exportarExcel()">
+            <mat-icon matPrefix class="my-icon">grid_on</mat-icon>
+            Exportar a Excel</button>
+
+        <button mat-raised-button color="warn" type="button"
+        *ngIf="recibo?.estatusNomina === 'BORRADOR' && fn_hasPermission('nomina_Eliminar')"
+        (click)="fn_eliminar()">
+            <mat-icon matPrefix class="my-icon">delete_forever</mat-icon>
+            Eliminar nómina</button>
+
+        <button mat-raised-button color="warn" type="button"
+        *ngIf="recibo?.estatusNomina === 'PAGADA' && fn_hasPermission('nomina_Cancelar')"
+        (click)="fn_cancelar()">
+            <mat-icon matPrefix class="my-icon">cancel</mat-icon>
+            Cancelar nómina</button>
+
+        <button mat-raised-button color="primary" type="button"
+        *ngIf="recibo?.estatusNomina === 'BORRADOR' && fn_hasPermission('nomina_Pagar')"
+        (click)="fn_pagar()">
+            <mat-icon matPrefix class="my-icon">payments</mat-icon>
+            Pagar nómina</button>
+
         <button mat-raised-button type="button" (click)="fn_close()">
             <mat-icon matPrefix class="my-icon">close</mat-icon>
             Cerrar</button>

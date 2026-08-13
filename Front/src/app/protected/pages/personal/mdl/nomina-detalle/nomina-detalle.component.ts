@@ -169,9 +169,10 @@ export class NominaDetalleComponent implements OnInit {
 
     const sInicio = (this.nomina.fechaInicio || '').toString().substring(0, 10);
     const sFin = (this.nomina.fechaFin || '').toString().substring(0, 10);
+    const sPeriodo = sInicio && sFin ? `${ sInicio } al ${ sFin }` : 'sin rango de fechas asociado';
 
     this.servicesGServ.showDialog('¿Estás seguro?'
-      , `Está a punto de ELIMINAR POR COMPLETO esta nómina (${ sInicio } al ${ sFin }). Esta acción no se puede deshacer.`
+      , `Está a punto de ELIMINAR POR COMPLETO esta nómina (${ sPeriodo }). Esta acción no se puede deshacer.`
       , '¿Desea continuar?'
       , 'Si', 'No')
     .afterClosed().subscribe({
