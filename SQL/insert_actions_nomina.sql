@@ -24,6 +24,16 @@ WHERE S.sectionName = 'Personal'
 AND NOT EXISTS ( SELECT 1 FROM actions WHERE name = 'nomina_Cancelar' )
 LIMIT 1;
 
+-- Eliminación física de una nómina completa (permiso separado y más
+-- restringido que Generar) — solo aplica a nóminas en BORRADOR, nunca
+-- a una ya pagada/cancelada (esas conservan su historial).
+INSERT INTO actions (createDate, idActionSection, name, nameHtml, description, active, nSpecial)
+SELECT NOW(), S.idActionSection, 'nomina_Eliminar', 'Eliminar nómina completa', 'Permite borrar por completo una nómina en borrador (permiso restringido); no aplica a nóminas ya pagadas o canceladas', 1, 0
+FROM actionsection AS S
+WHERE S.sectionName = 'Personal'
+AND NOT EXISTS ( SELECT 1 FROM actions WHERE name = 'nomina_Eliminar' )
+LIMIT 1;
+
 -- Menú "Nómina", hijo de "Personal"
 INSERT INTO menus (createDate, idMenuPadre, lugar, name, description, icon, linkCat, linkList, imgDash, imgDashSize, idAplication, active)
 SELECT NOW(), M.idMenu, '6', 'Nómina', 'Generación y pago de nómina de empleados', NULL, NULL, 'nominaList', 'assets/img/icons/invFisico.png', '80', '1', '1'

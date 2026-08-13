@@ -162,6 +162,43 @@ export class NominaDetalleComponent implements OnInit {
       });
   }
 
+  // Eliminación física de la nómina completa (permiso especial,
+  // nomina_Eliminar) — solo aplica a BORRADOR; el Back rechaza si ya
+  // se pagó o se canceló (esas quedan como comprobante permanente).
+  fn_eliminar() {
+
+    const sInicio = (this.nomina.fechaInicio || '').toString().substring(0, 10);
+    const sFin = (this.nomina.fechaFin || '').toString().substring(0, 10);
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+      , `Está a punto de ELIMINAR POR COMPLETO esta nómina (${ sInicio } al ${ sFin }). Esta acción no se puede deshacer.`
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: (resp) => {
+        if (resp) {
+          this.bShowSpinner = true;
+          this.nominaServ.CDelete(this.id)
+            .subscribe({
+              next: (resp2: any) => {
+                this.servicesGServ.showSnakbar(resp2.message);
+                this.bShowSpinner = false;
+                if (resp2.status === 0) {
+                  this.huboCambios = true;
+                  this.dialogRef.close(true);
+                }
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar('Problemas con el servicio');
+                this.bShowSpinner = false;
+              }
+            });
+        }
+      }
+    });
+  }
+
   fn_close() {
     this.dialogRef.close(this.huboCambios);
   }

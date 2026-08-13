@@ -69,6 +69,10 @@ export class NominaService {
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/cancelarNomina`, data );
   }
 
+  CDelete( id: number ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/deleteNomina`, { id } );
+  }
+
   CGetNominasByEmpleado( idEmpleado: number ): Observable<ResponseGet> {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getNominasByEmpleado`, { idEmpleado } );
   }

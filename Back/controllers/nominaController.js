@@ -661,6 +661,75 @@ const cancelarNomina = async(req, res = response) => {
     }
 };
 
+// Eliminación física de una nómina completa (permiso nomina_Eliminar,
+// separado y más restringido que Generar). Solo se permite en
+// BORRADOR — nada se pagó ni se ligó comisiones todavía, así que
+// borrarla no destruye ningún historial. Una PAGADA/CANCELADA nunca se
+// borra (se sugiere cancelar en su lugar); ese registro es el
+// comprobante permanente.
+const deleteNomina = async(req, res = response) => {
+
+    const { id } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const [nomina] = await dbConnection.query(
+            `SELECT estatus FROM nomina WHERE idNomina = :id LIMIT 1`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!nomina) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "La nómina no existe." });
+        }
+        if (nomina.estatus !== 'BORRADOR') {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: nomina.estatus === 'PAGADA'
+                    ? "No se puede eliminar: ya está pagada. Cancélala en su lugar."
+                    : "No se puede eliminar: es historial de una nómina cancelada."
+            });
+        }
+
+        await dbConnection.query(
+            `DELETE FROM nomina_recibo_detalle
+             WHERE idNominaRecibo IN ( SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = :id )`,
+            { replacements: { id }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await dbConnection.query(
+            `DELETE FROM nomina_recibos WHERE idNomina = :id`,
+            { replacements: { id }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await dbConnection.query(
+            `DELETE FROM nomina WHERE idNomina = :id`,
+            { replacements: { id }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: "Nómina eliminada por completo."
+        });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
 const getNominasByEmpleado = async(req, res = response) => {
 
     const { idEmpleado } = req.body;
@@ -702,6 +771,7 @@ module.exports = {
     , getNominasList
     , getNominaDetalle
     , getRecibo
+    , deleteNomina
     , insertUpdateReciboDetalle
     , deleteReciboDetalle
     , excluirRecibo

@@ -13,6 +13,7 @@ const {
     , excluirRecibo
     , pagarNomina
     , cancelarNomina
+    , deleteNomina
     , getNominasByEmpleado
      } = require('../controllers/nominaController');
 
@@ -73,6 +74,12 @@ router.post('/cancelarNomina',[
     validarCampos
 
 ], cancelarNomina );
+
+router.post('/deleteNomina',[
+    check('id','El id es obligatorio').not().isEmpty(),
+    validarCampos
+
+], deleteNomina );
 
 router.post('/getNominasByEmpleado',[
     check('idEmpleado','El empleado es obligatorio').not().isEmpty(),

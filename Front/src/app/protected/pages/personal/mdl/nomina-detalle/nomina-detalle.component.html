@@ -80,6 +80,12 @@
             <mat-icon matPrefix class="my-icon">payments</mat-icon>
             Pagar nómina</button>
 
+        <button mat-raised-button color="warn" type="button"
+        *ngIf="nomina?.estatus === 'BORRADOR' && fn_hasPermission('nomina_Eliminar')"
+        (click)="fn_eliminar()">
+            <mat-icon matPrefix class="my-icon">delete_forever</mat-icon>
+            Eliminar nómina</button>
+
     </mat-dialog-actions>
 
 </div>
