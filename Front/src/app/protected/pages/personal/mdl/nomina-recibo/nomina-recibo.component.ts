@@ -4,9 +4,9 @@ import { FormControl } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
-import { ColumnFormat } from 'src/app/protected/interfaces/global.interfaces';
 import { NominaConceptosService } from 'src/app/protected/services/nomina-conceptos.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
+import { PrinterPDFService } from 'src/app/protected/services/printer-pdf.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
 
@@ -63,6 +63,7 @@ export class NominaReciboComponent implements OnInit {
     , private servicesGServ: ServicesGService
     , private nominaServ: NominaService
     , private nominaConceptosServ: NominaConceptosService
+    , private printerServ: PrinterPDFService
     ) {
       this.dialogRef.disableClose = true;
     }
@@ -225,31 +226,8 @@ export class NominaReciboComponent implements OnInit {
     });
   }
 
-  fn_exportarExcel() {
-
-    const filas: any[] = [];
-
-    this.percepciones.forEach(item => {
-      filas.push({ Concepto: item.conceptoDesc, Tipo: 'Percepción', Monto: item.monto });
-    });
-    this.deducciones.forEach(item => {
-      filas.push({ Concepto: item.conceptoDesc, Tipo: 'Deducción', Monto: item.bEsComisiones ? -item.monto : item.monto });
-    });
-
-    filas.push({ Concepto: '', Tipo: '', Monto: null });
-    filas.push({ Concepto: 'TOTAL DE PERCEPCIONES', Tipo: '', Monto: this.recibo.totalPercepciones });
-    filas.push({ Concepto: 'TOTAL DE DEDUCCIONES', Tipo: '', Monto: -this.recibo.totalDeducciones });
-    filas.push({ Concepto: 'TOTAL NETO', Tipo: '', Monto: this.recibo.neto });
-
-    const columnFormats: ColumnFormat[] = [
-      { col: 0, currencyFormat: false, textAlignment: 'left' },
-      { col: 1, currencyFormat: false, textAlignment: 'left' },
-      { col: 2, currencyFormat: true, textAlignment: 'right' }
-    ];
-
-    const sFecha = this.fechaGeneracion.toISOString().replace(/[:.]/g, '-');
-    const sNombre = (this.recibo.nombreEmpleado || 'recibo').replace(/\s+/g, '_');
-    this.servicesGServ.exportToExcel(filas, `Recibo_${ sNombre }_${ sFecha }.xlsx`, columnFormats);
+  fn_exportarPDF() {
+    this.printerServ.generarPDFReciboNomina(this.recibo, this.percepciones, this.deducciones);
   }
 
   // ---- Pagar / cancelar / eliminar la nómina completa (mismas

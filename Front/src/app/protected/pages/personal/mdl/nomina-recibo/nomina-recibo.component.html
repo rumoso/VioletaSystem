@@ -128,9 +128,9 @@
 
     <mat-dialog-actions align="end" class="pcm-actions">
 
-        <button mat-stroked-button type="button" *ngIf="recibo" (click)="fn_exportarExcel()">
-            <mat-icon matPrefix class="my-icon">grid_on</mat-icon>
-            Exportar a Excel</button>
+        <button mat-stroked-button type="button" *ngIf="recibo" (click)="fn_exportarPDF()">
+            <mat-icon matPrefix class="my-icon">picture_as_pdf</mat-icon>
+            Exportar a PDF</button>
 
         <button mat-raised-button color="warn" type="button"
         *ngIf="recibo?.estatusNomina === 'BORRADOR' && fn_hasPermission('nomina_Eliminar')"
