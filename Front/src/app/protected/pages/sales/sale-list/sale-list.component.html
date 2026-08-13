@@ -282,6 +282,7 @@
 
             <td class="sll-td sll-td--left">
               <span class="sll-type-chip">{{ item.saleTypeDesc }}</span>
+              <span class="sll-type-entrega" *ngIf="item.fechaEntrega && item.userEntregaName">Entregó: {{ item.userEntregaName }}</span>
             </td>
 
             <td class="sll-td sll-td--right sll-td--amount">{{ item.total | currency }}</td>

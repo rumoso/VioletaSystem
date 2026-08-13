@@ -212,11 +212,13 @@ SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 	, S.active
 	, S.fechaEntrega
 	, S.idUserEntrega
+	, UE.name AS userEntregaName
 
 	FROM sales AS S
 	INNER JOIN sucursales AS SS ON S.idSucursal = SS.idSucursal
 	INNER JOIN salesListSec AS temp ON S.idSale = temp.idSale
 	INNER JOIN users AS U ON S.idSeller_idUser = U.idUser
+	LEFT JOIN users AS UE ON S.idUserEntrega = UE.idUser
 	INNER JOIN customers AS C ON S.idCustomer = C.idCustomer
 	INNER JOIN sales_type AS ST ON S.idSaleType = ST.idSaleType
 	LEFT JOIN sobre_taller_status AS STS ON S.idSale = STS.idSale AND S.idSucursal = STS.idSucursal

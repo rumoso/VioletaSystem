@@ -292,6 +292,13 @@
   color: #4527a0;
 }
 
+.sll-type-entrega {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #757575;
+}
+
 /* Fechas */
 .sll-td--date { min-width: 90px; }
 .sll-date { display: block; font-size: 13px; font-weight: 500; color: #444; }
