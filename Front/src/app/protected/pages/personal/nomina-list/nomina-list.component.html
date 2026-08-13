@@ -92,7 +92,7 @@
                             <mat-icon class="colorGreen">visibility</mat-icon>
                         </button>
                         <button mat-icon-button
-                        *ngIf="item.estatus === 'BORRADOR' && bPuedeEliminar"
+                        *ngIf="item.estatus !== 'PAGADA' && bPuedeEliminar"
                         matTooltip="Eliminar nómina"
                         (click)="$event.stopPropagation(); fn_eliminar(item)">
                             <mat-icon class="colorRed">delete_forever</mat-icon>

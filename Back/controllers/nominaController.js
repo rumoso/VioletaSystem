@@ -731,11 +731,11 @@ const cancelarNomina = async(req, res = response) => {
 };
 
 // Eliminación física de una nómina completa (permiso nomina_Eliminar,
-// separado y más restringido que Generar). Solo se permite en
-// BORRADOR — nada se pagó ni se ligó comisiones todavía, así que
-// borrarla no destruye ningún historial. Una PAGADA/CANCELADA nunca se
-// borra (se sugiere cancelar en su lugar); ese registro es el
-// comprobante permanente.
+// separado y más restringido que Generar). Se permite en BORRADOR
+// (nada se pagó ni se ligó comisiones todavía) y en CANCELADA (al
+// cancelar ya se liberaron sus comisiones a PENDIENTE, no queda nada
+// ligado a ella — no destruye historial real). Una PAGADA nunca se
+// borra: es el comprobante permanente de lo que sí se pagó.
 const deleteNomina = async(req, res = response) => {
 
     const { id } = req.body;
@@ -753,13 +753,11 @@ const deleteNomina = async(req, res = response) => {
             await transaction.rollback();
             return res.json({ status: 1, message: "La nómina no existe." });
         }
-        if (nomina.estatus !== 'BORRADOR') {
+        if (nomina.estatus === 'PAGADA') {
             await transaction.rollback();
             return res.json({
                 status: 1,
-                message: nomina.estatus === 'PAGADA'
-                    ? "No se puede eliminar: ya está pagada. Cancélala en su lugar."
-                    : "No se puede eliminar: es historial de una nómina cancelada."
+                message: "No se puede eliminar: ya está pagada. Cancélala en su lugar."
             });
         }
 

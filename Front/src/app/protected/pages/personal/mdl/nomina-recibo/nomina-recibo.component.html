@@ -133,7 +133,7 @@
             Exportar a PDF</button>
 
         <button mat-raised-button color="warn" type="button"
-        *ngIf="recibo?.estatusNomina === 'BORRADOR' && fn_hasPermission('nomina_Eliminar')"
+        *ngIf="recibo?.estatusNomina !== 'PAGADA' && fn_hasPermission('nomina_Eliminar')"
         (click)="fn_eliminar()">
             <mat-icon matPrefix class="my-icon">delete_forever</mat-icon>
             Eliminar nómina</button>
