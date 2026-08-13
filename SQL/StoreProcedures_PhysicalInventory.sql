@@ -138,3 +138,115 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- ============================================================
+-- getPhysicalInventoryListWithPage — nunca había estado versionada
+-- (capturada de la BD en vivo vía SHOW CREATE PROCEDURE). Se agregan
+-- gruposDesc/familiasDesc: todos los grupos/familias de los productos
+-- contados en cada inventario físico, separados por coma. El resto
+-- del procedimiento queda idéntico al original.
+-- ============================================================
+
+DROP PROCEDURE IF EXISTS `getPhysicalInventoryListWithPage`;
+
+DELIMITER $$
+
+CREATE PROCEDURE getPhysicalInventoryListWithPage(
+IN p_startDate VARCHAR(50)
+, IN p_endDate VARCHAR(50)
+, IN p_idSucursal INT
+, IN p_idFamily BIGINT
+, IN p_idGroup BIGINT
+
+, IN p_search VARCHAR(500)
+, IN p_start INT
+, IN p_limiter INT
+)
+BEGIN
+
+SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED ;
+
+	SET @iRows = 0;
+
+	CREATE TEMPORARY TABLE ODataTemp (
+		id BIGINT AUTO_INCREMENT,
+		idRelation VARCHAR(100),
+		PRIMARY KEY(id)
+	) ENGINE=InnoDB;
+
+
+	INSERT INTO ODataTemp( idRelation )
+	SELECT DISTINCT
+	T.idRelation
+	FROM
+	(
+		SELECT
+		PII.idPhysicalInventory AS idRelation
+		FROM physical_inventory AS PII
+		INNER JOIN physical_inventory_detail AS PID ON PII.idPhysicalInventory = PID.idPhysicalInventory
+		INNER JOIN products AS P ON P.active = 1 AND PID.idProduct = P.idProduct
+		WHERE
+		(
+			p_startDate = ''
+			OR CAST( PII.createDate AS DATE ) BETWEEN CAST( p_startDate AS DATE ) AND CAST( p_endDate AS DATE )
+		)
+		AND
+		(
+			p_idSucursal = 0
+			OR PII.idSucursal = p_idSucursal
+		)
+		AND
+		(
+			p_idFamily = 0
+			OR P.idFamily = p_idFamily
+		)
+		AND
+		(
+			p_idGroup = 0
+			OR P.idGroup = p_idGroup
+		)
+	) AS T;
+
+	SET @iRows = ( SELECT COUNT(*) FROM ODataTemp );
+
+	SELECT
+	@iRows AS iRows
+	, PII.idPhysicalInventory
+	, DATE_FORMAT( PII.createDate, '%d-%m-%Y') AS createDateDate
+	, DATE_FORMAT( PII.createDate, '%h:%i:%s %p') AS createDateHours
+	, PIS.idStatus
+	, PIS.name AS statusName
+	, S.name AS sucursalName
+	, U.name AS userName
+	, PII.bOK
+    , PII.bBlock
+	, PII.active
+	, (
+		SELECT GROUP_CONCAT(DISTINCT G.name ORDER BY G.name SEPARATOR ', ')
+		FROM physical_inventory_detail AS PIDG
+		INNER JOIN products AS PG ON PG.idProduct = PIDG.idProduct
+		LEFT JOIN `groups` AS G ON G.idGroup = PG.idGroup
+		WHERE PIDG.idPhysicalInventory = PII.idPhysicalInventory
+	) AS gruposDesc
+	, (
+		SELECT GROUP_CONCAT(DISTINCT F.name ORDER BY F.name SEPARATOR ', ')
+		FROM physical_inventory_detail AS PIDF
+		INNER JOIN products AS PF ON PF.idProduct = PIDF.idProduct
+		LEFT JOIN families AS F ON F.idFamily = PF.idFamily
+		WHERE PIDF.idPhysicalInventory = PII.idPhysicalInventory
+	) AS familiasDesc
+	FROM physical_inventory AS PII
+	INNER JOIN physical_inventory_status AS PIS ON PII.idStatus = PIS.idStatus
+	INNER JOIN sucursales AS S ON PII.idSucursal = S.idSucursal
+	INNER JOIN users AS U ON PII.idUser = U.idUser
+	INNER JOIN ODataTemp AS T ON PII.idPhysicalInventory = T.idRelation
+	ORDER BY PII.keyx DESC
+	LIMIT p_start, p_limiter;
+
+	DROP TABLE ODataTemp;
+
+ SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ ;
+
+END$$
+
+DELIMITER ;

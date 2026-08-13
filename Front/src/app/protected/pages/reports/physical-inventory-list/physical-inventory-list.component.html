@@ -241,6 +241,8 @@
                             <th class="textAlingCenter padding-th">Fecha</th>
                             <th class="textAlingLeft padding-th">Sucursal</th>
                             <th class="textAlingLeft padding-th">Usuario</th>
+                            <th class="textAlingLeft padding-th">Grupos</th>
+                            <th class="textAlingLeft padding-th">Familias</th>
                             <th class="textAlingLeft padding-th">Activo</th>
 
                         </thead>
@@ -322,6 +324,8 @@
                                 </td>
                                 <td class="textAlingLeft">{{ item.sucursalName }}</td>
                                 <td class="textAlingLeft">{{ item.userName }}</td>
+                                <td class="textAlingLeft">{{ item.gruposDesc }}</td>
+                                <td class="textAlingLeft">{{ item.familiasDesc }}</td>
                                 <td class="textAlingCenter">
                                     <mat-checkbox class="example-margin" [(ngModel)]="item.active" disabled></mat-checkbox>
                                 </td>
