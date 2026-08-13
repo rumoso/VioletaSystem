@@ -264,6 +264,13 @@
                   edit
                 </mat-icon>
 
+                <mat-icon *ngIf="item.idSaleType == 3 && item.active && !item.fechaEntrega && hasPermissionAction('ventas_EntregarApartado')"
+                  class="sll-action-icon sll-action-icon--edit"
+                  matTooltip="Entregar apartado"
+                  (click)="fn_entregarApartado( item )">
+                  local_shipping
+                </mat-icon>
+
               </div>
             </td>
 

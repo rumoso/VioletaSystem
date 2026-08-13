@@ -2305,7 +2305,7 @@ export class TallerComponent implements OnInit {
         next: ( auth_idUser ) =>{
           this.bShowActionAuthorization = false;
           if( auth_idUser ){
-            this._fn_deliverTallerOrder();
+            this._fn_deliverTallerOrder(auth_idUser);
           }
         }
       });
@@ -2313,7 +2313,7 @@ export class TallerComponent implements OnInit {
 
   }
 
-  _fn_deliverTallerOrder() {
+  _fn_deliverTallerOrder(auth_idUser: any) {
     this.servicesGServ.showDialog('¿Estás seguro?'
         , 'Está a punto de marcar este pedido como entregado'
         , '¿Desea continuar?'
@@ -2327,7 +2327,8 @@ export class TallerComponent implements OnInit {
                 idTaller: this.tallerForm.idTaller,
                 idTallerStatus: 5,
                 precioTotal: this.totalTaller,
-                idUser: this.idUserLogON
+                idUser: this.idUserLogON,
+                auth_idUser: auth_idUser
               };
 
               this.salesServ.CUpdateTallerStatus(oParams)

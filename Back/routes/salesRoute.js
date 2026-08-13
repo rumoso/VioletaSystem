@@ -25,6 +25,7 @@ const {
   , getCorteCajaListWithPage
 
   , disabledSale
+  , entregarApartado
 
   , getConsHistory
 
@@ -234,6 +235,14 @@ router.post('/disabledSale', [
   validarCampos
 ], disabledSale);
 
+router.post('/entregarApartado', [
+
+  check('idSale','Venta obligatoria').not().isEmpty(),
+  check('auth_idUser','La autorización especial es obligatoria').isInt({ gt: 0 }),
+
+  validarCampos
+], entregarApartado);
+
 router.post('/getConsHistory', [
 
   check('idSale','Venta obligatoria').not().isEmpty(),
@@ -418,6 +427,8 @@ router.post('/updateTallerStatus', [
 
   check('idTallerStatus','Estado de Taller obligatorio').not().isEmpty(),
   check('idTallerStatus','El Estado de Taller debe ser numérico').isNumeric(),
+
+  check('auth_idUser','El autorizante debe ser un usuario válido').optional().isInt({ gt: 0 }),
 
   validarCampos
 ], updateTallerStatus);

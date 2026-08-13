@@ -686,6 +686,72 @@ fn_disabledSale( data: any ){
 
 }
 
+// Entregar un apartado (idSaleType=3): pide autorización especial
+// por código/rostro cada vez, mismo patrón que cancelar una venta.
+fn_entregarApartado( data: any ){
+
+  if(this.bShowActionAuthorization){
+    return;
+  }
+
+  this.bShowActionAuthorization = true;
+
+  this.servicesGServ.showDialog('¿Estás seguro?'
+  , 'Está a punto de marcar como entregado el apartado #' + data.idSale
+  , '¿Desea continuar?'
+  , 'Si', 'No' )
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
+
+      if(resp){
+
+        var paramsMDL: any = {
+          actionName: 'ventas_EntregarApartado'
+          , bShowAlert: false
+        }
+
+        this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+        .afterClosed().subscribe({
+          next: ( auth_idUser ) =>{
+
+            this.bShowActionAuthorization = false;
+
+            if( auth_idUser ){
+
+              this.bShowSpinner = true;
+
+              this.salesServ.CEntregarApartado( data.idSale, auth_idUser )
+              .subscribe({
+                next: async (resp2: ResponseDB_CRUD) => {
+
+                  this.servicesGServ.showAlertIA( resp2 );
+                  this.bShowSpinner = false;
+
+                  this.fn_getVentasListWithPage();
+
+                },
+                error: (ex) => {
+
+                  this.servicesGServ.showSnakbar( ex.error.message );
+                  this.bShowSpinner = false;
+
+                }
+              });
+
+            }
+
+          }
+        });
+
+      }else{
+        this.bShowActionAuthorization = false;
+      }
+    }
+
+  });
+
+}
+
 
 fn_ClearFilters(){
 

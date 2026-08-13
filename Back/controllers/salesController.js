@@ -1311,6 +1311,76 @@ const disabledSale = async(req, res) => {
     }
 }
 
+// Entregar un apartado (idSaleType=3): registra fecha e idUserEntrega
+// en `sales`. Permiso especial ventas_EntregarApartado — pide
+// código/rostro cada vez, igual que cancelar una venta. Los folios de
+// taller (idSaleType 5/7) NO se entregan aquí — ese flujo ya existe
+// en updateTallerStatus (idTallerStatus=5), que llena estas mismas
+// columnas de `sales` como efecto secundario.
+const entregarApartado = async(req, res = response) => {
+
+    const {
+        idSale
+        , auth_idUser = 0
+    } = req.body;
+
+    if (auth_idUser == 0) {
+        return res.json({ status: 1, message: "No se pudo entregar el apartado porque no fue autorizada la acción." });
+    }
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const [sale] = await dbConnection.query(
+            `SELECT idSaleType, active, fechaEntrega FROM sales WHERE idSale = :idSale LIMIT 1`,
+            { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!sale) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "La venta no existe." });
+        }
+        if (!sale.active) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "No se puede entregar: la venta está cancelada." });
+        }
+        if (sale.idSaleType != 3) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "Solo los apartados se entregan desde aquí." });
+        }
+        if (sale.fechaEntrega) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "Este apartado ya fue entregado." });
+        }
+
+        await dbConnection.query(
+            `UPDATE sales SET fechaEntrega = :fechaEntrega, idUserEntrega = :idUserEntrega WHERE idSale = :idSale`,
+            { replacements: { fechaEntrega: oGetDateNow, idUserEntrega: auth_idUser, idSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: "Apartado entregado con éxito.",
+            data: { fechaEntrega: oGetDateNow }
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
 const getConsHistory = async(req, res = response) => {
 
     const {
@@ -2820,6 +2890,7 @@ const updateTallerStatus = async(req, res) => {
         idTaller = 0,
         idTallerStatus = 0,
         precioTotal = 0,
+        auth_idUser = 0,
         idUserLogON,
         idSucursalLogON
     } = req.body;
@@ -3011,11 +3082,23 @@ const updateTallerStatus = async(req, res) => {
             updateQuery += `, precioTotal = ${precioTotal}`;
         }
         
-        // Actualizar fechaEntrega cuando se pasa a status 5
+        // Actualizar fechaEntrega cuando se pasa a status 5 — y, ya que
+        // el taller vive en `sales` (analisis de entrega de apartados),
+        // reflejar ahí también quién y cuándo se entregó. idSale puede
+        // haber cambiado arriba (taller rápida, status 1 -> 5): usar
+        // siempre el folio vigente (newIdSale si se generó uno nuevo).
         if (idTallerStatus === 5) {
             updateQuery += `, fechaEntrega = '${ oGetDateNow }'`;
+
+            const idSaleParaEntrega = newIdSale || tallerInfo.idSale;
+            const idUserEntrega = auth_idUser > 0 ? auth_idUser : idUserLogON;
+
+            await dbConnection.query(
+                `UPDATE sales SET fechaEntrega = :fechaEntrega, idUserEntrega = :idUserEntrega WHERE idSale = :idSale`,
+                { replacements: { fechaEntrega: oGetDateNow, idUserEntrega, idSale: idSaleParaEntrega }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
         }
-        
+
         updateQuery += ` WHERE idTaller = ${idTaller}`;
 
         const oSQLUpdate = await dbConnection.query(updateQuery, { transaction });
@@ -5183,6 +5266,7 @@ module.exports = {
     , getCorteCajaListWithPage
 
     , disabledSale
+    , entregarApartado
 
     , getConsHistory
 

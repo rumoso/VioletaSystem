@@ -343,6 +343,10 @@ export class SalesService {
 
   }
 
+  CEntregarApartado( idSale: string, auth_idUser: number ): Observable<ResponseDB_CRUD> {
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/entregarApartado`, { idSale, auth_idUser } );
+  }
+
   CGetCorteCajaByID( idCorteCaja: any ): Observable<ResponseGet> {
     var data: any = {
       idCorteCaja: idCorteCaja
