@@ -108,6 +108,7 @@ const generarNomina = async(req, res = response) => {
         tipoPeriodo
         , fechaInicio
         , fechaFin
+        , idsEmpleados = []
 
         , idUserLogON
     } = req.body;
@@ -129,9 +130,16 @@ const generarNomina = async(req, res = response) => {
         const [idResult] = await dbConnection.query(`SELECT LAST_INSERT_ID() AS id`, { type: dbConnection.QueryTypes.SELECT, transaction });
         const idNomina = idResult.id;
 
+        // Sin empleados elegidos = todos los activos (comportamiento
+        // default, ya avisado en el Front antes de generar). Con
+        // empleados elegidos, la corrida se limita a esos.
+        const bFiltrarEmpleados = Array.isArray(idsEmpleados) && idsEmpleados.length > 0;
+
         const empleados = await dbConnection.query(
-            `SELECT idEmpleado, idUser, nombre FROM empleados WHERE active = 1`,
-            { type: dbConnection.QueryTypes.SELECT, transaction }
+            bFiltrarEmpleados
+                ? `SELECT idEmpleado, idUser, nombre FROM empleados WHERE active = 1 AND idEmpleado IN (:idsEmpleados)`
+                : `SELECT idEmpleado, idUser, nombre FROM empleados WHERE active = 1`,
+            { replacements: bFiltrarEmpleados ? { idsEmpleados } : {}, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
         for (const emp of empleados) {

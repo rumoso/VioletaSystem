@@ -23,6 +23,7 @@ router.post('/generarNomina',[
     check('tipoPeriodo','El tipo de periodo es obligatorio').isIn(['SEMANA','QUINCENA','MES']),
     check('fechaInicio','La fecha de inicio es obligatoria').not().isEmpty(),
     check('fechaFin','La fecha final es obligatoria').not().isEmpty(),
+    check('idsEmpleados','Los empleados elegidos deben ser una lista').optional().isArray(),
     validarCampos
 
 ], generarNomina );
@@ -46,12 +47,14 @@ router.post('/insertUpdateReciboDetalle',[
     check('conceptoDesc','El concepto es obligatorio').not().isEmpty(),
     check('tipo','El tipo es obligatorio').isIn(['PERCEPCION','DEDUCCION']),
     check('monto','El monto es obligatorio').isFloat(),
+    check('auth_idUser','La autorización especial es obligatoria').isInt({ gt: 0 }),
     validarCampos
 
 ], insertUpdateReciboDetalle );
 
 router.post('/deleteReciboDetalle',[
     check('id','El id es obligatorio').not().isEmpty(),
+    check('auth_idUser','La autorización especial es obligatoria').isInt({ gt: 0 }),
     validarCampos
 
 ], deleteReciboDetalle );

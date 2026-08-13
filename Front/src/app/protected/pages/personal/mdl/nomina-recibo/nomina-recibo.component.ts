@@ -5,11 +5,16 @@ import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { NominaConceptosService } from 'src/app/protected/services/nomina-conceptos.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
 
-// Recibo de un empleado dentro de una nómina (analisis/007). Misma
-// mecánica de captura rápida que el listado base de conceptos: combo
-// → foco al monto con texto seleccionado → Enter agrega/guarda.
-// Solo editable si la nómina sigue en BORRADOR.
+// Recibo de un empleado dentro de una nómina (analisis/007), en
+// formato de estado de cuenta contable: columna de percepciones y
+// columna de deducciones, con sus totales abajo. Misma mecánica de
+// captura rápida que el listado base de conceptos: combo → foco al
+// monto con texto seleccionado → Enter agrega/guarda. Editable solo
+// si la nómina sigue en BORRADOR y, además, con autorización especial
+// por código/rostro (permiso nomina_EditarConceptos) — se pide una vez
+// al empezar a editar, válida mientras el modal siga abierto.
 
 @Component({
   selector: 'app-nomina-recibo',
@@ -31,6 +36,11 @@ export class NominaReciboComponent implements OnInit {
   nuevoMontoControl: FormControl = new FormControl('');
   conceptoEditando: any = null;
 
+  // Autorización especial para editar (código/rostro), pedida una sola
+  // vez y válida mientras este modal siga abierto.
+  bAutorizado: boolean = false;
+  authIdUser: number = 0;
+
   @ViewChild('montoInput') montoInputRef!: ElementRef<HTMLInputElement>;
 
   constructor(
@@ -51,6 +61,17 @@ export class NominaReciboComponent implements OnInit {
 
   get bSoloLectura(): boolean {
     return !this.recibo || this.recibo.estatusNomina !== 'BORRADOR';
+  }
+
+  // Mismo criterio de bucketing que el Back (_fn_calcularTotales en
+  // nominaController.js): "Comisiones" es la única línea que puede
+  // caer en deducciones aunque esté tipada PERCEPCION, según su signo.
+  get percepciones(): any[] {
+    return this.detalle.filter(d => d.bEsComisiones ? Number(d.monto) >= 0 : d.tipo === 'PERCEPCION');
+  }
+
+  get deducciones(): any[] {
+    return this.detalle.filter(d => d.bEsComisiones ? Number(d.monto) < 0 : d.tipo === 'DEDUCCION');
   }
 
   get conceptosParaCombo(): any[] {
@@ -84,6 +105,25 @@ export class NominaReciboComponent implements OnInit {
         },
         error: () => { this.conceptosDisponibles = []; }
       });
+  }
+
+  // Pide el código/rostro de alguien con nomina_EditarConceptos; si lo
+  // obtiene, desbloquea agregar/editar/quitar para el resto de esta
+  // sesión del modal.
+  fn_solicitarAutorizacion() {
+
+    this.servicesGServ.showModalWithParams(ActionAuthorizationComponent, {
+      actionName: 'nomina_EditarConceptos'
+      , bShowAlert: false
+    }, '400px')
+    .afterClosed().subscribe({
+      next: (auth_idUser: any) => {
+        if (auth_idUser) {
+          this.bAutorizado = true;
+          this.authIdUser = auth_idUser;
+        }
+      }
+    });
   }
 
   fn_focusMonto() {
@@ -129,7 +169,8 @@ export class NominaReciboComponent implements OnInit {
       idNominaConcepto: concepto.id,
       conceptoDesc: concepto.name,
       tipo: concepto.tipo,
-      monto
+      monto,
+      auth_idUser: this.authIdUser
     }).subscribe({
       next: (resp: any) => {
         if (resp.status === 0) {
@@ -152,7 +193,7 @@ export class NominaReciboComponent implements OnInit {
     .afterClosed().subscribe({
       next: (resp) => {
         if (resp) {
-          this.nominaServ.CDeleteReciboDetalle(item.id)
+          this.nominaServ.CDeleteReciboDetalle(item.id, this.authIdUser)
             .subscribe({
               next: (resp2: any) => {
                 this.servicesGServ.showSnakbar(resp2.message);

@@ -40,6 +40,8 @@
                     <th class="textAlingLeft">Periodo</th>
                     <th class="textAlingCenter">Tipo</th>
                     <th class="textAlingCenter">Empleados</th>
+                    <th class="textAlingRight">Percepciones</th>
+                    <th class="textAlingRight">Deducciones</th>
                     <th class="textAlingRight">Neto</th>
                     <th class="textAlingCenter">Estatus</th>
                     <th class="textAlingCenter">Acciones</th>
@@ -54,6 +56,8 @@
                         <span class="pcl-chip pcl-chip-neutro">{{ item.tipoPeriodo | titlecase }}</span>
                     </td>
                     <td class="textAlingCenter">{{ item.iEmpleados }}</td>
+                    <td class="textAlingRight">{{ item.totalPercepciones | currency }}</td>
+                    <td class="textAlingRight">{{ item.totalDeducciones | currency }}</td>
                     <td class="textAlingRight" [class.nl-neto-negativo]="item.totalNeto < 0">{{ item.totalNeto | currency }}</td>
                     <td class="textAlingCenter">
                         <span class="pcl-chip"

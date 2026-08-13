@@ -1,17 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
+import { debounceTime } from 'rxjs';
+import { ResponseGet } from 'src/app/interfaces/general.interfaces';
+import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
 
 // Modal de generación de nómina (analisis/007): captura tipo de
-// periodo + rango de fechas, genera el borrador y cierra devolviendo
+// periodo + rango de fechas + opcionalmente qué empleados incluir.
+// Sin empleados elegidos, se genera para todos los activos (avisado
+// explícitamente en pantalla). Genera el borrador y cierra devolviendo
 // el id creado para abrir su detalle de inmediato.
 
 @Component({
   selector: 'app-nomina-generar',
   templateUrl: './nomina-generar.component.html',
-  styleUrls: ['../personal-catalogo/personal-catalogo.component.css']
+  styleUrls: ['../personal-catalogo/personal-catalogo.component.css', './nomina-generar.component.css']
 })
 export class NominaGenerarComponent {
 
@@ -24,13 +29,57 @@ export class NominaGenerarComponent {
     fechaFin: ['', [Validators.required]]
   });
 
+  empleadoSearchControl: FormControl = new FormControl('');
+  empleadosEncontrados: any[] = [];
+  bBuscandoEmpleados: boolean = false;
+  empleadosElegidos: any[] = [];
+
   constructor(
     private dialogRef: MatDialogRef<NominaGenerarComponent>
     , private fb: FormBuilder
     , private nominaServ: NominaService
+    , private empleadosServ: EmpleadosService
     ) {
       this.dialogRef.disableClose = true;
+
+      this.empleadoSearchControl.valueChanges
+        .pipe(debounceTime(500))
+        .subscribe((valor: any) => {
+          if (typeof valor === 'string' && valor.trim().length > 0) {
+            this.fn_buscarEmpleados(valor);
+          } else {
+            this.empleadosEncontrados = [];
+          }
+        });
     }
+
+  private fn_buscarEmpleados( search: string ) {
+
+    this.bBuscandoEmpleados = true;
+    this.empleadosServ.CGetList({ search, length: 0, pageSize: 10, pageIndex: 0, pageSizeOptions: [] })
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          const rows = resp.status === 0 ? (resp.data.rows || []) : [];
+          const idsYaElegidos = new Set(this.empleadosElegidos.map(e => e.id));
+          this.empleadosEncontrados = rows.filter((e: any) => e.active && !idsYaElegidos.has(e.id));
+          this.bBuscandoEmpleados = false;
+        },
+        error: () => {
+          this.empleadosEncontrados = [];
+          this.bBuscandoEmpleados = false;
+        }
+      });
+  }
+
+  fn_agregarEmpleado( empleado: any ) {
+    this.empleadosElegidos.push(empleado);
+    this.empleadosEncontrados = this.empleadosEncontrados.filter(e => e.id !== empleado.id);
+    this.empleadoSearchControl.setValue('', { emitEvent: false });
+  }
+
+  fn_quitarEmpleado( empleado: any ) {
+    this.empleadosElegidos = this.empleadosElegidos.filter(e => e.id !== empleado.id);
+  }
 
   fn_generar() {
 
@@ -48,7 +97,9 @@ export class NominaGenerarComponent {
 
     this.bGenerando = true;
 
-    this.nominaServ.CGenerar(this.myForm.value.tipoPeriodo, this.myForm.value.fechaInicio, this.myForm.value.fechaFin)
+    const idsEmpleados = this.empleadosElegidos.map(e => e.id);
+
+    this.nominaServ.CGenerar(this.myForm.value.tipoPeriodo, this.myForm.value.fechaInicio, this.myForm.value.fechaFin, idsEmpleados)
       .subscribe({
         next: (resp: any) => {
           this.bGenerando = false;

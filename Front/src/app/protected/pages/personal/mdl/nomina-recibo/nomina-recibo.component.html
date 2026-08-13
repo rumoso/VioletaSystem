@@ -23,66 +23,95 @@
             Este empleado no tenía conceptos configurados al generarse la nómina.
         </p>
 
-        <div class="pcm-conceptos">
+        <!-- Editar requiere autorización especial, pedida una sola vez -->
+        <div class="rc-gate" *ngIf="!bSoloLectura && !bAutorizado">
+            <button mat-stroked-button type="button" (click)="fn_solicitarAutorizacion()">
+                <mat-icon matPrefix class="my-icon">lock</mat-icon>
+                Editar percepciones/deducciones (autorización especial)</button>
+        </div>
 
-            <div class="pcm-concepto-agregar" *ngIf="!bSoloLectura">
-                <div class="pcm-slim-field pcm-concepto-select">
-                    <label class="pcm-slim-label">
-                        {{ conceptoEditando ? 'Editando: ' + conceptoEditando.conceptoDesc : 'Concepto' }}
-                    </label>
-                    <select class="pcm-slim-input" [formControl]="nuevoConceptoControl" (change)="fn_focusMonto()">
-                        <option [ngValue]="null">— Selecciona —</option>
-                        <option *ngFor="let c of conceptosParaCombo" [ngValue]="c">
-                            {{ c.name }} ({{ c.tipo === 'PERCEPCION' ? 'Percepción' : 'Deducción' }})
-                        </option>
-                    </select>
-                </div>
-                <div class="pcm-slim-field pcm-concepto-monto">
-                    <label class="pcm-slim-label">Monto</label>
-                    <input #montoInput class="pcm-slim-input" type="number" step="0.01"
-                        placeholder="0.00" [formControl]="nuevoMontoControl"
-                        (keydown.enter)="fn_guardarConcepto()">
-                </div>
-                <button mat-raised-button color="accent" type="button" (click)="fn_guardarConcepto()">
-                    <mat-icon matPrefix class="my-icon">{{ conceptoEditando ? 'save' : 'add' }}</mat-icon>
-                    {{ conceptoEditando ? 'Guardar' : 'Agregar' }}</button>
-                <button mat-icon-button type="button" *ngIf="conceptoEditando"
-                    matTooltip="Cancelar edición" (click)="fn_cancelarEdicion()">
-                    <mat-icon>close</mat-icon>
-                </button>
+        <div class="pcm-concepto-agregar" *ngIf="!bSoloLectura && bAutorizado">
+            <div class="pcm-slim-field pcm-concepto-select">
+                <label class="pcm-slim-label">
+                    {{ conceptoEditando ? 'Editando: ' + conceptoEditando.conceptoDesc : 'Concepto' }}
+                </label>
+                <select class="pcm-slim-input" [formControl]="nuevoConceptoControl" (change)="fn_focusMonto()">
+                    <option [ngValue]="null">— Selecciona —</option>
+                    <option *ngFor="let c of conceptosParaCombo" [ngValue]="c">
+                        {{ c.name }} ({{ c.tipo === 'PERCEPCION' ? 'Percepción' : 'Deducción' }})
+                    </option>
+                </select>
             </div>
+            <div class="pcm-slim-field pcm-concepto-monto">
+                <label class="pcm-slim-label">Monto</label>
+                <input #montoInput class="pcm-slim-input" type="number" step="0.01"
+                    placeholder="0.00" [formControl]="nuevoMontoControl"
+                    (keydown.enter)="fn_guardarConcepto()">
+            </div>
+            <button mat-raised-button color="accent" type="button" (click)="fn_guardarConcepto()">
+                <mat-icon matPrefix class="my-icon">{{ conceptoEditando ? 'save' : 'add' }}</mat-icon>
+                {{ conceptoEditando ? 'Guardar' : 'Agregar' }}</button>
+            <button mat-icon-button type="button" *ngIf="conceptoEditando"
+                matTooltip="Cancelar edición" (click)="fn_cancelarEdicion()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
 
-            <div class="pcm-concepto-row" *ngFor="let item of detalle"
-                [class.pcm-concepto-row-editando]="conceptoEditando?.id === item.id">
-                <div class="pcm-persona-datos pcm-concepto-nombre">
-                    <span class="pcm-principal">
+        <!-- Estado de cuenta: percepciones a la izquierda, deducciones a la derecha -->
+        <div class="rc-ledger">
+
+            <div class="rc-col">
+                <div class="rc-col-header rc-col-header--percepciones">Percepciones</div>
+
+                <div class="rc-linea" *ngFor="let item of percepciones"
+                    [class.pcm-concepto-row-editando]="conceptoEditando?.id === item.id">
+                    <div class="rc-linea-nombre">
                         {{ item.conceptoDesc }}
                         <mat-icon class="nr-icon-comisiones" *ngIf="item.bEsComisiones" matTooltip="Suma de la bitácora de comisiones del periodo">info</mat-icon>
-                    </span>
-                    <span class="pcm-secundario">{{ item.tipo === 'PERCEPCION' ? 'Percepción (suma)' : 'Deducción (resta)' }}</span>
+                    </div>
+                    <div class="rc-linea-monto">{{ item.monto | currency }}</div>
+                    <div class="rc-linea-acciones" *ngIf="!bSoloLectura && bAutorizado">
+                        <button mat-icon-button matTooltip="Editar" (click)="fn_editarConcepto(item)">
+                            <mat-icon class="colorGreen">edit</mat-icon>
+                        </button>
+                        <button mat-icon-button matTooltip="Quitar" (click)="fn_quitarConcepto(item)">
+                            <mat-icon class="colorRed">delete_outline</mat-icon>
+                        </button>
+                    </div>
                 </div>
-                <span class="pcm-chip-tipo"
-                    [class.pcm-chip-percepcion]="item.tipo === 'PERCEPCION' && item.monto >= 0"
-                    [class.pcm-chip-deduccion]="item.tipo === 'DEDUCCION' || item.monto < 0">
-                    {{ item.monto >= 0 ? '+' : '−' }}
-                </span>
-                <span class="pcm-concepto-monto-texto" [class.nr-monto-negativo]="item.monto < 0">{{ item.monto | currency }}</span>
-                <button mat-icon-button *ngIf="!bSoloLectura" matTooltip="Editar" (click)="fn_editarConcepto(item)">
-                    <mat-icon class="colorGreen">edit</mat-icon>
-                </button>
-                <button mat-icon-button *ngIf="!bSoloLectura" matTooltip="Quitar" (click)="fn_quitarConcepto(item)">
-                    <mat-icon class="colorRed">delete_outline</mat-icon>
-                </button>
+
+                <p class="pcm-slim-hint" *ngIf="percepciones.length === 0">Sin percepciones.</p>
             </div>
 
-            <p class="pcm-slim-hint" *ngIf="detalle.length === 0">Recibo sin conceptos.</p>
+            <div class="rc-col">
+                <div class="rc-col-header rc-col-header--deducciones">Deducciones</div>
+
+                <div class="rc-linea" *ngFor="let item of deducciones"
+                    [class.pcm-concepto-row-editando]="conceptoEditando?.id === item.id">
+                    <div class="rc-linea-nombre">
+                        {{ item.conceptoDesc }}
+                        <mat-icon class="nr-icon-comisiones" *ngIf="item.bEsComisiones" matTooltip="Suma de la bitácora de comisiones del periodo">info</mat-icon>
+                    </div>
+                    <div class="rc-linea-monto">{{ (item.bEsComisiones ? -item.monto : item.monto) | currency }}</div>
+                    <div class="rc-linea-acciones" *ngIf="!bSoloLectura && bAutorizado">
+                        <button mat-icon-button matTooltip="Editar" (click)="fn_editarConcepto(item)">
+                            <mat-icon class="colorGreen">edit</mat-icon>
+                        </button>
+                        <button mat-icon-button matTooltip="Quitar" (click)="fn_quitarConcepto(item)">
+                            <mat-icon class="colorRed">delete_outline</mat-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <p class="pcm-slim-hint" *ngIf="deducciones.length === 0">Sin deducciones.</p>
+            </div>
 
         </div>
 
         <div class="nr-totales">
-            <div><span>Percepciones</span><strong>{{ recibo.totalPercepciones | currency }}</strong></div>
-            <div><span>Deducciones</span><strong>{{ recibo.totalDeducciones | currency }}</strong></div>
-            <div class="nr-neto" [class.nr-monto-negativo]="recibo.neto < 0"><span>Neto</span><strong>{{ recibo.neto | currency }}</strong></div>
+            <div><span>Total de percepciones</span><strong>{{ recibo.totalPercepciones | currency }}</strong></div>
+            <div><span>Total de deducciones</span><strong class="nr-monto-negativo">{{ -recibo.totalDeducciones | currency }}</strong></div>
+            <div class="nr-neto" [class.nr-monto-negativo]="recibo.neto < 0"><span>Total neto</span><strong>{{ recibo.neto | currency }}</strong></div>
         </div>
 
     </mat-dialog-content>

@@ -21,8 +21,8 @@ export class NominaService {
     , private authServ: AuthService
     ) { }
 
-  CGenerar( tipoPeriodo: string, fechaInicio: string, fechaFin: string ): Observable<any> {
-    const data: any = { tipoPeriodo, fechaInicio, fechaFin };
+  CGenerar( tipoPeriodo: string, fechaInicio: string, fechaFin: string, idsEmpleados: number[] = [] ): Observable<any> {
+    const data: any = { tipoPeriodo, fechaInicio, fechaFin, idsEmpleados };
     data.idUserLogON = this.authServ.getIdUserSession();
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/generarNomina`, data );
   }
@@ -49,8 +49,8 @@ export class NominaService {
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/insertUpdateReciboDetalle`, data );
   }
 
-  CDeleteReciboDetalle( id: number ): Observable<any> {
-    return this.http.post<any>( `${ this.baseURL }/${ this._api }/deleteReciboDetalle`, { id } );
+  CDeleteReciboDetalle( id: number, auth_idUser: number ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/deleteReciboDetalle`, { id, auth_idUser } );
   }
 
   CExcluirRecibo( idNominaRecibo: number ): Observable<any> {

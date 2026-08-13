@@ -34,6 +34,19 @@ WHERE S.sectionName = 'Personal'
 AND NOT EXISTS ( SELECT 1 FROM actions WHERE name = 'nomina_Eliminar' )
 LIMIT 1;
 
+-- Editar percepciones/deducciones de un recibo (agregar/editar/quitar)
+-- — permiso SUPER especial (nSpecial=1): requiere autorización por
+-- código o rostro en el momento (patrón ActionAuthorizationComponent,
+-- igual que la captura manual de la bitácora de comisiones), no solo
+-- tener el permiso asignado. Separado de nomina_Generar: ver/generar/
+-- pagar/cancelar la nómina no requiere este código, tocar montos sí.
+INSERT INTO actions (createDate, idActionSection, name, nameHtml, description, active, nSpecial)
+SELECT NOW(), S.idActionSection, 'nomina_EditarConceptos', 'Editar percepciones/deducciones de nómina', 'Autoriza agregar, editar o quitar una percepción o deducción del recibo de un empleado en una nómina en borrador — pide código/rostro cada vez', 1, 1
+FROM actionsection AS S
+WHERE S.sectionName = 'Personal'
+AND NOT EXISTS ( SELECT 1 FROM actions WHERE name = 'nomina_EditarConceptos' )
+LIMIT 1;
+
 -- Menú "Nómina", hijo de "Personal"
 INSERT INTO menus (createDate, idMenuPadre, lugar, name, description, icon, linkCat, linkList, imgDash, imgDashSize, idAplication, active)
 SELECT NOW(), M.idMenu, '6', 'Nómina', 'Generación y pago de nómina de empleados', NULL, NULL, 'nominaList', 'assets/img/icons/invFisico.png', '80', '1', '1'

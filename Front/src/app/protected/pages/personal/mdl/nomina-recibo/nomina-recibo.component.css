@@ -33,3 +33,70 @@
     padding-top: 6px;
     margin-top: 2px;
 }
+
+/* Puerta de edición: sin autorización especial, el recibo es de solo
+   lectura aunque la nómina esté en borrador. */
+.rc-gate {
+    padding: 10px 0 14px;
+}
+
+/* Estado de cuenta contable: dos columnas, percepciones y deducciones */
+.rc-ledger {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 24px;
+    margin-top: 8px;
+}
+
+.rc-col-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.rc-col-header--percepciones {
+    color: #2e7d32;
+    border-bottom-color: #a5d6a7;
+}
+
+.rc-col-header--deducciones {
+    color: #c62828;
+    border-bottom-color: #ef9a9a;
+}
+
+.rc-linea {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.rc-linea-nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: #212121;
+}
+
+.rc-linea-monto {
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.rc-linea-acciones {
+    display: flex;
+    gap: 0;
+}
+
+@media (max-width: 599.98px) {
+    .rc-ledger {
+        grid-template-columns: 1fr;
+        gap: 18px 0;
+    }
+}

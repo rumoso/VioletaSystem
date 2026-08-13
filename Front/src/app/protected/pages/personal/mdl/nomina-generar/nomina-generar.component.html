@@ -17,7 +17,7 @@
         </div>
 
         <p class="pcm-slim-hint">
-            Se creará un recibo por cada empleado activo, con su listado base de conceptos y las comisiones pendientes del rango.
+            Se creará un recibo por cada empleado incluido, con su listado base de conceptos y las comisiones pendientes del rango.
         </p>
 
         <form [formGroup]="myForm" autocomplete="off">
@@ -42,6 +42,37 @@
             </div>
 
         </form>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Empleados (opcional)</label>
+            <input class="pcm-slim-input"
+                type="text"
+                placeholder="Busca por nombre o usuario..."
+                [formControl]="empleadoSearchControl"
+                [matAutocomplete]="autoEmpleados">
+            <mat-autocomplete autoActiveFirstOption
+                                #autoEmpleados="matAutocomplete"
+                                (optionSelected)="fn_agregarEmpleado($event.option.value)">
+                <mat-option *ngIf="bBuscandoEmpleados" disabled>Buscando...</mat-option>
+                <mat-option *ngFor="let e of empleadosEncontrados" [value]="e">
+                    {{ e.nombre }} <span *ngIf="e.userName">— {{ e.userName }}</span>
+                </mat-option>
+            </mat-autocomplete>
+
+            <span class="pcm-slim-hint" *ngIf="empleadosElegidos.length === 0">
+                Si no eliges a nadie, se generará para <strong>todos los empleados activos</strong>.
+            </span>
+            <span class="pcm-slim-hint" *ngIf="empleadosElegidos.length > 0">
+                Se generará <strong>solo</strong> para los {{ empleadosElegidos.length }} empleado(s) elegido(s).
+            </span>
+        </div>
+
+        <div class="ng-chips" *ngIf="empleadosElegidos.length > 0">
+            <span class="ng-chip" *ngFor="let e of empleadosElegidos">
+                {{ e.nombre }}
+                <mat-icon (click)="fn_quitarEmpleado(e)">close</mat-icon>
+            </span>
+        </div>
 
     </mat-dialog-content>
 
