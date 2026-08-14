@@ -534,6 +534,125 @@ const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancela
 
 };
 
+// Comisión de venta AUTOMÁTICA sobre la utilidad (analisis/010): se
+// llama después de cada pago (insertPayments) y después de entregar
+// un apartado (entregarApartado) — cualquiera de los dos eventos
+// puede ser el que finalmente cumpla la regla, así que ambos disparan
+// la misma verificación. Reglas:
+//   - Contado/Crédito (idSaleType 1/2): se genera en cuanto la venta
+//     queda pagada al 100%.
+//   - Apartado (idSaleType 3): se genera solo cuando está pagada al
+//     100% Y entregada (fechaEntrega) — lo que pase después dispara.
+// Utilidad = importe vendido - costo (SUM(SD.importe) - SUM(SD.cost *
+// SD.cantidad) de las líneas activas), mismo criterio que ya usa el
+// reporte de utilidades (rep_getUtilidades). Comisión = utilidad x
+// vendedores.comisionPorcentaje. Anti-duplicado: un renglón VENTA no
+// cancelado ya existente para ese idSale detiene la generación — así
+// no importa cuántas veces se dispare el evento (pagos parciales
+// múltiples, reintentos), solo se genera una vez.
+// No corre dentro de la transacción del pago/entrega — se llama
+// después de confirmado (mismo criterio que fn_reversarComisionByOrigen):
+// si falla, no debe tumbar el pago/entrega que ya se guardó.
+const fn_registrarComisionVentaSiPagada = async(idSale, idUserLogON) => {
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const [sale] = await dbConnection.query(
+        `SELECT idSaleType, idSeller_idUser, fechaEntrega, active FROM sales WHERE idSale = :idSale LIMIT 1`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    if (!sale || !sale.active || ![1, 2, 3].includes(sale.idSaleType)) {
+        return;
+    }
+
+    if (sale.idSaleType === 3 && !sale.fechaEntrega) {
+        return;
+    }
+
+    const [yaGenerado] = await dbConnection.query(
+        `SELECT 1 AS ok FROM comisiones_track
+         WHERE idSale = :idSale AND tipo = 'VENTA' AND estatus <> 'CANCELADA'
+         LIMIT 1`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    if (yaGenerado) {
+        return;
+    }
+
+    const [totales] = await dbConnection.query(
+        `SELECT
+            ROUND(IFNULL(SUM(SD.importe), 0), 2) AS total,
+            ROUND(IFNULL(SUM(SD.cost * SD.cantidad), 0), 2) AS costoTotal
+         FROM salesdetail AS SD WHERE SD.idSale = :idSale AND SD.active = 1`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    const total = parseFloat(totales.total) || 0;
+
+    if (total <= 0) {
+        return;
+    }
+
+    const [abonadoRow] = await dbConnection.query(
+        `SELECT ROUND(IFNULL(SUM(pago), 0), 2) AS abonado FROM payments
+         WHERE idRelation = :idSale AND active = 1 AND relationType IN ('V', 'A')`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    const abonado = parseFloat(abonadoRow.abonado) || 0;
+
+    // Tolerancia de un centavo por redondeos de precio/descuento
+    if (abonado + 0.01 < total) {
+        return;
+    }
+
+    const [vendedor] = await dbConnection.query(
+        `SELECT comisionPorcentaje FROM vendedores WHERE idUser = :idUser AND active = 1 LIMIT 1`,
+        { replacements: { idUser: sale.idSeller_idUser }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    const comisionPorcentaje = parseFloat(vendedor?.comisionPorcentaje) || 0;
+
+    if (comisionPorcentaje <= 0) {
+        return;
+    }
+
+    const costoTotal = parseFloat(totales.costoTotal) || 0;
+    const utilidad = total - costoTotal;
+
+    if (utilidad <= 0) {
+        return;
+    }
+
+    const monto = Math.round(utilidad * comisionPorcentaje / 100 * 100) / 100;
+
+    if (monto <= 0) {
+        return;
+    }
+
+    await dbConnection.query(
+        `INSERT INTO comisiones_track
+            (idUser, tipo, concepto, monto, fecha, idSale, referencia, estatus, createDate, idCreateUser)
+         VALUES
+            (:idUser, 'VENTA', :concepto, :monto, :fecha, :idSale, :referencia, 'PENDIENTE', :createDate, :idCreateUser)`,
+        {
+            replacements: {
+                idUser: sale.idSeller_idUser,
+                concepto: `Venta #${ idSale }`,
+                monto,
+                fecha: oGetDateNow.substring(0, 10),
+                idSale,
+                referencia: `Utilidad $${ utilidad.toFixed(2) } x ${ comisionPorcentaje }%`,
+                createDate: oGetDateNow,
+                idCreateUser: idUserLogON
+            }
+        }
+    );
+
+};
+
 module.exports = {
     getComisionesResumen
     , getComisionesTrackList
@@ -542,4 +661,5 @@ module.exports = {
     , generarComisionesVenta
     , fn_registrarDestajoByTaller
     , fn_reversarComisionByOrigen
+    , fn_registrarComisionVentaSiPagada
 }

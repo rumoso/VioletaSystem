@@ -7,7 +7,7 @@ const path = require('path');
 
 const { dbConnection } = require('../database/config');
 const { Console } = require('console');
-const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen } = require('./comisionesTrackController');
+const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_registrarComisionVentaSiPagada } = require('./comisionesTrackController');
 
 const insertSale = async(req, res) => {
 
@@ -322,11 +322,12 @@ const insertPayments = async(req, res) => {
     var bOK = false;
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
-  
+
     var rollbackList = [];
+    var idsSaleTocadas = new Set();
 
     try{
-        
+
         for( var i = 0; i < paymentList.length; i++){
 
             var OPayment = paymentList[i];
@@ -366,6 +367,7 @@ const insertPayments = async(req, res) => {
                     if(idPayment.length > 0){
                         bOK = true;
                         rollbackList.push( { type: 'Payment', idRelation: idPayment } );
+                        idsSaleTocadas.add( OPayment.idRelation );
                     }else{
                         bOK = false;
                         break;
@@ -401,6 +403,22 @@ const insertPayments = async(req, res) => {
         }
         
         if(bOK){
+
+            // Comisión de venta automática (analisis/010) — se revisa
+            // hasta que TODO el lote quedó guardado (si un pago
+            // posterior fallara, el rollback compensatorio de abajo no
+            // sabría deshacer una comisión ya generada por uno
+            // anterior). Si con estos pagos alguna venta quedó saldada
+            // al 100% (y, si es apartado, ya entregada), genera la
+            // comisión del vendedor. No debe tumbar la respuesta del
+            // pago si falla.
+            for (const idSaleTocada of idsSaleTocadas) {
+                try {
+                    await fn_registrarComisionVentaSiPagada( idSaleTocada, idUserLogON );
+                } catch (comisionError) {
+                    console.log('No se pudo generar la comisión de venta:', comisionError.message);
+                }
+            }
 
             res.json({
                 status: 0,
@@ -1361,6 +1379,16 @@ const entregarApartado = async(req, res = response) => {
         );
 
         await transaction.commit();
+
+        // Comisión de venta automática (analisis/010) — un apartado
+        // solo genera comisión cuando está pagado al 100% Y entregado;
+        // si ya estaba pagado, este evento (la entrega) es el que la
+        // dispara. No debe tumbar la respuesta de entrega si falla.
+        try {
+            await fn_registrarComisionVentaSiPagada( idSale, auth_idUser );
+        } catch (comisionError) {
+            console.log('No se pudo generar la comisión de venta:', comisionError.message);
+        }
 
         res.json({
             status: 0,
