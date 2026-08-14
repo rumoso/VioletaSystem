@@ -32,6 +32,11 @@ const CATALOGOS = {
         tabla: 'vendedores',
         idCampo: 'idVendedor',
         etiqueta: 'vendedor',
+        // % de comisión base (0-100) — solo vendedores, no técnicos.
+        // Punto de partida para calcular su comisión de venta; la
+        // captura en la bitácora de comisiones (analisis/008) sigue
+        // siendo manual, este dato es solo de referencia.
+        bTieneComisionBase: true,
         referencias: [
             { sql: `SELECT COUNT(*) AS n FROM sales WHERE idSeller_idUser = :idUser`, desc: 'ventas' }
         ]
@@ -74,6 +79,7 @@ const _fn_getList = (config) => async(req, res = response) => {
                 U.name AS userNombre,
                 U.active AS userActive
                 ${ config.bTieneDestajo ? ', C.destajoPorcentaje' : '' }
+                ${ config.bTieneComisionBase ? ', C.comisionPorcentaje' : '' }
              FROM ${ config.tabla } AS C
              INNER JOIN users AS U ON U.idUser = C.idUser
              WHERE ( :search = '%%' OR C.nombre LIKE :search OR U.userName LIKE :search )
@@ -114,6 +120,7 @@ const _fn_getById = (config) => async(req, res = response) => {
                 C.${ config.idCampo } AS id, C.idUser, C.nombre, C.active,
                 U.userName, U.name AS userNombre
                 ${ config.bTieneDestajo ? ', C.destajoPorcentaje' : '' }
+                ${ config.bTieneComisionBase ? ', C.comisionPorcentaje' : '' }
              FROM ${ config.tabla } AS C
              INNER JOIN users AS U ON U.idUser = C.idUser
              WHERE C.${ config.idCampo } = :id
@@ -146,6 +153,7 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
         , nombre
         , active = 1
         , destajoPorcentaje = 0
+        , comisionPorcentaje = 0
 
         , idUserLogON
     } = req.body;
@@ -158,6 +166,13 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
             return res.json({
                 status: 1,
                 message: "El % de destajo debe estar entre 0 y 100."
+            });
+        }
+
+        if (config.bTieneComisionBase && (Number(comisionPorcentaje) < 0 || Number(comisionPorcentaje) > 100)) {
+            return res.json({
+                status: 1,
+                message: "El % de comisión base debe estar entre 0 y 100."
             });
         }
 
@@ -195,8 +210,9 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
                 `UPDATE ${ config.tabla }
                  SET idUser = :idUser, nombre = :nombre, active = :active, updateDate = :updateDate
                  ${ config.bTieneDestajo ? ', destajoPorcentaje = :destajoPorcentaje' : '' }
+                 ${ config.bTieneComisionBase ? ', comisionPorcentaje = :comisionPorcentaje' : '' }
                  WHERE ${ config.idCampo } = :id`,
-                { replacements: { idUser, nombre, active: active ? 1 : 0, updateDate: oGetDateNow, destajoPorcentaje, id }, type: dbConnection.QueryTypes.UPDATE }
+                { replacements: { idUser, nombre, active: active ? 1 : 0, updateDate: oGetDateNow, destajoPorcentaje, comisionPorcentaje, id }, type: dbConnection.QueryTypes.UPDATE }
             );
 
             return res.json({
@@ -209,11 +225,13 @@ const _fn_insertUpdate = (config) => async(req, res = response) => {
 
         const sColumnasDestajo = config.bTieneDestajo ? ', destajoPorcentaje' : '';
         const sValoresDestajo = config.bTieneDestajo ? ', :destajoPorcentaje' : '';
+        const sColumnasComisionBase = config.bTieneComisionBase ? ', comisionPorcentaje' : '';
+        const sValoresComisionBase = config.bTieneComisionBase ? ', :comisionPorcentaje' : '';
 
         await dbConnection.query(
-            `INSERT INTO ${ config.tabla } (idUser, nombre, active, createDate, idCreateUser ${ sColumnasDestajo })
-             VALUES (:idUser, :nombre, 1, :createDate, :idCreateUser ${ sValoresDestajo })`,
-            { replacements: { idUser, nombre, createDate: oGetDateNow, idCreateUser: idUserLogON, destajoPorcentaje }, type: dbConnection.QueryTypes.INSERT }
+            `INSERT INTO ${ config.tabla } (idUser, nombre, active, createDate, idCreateUser ${ sColumnasDestajo } ${ sColumnasComisionBase })
+             VALUES (:idUser, :nombre, 1, :createDate, :idCreateUser ${ sValoresDestajo } ${ sValoresComisionBase })`,
+            { replacements: { idUser, nombre, createDate: oGetDateNow, idCreateUser: idUserLogON, destajoPorcentaje, comisionPorcentaje }, type: dbConnection.QueryTypes.INSERT }
         );
 
         const [nuevoRow] = await dbConnection.query(

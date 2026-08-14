@@ -67,6 +67,20 @@
                 </span>
             </div>
 
+            <div class="pcm-slim-field" *ngIf="bEsVendedor">
+                <label class="pcm-slim-label">% de comisión base</label>
+                <input class="pcm-slim-input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    placeholder="0"
+                    formControlName="comisionPorcentaje">
+                <span class="pcm-slim-hint">
+                    Punto de partida para su comisión de venta (0 = no gana comisión). La captura sigue siendo manual en la bitácora de comisiones.
+                </span>
+            </div>
+
             <div class="pcm-slim-field pcm-activo" *ngIf="id > 0">
                 <label class="pcm-slim-label">Activo</label>
                 <label class="pcm-switch">
