@@ -79,26 +79,28 @@
 }
 
 .pcm-slim-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    color: #757575;
+    color: #283593;
     text-transform: uppercase;
-    letter-spacing: .3px;
+    letter-spacing: .5px;
 }
 
 .pcm-slim-input {
     height: 36px;
     padding: 0 10px;
-    border: 1px solid #bdbdbd;
-    border-radius: 4px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
     font-size: 13px;
+    font-weight: 500;
     outline: none;
     background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .pcm-slim-input:focus {
-    border-color: #7B1FA2;
-    box-shadow: 0 0 0 3px rgba(123, 31, 162, .15);
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
 }
 
 .pcm-slim-input:disabled {
@@ -205,7 +207,7 @@
 }
 
 .pcm-concepto-row-editando {
-    background: #f3e5f5;
+    background: #e8eaf6;
     border-radius: 6px;
     padding-left: 6px;
     padding-right: 6px;
