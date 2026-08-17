@@ -1,44 +1,35 @@
-<div class="divMain pcl-main">
+<div class="pcl-page">
 
-    <div class="pcl-filtros">
-        <div class="pcl-slim-field">
-            <label class="pcl-slim-label">Estatus</label>
-            <select class="pcl-slim-input" [formControl]="estatusControl" (change)="fn_buscar()">
-                <option value="">Todos</option>
-                <option value="BORRADOR">Borrador</option>
-                <option value="PAGADA">Pagada</option>
-                <option value="CANCELADA">Cancelada</option>
-            </select>
-        </div>
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="pcl-card pcl-filtros">
 
-        <div class="pcl-slim-field">
-            <label class="pcl-slim-label">Empleados</label>
-            <input class="pcl-slim-input"
-                type="text"
-                placeholder="Busca por nombre o usuario..."
-                [formControl]="empleadoSearchControl"
-                [matAutocomplete]="autoEmpleadosFiltro">
-            <mat-autocomplete autoActiveFirstOption
-                                #autoEmpleadosFiltro="matAutocomplete"
-                                (optionSelected)="fn_agregarEmpleadoFiltro($event.option.value)">
-                <mat-option *ngIf="bBuscandoEmpleados" disabled>Buscando...</mat-option>
-                <mat-option *ngFor="let e of empleadosEncontrados" [value]="e">
-                    {{ e.nombre }} <span *ngIf="e.userName">— {{ e.userName }}</span>
-                </mat-option>
-            </mat-autocomplete>
-        </div>
+    <div class="pcl-filtros-row">
+      <div class="pcl-slim-field">
+        <label class="pcl-slim-label">Estatus</label>
+        <select class="pcl-slim-input" [formControl]="estatusControl" (change)="fn_buscar()">
+            <option value="">Todos</option>
+            <option value="BORRADOR">Borrador</option>
+            <option value="PAGADA">Pagada</option>
+            <option value="CANCELADA">Cancelada</option>
+        </select>
+      </div>
 
-        <div class="pcl-filtro-botones">
-            <button mat-raised-button type="button" (click)="fn_getList()">
-                <mat-icon matPrefix class="my-icon">refresh</mat-icon>
-                Actualizar</button>
-
-            <button mat-raised-button color="accent" type="button"
-            *ngIf="bPuedeGenerar"
-            (click)="fn_generar()">
-                <mat-icon matPrefix class="my-icon">receipt_long</mat-icon>
-                Generar nómina</button>
-        </div>
+      <div class="pcl-slim-field pcl-filtro-buscar">
+        <label class="pcl-slim-label">Empleados</label>
+        <input class="pcl-slim-input"
+            type="text"
+            placeholder="Busca por nombre o usuario..."
+            [formControl]="empleadoSearchControl"
+            [matAutocomplete]="autoEmpleadosFiltro">
+        <mat-autocomplete autoActiveFirstOption
+                            #autoEmpleadosFiltro="matAutocomplete"
+                            (optionSelected)="fn_agregarEmpleadoFiltro($event.option.value)">
+            <mat-option *ngIf="bBuscandoEmpleados" disabled>Buscando...</mat-option>
+            <mat-option *ngFor="let e of empleadosEncontrados" [value]="e">
+                {{ e.nombre }} <span *ngIf="e.userName">— {{ e.userName }}</span>
+            </mat-option>
+        </mat-autocomplete>
+      </div>
     </div>
 
     <div class="ng-chips" *ngIf="empleadosFiltro.length > 0">
@@ -47,6 +38,26 @@
             <mat-icon (click)="fn_quitarEmpleadoFiltro(e)">close</mat-icon>
         </span>
     </div>
+
+    <div class="pcl-filtro-botones">
+        <button mat-stroked-button class="pcl-btn-secondary" (click)="fn_getList()">
+            <mat-icon>refresh</mat-icon>
+            Actualizar</button>
+
+        <div class="pcl-divider-v"></div>
+        <span class="pcl-count-badge">{{ pagination.length | number }} registros</span>
+
+        <button mat-flat-button class="pcl-btn-add"
+        *ngIf="bPuedeGenerar"
+        (click)="fn_generar()">
+            <mat-icon>receipt_long</mat-icon>
+            Generar nómina</button>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ CONTENIDO ═══════════════ -->
+  <div class="pcl-card pcl-content">
 
     <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
         <mat-icon class="pcl-vacio-icon">payments</mat-icon>
@@ -99,9 +110,13 @@
         </table>
     </div>
 
-    <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
-                    (OPagination)="changePagination($event)">
-    </app-pagination>
+    <div class="pcl-pagination">
+      <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
+                      (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
+
+  </div>
 
 </div>
 

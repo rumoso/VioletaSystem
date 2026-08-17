@@ -1,7 +1,10 @@
-<div class="divMain pcl-main">
+<div class="pcl-page">
 
-    <div class="pcl-header pcl-header--sin-titulo">
-        <div class="pcl-vista-toggle" *ngIf="!bEsMovil">
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="pcl-card pcl-filtros">
+
+    <div class="pcl-header pcl-header--sin-titulo" *ngIf="!bEsMovil">
+        <div class="pcl-vista-toggle">
             <button type="button"
             [class.active]="vistaActual === 'tabla'"
             matTooltip="Vista de tabla"
@@ -17,53 +20,60 @@
         </div>
     </div>
 
-    <div class="pcl-filtros">
-        <div class="pcl-slim-field pcl-filtro-buscar">
-            <label class="pcl-slim-label">Buscar</label>
-            <input class="pcl-slim-input"
-                type="text"
-                placeholder="Nombre o usuario..."
-                [formControl]="searchControl"
-                (keydown.enter)="fn_buscar()">
-        </div>
-
-        <div class="pcl-filtro-botones">
-            <button mat-raised-button color="primary" type="button" (click)="fn_buscar()">
-                <mat-icon matPrefix class="my-icon">search</mat-icon>
-                Buscar</button>
-
-            <button mat-raised-button type="button" (click)="fn_limpiar()">
-                <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                Limpiar</button>
-
-            <button mat-raised-button type="button" (click)="fn_getList()">
-                <mat-icon matPrefix class="my-icon">refresh</mat-icon>
-                Actualizar</button>
-
-            <button mat-raised-button color="accent" type="button"
-            *ngIf="fn_hasPermission(config.permisoCrear)"
-            (click)="fn_showModal(0)">
-                <mat-icon matPrefix class="my-icon">add</mat-icon>
-                Nuevo</button>
-        </div>
+    <div class="pcl-filtros-row">
+      <div class="pcl-slim-field pcl-filtro-buscar">
+        <label class="pcl-slim-label">Buscar</label>
+        <input class="pcl-slim-input"
+            type="text"
+            placeholder="Nombre o usuario..."
+            [formControl]="searchControl"
+            (keydown.enter)="fn_buscar()">
+      </div>
     </div>
+
+    <div class="pcl-filtro-botones">
+        <button mat-stroked-button class="pcl-btn-secondary" (click)="fn_limpiar()">
+            <mat-icon>filter_alt_off</mat-icon>
+            Limpiar</button>
+
+        <button mat-flat-button class="pcl-btn-primary" (click)="fn_buscar()">
+            <mat-icon>search</mat-icon>
+            Buscar</button>
+
+        <div class="pcl-divider-v"></div>
+        <span class="pcl-count-badge">{{ pagination.length | number }} registros</span>
+
+        <button mat-stroked-button class="pcl-btn-secondary" (click)="fn_getList()">
+            <mat-icon>refresh</mat-icon>
+            Actualizar</button>
+
+        <button mat-flat-button class="pcl-btn-add"
+        *ngIf="fn_hasPermission(config.permisoCrear)"
+        (click)="fn_showModal(0)">
+            <mat-icon>add</mat-icon>
+            Nuevo</button>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ CONTENIDO ═══════════════ -->
+  <div class="pcl-card pcl-content">
 
     <!-- Estado vacío -->
     <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
         <mat-icon class="pcl-vacio-icon">group_off</mat-icon>
         <p>No hay registros{{ pagination.search ? ' con ese filtro' : '' }}.</p>
-        <button mat-raised-button color="primary" type="button"
+        <button mat-flat-button class="pcl-btn-add" style="margin: 0 auto;"
         *ngIf="!pagination.search && fn_hasPermission(config.permisoCrear)"
         (click)="fn_showModal(0)">
             Crear el primero</button>
     </div>
 
-    <!-- Vista TABLA (diseño según imagen de referencia) -->
+    <!-- Vista TABLA -->
     <div class="table-responsive" *ngIf="vistaActual === 'tabla' && catlist.length > 0">
         <table class="pcl-tabla">
             <thead>
                 <tr>
-                    <th class="textAlingLeft">ID</th>
                     <th class="textAlingLeft">Nombre</th>
                     <th class="textAlingLeft">Usuario del sistema</th>
                     <th class="textAlingCenter">Estatus</th>
@@ -73,8 +83,6 @@
             </thead>
             <tbody>
                 <tr *ngFor="let item of catlist">
-                    <td class="pcl-td-id">#{{ item.id }}</td>
-
                     <td>
                         <div class="pcl-persona">
                             <div class="pcl-avatar" [style.background-color]="fn_avatarColor(item.nombre)">
@@ -140,14 +148,14 @@
 
     <!-- Vista CARDS (resolución baja o por preferencia) -->
     <div class="pcl-cards" *ngIf="vistaActual === 'cards' && catlist.length > 0">
-        <div class="pcl-card" *ngFor="let item of catlist">
+        <div class="pcl-card-item" *ngFor="let item of catlist">
             <div class="pcl-card-header">
                 <div class="pcl-avatar" [style.background-color]="fn_avatarColor(item.nombre)">
                     {{ fn_inicial(item.nombre) }}
                 </div>
                 <div class="pcl-persona-datos">
                     <span class="pcl-principal">{{ item.nombre }}</span>
-                    <span class="pcl-secundario">#{{ item.id }} · {{ item.userName }}</span>
+                    <span class="pcl-secundario">{{ item.userName }}</span>
                 </div>
                 <span class="pcl-chip" [class.pcl-chip-activo]="item.active" [class.pcl-chip-inactivo]="!item.active">
                     {{ item.active ? 'Activo' : 'Inactivo' }}
@@ -182,9 +190,13 @@
         </div>
     </div>
 
-    <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
-                    (OPagination)="changePagination($event)">
-    </app-pagination>
+    <div class="pcl-pagination">
+      <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
+                      (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
+
+  </div>
 
 </div>
 

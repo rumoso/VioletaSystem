@@ -1,40 +1,51 @@
-<div class="divMain pcl-main">
+<div class="pcl-page">
 
-    <div class="pcl-filtros">
-        <div class="pcl-slim-field pcl-filtro-buscar">
-            <label class="pcl-slim-label">Buscar</label>
-            <input class="pcl-slim-input"
-                type="text"
-                placeholder="Nombre del concepto..."
-                [formControl]="searchControl"
-                (keydown.enter)="fn_buscar()">
-        </div>
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="pcl-card pcl-filtros">
 
-        <div class="pcl-slim-field">
-            <label class="pcl-slim-label">Tipo</label>
-            <select class="pcl-slim-input" [formControl]="tipoControl" (change)="fn_buscar()">
-                <option value="">Todos</option>
-                <option value="PERCEPCION">Percepción</option>
-                <option value="DEDUCCION">Deducción</option>
-            </select>
-        </div>
+    <div class="pcl-filtros-row">
+      <div class="pcl-slim-field pcl-filtro-buscar">
+        <label class="pcl-slim-label">Buscar</label>
+        <input class="pcl-slim-input"
+            type="text"
+            placeholder="Nombre del concepto..."
+            [formControl]="searchControl"
+            (keydown.enter)="fn_buscar()">
+      </div>
 
-        <div class="pcl-filtro-botones">
-            <button mat-raised-button color="primary" type="button" (click)="fn_buscar()">
-                <mat-icon matPrefix class="my-icon">search</mat-icon>
-                Buscar</button>
-
-            <button mat-raised-button type="button" (click)="fn_limpiar()">
-                <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                Limpiar</button>
-
-            <button mat-raised-button color="accent" type="button"
-            *ngIf="bPuedeAdministrar"
-            (click)="fn_showModal(null)">
-                <mat-icon matPrefix class="my-icon">add</mat-icon>
-                Nuevo</button>
-        </div>
+      <div class="pcl-slim-field">
+        <label class="pcl-slim-label">Tipo</label>
+        <select class="pcl-slim-input" [formControl]="tipoControl" (change)="fn_buscar()">
+            <option value="">Todos</option>
+            <option value="PERCEPCION">Percepción</option>
+            <option value="DEDUCCION">Deducción</option>
+        </select>
+      </div>
     </div>
+
+    <div class="pcl-filtro-botones">
+        <button mat-stroked-button class="pcl-btn-secondary" (click)="fn_limpiar()">
+            <mat-icon>filter_alt_off</mat-icon>
+            Limpiar</button>
+
+        <button mat-flat-button class="pcl-btn-primary" (click)="fn_buscar()">
+            <mat-icon>search</mat-icon>
+            Buscar</button>
+
+        <div class="pcl-divider-v"></div>
+        <span class="pcl-count-badge">{{ pagination.length | number }} registros</span>
+
+        <button mat-flat-button class="pcl-btn-add"
+        *ngIf="bPuedeAdministrar"
+        (click)="fn_showModal(null)">
+            <mat-icon>add</mat-icon>
+            Nuevo</button>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ CONTENIDO ═══════════════ -->
+  <div class="pcl-card pcl-content">
 
     <div class="pcl-vacio" *ngIf="catlist.length === 0 && !bShowSpinner">
         <mat-icon class="pcl-vacio-icon">receipt_long</mat-icon>
@@ -110,9 +121,13 @@
         </table>
     </div>
 
-    <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
-                    (OPagination)="changePagination($event)">
-    </app-pagination>
+    <div class="pcl-pagination">
+      <app-pagination *ngIf="catlist.length > 0" [IPagination]="pagination"
+                      (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
+
+  </div>
 
 </div>
 
