@@ -120,7 +120,7 @@
                             <input class="pcm-slim-input" type="number" min="1" step="0.5"
                                 formControlName="horasSemana"
                                 (keydown.enter)="fn_guardar()">
-                            <span class="pcm-slim-hint">Lo usará el control de horas (timeCard)</span>
+                            <span class="pcm-slim-hint">Solo referencia — el control de horas usa el horario de la pestaña TimeCard</span>
                         </div>
 
                     </div>
@@ -199,6 +199,66 @@
                     <p class="pcm-slim-hint" *ngIf="id > 0 && conceptosBase.length === 0">
                         Sin conceptos base — agrega al menos el sueldo base.
                     </p>
+
+                </div>
+
+            </mat-tab>
+
+            <mat-tab label="TimeCard" [disabled]="id === 0">
+
+                <div class="pcm-timecard">
+
+                    <p class="pcm-slim-hint" *ngIf="id === 0">
+                        Guarda primero los datos del empleado para configurar su TimeCard.
+                    </p>
+
+                    <ng-container *ngIf="id > 0">
+
+                        <!-- Rostro enrolado -->
+                        <div class="pcm-tc-rostro">
+                            <mat-icon [class.colorGreen]="bTieneRostro" [class.colorOrange]="!bTieneRostro">
+                                {{ bTieneRostro ? 'verified_user' : 'face_retouching_off' }}
+                            </mat-icon>
+                            <span>{{ bTieneRostro ? 'Rostro enrolado' : 'Sin rostro registrado — no puede checar en TimeCard' }}</span>
+                            <button mat-stroked-button type="button" *ngIf="!bSoloLectura" (click)="fn_enrolarRostro()">
+                                <mat-icon matPrefix class="my-icon">face</mat-icon>
+                                {{ bTieneRostro ? 'Reenrolar' : 'Enrolar rostro' }}</button>
+                        </div>
+
+                        <!-- Horario propio opcional -->
+                        <div class="pcm-banner" *ngIf="bannerHorario"
+                            [class.pcm-banner-ok]="bannerHorario.tipo === 'ok'"
+                            [class.pcm-banner-error]="bannerHorario.tipo === 'error'">
+                            <mat-icon>{{ bannerHorario.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+                            <span>{{ bannerHorario.mensaje }}</span>
+                        </div>
+
+                        <p class="pcm-slim-hint">
+                            Horario propio (opcional). Si no capturas ningún día, se usa el horario de su sucursal.
+                        </p>
+
+                        <div class="hs-dia" *ngFor="let dia of horarioDias">
+                            <label class="hs-dia-checkbox">
+                                <input type="checkbox" [(ngModel)]="dia.bTrabaja" [disabled]="bSoloLectura">
+                                <span class="hs-dia-nombre">{{ dia.nombre }}</span>
+                            </label>
+                            <div class="hs-dia-horas" *ngIf="dia.bTrabaja">
+                                <input class="pcm-slim-input" type="time" [(ngModel)]="dia.horaEntrada" [disabled]="bSoloLectura">
+                                <span>a</span>
+                                <input class="pcm-slim-input" type="time" [(ngModel)]="dia.horaSalida" [disabled]="bSoloLectura">
+                            </div>
+                            <div class="hs-dia-descanso" *ngIf="!dia.bTrabaja">
+                                {{ id > 0 ? 'Toma el de su sucursal / descanso' : 'Descanso' }}
+                            </div>
+                        </div>
+
+                        <button mat-raised-button color="accent" type="button" *ngIf="!bSoloLectura"
+                            [disabled]="bGuardandoHorario"
+                            (click)="fn_guardarHorarioPropio()">
+                            <mat-icon matPrefix class="my-icon">save</mat-icon>
+                            {{ bGuardandoHorario ? 'Guardando...' : 'Guardar horario' }}</button>
+
+                    </ng-container>
 
                 </div>
 

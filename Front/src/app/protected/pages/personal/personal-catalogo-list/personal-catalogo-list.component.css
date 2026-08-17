@@ -263,6 +263,14 @@
     color: #EF6C00;
 }
 
+.pcl-icono-inline {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+
 /* Responsivo: filtros apilados */
 @media (max-width: 767.98px) {
     .pcl-filtros {

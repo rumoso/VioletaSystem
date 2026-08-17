@@ -85,7 +85,11 @@
                                 {{ fn_inicial(item.nombre) }}
                             </div>
                             <div class="pcl-persona-datos">
-                                <span class="pcl-principal">{{ item.nombre }}</span>
+                                <span class="pcl-principal">
+                                    {{ item.nombre }}
+                                    <mat-icon *ngIf="!item.bTieneRostro" class="colorOrange pcl-icono-inline"
+                                        matTooltip="Sin rostro registrado — no puede checar en TimeCard">face_retouching_off</mat-icon>
+                                </span>
                                 <span class="pcl-secundario">{{ item.telefono || 'Sin teléfono' }}</span>
                             </div>
                         </div>
@@ -161,7 +165,11 @@
                     {{ fn_inicial(item.nombre) }}
                 </div>
                 <div class="pcl-persona-datos">
-                    <span class="pcl-principal">{{ item.nombre }}</span>
+                    <span class="pcl-principal">
+                        {{ item.nombre }}
+                        <mat-icon *ngIf="!item.bTieneRostro" class="colorOrange pcl-icono-inline"
+                            matTooltip="Sin rostro registrado — no puede checar en TimeCard">face_retouching_off</mat-icon>
+                    </span>
                     <span class="pcl-secundario">#{{ item.id }} · {{ item.userName }}</span>
                 </div>
                 <span class="pcl-chip" [class.pcl-chip-activo]="item.active" [class.pcl-chip-inactivo]="!item.active">

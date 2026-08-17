@@ -48,10 +48,12 @@ const getEmpleadosList = async(req, res = response) => {
                 DATE_FORMAT( E.fechaBaja, '%d-%m-%Y' ) AS fechaBajaDesc,
                 U.userName,
                 U.name AS userNombre,
-                S.name AS sucursalDesc
+                S.name AS sucursalDesc,
+                IF(FR.idFaceReference IS NULL, 0, 1) AS bTieneRostro
              FROM empleados AS E
              INNER JOIN users AS U ON U.idUser = E.idUser
              LEFT JOIN sucursales AS S ON S.idSucursal = E.idSucursal
+             LEFT JOIN face_reference AS FR ON FR.tipoPersona = 'USUARIO' AND FR.idPersona = E.idUser
              WHERE ( :search = '%%' OR E.nombre LIKE :search OR U.userName LIKE :search OR E.puesto LIKE :search )
              ORDER BY E.active DESC, E.nombre ASC
              LIMIT :offset, :limit`,
@@ -89,9 +91,11 @@ const getEmpleadoById = async(req, res = response) => {
                 E.idEmpleado AS id, E.idUser, E.nombre, E.fechaIngreso, E.fechaBaja,
                 E.puesto, E.idSucursal, E.telefono, E.contactoEmergencia,
                 E.rfc, E.curp, E.nss, E.periodicidadComisiones, E.horasSemana, E.active,
-                U.userName, U.name AS userNombre
+                U.userName, U.name AS userNombre,
+                IF(FR.idFaceReference IS NULL, 0, 1) AS bTieneRostro
              FROM empleados AS E
              INNER JOIN users AS U ON U.idUser = E.idUser
+             LEFT JOIN face_reference AS FR ON FR.tipoPersona = 'USUARIO' AND FR.idPersona = E.idUser
              WHERE E.idEmpleado = :id
              LIMIT 1`,
             { replacements: { id }, type: dbConnection.QueryTypes.SELECT }
