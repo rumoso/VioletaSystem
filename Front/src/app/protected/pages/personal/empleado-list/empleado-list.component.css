@@ -1,0 +1,347 @@
+/* ══════════════════════════════════════════════════
+   ECL — Empleado Catálogo List  |  mismo formato de sale-list/taller-list
+   Paleta Indigo #1a237e / #283593 / #3949ab
+══════════════════════════════════════════════════ */
+
+.ecl-page {
+  padding: 20px 24px 40px;
+  background: #f0f2f7;
+  min-height: 100%;
+}
+
+/* ══ Título integrado ══ */
+.ecl-inline-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
+}
+.ecl-inline-title-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1a237e, #3949ab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(26,35,126,.22);
+}
+.ecl-inline-title-icon mat-icon {
+  font-size: 22px !important;
+  width: 22px;
+  height: 22px;
+  color: #fff;
+}
+.ecl-inline-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ecl-inline-title-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a237e;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+.ecl-inline-title-desc {
+  font-size: 12px;
+  color: #888;
+}
+
+/* ══ TARJETAS ══ */
+.ecl-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* ══ FILTROS ══ */
+.ecl-filters { padding: 0 0 16px; }
+.ecl-filters-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 16px 24px 0;
+}
+.ecl-field { flex: 1; min-width: 160px; }
+.ecl-field--search { min-width: 280px; flex: 1.4; }
+
+.ecl-filters-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid #f0f0f0;
+  padding: 14px 24px 0;
+  margin-top: 14px;
+}
+
+.ecl-divider-v {
+  width: 1px;
+  height: 26px;
+  background: #e0e0e0;
+  margin: 0 2px;
+}
+
+.ecl-btn-primary {
+  background: #283593 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.ecl-btn-primary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+.ecl-btn-secondary {
+  border-color: #dadada !important;
+  color: #555 !important;
+  border-radius: 8px !important;
+}
+.ecl-btn-secondary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+.ecl-btn-add {
+  background: #fff !important;
+  color: #1a237e !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  padding: 0 14px !important;
+  height: 32px;
+  font-size: 13px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  white-space: nowrap;
+  margin-left: auto;
+}
+.ecl-btn-add mat-icon { font-size: 16px !important; margin-right: 4px; vertical-align: middle; }
+
+.ecl-count-badge {
+  background: #e8eaf6;
+  border: 1px solid #c5cae9;
+  color: #283593;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ══ CONTENIDO / TABLA ══ */
+.ecl-content { padding: 0; }
+
+.ecl-table-wrapper {
+  overflow-x: auto;
+  padding: 4px 0 0;
+}
+.ecl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ecl-th {
+  padding: 13px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #8e97a4;
+  background: #fafbfc;
+  border-bottom: 2px solid #ececec;
+  white-space: nowrap;
+}
+.ecl-th--left   { text-align: left; }
+.ecl-th--center { text-align: center; }
+
+.ecl-tr { transition: background 0.12s; }
+.ecl-tr:hover { background: #f5f7ff; }
+
+.ecl-td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 14px;
+  color: #333;
+  vertical-align: middle;
+}
+.ecl-td--center { text-align: center; }
+.ecl-td--left   { text-align: left; }
+
+/* Empleado: avatar + nombre + teléfono */
+.ecl-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ecl-user-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ecl-user-chip-datos {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.ecl-user-name {
+  font-weight: 600;
+  color: #212121;
+  font-size: 14px;
+}
+.ecl-user-sub {
+  font-size: 12px;
+  color: #9e9e9e;
+}
+
+.ecl-persona-datos {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.ecl-principal {
+  font-weight: 500;
+  color: #212121;
+}
+.ecl-secundario {
+  font-size: 12px;
+  color: #9e9e9e;
+}
+
+/* Chip de periodicidad de comisiones */
+.ecl-type-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #ede7f6;
+  color: #4527a0;
+}
+
+/* Face ID */
+.ecl-face-ok    { color: #2e7d32; }
+.ecl-face-warn  { color: #ef6c00; }
+
+/* Estatus activo/baja */
+.ecl-status-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ecl-status-chip--activo   { background: #e8f5e9; color: #2e7d32; }
+.ecl-status-chip--inactivo { background: #ffebee; color: #c62828; }
+
+/* Acciones */
+.ecl-td--actions { min-width: 100px; }
+.ecl-actions {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+.ecl-action-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  cursor: pointer;
+  margin: 0 2px;
+  vertical-align: middle;
+  transition: opacity 0.2s;
+}
+.ecl-action-icon:hover { opacity: 0.75; }
+.ecl-action-icon--edit  { color: #1565c0; }
+.ecl-action-icon--paid  { color: #2e7d32; }
+.ecl-action-icon--warn  { color: #ef6c00; }
+.ecl-action-icon--delete{ color: #c62828; }
+
+/* Estado vacío */
+.ecl-empty {
+  padding: 64px 20px;
+  text-align: center;
+  color: #c4ccd6;
+}
+.ecl-empty mat-icon {
+  font-size: 52px !important;
+  width: 52px;
+  height: 52px;
+  display: block;
+  margin: 0 auto 10px;
+}
+.ecl-empty span {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+/* Paginación */
+.ecl-pagination {
+  padding: 10px 20px;
+  border-top: 1px solid #f2f2f2;
+}
+
+/* ══ Inputs SLIM nativos (36px) — mismo patrón del taller/ventas ══ */
+.ecl-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  margin-bottom: 3px;
+  line-height: 1.2;
+  padding-left: 2px;
+}
+.ecl-field .inline-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ecl-field .inline-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+.ecl-slim-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  box-sizing: border-box;
+}
+.ecl-slim-input::placeholder {
+  color: #9e9e9e;
+  font-weight: 400;
+}
+.ecl-slim-input--with-prefix { padding-left: 6px; }
+.ecl-slim-prefix-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  color: #9e9e9e !important;
+  margin: 0 6px 0 10px;
+  flex-shrink: 0;
+}
