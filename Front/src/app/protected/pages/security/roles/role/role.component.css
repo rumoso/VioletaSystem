@@ -1,0 +1,141 @@
+/* ══════════════════════════════════════════════════
+   RCM — Role Catálogo Modal (pantalla)  |  mismo formato de sale-list/taller-list
+   Paleta Indigo #1a237e / #283593 / #3949ab
+══════════════════════════════════════════════════ */
+
+.rcm-page {
+  padding: 20px 24px 40px;
+  background: #f0f2f7;
+  min-height: 100%;
+}
+
+.rcm-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  max-width: 560px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* ══ Título integrado ══ */
+.rcm-inline-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
+}
+.rcm-inline-title-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1a237e, #3949ab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(26,35,126,.22);
+}
+.rcm-inline-title-icon mat-icon {
+  font-size: 22px !important;
+  width: 22px;
+  height: 22px;
+  color: #fff;
+}
+.rcm-inline-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.rcm-inline-title-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a237e;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+.rcm-inline-title-desc {
+  font-size: 12px;
+  color: #888;
+}
+
+/* ══ Formulario ══ */
+.rcm-form {
+  padding: 16px 24px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rcm-field { display: flex; flex-direction: column; gap: 3px; }
+
+.rcm-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  padding-left: 2px;
+}
+
+.rcm-field .inline-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.rcm-field .inline-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+
+.rcm-slim-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  box-sizing: border-box;
+}
+.rcm-slim-input::placeholder {
+  color: #9e9e9e;
+  font-weight: 400;
+}
+
+/* ══ Acciones ══ */
+.rcm-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+}
+
+.rcm-btn-primary {
+  background: #283593 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.rcm-btn-primary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+.rcm-btn-primary[disabled] { opacity: 0.5; }
+
+.rcm-btn-secondary {
+  border-color: #dadada !important;
+  color: #555 !important;
+  border-radius: 8px !important;
+}
+.rcm-btn-secondary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
