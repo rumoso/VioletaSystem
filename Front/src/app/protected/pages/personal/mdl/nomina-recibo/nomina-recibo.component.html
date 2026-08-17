@@ -67,6 +67,34 @@
             </button>
         </div>
 
+        <!-- TimeCard (analisis/011, T17): solo informativo — el sistema no
+             convierte horas extra/retardos/faltas a dinero, quien captura
+             decide el monto con este dato a la vista. -->
+        <div class="rc-horas" *ngIf="recibo.horasTrabajadas > 0 || recibo.horasEsperadas > 0">
+            <div class="rc-horas-item">
+                <span class="rc-horas-valor">{{ recibo.horasTrabajadas }}</span>
+                <span class="rc-horas-label">Trabajadas</span>
+            </div>
+            <div class="rc-horas-item">
+                <span class="rc-horas-valor">{{ recibo.horasEsperadas }}</span>
+                <span class="rc-horas-label">Esperadas</span>
+            </div>
+            <div class="rc-horas-item">
+                <span class="rc-horas-valor" [class.nr-monto-negativo]="(recibo.horasTrabajadas - recibo.horasEsperadas) < 0">
+                    {{ (recibo.horasTrabajadas - recibo.horasEsperadas) > 0 ? '+' : '' }}{{ recibo.horasTrabajadas - recibo.horasEsperadas }}
+                </span>
+                <span class="rc-horas-label">Diferencia</span>
+            </div>
+            <div class="rc-horas-item">
+                <span class="rc-horas-valor" [class.nr-monto-negativo]="recibo.iRetardos > 0">{{ recibo.iRetardos }}</span>
+                <span class="rc-horas-label">Retardos</span>
+            </div>
+            <div class="rc-horas-item">
+                <span class="rc-horas-valor" [class.nr-monto-negativo]="recibo.iFaltas > 0">{{ recibo.iFaltas }}</span>
+                <span class="rc-horas-label">Faltas</span>
+            </div>
+        </div>
+
         <!-- Estado de cuenta: percepciones a la izquierda, deducciones a la derecha -->
         <div class="rc-ledger">
 
