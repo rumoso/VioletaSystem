@@ -6,6 +6,7 @@ const { validarCampos } = require('../middlewares/validar-campos')
 const {
     saveFaceReference
     , getFaceReference
+    , deleteFaceReference
     , getFaceReferences
     , logFaceVerification
     , getFaceVerificationLogTrack
@@ -33,6 +34,14 @@ router.post('/getFaceReference', [
 
   validarCampos
 ], getFaceReference);
+
+router.post('/deleteFaceReference', [
+
+  check('tipoPersona','tipoPersona obligatorío').not().isEmpty(),
+  check('idPersona','idPersona obligatorío').not().isEmpty(),
+
+  validarCampos
+], deleteFaceReference);
 
 router.post('/getFaceReferences', getFaceReferences);
 

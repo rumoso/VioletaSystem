@@ -212,6 +212,39 @@ export class UserComponent implements OnInit {
     });
   }
 
+  fn_removeFaceReference() {
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+      , 'Está a punto de eliminar el rostro de referencia de este usuario. Ya no podrá usarlo para checar ni para autorizaciones/login por rostro.'
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: ( resp: any ) => {
+        if( resp ){
+
+          this.bShowSpinner = true;
+
+          this.faceReferenceServ.CDeleteFaceReference( 'USUARIO', this.idUser )
+          .subscribe({
+            next: (resp2: any) => {
+              this.servicesGServ.showSnakbar( resp2.message );
+              this.bShowSpinner = false;
+              if( resp2.status === 0 ){
+                this.bTieneRostro = false;
+              }
+            },
+            error: () => {
+              this.servicesGServ.showSnakbar( "Problemas con el servicio" );
+              this.bShowSpinner = false;
+            }
+          });
+
+        }
+      }
+    });
+
+  }
+
   fn_saveUser() {
 
     this.bShowSpinner = true;

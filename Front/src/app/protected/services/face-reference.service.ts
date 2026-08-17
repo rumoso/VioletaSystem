@@ -35,6 +35,14 @@ export class FaceReferenceService {
 
   }
 
+  CDeleteFaceReference( tipoPersona: string, idPersona: number ): Observable<ResponseDB_CRUD> {
+
+    const data = { tipoPersona, idPersona };
+
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteFaceReference`, data );
+
+  }
+
   CGetFaceReferences( tipoPersona: string = '' ): Observable<ResponseGet> {
 
     const data = { tipoPersona };

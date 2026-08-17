@@ -90,6 +90,15 @@
                         {{ bTieneRostro ? 'Rostro registrado (actualizar)' : 'Registrar rostro' }}
                     </button>
                 </div>
+                <div class="col-md-3" *ngIf="id > 0 && bTieneRostro">
+                    <button mat-stroked-button
+                    color="warn"
+                    type="button"
+                    (click)="fn_removeFaceReference()">
+                        <mat-icon matPrefix class="my-icon">face_retouching_off</mat-icon>
+                        Quitar rostro
+                    </button>
+                </div>
             </div>
 
             <div class="row top10px">

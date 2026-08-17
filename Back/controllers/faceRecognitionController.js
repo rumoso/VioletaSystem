@@ -95,6 +95,36 @@ const getFaceReference = async(req, res = response) => {
     }
 };
 
+const deleteFaceReference = async(req, res = response) => {
+
+    const {
+        tipoPersona,
+        idPersona
+    } = req.body;
+
+    try{
+
+        await dbConnection.query(
+            `DELETE FROM face_reference WHERE tipoPersona = :tipoPersona AND idPersona = :idPersona`,
+            { replacements: { tipoPersona, idPersona }, type: dbConnection.QueryTypes.DELETE }
+        );
+
+        res.json({
+            status: 0,
+            message: "Rostro de referencia eliminado."
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
 const getFaceReferences = async(req, res = response) => {
 
     const {
@@ -341,6 +371,7 @@ const saveCameraPreference = async(req, res = response) => {
 module.exports = {
     saveFaceReference
     , getFaceReference
+    , deleteFaceReference
     , getFaceReferences
     , logFaceVerification
     , getFaceVerificationLogTrack
