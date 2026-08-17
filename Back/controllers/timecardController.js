@@ -219,11 +219,21 @@ const fn_recalcularJornada = async(idEmpleado, fecha, idUserLogON, transaction) 
             }
         );
     } else {
+        // INSERT ... ON DUPLICATE KEY UPDATE (no un INSERT plano): dos
+        // marcajes casi simultaneos del mismo dia (doble-tap, reintento
+        // de red) pueden competir por crear la PRIMERA fila de
+        // timecard_jornadas para ese idEmpleado+fecha — con un INSERT
+        // plano el perdedor de la carrera truena contra el UNIQUE KEY en
+        // vez de simplemente actualizar.
         await dbConnection.query(
             `INSERT INTO timecard_jornadas
                 (idEmpleado, fecha, horasTrabajadas, horasEsperadas, bIncompleta, bFalta, bRetardo, minutosRetardo, estatus, createDate, idCreateUser)
              VALUES
-                (:idEmpleado, :fecha, :horasTrabajadas, :horasEsperadas, :bIncompleta, :bFalta, :bRetardo, :minutosRetardo, 'PENDIENTE', :createDate, :idCreateUser)`,
+                (:idEmpleado, :fecha, :horasTrabajadas, :horasEsperadas, :bIncompleta, :bFalta, :bRetardo, :minutosRetardo, 'PENDIENTE', :createDate, :idCreateUser)
+             ON DUPLICATE KEY UPDATE
+                horasTrabajadas = VALUES(horasTrabajadas), horasEsperadas = VALUES(horasEsperadas),
+                bIncompleta = VALUES(bIncompleta), bFalta = VALUES(bFalta), bRetardo = VALUES(bRetardo),
+                minutosRetardo = VALUES(minutosRetardo), updateDate = VALUES(createDate)`,
             {
                 replacements: {
                     idEmpleado, fecha, horasTrabajadas, horasEsperadas,
