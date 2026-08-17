@@ -23,7 +23,17 @@
               </mat-form-field>
         </div>
     </div>
-    
+
+    <div class="row">
+        <div class="col-md-12 textAlingLeft">
+            <mat-radio-group [(ngModel)]="filterFaceID" (change)="fn_filtrarFaceID()">
+                <mat-radio-button value="">Todos</mat-radio-button>
+                <mat-radio-button value="CON" style="margin-left: 20px;">Con Face ID</mat-radio-button>
+                <mat-radio-button value="SIN" style="margin-left: 20px;">Sin Face ID</mat-radio-button>
+            </mat-radio-group>
+        </div>
+    </div>
+
     <div class="row top20px">
             <div class="col-md-12">
                 <div class="table-responsive">
@@ -33,6 +43,7 @@
                             <th class="textAlingLeft padding-th">Nombre</th>
                             <th class="textAlingLeft padding-th">Usuario</th>
                             <th class="textAlingLeft padding-th">Roles</th>
+                            <th class="textAlingCenter padding-th">Face ID</th>
                             <th class="textAlingCenter padding-th">Creado</th>
                             <th class="textAlingCenter padding-th">Activo</th>
                         </thead>
@@ -73,6 +84,13 @@
                                 <td class="textAlingLeft">{{ item.name }}</td>
                                 <td class="textAlingLeft">{{ item.userName }}</td>
                                 <td class="textAlingLeft">{{ item.roles }}</td>
+
+                                <td class="textAlingCenter">
+                                    <mat-icon [class.colorGreen]="item.bTieneFaceID" [class.colorOrange]="!item.bTieneFaceID"
+                                    [matTooltip]="item.bTieneFaceID ? 'Face ID registrado' : 'Sin Face ID registrado'">
+                                        {{ item.bTieneFaceID ? 'verified_user' : 'face_retouching_off' }}
+                                    </mat-icon>
+                                </td>
 
                                 <td class="textAlingCenter">{{ item.createDate | date:'dd-MM-yyyy' }}</td>
 

@@ -20,7 +20,7 @@ export class UsersService {
     , private authServ: AuthService
   ) { }
 
-  CGetUsersListWithPage( pagination: Pagination ): Observable<ResponseGet> {
+  CGetUsersListWithPage( pagination: Pagination, filterFaceID: string = '' ): Observable<ResponseGet> {
 
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
@@ -29,6 +29,7 @@ export class UsersService {
       search: pagination.search
       ,start: start
       ,limiter: limiter
+      ,filterFaceID
     };
 
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getUsersListWithPage`, data);

@@ -9,14 +9,18 @@ const getUsersListWithPage = async(req, res = response) => {
     const idUserLogON = req.header('idUserLogON')
 
     const {
-        search = '', limiter = 10, start = 0
+        search = '', limiter = 10, start = 0, filterFaceID = ''
     } = req.body;
 
     //console.log(req.body)
 
+    // Lista blanca del filtro antes de interpolarlo en el CALL — el SP
+    // solo entiende '' | 'CON' | 'SIN'.
+    const sFilterFaceID = ['CON', 'SIN'].includes(filterFaceID) ? filterFaceID : '';
+
     try{
 
-        var OSQL = await dbConnection.query(`call getUsersListWithPage('${ search }',${ start },${ limiter })`)
+        var OSQL = await dbConnection.query(`call getUsersListWithPage('${ search }',${ start },${ limiter },'${ sFilterFaceID }')`)
 
         if(OSQL.length == 0){
 

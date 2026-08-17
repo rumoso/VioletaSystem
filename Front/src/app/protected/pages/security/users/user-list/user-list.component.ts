@@ -73,10 +73,18 @@ export class UserListComponent implements OnInit {
   }
   //-------------------------------
 
+  // Filtro de Face ID: '' (todos) | 'CON' | 'SIN'
+  filterFaceID: string = '';
+
+  fn_filtrarFaceID() {
+    this.pagination.pageIndex = 0;
+    this.fn_getUsersListWithPage();
+  }
+
   fn_getUsersListWithPage() {
 
     this.bShowSpinner = true;
-    this.usersServ.CGetUsersListWithPage( this.pagination )
+    this.usersServ.CGetUsersListWithPage( this.pagination, this.filterFaceID )
     .subscribe({
       next: (resp: ResponseGet) => {
         this.catlist = resp.data.rows;
