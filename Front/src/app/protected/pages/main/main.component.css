@@ -41,6 +41,71 @@
 
 .topbar-spacer { flex: 1; }
 
+/* Título de la pantalla actual (analisis/README, migración 2026-08-17):
+   se muestra aquí en vez de repetirlo dentro de cada pantalla, para
+   ahorrar ese espacio — patrón adaptado de La Rebanada, simplificado
+   sin manejo de secciones (la flecha siempre regresa al dashboard). */
+.topbar-divider {
+  width: 1px;
+  height: 26px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.topbar-back-btn {
+  color: #64748b !important;
+  flex-shrink: 0;
+}
+.topbar-back-btn:hover { color: #4a148c !important; }
+
+.topbar-page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.topbar-page-title-icon {
+  font-size: 20px !important;
+  width: 20px;
+  height: 20px;
+  color: #7B1FA2;
+  flex-shrink: 0;
+}
+
+.topbar-page-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.topbar-page-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-page-desc {
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .topbar-page-desc { display: none; }
+  .topbar-page-title-text { max-width: 120px; }
+}
+
 /* Usuario pill */
 .topbar-user {
   display: flex;

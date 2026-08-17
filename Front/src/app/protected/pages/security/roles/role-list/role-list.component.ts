@@ -1,11 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { RolesService } from 'src/app/protected/services/roles.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { ActionsconfComponent } from '../../mdl/actionsconf/actionsconf.component';
 import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.component';
@@ -15,7 +16,7 @@ import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.compo
   templateUrl: './role-list.component.html',
   styleUrls: ['./role-list.component.css']
 })
-export class RoleListComponent {
+export class RoleListComponent implements OnInit, OnDestroy {
   
   private _appMain: string = environment.appMain;
 
@@ -39,12 +40,18 @@ export class RoleListComponent {
     private servicesGServ: ServicesGService
     , private rolesServ: RolesService
     , private authService: AuthService
+    , private pageTitleServ: PageTitleService
     ) { }
 
     ngOnInit(): void {
       this.authService.checkSession();
-      
+      this.pageTitleServ.set('admin_panel_settings', 'Roles', 'Catálogo de roles y sus permisos');
+
       this.fn_getRolesListWithPage();
+    }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
     }
 
     edit( id: number ){

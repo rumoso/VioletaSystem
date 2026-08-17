@@ -1,11 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatSidenav } from '@angular/material/sidenav';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { ActionsComponent } from '../mdl/actions/actions.component';
 import { ActionsconfComponent } from '../../mdl/actionsconf/actionsconf.component';
@@ -18,20 +19,26 @@ import { FaceIdManagerComponent } from '../../mdl/face-id-manager/face-id-manage
   templateUrl: './user-list.component.html',
   styleUrls: ['./user-list.component.css']
 })
-export class UserListComponent implements OnInit {
-  
+export class UserListComponent implements OnInit, OnDestroy {
+
   private _appMain: string = environment.appMain;
 
   constructor(
     private servicesGServ: ServicesGService
     , private usersServ: UsersService
     , private authServ: AuthService
+    , private pageTitleServ: PageTitleService
     ) { }
 
     ngOnInit(): void {
       this.authServ.checkSession();
-      
+      this.pageTitleServ.set('manage_accounts', this.title, 'Usuarios del sistema, roles y Face ID');
+
       this.fn_getUsersListWithPage();
+    }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
     }
 
     edit( id: number ){

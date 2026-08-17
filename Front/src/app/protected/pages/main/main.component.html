@@ -39,6 +39,22 @@
             <span class="topbar-title">{{ _appName }}</span>
         </div>
 
+        <ng-container *ngIf="pageTitleServ.title">
+            <div class="topbar-divider"></div>
+
+            <button mat-icon-button class="topbar-back-btn" (click)="fn_volverDashboard()" matTooltip="Volver al menú">
+                <mat-icon>arrow_back</mat-icon>
+            </button>
+
+            <div class="topbar-page-title">
+                <mat-icon class="topbar-page-title-icon">{{ pageTitleServ.icon }}</mat-icon>
+                <div class="topbar-page-title-text">
+                    <span class="topbar-page-name">{{ pageTitleServ.title }}</span>
+                    <span class="topbar-page-desc" *ngIf="pageTitleServ.desc">{{ pageTitleServ.desc }}</span>
+                </div>
+            </div>
+        </ng-container>
+
         <span class="topbar-spacer"></span>
 
         <div class="topbar-user manitaSobre" (click)="showChangePwdModal()" matTooltip="Mi cuenta">

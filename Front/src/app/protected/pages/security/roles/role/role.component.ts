@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,6 +9,7 @@ import { ActionsService } from 'src/app/protected/services/actions.service';
 import { RolesService } from 'src/app/protected/services/roles.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -16,7 +17,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './role.component.html',
   styleUrls: ['./role.component.css']
 })
-export class RoleComponent {
+export class RoleComponent implements OnDestroy {
   
   private _appMain: string = environment.appMain;
 
@@ -42,6 +43,7 @@ export class RoleComponent {
     , private actionsServ: ActionsService
 
     , private authService: AuthService
+    , private pageTitleServ: PageTitleService
   ) { }
 
 
@@ -52,6 +54,7 @@ export class RoleComponent {
     this._adapter.setLocale(this._locale);
 
     if( !this.router.url.includes('editRol') ){
+      this.fn_actualizarTitulo();
       return;
     }
 
@@ -62,9 +65,9 @@ export class RoleComponent {
         switchMap( ({ id }) => this.rolesServ.CGetRolByID( id ) )
       )
       .subscribe( ( resp: any ) => {
-        
+
          if(resp.status == 0){
-            
+
             this.idRol = resp.data.idRol;
 
             this.rolForm = {
@@ -78,9 +81,18 @@ export class RoleComponent {
          }else{
           this.servicesGServ.showSnakbar(resp.message);
          }
+         this.fn_actualizarTitulo();
          this.bShowSpinner = false;
       } )
 
+  }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
+
+  private fn_actualizarTitulo() {
+    this.pageTitleServ.set('admin_panel_settings', this.idRol ? 'Editar Rol' : 'Nuevo Rol', 'Datos del rol y su estatus');
   }
 
   changeRoute( route: string ): void {
@@ -113,10 +125,12 @@ export class RoleComponent {
         next: (resp: ResponseDB_CRUD) => {
 
           if( resp.status === 0 ){
-            
+
             this.idRol = resp.insertID;
 
             this.rolForm.idRol = resp.insertID;
+
+            this.fn_actualizarTitulo();
 
           }
 

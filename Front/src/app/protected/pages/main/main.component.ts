@@ -6,6 +6,7 @@ import { environment } from 'src/environments/environment';
 import { SoundService } from '../../services/sound.service';
 import { ChangepwdsecretwordComponent } from '../security/mdl/changepwdsecretword/changepwdsecretword.component';
 import { TimecardChecadorComponent } from '../personal/timecard-checador/timecard-checador.component';
+import { PageTitleService } from '../../services/page-title.service';
 
 @Component({
   selector: 'app-main',
@@ -23,6 +24,7 @@ export class MainComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private servicesGServ: ServicesGService
+    , public pageTitleServ: PageTitleService
   ) { }
 
   get userLogin() {
@@ -82,6 +84,11 @@ export class MainComponent implements OnInit {
 
   fn_abrirTimecard() {
     this.servicesGServ.showModalWithParamsv2( TimecardChecadorComponent, {}, { width: '100vw', height: '100vh', maxWidth: '100vw', panelClass: 'full-screen-modal' } );
+  }
+
+  // Sin manejo de secciones por ahora: la flecha siempre regresa al dashboard.
+  fn_volverDashboard() {
+    this.servicesGServ.changeRoute( `/${ this._appMain }/dashboard` );
   }
 
 }

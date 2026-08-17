@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { EmpleadoComponent } from '../mdl/empleado/empleado.component';
 import { EmpleadoBajaComponent } from '../mdl/empleado-baja/empleado-baja.component';
 
@@ -19,7 +20,7 @@ const AVATAR_COLORS = ['#5C6BC0', '#26A69A', '#7E57C2', '#EF5350', '#42A5F5', '#
   templateUrl: './empleado-list.component.html',
   styleUrls: ['./empleado-list.component.css']
 })
-export class EmpleadoListComponent implements OnInit {
+export class EmpleadoListComponent implements OnInit, OnDestroy {
 
   bShowSpinner: boolean = false;
   catlist: any[] = [];
@@ -38,11 +39,17 @@ export class EmpleadoListComponent implements OnInit {
     private authServ: AuthService
     , private servicesGServ: ServicesGService
     , private empleadosServ: EmpleadosService
+    , private pageTitleServ: PageTitleService
     ) { }
 
   ngOnInit(): void {
     this.authServ.checkSession();
+    this.pageTitleServ.set('badge', 'Empleados', 'Catálogo de personal, sucursal y comisiones');
     this.fn_getList();
+  }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
   }
 
   fn_hasPermission( name: string ): boolean {
