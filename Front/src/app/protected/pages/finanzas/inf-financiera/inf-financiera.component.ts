@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { debounceTime, Subject } from 'rxjs';
@@ -12,6 +12,7 @@ import { RepUtilidadesService } from 'src/app/protected/services/rep-utilidades.
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -19,7 +20,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './inf-financiera.component.html',
   styleUrls: ['./inf-financiera.component.css']
 })
-export class InfFinancieraComponent {
+export class InfFinancieraComponent implements OnInit, OnDestroy {
 
   private _appMain: string = environment.appMain;
 
@@ -44,11 +45,17 @@ export class InfFinancieraComponent {
     , private authServ: AuthService
     , private userServ: UsersService
     , private finanzasServ: FinanzasService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
+      this.pageTitleServ.set('account_balance', 'Información Financiera', 'Costo, precio y márgenes de utilidad');
       this.idUserLogON = await this.authServ.getIdUserSession();
 
       this._locale = 'mx';

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { Subject, debounceTime } from 'rxjs';
@@ -8,6 +8,7 @@ import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { CustomersService } from 'src/app/protected/services/customers.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { CortecajadetailComponent } from '../../sales/mdl/cortecajadetail/cortecajadetail.component';
 
@@ -16,7 +17,7 @@ import { CortecajadetailComponent } from '../../sales/mdl/cortecajadetail/cortec
   templateUrl: './pagos-cancelados.component.html',
   styleUrls: ['./pagos-cancelados.component.css']
 })
-export class PagosCanceladosComponent {
+export class PagosCanceladosComponent implements OnInit, OnDestroy {
 
 //#region VARIABLES
 
@@ -75,12 +76,18 @@ constructor(
   , private authServ: AuthService
   , private customersServ: CustomersService
   , private salesServ: SalesService
+  , private pageTitleServ: PageTitleService
 
   ) { }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   async ngOnInit() {
 
     this.authServ.checkSession();
+    this.pageTitleServ.set('cancel', 'Pagos Cancelados', 'Historial de pagos cancelados');
     this.idUserLogON = await this.authServ.getIdUserSession();
     // this._actionsPermisionList = await this.authServ.CGetActionsPermissionPromise(this.idUserLogON);
     // console.log(this._actionsPermisionList)

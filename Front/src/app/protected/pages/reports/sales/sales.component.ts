@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { Subject, debounceTime } from 'rxjs';
@@ -9,6 +9,7 @@ import { CustomersService } from 'src/app/protected/services/customers.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { SalestypeService } from 'src/app/protected/services/salestype.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -16,7 +17,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './sales.component.html',
   styleUrls: ['./sales.component.css']
 })
-export class SalesComponent {
+export class SalesComponent implements OnInit, OnDestroy {
 
 //#region VARIABLES
 
@@ -80,12 +81,18 @@ export class SalesComponent {
     , private customersServ: CustomersService
     , private salesServ: SalesService
     , private salesTypeServ: SalestypeService
+    , private pageTitleServ: PageTitleService
 
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
+      this.pageTitleServ.set('receipt_long', 'Reporte de Ventas', 'Detalle de ventas por periodo');
       this.idUserLogON = await this.authServ.getIdUserSession();
       // this._actionsPermisionList = await this.authServ.CGetActionsPermissionPromise(this.idUserLogON);
       // console.log(this._actionsPermisionList)

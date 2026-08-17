@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
@@ -9,6 +9,7 @@ import { ColumnFormat } from 'src/app/protected/interfaces/global.interfaces';
 import { ProductsService } from 'src/app/protected/services/products.service';
 import { SuppliersService } from 'src/app/protected/services/suppliers.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -16,7 +17,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './repcomprasproveedor.component.html',
   styleUrls: ['./repcomprasproveedor.component.css']
 })
-export class RepcomprasproveedorComponent {
+export class RepcomprasproveedorComponent implements OnInit, OnDestroy {
 
   private _appMain: string = environment.appMain;
 
@@ -33,11 +34,17 @@ export class RepcomprasproveedorComponent {
     , private authServ: AuthService
 
     , private suppliersServ: SuppliersService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
+      this.pageTitleServ.set('local_shipping', 'Compras a Proveedor', 'Reporte de compras por proveedor');
       this.idUserLogON = await this.authServ.getIdUserSession();
 
       this._locale = 'mx';

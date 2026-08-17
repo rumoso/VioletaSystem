@@ -1,11 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ProductsService } from 'src/app/protected/services/products.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { ColumnFormat } from 'src/app/protected/interfaces/global.interfaces';
@@ -16,7 +17,7 @@ import { PrinterPDFService } from 'src/app/protected/services/printer-pdf.servic
   templateUrl: './verificacion-entradas.component.html',
   styleUrls: ['./verificacion-entradas.component.css']
 })
-export class VerificacionEntradasComponent {
+export class VerificacionEntradasComponent implements OnInit, OnDestroy {
 
 // #region VARIABLES
 
@@ -66,12 +67,18 @@ export class VerificacionEntradasComponent {
 
     , private authServ: AuthService
     , private printerServ: PrinterPDFService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
       this.idUserLogON = await this.authServ.getIdUserSession();
+      this.pageTitleServ.set('move_to_inbox', 'Verificación de Entradas', 'Confirmación de mercancía recibida');
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);

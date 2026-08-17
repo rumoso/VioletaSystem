@@ -1,6 +1,7 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { CustomersService } from 'src/app/protected/services/customers.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
@@ -16,7 +17,7 @@ import { Subject, debounceTime } from 'rxjs';
   templateUrl: './rep-mob-dineoelect.component.html',
   styleUrls: ['./rep-mob-dineoelect.component.css']
 })
-export class RepMobDineoelectComponent {
+export class RepMobDineoelectComponent implements OnInit, OnDestroy {
 
 // #region VARIABLES
   private _appMain: string = environment.appMain;
@@ -69,12 +70,17 @@ export class RepMobDineoelectComponent {
 
     , private customersServ: CustomersService
     , private electronicMoneyServ: ElectronicMoneyService
+    , private pageTitleServ: PageTitleService
     ) { }
-    
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
+      this.pageTitleServ.set('account_balance_wallet', 'Movimientos de Dinero Electrónico', 'Reporte de pagos con tarjeta y transferencia');
       this.idUserLogON = await this.authServ.getIdUserSession();
 
 

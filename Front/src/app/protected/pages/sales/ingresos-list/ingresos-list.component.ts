@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
@@ -8,6 +8,7 @@ import { PrintersService } from 'src/app/protected/services/printers.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -15,7 +16,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './ingresos-list.component.html',
   styleUrls: ['./ingresos-list.component.css']
 })
-export class IngresosListComponent {
+export class IngresosListComponent implements OnInit, OnDestroy {
 
 // #region VARIABLES
 
@@ -64,11 +65,17 @@ constructor(
   , private salesServ: SalesService
   , private printersServ: PrintersService
   , private printTicketServ: PrintTicketService
+  , private pageTitleServ: PageTitleService
   ) { }
+
+ngOnDestroy(): void {
+  this.pageTitleServ.clear();
+}
 
 async ngOnInit() {
 
   this.authServ.checkSession();
+  this.pageTitleServ.set('attach_money', 'Ingresos', 'Entradas de dinero registradas en caja');
   this.idUserLogON = await this.authServ.getIdUserSession();
 
   this._locale = 'mx';

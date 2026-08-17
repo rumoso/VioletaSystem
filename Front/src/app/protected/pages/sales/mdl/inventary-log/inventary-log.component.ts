@@ -1,17 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ProductsService } from 'src/app/protected/services/products.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 
 @Component({
   selector: 'app-inventary-log',
   templateUrl: './inventary-log.component.html',
   styleUrls: ['./inventary-log.component.css']
 })
-export class InventaryLogComponent {
+export class InventaryLogComponent implements OnInit, OnDestroy {
 
   idUserLogON: number = 0;
 
@@ -46,11 +47,17 @@ export class InventaryLogComponent {
     , @Inject(MAT_DATE_LOCALE) private _locale: string
 
     , private authServ: AuthService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
+      this.pageTitleServ.set('history', 'Historial de Inventario', 'Movimientos de entrada y salida de producto');
       this.idUserLogON = await this.authServ.getIdUserSession();
 
       this._locale = 'mx';

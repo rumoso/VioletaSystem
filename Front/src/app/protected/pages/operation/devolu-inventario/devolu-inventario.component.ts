@@ -1,11 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ColumnFormat } from 'src/app/protected/interfaces/global.interfaces';
 import { ProductsService } from 'src/app/protected/services/products.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -15,7 +16,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
   templateUrl: './devolu-inventario.component.html',
   styleUrls: ['./devolu-inventario.component.css']
 })
-export class DevoluInventarioComponent {
+export class DevoluInventarioComponent implements OnInit, OnDestroy {
 
 // #region VARIABLES
 
@@ -73,11 +74,17 @@ constructor(
   , @Inject(MAT_DATE_LOCALE) private _locale: string
 
   , private authServ: AuthService
+  , private pageTitleServ: PageTitleService
   ) { }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   async ngOnInit() {
 
     this.authServ.checkSession();
+    this.pageTitleServ.set('keyboard_return', 'Devolución de Inventario', 'Regresos de mercancía al inventario');
     this.idUserLogON = await this.authServ.getIdUserSession();
 
     this._locale = 'mx';
