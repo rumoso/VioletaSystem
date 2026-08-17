@@ -1,16 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { FaceReferenceService } from 'src/app/protected/services/face-reference.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 
 @Component({
   selector: 'app-face-log',
   templateUrl: './face-log.component.html',
   styleUrls: ['./face-log.component.css']
 })
-export class FaceLogComponent {
+export class FaceLogComponent implements OnDestroy {
 
 // #region VARIABLES
 
@@ -39,10 +40,16 @@ export class FaceLogComponent {
     private servicesGServ: ServicesGService
     , private faceReferenceServ: FaceReferenceService
     , private authServ: AuthService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   ngOnInit() {
     this.authServ.checkSession();
+    this.pageTitleServ.set('face', 'Bitácora Facial', 'Historial de verificaciones e identificaciones faciales');
     this.fn_getTrack();
   }
 

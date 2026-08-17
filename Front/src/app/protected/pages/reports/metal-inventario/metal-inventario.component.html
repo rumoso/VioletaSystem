@@ -1,24 +1,14 @@
 <div class="mi-page">
 
-    <!-- ═══════════════ TÍTULO INTEGRADO + SALDO DE SUCURSAL (misma card) ═══════════════ -->
-    <div class="mi-card mi-header-card">
-        <div class="mi-inline-title">
-            <div class="mi-inline-title-icon">
-                <mat-icon>toll</mat-icon>
-            </div>
-            <div class="mi-inline-title-text">
-                <span class="mi-inline-title-name">Inventario de Metal</span>
-                <span class="mi-inline-title-desc">Saldos y kardex de metal por sucursal y técnico</span>
-            </div>
-
-            <div class="mi-header-saldos" *ngIf="bCanVer">
-                <span class="mi-header-saldos-label">Sucursal (fino):</span>
-                <span *ngIf="saldosSucursal.length === 0" class="saldo-vacio">Sin saldos registrados</span>
-                <span *ngFor="let s of saldosSucursal" class="saldo-chip" [class.negativo]="s.gramos < 0">
-                    <mat-icon [style.color]="s.tipoMetal === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
-                    {{ s.productName }}: <b>{{ s.gramos | number:'1.0-2' }} g</b>
-                </span>
-            </div>
+    <!-- ═══════════════ SALDO DE SUCURSAL ═══════════════ -->
+    <div class="mi-card mi-header-card" *ngIf="bCanVer">
+        <div class="mi-header-saldos">
+            <span class="mi-header-saldos-label">Sucursal (fino):</span>
+            <span *ngIf="saldosSucursal.length === 0" class="saldo-vacio">Sin saldos registrados</span>
+            <span *ngFor="let s of saldosSucursal" class="saldo-chip" [class.negativo]="s.gramos < 0">
+                <mat-icon [style.color]="s.tipoMetal === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
+                {{ s.productName }}: <b>{{ s.gramos | number:'1.0-2' }} g</b>
+            </span>
         </div>
     </div>
 

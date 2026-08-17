@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { Subject, debounceTime } from 'rxjs';
@@ -24,13 +24,14 @@ import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
 import { IngresosComponent } from '../mdl/ingresos/ingresos.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { Router } from '@angular/router';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 
 @Component({
   selector: 'app-sale-list',
   templateUrl: './sale-list.component.html',
   styleUrls: ['./sale-list.component.css']
 })
-export class SaleListComponent {
+export class SaleListComponent implements OnInit, OnDestroy {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE VARIABLES
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,12 +120,18 @@ constructor(
   , private printTicketServ: PrintTicketService
   , private salesTypeServ: SalestypeService
   , private router: Router
+  , private pageTitleServ: PageTitleService
 
   ) { }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   async ngOnInit() {
 
     this.authServ.checkSession();
+    this.pageTitleServ.set('point_of_sale', 'Ventas', 'Órdenes de venta, pagos y facturación');
     this.idUserLogON = await this.authServ.getIdUserSession();
     // this._actionsPermisionList = await this.authServ.CGetActionsPermissionPromise(this.idUserLogON);
     // console.log(this._actionsPermisionList)

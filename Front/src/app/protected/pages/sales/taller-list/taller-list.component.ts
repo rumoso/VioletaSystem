@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { Router } from '@angular/router';
@@ -24,13 +24,14 @@ import { TallerComponent } from '../mdl/taller/taller.component';
 import { CajasService } from 'src/app/protected/services/cajas.service';
 import { SelectCajaComponent } from '../mdl/select-caja/select-caja.component';
 import { TallerFirmaHistorialModalComponent } from '../mdl/taller/taller-firma-historial-modal.component';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 
 @Component({
   selector: 'app-taller-list',
   templateUrl: './taller-list.component.html',
   styleUrls: ['./taller-list.component.css']
 })
-export class TallerListComponent {
+export class TallerListComponent implements OnInit, OnDestroy {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE VARIABLES
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,12 +129,18 @@ constructor(
   , private cajasServ: CajasService
   , private router: Router
   , private usersServ: UsersService
+  , private pageTitleServ: PageTitleService
 
   ) { }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   async ngOnInit() {
 
     this.authServ.checkSession();
+    this.pageTitleServ.set('build', 'Taller', 'Órdenes de servicio y aprobaciones de firma');
     this.idUserLogON = await this.authServ.getIdUserSession();
     // this._actionsPermisionList = await this.authServ.CGetActionsPermissionPromise(this.idUserLogON);
     // console.log(this._actionsPermisionList)

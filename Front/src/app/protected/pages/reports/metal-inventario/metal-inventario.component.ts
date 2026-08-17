@@ -1,11 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { MetalInventarioService } from 'src/app/protected/services/metal-inventario.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -13,7 +14,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './metal-inventario.component.html',
   styleUrls: ['./metal-inventario.component.css']
 })
-export class MetalInventarioComponent {
+export class MetalInventarioComponent implements OnDestroy {
 
 // #region VARIABLES
 
@@ -70,11 +71,17 @@ export class MetalInventarioComponent {
     , private metalInvServ: MetalInventarioService
     , private usersServ: UsersService
     , private authServ: AuthService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   async ngOnInit() {
 
     this.authServ.checkSession();
+    this.pageTitleServ.set('toll', 'Inventario de Metal', 'Saldos y kardex de metal por sucursal y técnico');
     this.idUserLogON = await this.authServ.getIdUserSession();
 
     this.bCanVer = this.authServ.hasPermissionAction('tall_MetalInvVer');

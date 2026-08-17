@@ -15,56 +15,6 @@
     overflow: hidden;
 }
 
-.fl-header-card {
-    padding: 0;
-    margin-bottom: 16px;
-}
-
-.fl-inline-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 18px 24px;
-}
-
-.fl-inline-title-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #6a1b9a, #8e24aa);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(106, 27, 154, .22);
-}
-
-.fl-inline-title-icon mat-icon {
-    font-size: 22px !important;
-    width: 22px;
-    height: 22px;
-    color: #fff;
-}
-
-.fl-inline-title-text {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.fl-inline-title-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: #4a148c;
-    letter-spacing: -0.2px;
-    line-height: 1.2;
-}
-
-.fl-inline-title-desc {
-    font-size: 12px;
-    color: #888;
-}
-
 /* ---------- Filtros slim ---------- */
 
 .fl-filters-row {
