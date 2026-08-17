@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
@@ -14,7 +14,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './metal-inventario.component.html',
   styleUrls: ['./metal-inventario.component.css']
 })
-export class MetalInventarioComponent implements OnDestroy {
+export class MetalInventarioComponent implements OnInit, OnDestroy {
 
 // #region VARIABLES
 

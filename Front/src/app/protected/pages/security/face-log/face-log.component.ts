@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { FaceReferenceService } from 'src/app/protected/services/face-reference.service';
@@ -11,7 +11,7 @@ import { PageTitleService } from 'src/app/protected/services/page-title.service'
   templateUrl: './face-log.component.html',
   styleUrls: ['./face-log.component.css']
 })
-export class FaceLogComponent implements OnDestroy {
+export class FaceLogComponent implements OnInit, OnDestroy {
 
 // #region VARIABLES
 

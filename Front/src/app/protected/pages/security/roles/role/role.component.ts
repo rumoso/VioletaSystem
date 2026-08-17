@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -17,7 +17,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './role.component.html',
   styleUrls: ['./role.component.css']
 })
-export class RoleComponent implements OnDestroy {
+export class RoleComponent implements OnInit, OnDestroy {
   
   private _appMain: string = environment.appMain;
 
