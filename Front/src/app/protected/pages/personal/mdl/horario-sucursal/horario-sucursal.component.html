@@ -1,0 +1,58 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">Horario de sucursal</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <div class="pcm-banner" *ngIf="banner"
+            [class.pcm-banner-ok]="banner.tipo === 'ok'"
+            [class.pcm-banner-error]="banner.tipo === 'error'">
+            <mat-icon>{{ banner.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+            <span>{{ banner.mensaje }}</span>
+        </div>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Sucursal</label>
+            <select class="pcm-slim-input" [(ngModel)]="idSucursalSeleccionada" (change)="fn_cambiarSucursal()">
+                <option [ngValue]="null" disabled>Elige una sucursal...</option>
+                <option *ngFor="let s of sucursales" [ngValue]="s.idSucursal">{{ s.name }}</option>
+            </select>
+        </div>
+
+        <p class="pcm-slim-hint">Desmarca el día que se descansa — no aportará horas esperadas ni contará como falta.</p>
+
+        <div class="hs-dia" *ngFor="let dia of dias">
+            <label class="hs-dia-checkbox">
+                <input type="checkbox" [(ngModel)]="dia.bTrabaja">
+                <span class="hs-dia-nombre">{{ dia.nombre }}</span>
+            </label>
+            <div class="hs-dia-horas" *ngIf="dia.bTrabaja">
+                <input class="pcm-slim-input" type="time" [(ngModel)]="dia.horaEntrada">
+                <span>a</span>
+                <input class="pcm-slim-input" type="time" [(ngModel)]="dia.horaSalida">
+            </div>
+            <div class="hs-dia-descanso" *ngIf="!dia.bTrabaja">Descanso</div>
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        [disabled]="bShowSpinner || !idSucursalSeleccionada"
+        (click)="fn_guardar()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            {{ bShowSpinner ? 'Guardando...' : 'Guardar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>

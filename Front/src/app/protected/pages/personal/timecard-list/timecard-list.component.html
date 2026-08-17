@@ -2,6 +2,9 @@
 
   <div class="pcl-header">
     <h2 class="pcl-titulo">Asistencia (TimeCard)</h2>
+    <button mat-stroked-button *ngIf="bPuedeAdministrarHorarios" (click)="fn_abrirHorarioSucursal()">
+      <mat-icon>store</mat-icon> Horario de sucursal
+    </button>
   </div>
 
   <div class="pcl-filtros">

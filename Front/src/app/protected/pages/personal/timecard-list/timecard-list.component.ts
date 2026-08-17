@@ -9,6 +9,7 @@ import { TimecardService } from 'src/app/protected/services/timecard.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { TimecardMarcajeManualComponent } from '../mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
+import { HorarioSucursalComponent } from '../mdl/horario-sucursal/horario-sucursal.component';
 
 // Consulta de asistencia (analisis/011, T14): por empleado y rango de
 // fechas, jornadas vs horario esperado y detalle de marcajes.
@@ -75,6 +76,14 @@ export class TimecardListComponent implements OnInit {
 
   get bPuedeCapturar(): boolean {
     return this.authServ.hasPermissionAction('timecard_CapturarManual');
+  }
+
+  get bPuedeAdministrarHorarios(): boolean {
+    return this.authServ.hasPermissionAction('timecard_AdministrarHorarios');
+  }
+
+  fn_abrirHorarioSucursal() {
+    this.servicesGServ.showModalWithParams(HorarioSucursalComponent, {}, '480px');
   }
 
   private fn_buscarEmpleados( search: string ) {

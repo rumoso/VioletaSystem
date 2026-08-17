@@ -93,6 +93,7 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
 import { TimecardChecadorComponent } from './pages/personal/timecard-checador/timecard-checador.component';
 import { TimecardListComponent } from './pages/personal/timecard-list/timecard-list.component';
 import { TimecardMarcajeManualComponent } from './pages/personal/mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
+import { HorarioSucursalComponent } from './pages/personal/mdl/horario-sucursal/horario-sucursal.component';
 
 @NgModule({
     declarations: [
@@ -182,6 +183,7 @@ import { TimecardMarcajeManualComponent } from './pages/personal/mdl/timecard-ma
     TimecardChecadorComponent,
     TimecardListComponent,
     TimecardMarcajeManualComponent,
+    HorarioSucursalComponent,
   ],
     imports: [
         CommonModule,
