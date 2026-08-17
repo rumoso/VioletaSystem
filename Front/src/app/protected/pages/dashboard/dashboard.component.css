@@ -6,7 +6,7 @@
 .db-page {
   padding: 20px 20px 80px;
   background: #f0f2f7;
-  min-height: 100vh;
+  min-height: 100%;   /* 100vh sobraba: bajo el topbar de 58px forzaba scroll aunque el contenido cupiera */
 }
 
 /* ===== LAUNCHER ===== */

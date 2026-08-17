@@ -42,3 +42,7 @@ testem.log
 Thumbs.db
 
 /Diprolim2.0
+# Respaldos / dumps de base de datos (pesan decenas de MB y traen datos
+# reales de clientes — nunca van al repo)
+Documents/Respaldos/
+Documents/*Dump*.sql

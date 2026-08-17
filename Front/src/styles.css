@@ -42,8 +42,19 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     padding: 30px 30px 30px 30px !important;
     box-shadow: 1px 1px 5px grey !important;
     z-index: 1 !important;
-    margin: auto !important;
-    margin-top: 50px !important;
+    /* Antes era `margin: auto` + `margin-top: 50px`, y el aire lateral lo
+       ponía el padding del .container-fluid. Al quitar ese padding para
+       aprovechar toda la pantalla, estas pantallas quedaban pegadas a la
+       orilla, así que el margen se define aquí. Mismo espaciado que usan
+       las pantallas nuevas (.sll-page / .db-page). */
+    margin: 20px 24px 40px !important;
+    /* El ancho se fija explícitamente (parent - los dos márgenes) porque
+       con `width: auto` la tarjeta se calculaba contra un ancestro más
+       arriba —el host del componente Angular es `display: inline` por
+       defecto— e ignoraba su propio margen, desbordando por la derecha.
+       border-box para que el padding de 30px quede DENTRO del ancho. */
+    width: calc(100% - 48px) !important;
+    box-sizing: border-box !important;
 }
 
 .loginDiv {
@@ -321,8 +332,54 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     padding: 20px 20px 5px 20px !important;
     box-shadow: 1px 1px 5px grey !important;
     z-index: 1 !important;
-    margin: auto !important;
-    margin-top: 20px !important;
+    /* Mismo criterio que .divMain: el aire lateral ya no lo pone el
+       .container-fluid, se define aquí. */
+    margin: 20px 24px 40px !important;
+    width: calc(100% - 48px) !important;
+    box-sizing: border-box !important;
+}
+
+/* Los elementos host de los componentes de Angular (<app-egresos-list>,
+   <app-cortes-caja>, etc.) son `display: inline` por defecto, igual que
+   <mat-accordion>. Un padre inline no establece un ancho de referencia,
+   así que las tarjetas de adentro (.divMain / .divSection) calculaban su
+   ancho contra un ancestro más arriba, ignoraban su propio margen y se
+   salían por la derecha. Pasaba en TODAS las pantallas.
+   Se corrige de raíz volviendo bloque al host de la pantalla enrutada. */
+.app-content > * {
+    display: block;
+}
+
+mat-accordion {
+    display: block;
+}
+
+/* ══════════════════════════════
+   BARRA DE SCROLL — el riel por defecto es blanco y, junto al gris de
+   las pantallas, se lee como una franja desperdiciada en el borde
+   derecho. Se tiñe del mismo gris para que no se note.
+══════════════════════════════ */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f2f7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+  border: 3px solid #f0f2f7;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+::-webkit-scrollbar-corner {
+  background: #f0f2f7;
 }
 
 @media (max-width: 700px) {

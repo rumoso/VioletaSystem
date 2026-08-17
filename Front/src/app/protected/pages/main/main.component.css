@@ -88,6 +88,20 @@
 }
 
 /* ══════════════════════════════
+   SIN ESPACIOS EN BLANCO
+   El contenido debe pegar con el topbar y llegar a los bordes. Tres
+   cosas metían blanco y se corrigen aquí:
+     1) mat-toolbar traía margin-bottom: 20px (de #headerApp en
+        styles.css)                             -> franja arriba
+     2) .container-fluid trae padding: 0 12px    -> canaletas laterales
+     3) el fondo de la app era blanco            -> se ve en los bordes
+        y debajo del contenido cuando la página es más corta
+══════════════════════════════ */
+.app-topbar {
+  margin-bottom: 0 !important;
+}
+
+/* ══════════════════════════════
    CONTENIDO — altura centralizada aquí (no en cada página) para que
    todas las pantallas aprovechen exactamente el espacio disponible
    bajo el topbar (58px), en vez de que cada una calcule 100vh por su
@@ -95,5 +109,14 @@
 ══════════════════════════════ */
 .app-content {
   min-height: calc(100vh - 58px);
-  margin-bottom: 50px;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+  background: #f0f2f7;
+}
+
+/* El lienzo del sidenav es lo que se ve detrás de cada pantalla: si se
+   queda blanco, asoma en los bordes y al final del scroll. */
+::ng-deep .mat-drawer-container,
+::ng-deep mat-sidenav-content {
+  background: #f0f2f7 !important;
 }
