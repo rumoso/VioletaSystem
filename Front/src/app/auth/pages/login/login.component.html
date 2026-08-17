@@ -51,4 +51,16 @@ autocomplete="off"
     </div>
 </div>
 
+<div class="row top10px">
+    <div class="col-md-12">
+        <button mat-stroked-button
+                type="button"
+                style="width: 90%;"
+                (click)="fn_abrirTimecard()">
+            <mat-icon matPrefix class="my-icon">schedule</mat-icon>
+            Registrar entrada/salida (TimeCard)
+        </button>
+    </div>
+</div>
+
 <app-spinner *ngIf="bShowSpinner"></app-spinner>

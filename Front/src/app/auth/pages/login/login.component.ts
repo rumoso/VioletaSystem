@@ -3,6 +3,7 @@ import { AuthService } from '../../services/auth.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FaceVerificationComponent } from 'src/app/protected/pages/security/mdl/face-verification/face-verification.component';
+import { TimecardChecadorComponent } from 'src/app/protected/pages/personal/timecard-checador/timecard-checador.component';
 
 @Component({
   selector: 'app-login',
@@ -98,6 +99,10 @@ export class LoginComponent {
         }
       });
 
+    }
+
+    fn_abrirTimecard() {
+      this.servicesGServ.showModalWithParamsv2( TimecardChecadorComponent, {}, { width: '100vw', height: '100vh', maxWidth: '100vw', panelClass: 'full-screen-modal' } );
     }
 
 }

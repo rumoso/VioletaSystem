@@ -90,6 +90,7 @@ import { SeleccionarProductoModalComponent } from './pages/sales/mdl/taller/sele
 import { TallerFirmaModalComponent } from './pages/sales/mdl/taller/taller-firma-modal.component';
 import { TallerFirmaHistorialModalComponent } from './pages/sales/mdl/taller/taller-firma-historial-modal.component';
 import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/taller/taller-responsables-devolucion-modal.component';
+import { TimecardChecadorComponent } from './pages/personal/timecard-checador/timecard-checador.component';
 
 @NgModule({
     declarations: [
@@ -176,6 +177,7 @@ import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/ta
     TallerFirmaModalComponent,
     TallerFirmaHistorialModalComponent,
     TallerResponsablesDevolucionModalComponent,
+    TimecardChecadorComponent,
   ],
     imports: [
         CommonModule,

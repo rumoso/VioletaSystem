@@ -1,0 +1,90 @@
+.tc-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%);
+  position: relative;
+}
+
+.tc-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: #fff;
+  z-index: 2;
+}
+
+.tc-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 48px 40px;
+  width: 90%;
+  max-width: 480px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  text-align: center;
+}
+
+.tc-estado h2 {
+  margin: 8px 0;
+  font-weight: 500;
+}
+
+.tc-estado p {
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.tc-icono-grande {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #7b1fa2;
+}
+
+.tc-icono-ok {
+  color: #43a047;
+}
+
+.tc-icono-warn {
+  color: #e53935;
+}
+
+.tc-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tc-opcion-btn {
+  padding: 20px 16px !important;
+  font-size: 16px !important;
+}
+
+.tc-opcion-btn mat-icon {
+  margin-right: 8px;
+}
+
+.tc-auto {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.tc-auto p {
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.tc-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+}

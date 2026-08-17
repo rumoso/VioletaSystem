@@ -5,6 +5,7 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { SoundService } from '../../services/sound.service';
 import { ChangepwdsecretwordComponent } from '../security/mdl/changepwdsecretword/changepwdsecretword.component';
+import { TimecardChecadorComponent } from '../personal/timecard-checador/timecard-checador.component';
 
 @Component({
   selector: 'app-main',
@@ -77,6 +78,10 @@ export class MainComponent implements OnInit {
 
       }
     });
+  }
+
+  fn_abrirTimecard() {
+    this.servicesGServ.showModalWithParamsv2( TimecardChecadorComponent, {}, { width: '100vw', height: '100vh', maxWidth: '100vw', panelClass: 'full-screen-modal' } );
   }
 
 }

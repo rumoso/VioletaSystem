@@ -1,0 +1,79 @@
+<div class="tc-container">
+
+  <button mat-icon-button class="tc-close" (click)="fn_close()" matTooltip="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <div class="tc-card">
+
+    <!-- INICIAL: esperando que se abra/termine el escaneo facial -->
+    <div *ngIf="estado === 'INICIAL'" class="tc-estado">
+      <mat-icon class="tc-icono-grande">face</mat-icon>
+      <h2>TimeCard</h2>
+      <p>Escanea tu rostro para registrar tu entrada o salida.</p>
+      <button mat-raised-button color="primary" (click)="fn_escanear()">
+        <mat-icon>photo_camera</mat-icon> Escanear rostro
+      </button>
+    </div>
+
+    <!-- NO_EMPLEADO -->
+    <div *ngIf="estado === 'NO_EMPLEADO'" class="tc-estado">
+      <mat-icon class="tc-icono-grande tc-icono-warn">person_off</mat-icon>
+      <h2>{{ mensaje }}</h2>
+      <button mat-raised-button color="primary" (click)="fn_otroEmpleado()">
+        <mat-icon>refresh</mat-icon> Intentar de nuevo
+      </button>
+    </div>
+
+    <!-- CERRADA: ya marcó salida de jornada hoy -->
+    <div *ngIf="estado === 'CERRADA'" class="tc-estado">
+      <mat-icon class="tc-icono-grande tc-icono-ok">check_circle</mat-icon>
+      <h2>Hola {{ nombre }}</h2>
+      <p>Ya cerraste tu jornada de hoy.</p>
+      <button mat-raised-button color="primary" (click)="fn_otroEmpleado()">
+        <mat-icon>refresh</mat-icon> Escanear otro empleado
+      </button>
+    </div>
+
+    <!-- OPCIONES -->
+    <div *ngIf="estado === 'OPCIONES'" class="tc-estado">
+      <h2>Hola {{ nombre }}</h2>
+      <p>¿Qué quieres marcar?</p>
+
+      <div class="tc-opciones">
+        <button
+          *ngFor="let tipo of tiposValidos"
+          mat-raised-button
+          color="primary"
+          class="tc-opcion-btn"
+          (click)="fn_marcar(tipo)">
+          <mat-icon>{{ iconos[tipo] }}</mat-icon>
+          {{ etiquetas[tipo] }}
+        </button>
+      </div>
+
+      <div *ngIf="bAutoDisparando" class="tc-auto">
+        <p>Registrando <strong>{{ etiquetas[tiposValidos[0]] }}</strong> automáticamente…</p>
+        <mat-progress-bar mode="determinate" [value]="progresoAuto"></mat-progress-bar>
+        <button mat-stroked-button (click)="fn_cancelarAuto()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- CONFIRMADO -->
+    <div *ngIf="estado === 'CONFIRMADO'" class="tc-estado">
+      <mat-icon class="tc-icono-grande tc-icono-ok">check_circle</mat-icon>
+      <h2>Hola {{ nombre }}</h2>
+      <p *ngIf="!bDuplicado">{{ etiquetas[tipoConfirmado] }} registrada, {{ horaConfirmada }}</p>
+      <p *ngIf="bDuplicado">Ya habías registrado {{ etiquetas[tipoConfirmado] }} hace un momento.</p>
+      <button mat-raised-button color="primary" (click)="fn_otroEmpleado()">
+        <mat-icon>refresh</mat-icon> Escanear otro empleado
+      </button>
+    </div>
+
+    <div *ngIf="bShowSpinner" class="tc-spinner-overlay">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+
+  </div>
+
+</div>

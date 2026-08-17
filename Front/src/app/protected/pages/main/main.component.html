@@ -46,6 +46,10 @@
             <span class="topbar-user-name hide-on-small">{{ userLogin?.name }}</span>
         </div>
 
+        <button mat-icon-button class="topbar-timecard-btn" (click)="fn_abrirTimecard()" matTooltip="TimeCard — registrar entrada/salida">
+            <mat-icon>schedule</mat-icon>
+        </button>
+
         <button mat-icon-button class="topbar-logout-btn" (click)="logout()" matTooltip="Cerrar sesión">
             <mat-icon>logout</mat-icon>
         </button>
