@@ -12,10 +12,11 @@
     margin-bottom: 12px;
 }
 
-.pcl-titulo {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
+/* Ahora que el título vive en el header de la app (PageTitleService),
+   cuando el pcl-header solo trae otro control (ej. el toggle de vista)
+   se manda a la derecha en vez de al espacio vacío del título. */
+.pcl-header--sin-titulo {
+    justify-content: flex-end;
 }
 
 /* Toggle tabla/cards */

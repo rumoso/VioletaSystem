@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { debounceTime } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
@@ -7,6 +7,7 @@ import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { TimecardService } from 'src/app/protected/services/timecard.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { TimecardMarcajeManualComponent } from '../mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
 import { HorarioSucursalComponent } from '../mdl/horario-sucursal/horario-sucursal.component';
@@ -28,7 +29,7 @@ const ETIQUETAS_TIPO: { [key: string]: string } = {
   templateUrl: './timecard-list.component.html',
   styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css', './timecard-list.component.css']
 })
-export class TimecardListComponent implements OnInit {
+export class TimecardListComponent implements OnInit, OnDestroy {
 
   etiquetas = ETIQUETAS_TIPO;
 
@@ -49,6 +50,7 @@ export class TimecardListComponent implements OnInit {
     , private servicesGServ: ServicesGService
     , private timecardServ: TimecardService
     , private empleadosServ: EmpleadosService
+    , private pageTitleServ: PageTitleService
     ) {
 
       const hoy = new Date();
@@ -72,6 +74,11 @@ export class TimecardListComponent implements OnInit {
 
   ngOnInit(): void {
     this.authServ.checkSession();
+    this.pageTitleServ.set('schedule', 'Asistencia (TimeCard)', 'Horas trabajadas, retardos y faltas por empleado');
+  }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
   }
 
   get bPuedeCapturar(): boolean {

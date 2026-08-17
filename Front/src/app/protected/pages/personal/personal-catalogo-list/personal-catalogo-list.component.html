@@ -1,8 +1,6 @@
 <div class="divMain pcl-main">
 
-    <div class="pcl-header">
-        <h2 class="pcl-titulo">{{ config.titulo }}</h2>
-
+    <div class="pcl-header pcl-header--sin-titulo">
         <div class="pcl-vista-toggle" *ngIf="!bEsMovil">
             <button type="button"
             [class.active]="vistaActual === 'tabla'"

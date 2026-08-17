@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { NominaConceptosService } from 'src/app/protected/services/nomina-conceptos.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { NominaConceptoComponent } from '../mdl/nomina-concepto/nomina-concepto.component';
 
 // Catálogo de conceptos de nómina (analisis/006). Los conceptos de
@@ -15,7 +16,7 @@ import { NominaConceptoComponent } from '../mdl/nomina-concepto/nomina-concepto.
   templateUrl: './nomina-conceptos-list.component.html',
   styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css']
 })
-export class NominaConceptosListComponent implements OnInit {
+export class NominaConceptosListComponent implements OnInit, OnDestroy {
 
   bShowSpinner: boolean = false;
   catlist: any[] = [];
@@ -35,11 +36,17 @@ export class NominaConceptosListComponent implements OnInit {
     private authServ: AuthService
     , private servicesGServ: ServicesGService
     , private nominaConceptosServ: NominaConceptosService
+    , private pageTitleServ: PageTitleService
     ) { }
 
   ngOnInit(): void {
     this.authServ.checkSession();
+    this.pageTitleServ.set('receipt_long', 'Conceptos de Nómina', 'Catálogo de percepciones y deducciones');
     this.fn_getList();
+  }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
   }
 
   get bPuedeAdministrar(): boolean {

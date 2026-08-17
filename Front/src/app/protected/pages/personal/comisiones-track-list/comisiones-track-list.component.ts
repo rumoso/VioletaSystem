@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ComisionesTrackService } from 'src/app/protected/services/comisiones-track.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { ComisionesTrackDetalleComponent } from '../mdl/comisiones-track-detalle/comisiones-track-detalle.component';
 
 // Comisiones (analisis/008) — pantalla principal: RESUMEN por empleado
@@ -20,7 +21,7 @@ const AVATAR_COLORS = ['#5C6BC0', '#26A69A', '#7E57C2', '#EF5350', '#42A5F5', '#
   templateUrl: './comisiones-track-list.component.html',
   styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css', './comisiones-track-list.component.css']
 })
-export class ComisionesTrackListComponent implements OnInit {
+export class ComisionesTrackListComponent implements OnInit, OnDestroy {
 
   bShowSpinner: boolean = false;
   catlist: any[] = [];
@@ -40,13 +41,19 @@ export class ComisionesTrackListComponent implements OnInit {
     private authServ: AuthService
     , private servicesGServ: ServicesGService
     , private comisionesServ: ComisionesTrackService
+    , private pageTitleServ: PageTitleService
     ) { }
 
   ngOnInit(): void {
     this.authServ.checkSession();
+    this.pageTitleServ.set('paid', 'Comisiones', 'Bitácora de comisiones por empleado');
     // Rango default VACÍO: se muestra TODO lo pendiente sin acotar por
     // fechas; el rango es solo un filtro opcional.
     this.fn_getList();
+  }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
   }
 
   fn_avatarColor( nombre: string ): string {

@@ -9,6 +9,7 @@ import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { CatalogosPersonalService } from 'src/app/protected/services/catalogos-personal.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { PersonalCatalogoComponent } from '../mdl/personal-catalogo/personal-catalogo.component';
 
 // Lista de catálogo de personal (analisis/005). Un solo componente
@@ -18,6 +19,8 @@ import { PersonalCatalogoComponent } from '../mdl/personal-catalogo/personal-cat
 interface CatalogoConfig {
   catalogo: string;
   titulo: string;
+  desc: string;
+  icono: string;
   entidad: string;
   permisoCrear: string;
   permisoInactivar: string;
@@ -28,6 +31,8 @@ const CONFIGS: { [key: string]: CatalogoConfig } = {
   tecnicos: {
     catalogo: 'tecnicos',
     titulo: 'Catálogo de Técnicos',
+    desc: 'Personal de taller y su % de destajo',
+    icono: 'engineering',
     entidad: 'técnico',
     permisoCrear: 'tecnicos_CrearModificar',
     permisoInactivar: 'tecnicos_Inactivar',
@@ -36,6 +41,8 @@ const CONFIGS: { [key: string]: CatalogoConfig } = {
   vendedores: {
     catalogo: 'vendedores',
     titulo: 'Catálogo de Vendedores',
+    desc: 'Personal de piso y su % de comisión base',
+    icono: 'sell',
     entidad: 'vendedor',
     permisoCrear: 'vendedores_CrearModificar',
     permisoInactivar: 'vendedores_Inactivar',
@@ -85,6 +92,7 @@ export class PersonalCatalogoListComponent implements OnInit, OnDestroy {
     , private authServ: AuthService
     , private servicesGServ: ServicesGService
     , private catalogosServ: CatalogosPersonalService
+    , private pageTitleServ: PageTitleService
     ) { }
 
   ngOnInit(): void {
@@ -95,6 +103,7 @@ export class PersonalCatalogoListComponent implements OnInit, OnDestroy {
     // tecnicosList y vendedoresList — por eso se escucha data, no snapshot.
     this.routeSub = this.route.data.subscribe(data => {
       this.config = CONFIGS[data['catalogo']] || CONFIGS['vendedores'];
+      this.pageTitleServ.set(this.config.icono, this.config.titulo, this.config.desc);
       this.searchControl.setValue('');
       this.pagination.search = '';
       this.pagination.pageIndex = 0;
@@ -112,6 +121,7 @@ export class PersonalCatalogoListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.breakpointSub?.unsubscribe();
     this.routeSub?.unsubscribe();
+    this.pageTitleServ.clear();
   }
 
   get vistaActual(): 'tabla' | 'cards' {

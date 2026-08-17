@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { debounceTime } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
@@ -7,6 +7,7 @@ import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { NominaGenerarComponent } from '../mdl/nomina-generar/nomina-generar.component';
 import { NominaDetalleComponent } from '../mdl/nomina-detalle/nomina-detalle.component';
 import { NominaReciboComponent } from '../mdl/nomina-recibo/nomina-recibo.component';
@@ -20,7 +21,7 @@ import { NominaReciboComponent } from '../mdl/nomina-recibo/nomina-recibo.compon
   templateUrl: './nomina-list.component.html',
   styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css', './nomina-list.component.css']
 })
-export class NominaListComponent implements OnInit {
+export class NominaListComponent implements OnInit, OnDestroy {
 
   bShowSpinner: boolean = false;
   catlist: any[] = [];
@@ -45,6 +46,7 @@ export class NominaListComponent implements OnInit {
     , private servicesGServ: ServicesGService
     , private nominaServ: NominaService
     , private empleadosServ: EmpleadosService
+    , private pageTitleServ: PageTitleService
     ) {
       this.empleadoSearchControl.valueChanges
         .pipe(debounceTime(500))
@@ -59,7 +61,12 @@ export class NominaListComponent implements OnInit {
 
   ngOnInit(): void {
     this.authServ.checkSession();
+    this.pageTitleServ.set('payments', 'Nómina', 'Corridas de pago y recibos por empleado');
     this.fn_getList();
+  }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
   }
 
   get bPuedeGenerar(): boolean {
