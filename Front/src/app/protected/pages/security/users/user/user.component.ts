@@ -14,7 +14,6 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ActionsComponent } from '../mdl/actions/actions.component';
 import { ActionsService } from 'src/app/protected/services/actions.service';
-import { FaceIdManagerComponent } from '../../mdl/face-id-manager/face-id-manager.component';
 
 
 
@@ -179,14 +178,6 @@ export class UserComponent implements OnInit {
 
   hasPermissionAction( action: string ): boolean{
     return this.authServ.hasPermissionAction(action);
-  }
-
-  fn_abrirFaceId() {
-    this.servicesGServ.showModalWithParams( FaceIdManagerComponent, {
-      tipoPersona: 'USUARIO',
-      idPersona: this.idUser,
-      nombrePersona: this.userForm.name
-    }, '420px');
   }
 
   fn_saveUser() {

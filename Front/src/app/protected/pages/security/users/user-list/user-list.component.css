@@ -201,6 +201,8 @@
 }
 
 /* Face ID */
+.ucl-face-icon  { cursor: pointer; transition: opacity 0.2s; }
+.ucl-face-icon:hover { opacity: 0.75; }
 .ucl-face-ok    { color: #2e7d32; }
 .ucl-face-warn  { color: #ef6c00; }
 

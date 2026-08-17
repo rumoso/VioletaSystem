@@ -114,8 +114,9 @@
             <td class="ucl-td ucl-td--left">{{ item.roles }}</td>
 
             <td class="ucl-td ucl-td--center">
-              <mat-icon [class.ucl-face-ok]="item.bTieneFaceID" [class.ucl-face-warn]="!item.bTieneFaceID"
-                [matTooltip]="item.bTieneFaceID ? 'Face ID registrado' : 'Sin Face ID registrado'">
+              <mat-icon class="ucl-face-icon" [class.ucl-face-ok]="item.bTieneFaceID" [class.ucl-face-warn]="!item.bTieneFaceID"
+                [matTooltip]="item.bTieneFaceID ? 'Face ID registrado — clic para actualizar o eliminar' : 'Sin Face ID — clic para crear'"
+                (click)="fn_clickFaceId(item)">
                 {{ item.bTieneFaceID ? 'verified_user' : 'face_retouching_off' }}
               </mat-icon>
             </td>

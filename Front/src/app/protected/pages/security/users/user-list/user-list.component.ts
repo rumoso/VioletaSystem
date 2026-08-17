@@ -10,6 +10,8 @@ import { environment } from 'src/environments/environment';
 import { ActionsComponent } from '../mdl/actions/actions.component';
 import { ActionsconfComponent } from '../../mdl/actionsconf/actionsconf.component';
 import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.component';
+import { FaceVerificationComponent } from '../../mdl/face-verification/face-verification.component';
+import { FaceIdManagerComponent } from '../../mdl/face-id-manager/face-id-manager.component';
 
 @Component({
   selector: 'app-user-list',
@@ -97,6 +99,42 @@ export class UserListComponent implements OnInit {
         this.bShowSpinner = false;
       }
     })
+  }
+
+  // Acceso directo al Face ID desde el listado — mismo comportamiento
+  // que el botón inteligente (FaceIdButtonComponent): sin Face ID abre
+  // el enrolamiento directo; con Face ID abre el modal de administrar.
+  fn_clickFaceId( item: any ) {
+
+    if ( item.bTieneFaceID ) {
+
+      this.servicesGServ.showModalWithParams( FaceIdManagerComponent, {
+        tipoPersona: 'USUARIO',
+        idPersona: item.idUser,
+        nombrePersona: item.name
+      }, '420px')
+      .afterClosed().subscribe({
+        next: () => this.fn_getUsersListWithPage()
+      });
+
+    } else {
+
+      this.servicesGServ.showModalWithParams( FaceVerificationComponent, {
+        modo: 'ENROLAR',
+        tipoPersona: 'USUARIO',
+        idPersona: item.idUser,
+        nombrePersona: item.name
+      }, '480px')
+      .afterClosed().subscribe({
+        next: ( resp: any ) => {
+          if ( resp?.ok ) {
+            item.bTieneFaceID = 1;
+          }
+        }
+      });
+
+    }
+
   }
 
   fn_deleteUser( idUser: number ){

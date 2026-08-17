@@ -12,7 +12,6 @@ import { UsersService } from 'src/app/protected/services/users.service';
 import { TimecardService } from 'src/app/protected/services/timecard.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { NominaHistorialEmpleadoComponent } from '../nomina-historial-empleado/nomina-historial-empleado.component';
-import { FaceIdManagerComponent } from '../../../security/mdl/face-id-manager/face-id-manager.component';
 
 const DIAS_SEMANA = [
   { diaSemana: 1, nombre: 'Lunes' },
@@ -472,15 +471,6 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
         }
       });
 
-  }
-
-  fn_abrirFaceId() {
-    this.servicesGServ.showModalWithParams( FaceIdManagerComponent, {
-      tipoPersona: 'USUARIO',
-      idPersona: this.usuarioSeleccionado?.id || 0,
-      nombrePersona: this.myForm.value.nombre,
-      bSoloLectura: this.bSoloLectura
-    }, '420px');
   }
 
   fn_verHistorialNomina() {

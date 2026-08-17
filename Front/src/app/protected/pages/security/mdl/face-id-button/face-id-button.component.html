@@ -1,0 +1,6 @@
+<ng-container *ngIf="idPersona">
+    <button mat-stroked-button type="button" [disabled]="bCargando || bSoloLectura" (click)="fn_click()">
+        <mat-icon matPrefix class="my-icon">face</mat-icon>
+        {{ bTieneFaceId ? 'Actualizar Face ID' : 'Crear Face ID' }}
+    </button>
+</ng-container>
