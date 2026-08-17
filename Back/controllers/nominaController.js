@@ -2,6 +2,7 @@ const { response } = require('express');
 const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
+const { fn_getResumenPeriodo } = require('./timecardController');
 
 // Pago de nómina (analisis/007-pago-nomina.md). Registro histórico en
 // tres niveles (nomina, nomina_recibos, nomina_recibo_detalle) como
@@ -182,10 +183,23 @@ const generarNomina = async(req, res = response) => {
 
         for (const emp of empleadosAGenerar) {
 
+            // Horas de TimeCard (analisis/011, solo informativas — no
+            // generan ninguna línea de dinero). Sin rango de fechas no
+            // hay periodo que resumir, quedan en cero.
+            let horasTrabajadas = 0, horasEsperadas = 0, iRetardos = 0, iFaltas = 0;
+
+            if (sFechaInicio && sFechaFin) {
+                const resumenHoras = await fn_getResumenPeriodo(emp.idEmpleado, sFechaInicio, sFechaFin, transaction);
+                horasTrabajadas = resumenHoras.totales.horasTrabajadas;
+                horasEsperadas = resumenHoras.totales.horasEsperadas;
+                iRetardos = resumenHoras.totales.iRetardos;
+                iFaltas = resumenHoras.totales.iFaltas;
+            }
+
             await dbConnection.query(
-                `INSERT INTO nomina_recibos (idNomina, idEmpleado, idUser, nombreEmpleado, createDate, idCreateUser)
-                 VALUES (:idNomina, :idEmpleado, :idUser, :nombreEmpleado, :createDate, :idCreateUser)`,
-                { replacements: { idNomina, idEmpleado: emp.idEmpleado, idUser: emp.idUser, nombreEmpleado: emp.nombre, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
+                `INSERT INTO nomina_recibos (idNomina, idEmpleado, idUser, nombreEmpleado, horasTrabajadas, horasEsperadas, iRetardos, iFaltas, createDate, idCreateUser)
+                 VALUES (:idNomina, :idEmpleado, :idUser, :nombreEmpleado, :horasTrabajadas, :horasEsperadas, :iRetardos, :iFaltas, :createDate, :idCreateUser)`,
+                { replacements: { idNomina, idEmpleado: emp.idEmpleado, idUser: emp.idUser, nombreEmpleado: emp.nombre, horasTrabajadas, horasEsperadas, iRetardos, iFaltas, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
             );
 
             const [idReciboResult] = await dbConnection.query(`SELECT LAST_INSERT_ID() AS id`, { type: dbConnection.QueryTypes.SELECT, transaction });
@@ -651,6 +665,19 @@ const pagarNomina = async(req, res = response) => {
             { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
         );
 
+        // Mismo criterio para las jornadas de TimeCard (analisis/011):
+        // liga (set-based) las PENDIENTE del empleado dentro del rango.
+        await dbConnection.query(
+            `UPDATE timecard_jornadas AS J
+             INNER JOIN nomina_recibos AS R ON R.idEmpleado = J.idEmpleado AND R.idNomina = :id
+             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+             SET J.estatus = 'INCLUIDA_EN_NOMINA', J.idNomina = :id
+             WHERE J.estatus = 'PENDIENTE'
+             AND ( N.fechaInicio IS NULL OR J.fecha >= N.fechaInicio )
+             AND ( N.fechaFin IS NULL OR J.fecha <= N.fechaFin )`,
+            { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
         await transaction.commit();
 
         res.json({ status: 0, message: "Nómina pagada con éxito." });
@@ -710,6 +737,11 @@ const cancelarNomina = async(req, res = response) => {
 
         await dbConnection.query(
             `UPDATE comisiones_track SET estatus = 'PENDIENTE', idNomina = NULL WHERE idNomina = :id AND estatus = 'INCLUIDA_EN_NOMINA'`,
+            { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        await dbConnection.query(
+            `UPDATE timecard_jornadas SET estatus = 'PENDIENTE', idNomina = NULL WHERE idNomina = :id AND estatus = 'INCLUIDA_EN_NOMINA'`,
             { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
         );
 
