@@ -1,0 +1,31 @@
+.tcl-totales {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tcl-total-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+}
+
+.tcl-total-valor {
+  font-size: 22px;
+  font-weight: 600;
+  color: #7B1FA2;
+}
+
+.tcl-total-label {
+  font-size: 11px;
+  color: #757575;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.tcl-anulado {
+  opacity: .55;
+  text-decoration: line-through;
+}

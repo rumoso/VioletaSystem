@@ -1,0 +1,143 @@
+<div class="pcl-main">
+
+  <div class="pcl-header">
+    <h2 class="pcl-titulo">Asistencia (TimeCard)</h2>
+  </div>
+
+  <div class="pcl-filtros">
+
+    <div class="pcl-slim-field pcl-filtro-buscar">
+      <label class="pcl-slim-label">Empleado</label>
+      <input class="pcl-slim-input"
+        type="text"
+        placeholder="Busca por nombre o usuario..."
+        [formControl]="empleadoSearchControl"
+        [matAutocomplete]="autoEmpleados">
+      <mat-autocomplete autoActiveFirstOption
+        #autoEmpleados="matAutocomplete"
+        (optionSelected)="fn_elegirEmpleado($event.option.value)">
+        <mat-option *ngIf="bBuscandoEmpleados" disabled>Buscando...</mat-option>
+        <mat-option *ngFor="let e of empleadosEncontrados" [value]="e">
+          {{ e.nombre }} <span *ngIf="e.userName">— {{ e.userName }}</span>
+        </mat-option>
+      </mat-autocomplete>
+    </div>
+
+    <div class="pcl-slim-field">
+      <label class="pcl-slim-label">Del</label>
+      <input class="pcl-slim-input" type="date" [(ngModel)]="startDate" (change)="fn_buscar()">
+    </div>
+
+    <div class="pcl-slim-field">
+      <label class="pcl-slim-label">Al</label>
+      <input class="pcl-slim-input" type="date" [(ngModel)]="endDate" (change)="fn_buscar()">
+    </div>
+
+    <div class="pcl-filtro-botones">
+      <button mat-raised-button color="primary" [disabled]="!empleadoSeleccionado" (click)="fn_buscar()">
+        <mat-icon>search</mat-icon> Buscar
+      </button>
+      <button mat-stroked-button *ngIf="bPuedeCapturar" [disabled]="!empleadoSeleccionado" (click)="fn_capturarMarcaje()">
+        <mat-icon>edit_calendar</mat-icon> Capturar/corregir marcaje
+      </button>
+    </div>
+
+  </div>
+
+  <div *ngIf="!empleadoSeleccionado" class="pcl-vacio">
+    <mat-icon class="pcl-vacio-icon">schedule</mat-icon>
+    <p>Elige un empleado para ver su asistencia.</p>
+  </div>
+
+  <div *ngIf="resultado">
+
+    <h3>{{ resultado.nombreEmpleado }}</h3>
+
+    <div class="tcl-totales">
+      <div class="tcl-total-item">
+        <span class="tcl-total-valor">{{ resultado.totales.horasTrabajadas }}</span>
+        <span class="tcl-total-label">Horas trabajadas</span>
+      </div>
+      <div class="tcl-total-item">
+        <span class="tcl-total-valor">{{ resultado.totales.horasEsperadas }}</span>
+        <span class="tcl-total-label">Horas esperadas</span>
+      </div>
+      <div class="tcl-total-item">
+        <span class="tcl-total-valor">{{ resultado.totales.iRetardos }}</span>
+        <span class="tcl-total-label">Retardos</span>
+      </div>
+      <div class="tcl-total-item">
+        <span class="tcl-total-valor">{{ resultado.totales.iFaltas }}</span>
+        <span class="tcl-total-label">Faltas</span>
+      </div>
+    </div>
+
+    <table class="pcl-tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Horas trabajadas</th>
+          <th>Horas esperadas</th>
+          <th>Estado</th>
+          <th>Pago</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let dia of resultado.dias">
+          <td>{{ dia.fecha }}</td>
+          <td>{{ dia.horasTrabajadas }}</td>
+          <td>{{ dia.horasEsperadas }}</td>
+          <td>
+            <span class="pcl-chip pcl-chip-neutro" *ngIf="dia.bDescanso">Descanso</span>
+            <span class="pcl-chip pcl-chip-inactivo" *ngIf="dia.bFalta">Falta</span>
+            <span class="pcl-chip pcl-chip-inactivo" *ngIf="dia.bRetardo">Retardo {{ dia.minutosRetardo }} min</span>
+            <span class="pcl-chip pcl-chip-inactivo" *ngIf="dia.bIncompleta">Incompleta</span>
+            <span class="pcl-chip pcl-chip-activo" *ngIf="!dia.bDescanso && !dia.bFalta && !dia.bRetardo && !dia.bIncompleta && !dia.bSinMarcar">Completa</span>
+          </td>
+          <td>{{ fn_estatusDesc(dia) }}</td>
+        </tr>
+        <tr *ngIf="resultado.dias.length === 0">
+          <td colspan="5" class="pcl-vacio">Sin días en este rango.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Marcajes</h3>
+
+    <table class="pcl-tabla">
+      <thead>
+        <tr>
+          <th>Fecha/hora</th>
+          <th>Tipo</th>
+          <th>Origen</th>
+          <th>Motivo</th>
+          <th *ngIf="bPuedeCapturar">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of resultado.marcajes" [class.tcl-anulado]="m.bAnulado">
+          <td>{{ m.fechaHora }}</td>
+          <td>{{ etiquetas[m.tipo] || m.tipo }}</td>
+          <td>
+            {{ m.origen }}
+            <span *ngIf="m.similitud"> ({{ (m.similitud * 100).toFixed(0) }}%)</span>
+            <span class="pcl-chip pcl-chip-inactivo" *ngIf="m.bAnulado">Anulado</span>
+          </td>
+          <td>{{ m.motivo }}</td>
+          <td *ngIf="bPuedeCapturar">
+            <button mat-icon-button *ngIf="!m.bAnulado" matTooltip="Corregir" (click)="fn_corregirMarcaje(m)">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="resultado.marcajes.length === 0">
+          <td [attr.colspan]="bPuedeCapturar ? 5 : 4" class="pcl-vacio">Sin marcajes en este rango.</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <app-spinner *ngIf="bShowSpinner"></app-spinner>
+
+</div>

@@ -1,0 +1,66 @@
+<div class="pcm-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">{{ bEsCorreccion ? 'Corregir marcaje' : 'Capturar marcaje' }}</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <div class="pcm-banner" *ngIf="banner"
+            [class.pcm-banner-ok]="banner.tipo === 'ok'"
+            [class.pcm-banner-error]="banner.tipo === 'error'">
+            <mat-icon>{{ banner.tipo === 'ok' ? 'check_circle' : 'error' }}</mat-icon>
+            <span>{{ banner.mensaje }}</span>
+        </div>
+
+        <p class="pcm-slim-hint" *ngIf="bEsCorreccion">
+            El marcaje original queda anulado (visible en el historial) y este lo sustituye.
+        </p>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Empleado</label>
+            <input class="pcm-slim-input" type="text" [value]="nombreEmpleado" disabled>
+        </div>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Tipo de marcaje</label>
+            <select class="pcm-slim-input" [(ngModel)]="myForm.tipo">
+                <option *ngFor="let t of tiposMarcaje" [value]="t.value">{{ t.label }}</option>
+            </select>
+        </div>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Fecha</label>
+            <input class="pcm-slim-input" type="date" [(ngModel)]="myForm.fecha">
+        </div>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Hora</label>
+            <input class="pcm-slim-input" type="time" [(ngModel)]="myForm.hora">
+        </div>
+
+        <div class="pcm-slim-field">
+            <label class="pcm-slim-label">Motivo</label>
+            <input class="pcm-slim-input" type="text" [(ngModel)]="myForm.motivo" placeholder="Ej. se le olvidó checar la salida">
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cancelar</button>
+
+        <button mat-raised-button color="primary" type="button"
+        [disabled]="bShowSpinner"
+        (click)="fn_guardar()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            {{ bShowSpinner ? 'Guardando...' : 'Guardar' }}</button>
+
+    </mat-dialog-actions>
+
+</div>
