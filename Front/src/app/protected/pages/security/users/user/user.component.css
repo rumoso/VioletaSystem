@@ -1,0 +1,198 @@
+/* Modal de usuario — formato slim, pestañas de Datos/Sucursales/Roles/Contraseña. */
+
+.ucm-modal {
+    display: flex;
+    flex-direction: column;
+    min-width: 480px;
+}
+
+.ucm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 0;
+}
+
+.ucm-titulo {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.ucm-content {
+    padding-top: 4px !important;
+}
+
+.ucm-form {
+    padding-top: 14px;
+}
+
+.ucm-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 14px;
+}
+
+.ucm-col-2 {
+    grid-column: span 2;
+}
+
+/* Formato slim */
+.ucm-slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 14px;
+}
+
+.ucm-slim-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #283593;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.ucm-slim-input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ucm-slim-input:focus {
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
+}
+
+.ucm-slim-input:disabled {
+    background: #f5f5f5;
+    color: #9e9e9e;
+}
+
+.ucm-slim-hint {
+    font-size: 11px;
+    color: #9e9e9e;
+    font-style: italic;
+    padding-top: 14px;
+}
+
+.ucm-inline-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ucm-inline-wrap:focus-within {
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
+}
+
+.ucm-inline-wrap .ucm-slim-input {
+    border: none;
+    height: 34px;
+}
+
+.ucm-inline-icon {
+    margin-right: 8px;
+    color: #9e9e9e;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+/* Sucursales / Roles */
+.ucm-subseccion {
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ucm-agregar {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.ucm-agregar button {
+    margin-bottom: 14px;
+}
+
+.ucm-agregar-combo {
+    flex: 1;
+}
+
+.ucm-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.ucm-persona-datos {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    flex: 1;
+    min-width: 0;
+}
+
+.ucm-principal {
+    font-weight: 500;
+    color: #212121;
+    font-size: 13px;
+}
+
+.ucm-secundario {
+    font-size: 12px;
+    color: #9e9e9e;
+}
+
+/* Contraseña */
+.ucm-pwd-hint {
+    font-size: 11px;
+    color: #616161;
+    background: #f5f5f5;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+}
+
+.ucm-pwd-hint ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+}
+
+.ucm-actions {
+    padding-top: 6px;
+    gap: 8px;
+}
+
+@media (max-width: 599.98px) {
+    .ucm-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ucm-col-2 {
+        grid-column: span 1;
+    }
+
+    .ucm-modal {
+        min-width: 0;
+    }
+}

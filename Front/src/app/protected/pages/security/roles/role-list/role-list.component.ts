@@ -10,6 +10,7 @@ import { PageTitleService } from 'src/app/protected/services/page-title.service'
 import { environment } from 'src/environments/environment';
 import { ActionsconfComponent } from '../../mdl/actionsconf/actionsconf.component';
 import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.component';
+import { RoleComponent } from '../role/role.component';
 
 @Component({
   selector: 'app-role-list',
@@ -55,7 +56,16 @@ export class RoleListComponent implements OnInit, OnDestroy {
     }
 
     edit( id: number ){
-      this.servicesGServ.changeRouteWithParameter(`/${ this._appMain }/editRol`, id)
+
+      this.servicesGServ.showModalWithParams( RoleComponent, { idRol: id }, '520px')
+      .afterClosed().subscribe({
+        next: ( huboCambios: any ) =>{
+          if( huboCambios ){
+            this.fn_getRolesListWithPage();
+          }
+        }
+      });
+
     }
 
     ////************************************************ */

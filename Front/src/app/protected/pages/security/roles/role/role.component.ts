@@ -1,29 +1,20 @@
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
-import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { Component, Inject, OnInit } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
-import { ActionsService } from 'src/app/protected/services/actions.service';
 import { RolesService } from 'src/app/protected/services/roles.service';
-import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
-import { PageTitleService } from 'src/app/protected/services/page-title.service';
-import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-role',
   templateUrl: './role.component.html',
   styleUrls: ['./role.component.css']
 })
-export class RoleComponent implements OnInit, OnDestroy {
-  
-  private _appMain: string = environment.appMain;
+export class RoleComponent implements OnInit {
 
-  title: string = 'Rol';
   bShowSpinner: boolean = false;
   idRol: number = 0;
+  huboCambios: boolean = false;
 
   rolForm: any = {
     idRol: 0,
@@ -33,70 +24,52 @@ export class RoleComponent implements OnInit, OnDestroy {
   };
 
   constructor(
-    private router: Router
-    , private activatedRoute: ActivatedRoute
+    private dialogRef: MatDialogRef<RoleComponent>
+    , @Inject(MAT_DIALOG_DATA) public ODataP: any
 
     , private servicesGServ: ServicesGService
-    , private _adapter: DateAdapter<any>
-    , @Inject(MAT_DATE_LOCALE) private _locale: string
     , private rolesServ: RolesService
-    , private actionsServ: ActionsService
 
     , private authService: AuthService
-    , private pageTitleServ: PageTitleService
   ) { }
 
+  get titulo(): string {
+    return this.idRol ? 'Editar Rol' : 'Nuevo Rol';
+  }
 
   ngOnInit(): void {
     this.authService.checkSession();
 
-    this._locale = 'mx';
-    this._adapter.setLocale(this._locale);
+    this.idRol = this.ODataP?.idRol || 0;
 
-    if( !this.router.url.includes('editRol') ){
-      this.fn_actualizarTitulo();
-      return;
+    if( this.idRol > 0 ){
+
+      this.bShowSpinner = true;
+
+      this.rolesServ.CGetRolByID( this.idRol )
+        .subscribe( ( resp: any ) => {
+
+           if(resp.status == 0){
+
+              this.rolForm = {
+                idRol: resp.data.idRol,
+                name: resp.data.name,
+                description: resp.data.description,
+                active: resp.data.active
+              };
+
+           }else{
+            this.servicesGServ.showSnakbar(resp.message);
+           }
+           this.bShowSpinner = false;
+        } )
+
     }
 
-    this.bShowSpinner = true;
-
-    this.activatedRoute.params
-      .pipe(
-        switchMap( ({ id }) => this.rolesServ.CGetRolByID( id ) )
-      )
-      .subscribe( ( resp: any ) => {
-
-         if(resp.status == 0){
-
-            this.idRol = resp.data.idRol;
-
-            this.rolForm = {
-              idRol: resp.data.idRol,
-              name: resp.data.name,
-              description: resp.data.description,
-              active: resp.data.active
-            };
-
-           //this.fn_getActionListWithPage();
-         }else{
-          this.servicesGServ.showSnakbar(resp.message);
-         }
-         this.fn_actualizarTitulo();
-         this.bShowSpinner = false;
-      } )
-
   }
 
-  ngOnDestroy(): void {
-    this.pageTitleServ.clear();
-  }
-
-  private fn_actualizarTitulo() {
-    this.pageTitleServ.set('admin_panel_settings', this.idRol ? 'Editar Rol' : 'Nuevo Rol', 'Datos del rol y su estatus');
-  }
-
-  changeRoute( route: string ): void {
-    this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
+  fn_close() {
+    this.dialogRef.close( this.huboCambios );
   }
 
   fn_saveRol() {
@@ -107,7 +80,8 @@ export class RoleComponent implements OnInit, OnDestroy {
       this.rolesServ.CUpdateRol( this.rolForm )
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
-            
+
+            this.huboCambios = true;
             this.servicesGServ.showAlertIA( resp );
             this.bShowSpinner = false;
 
@@ -127,10 +101,8 @@ export class RoleComponent implements OnInit, OnDestroy {
           if( resp.status === 0 ){
 
             this.idRol = resp.insertID;
-
             this.rolForm.idRol = resp.insertID;
-
-            this.fn_actualizarTitulo();
+            this.huboCambios = true;
 
           }
 

@@ -13,6 +13,7 @@ import { ActionsconfComponent } from '../../mdl/actionsconf/actionsconf.componen
 import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.component';
 import { FaceVerificationComponent } from '../../mdl/face-verification/face-verification.component';
 import { FaceIdManagerComponent } from '../../mdl/face-id-manager/face-id-manager.component';
+import { UserComponent } from '../user/user.component';
 
 @Component({
   selector: 'app-user-list',
@@ -42,7 +43,16 @@ export class UserListComponent implements OnInit, OnDestroy {
     }
 
     edit( id: number ){
-      this.servicesGServ.changeRouteWithParameter(`/${ this._appMain }/editUser`, id)
+
+      this.servicesGServ.showModalWithParams( UserComponent, { idUser: id }, '650px')
+      .afterClosed().subscribe({
+        next: ( huboCambios: any ) =>{
+          if( huboCambios ){
+            this.fn_getUsersListWithPage();
+          }
+        }
+      });
+
     }
 
     ////************************************************ */

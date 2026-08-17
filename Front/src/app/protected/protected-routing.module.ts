@@ -2,7 +2,6 @@ import { NgModule } from "@angular/core";
 import { Routes, RouterModule } from '@angular/router';
 import { DashboardComponent } from "./pages/dashboard/dashboard.component";
 import { MainComponent } from './pages/main/main.component';
-import { UserComponent } from "./pages/security/users/user/user.component";
 import { UserListComponent } from "./pages/security/users/user-list/user-list.component";
 import { ProductListComponent } from "./pages/catssales/product-list/product-list.component";
 import { ProductComponent } from "./pages/catssales/product/product.component";
@@ -13,7 +12,6 @@ import { InventaryComponent } from "./pages/reports/inventary/inventary.componen
 import { CortesCajaComponent } from "./pages/sales/cortes-caja/cortes-caja.component";
 import { UtilidadComponent } from "./pages/reports/utilidad/utilidad.component";
 import { RoleListComponent } from "./pages/security/roles/role-list/role-list.component";
-import { RoleComponent } from "./pages/security/roles/role/role.component";
 import { PhysicalInventoryListComponent } from "./pages/reports/physical-inventory-list/physical-inventory-list.component";
 import { MetalInventarioComponent } from "./pages/reports/metal-inventario/metal-inventario.component";
 import { FaceLogComponent } from "./pages/security/face-log/face-log.component";
@@ -47,24 +45,8 @@ const routes: Routes = [
           component: DashboardComponent
         },
         {
-          path: 'users',
-          component: UserComponent
-        },
-        {
-          path: 'editUser/:id',
-          component: UserComponent
-        },
-        {
           path: 'userList',
           component: UserListComponent
-        },
-        {
-          path: 'rol',
-          component: RoleComponent
-        },
-        {
-          path: 'editRol/:id',
-          component: RoleComponent
         },
         {
           path: 'roleList',

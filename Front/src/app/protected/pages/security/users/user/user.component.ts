@@ -1,38 +1,29 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseDB_CRUD, ResponseGet } from 'src/app/protected/interfaces/global.interfaces';
 import { RolesService } from 'src/app/protected/services/roles.service';
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
-import { environment } from 'src/environments/environment';
 import { ActionsComponent } from '../mdl/actions/actions.component';
-import { ActionsService } from 'src/app/protected/services/actions.service';
-import { PageTitleService } from 'src/app/protected/services/page-title.service';
-
-
 
 @Component({
   selector: 'app-user',
   templateUrl: './user.component.html',
   styleUrls: ['./user.component.css']
 })
-export class UserComponent implements OnInit, OnDestroy {
-
-  private _appMain: string = environment.appMain;
+export class UserComponent implements OnInit {
 
   hidePwd: boolean = true;
   hidePwd2: boolean = true;
 
-  title: string = 'Usuario';
   bShowSpinner: boolean = false;
   idUser: number = 0;
+  huboCambios: boolean = false;
 
   rolesByUserList: any[] = [];
   sucursalesByUserList: any[] = [];
@@ -40,20 +31,17 @@ export class UserComponent implements OnInit, OnDestroy {
   public showPwd2: boolean = false;
 
   constructor(
-    private fb: FormBuilder
-    , private router: Router
-    , private activatedRoute: ActivatedRoute
+    private dialogRef: MatDialogRef<UserComponent>
+    , @Inject(MAT_DIALOG_DATA) public ODataP: any
+
+    , private fb: FormBuilder
 
     , private servicesGServ: ServicesGService
-    , private _adapter: DateAdapter<any>
-    , @Inject(MAT_DATE_LOCALE) private _locale: string
     , private usersServ: UsersService
     , private rolesServ: RolesService
     , private sucursalesServ: SucursalesService
-    , private actionsServ: ActionsService
 
     , private authServ: AuthService
-    , private pageTitleServ: PageTitleService
   ) { }
 
   userForm: any = {
@@ -113,37 +101,27 @@ export class UserComponent implements OnInit, OnDestroy {
   }
   //-------------------------------
 
-  ngOnDestroy(): void {
-    this.pageTitleServ.clear();
-  }
-
-  private fn_actualizarTitulo() {
-    this.pageTitleServ.set('person', this.idUser ? 'Editar Usuario' : 'Nuevo Usuario', 'Datos de acceso, roles y sucursales');
+  get titulo(): string {
+    return this.idUser ? 'Editar Usuario' : 'Nuevo Usuario';
   }
 
   ngOnInit(): void {
     this.authServ.checkSession();
 
-    this._locale = 'mx';
-    this._adapter.setLocale(this._locale);
+    this.idUser = this.ODataP?.idUser || 0;
 
-    if( !this.router.url.includes('editUser') ){
-      this.fn_actualizarTitulo();
+    if( this.idUser === 0 ){
       return;
     }
 
     this.bShowSpinner = true;
 
-    this.activatedRoute.params
-      .pipe(
-        switchMap( ({ id }) => this.usersServ.CGetUserByID( id ) )
-      )
+    this.usersServ.CGetUserByID( this.idUser )
       .subscribe( ( resp: any ) => {
-        console.log(resp)
+
          if(resp.status == 0){
 
             this.idUser = resp.data.idUser;
-            this.fn_actualizarTitulo();
 
             this.userForm.idUser = resp.data.idUser;
             this.addRoleForm.get('idUser')?.setValue( resp.data.idUser );
@@ -184,8 +162,8 @@ export class UserComponent implements OnInit, OnDestroy {
     return bOK;
   }
 
-  changeRoute( route: string ): void {
-    this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
+  fn_close() {
+    this.dialogRef.close( this.huboCambios );
   }
 
   hasPermissionAction( action: string ): boolean{
@@ -208,6 +186,7 @@ export class UserComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (resp: ResponseDB_CRUD) => {
 
+            this.huboCambios = true;
             this.servicesGServ.showAlertIA( resp );
             this.bShowSpinner = false;
 
@@ -227,7 +206,7 @@ export class UserComponent implements OnInit, OnDestroy {
           if( resp.status === 0 ){
 
             this.idUser = resp.insertID;
-            this.fn_actualizarTitulo();
+            this.huboCambios = true;
 
             this.userForm.idUser = resp.insertID;
             this.addRoleForm.get('idUser')?.setValue( resp.insertID )
@@ -567,8 +546,6 @@ export class UserComponent implements OnInit, OnDestroy {
     }
 
     const ODataCbx: any = event.option.value;
-
-    console.log(ODataCbx)
 
     this.addSucursalForm.get('idSucursal')?.setValue( ODataCbx.idSucursal )
     this.addSucursalForm.get('sucursalDesc')?.setValue( ODataCbx.name )

@@ -1,46 +1,51 @@
-<div class="rcm-page">
+<div mat-dialog-title class="rcm-header">
+    <span class="rcm-titulo">{{ titulo }}</span>
+    <button mat-icon-button (click)="fn_close()">
+        <mat-icon>close</mat-icon>
+    </button>
+</div>
 
-    <div class="rcm-card">
+<mat-dialog-content class="rcm-content">
 
-        <div class="rcm-form">
+    <div class="rcm-form">
 
-            <div class="rcm-field">
-                <label class="rcm-label">Nombre</label>
-                <div class="inline-wrap">
-                    <input type="text" class="rcm-slim-input" [(ngModel)]="rolForm.name">
-                </div>
+        <div class="rcm-field">
+            <label class="rcm-label">Nombre</label>
+            <div class="inline-wrap">
+                <input type="text" class="rcm-slim-input" [(ngModel)]="rolForm.name">
             </div>
-
-            <div class="rcm-field">
-                <label class="rcm-label">Descripción</label>
-                <div class="inline-wrap">
-                    <input type="text" class="rcm-slim-input" [(ngModel)]="rolForm.description">
-                </div>
-            </div>
-
-            <div class="rcm-field">
-                <mat-checkbox class="example-margin" [(ngModel)]="rolForm.active" disabled>Activo</mat-checkbox>
-            </div>
-
         </div>
 
-        <div class="rcm-actions">
-            <button mat-flat-button class="rcm-btn-primary"
-                type="submit"
-                (click)="fn_saveRol()"
-                [disabled]="rolForm.name.length == 0">
-                <mat-icon>save</mat-icon>
-                Guardar</button>
+        <div class="rcm-field">
+            <label class="rcm-label">Descripción</label>
+            <div class="inline-wrap">
+                <input type="text" class="rcm-slim-input" [(ngModel)]="rolForm.description">
+            </div>
+        </div>
 
-            <button mat-stroked-button class="rcm-btn-secondary"
-                type="button"
-                (click)="changeRoute('roleList')">
-                <mat-icon>close</mat-icon>
-                Cancelar</button>
+        <div class="rcm-field">
+            <mat-checkbox class="example-margin" [(ngModel)]="rolForm.active" disabled>Activo</mat-checkbox>
         </div>
 
     </div>
 
-</div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="rcm-actions">
+
+    <button mat-stroked-button class="rcm-btn-secondary"
+        type="button"
+        (click)="fn_close()">
+        <mat-icon>close</mat-icon>
+        Cerrar</button>
+
+    <button mat-flat-button class="rcm-btn-primary"
+        type="submit"
+        (click)="fn_saveRol()"
+        [disabled]="rolForm.name.length == 0">
+        <mat-icon>save</mat-icon>
+        Guardar</button>
+
+</mat-dialog-actions>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>
