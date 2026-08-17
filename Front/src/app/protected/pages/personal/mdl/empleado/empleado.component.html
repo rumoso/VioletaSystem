@@ -216,12 +216,10 @@
 
                         <!-- Face ID (sin él no puede checar en TimeCard) -->
                         <div class="pcm-tc-rostro">
-                            <app-face-id-manager
-                                tipoPersona="USUARIO"
-                                [idPersona]="usuarioSeleccionado?.id || 0"
-                                [nombrePersona]="myForm.value.nombre"
-                                [bSoloLectura]="bSoloLectura">
-                            </app-face-id-manager>
+                            <button mat-stroked-button type="button" (click)="fn_abrirFaceId()">
+                                <mat-icon matPrefix class="my-icon">face</mat-icon>
+                                Face ID
+                            </button>
                         </div>
 
                         <!-- Horario propio opcional -->

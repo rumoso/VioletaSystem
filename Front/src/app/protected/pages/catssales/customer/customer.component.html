@@ -81,12 +81,11 @@
                 <div class="col-md-1">
                     <mat-checkbox class="example-margin" [(ngModel)]="customerForm.active">Activo</mat-checkbox>
                 </div>
-                <div class="col-md-6" *ngIf="id > 0">
-                    <app-face-id-manager
-                        tipoPersona="CLIENTE"
-                        [idPersona]="id"
-                        [nombrePersona]="name">
-                    </app-face-id-manager>
+                <div class="col-md-3" *ngIf="id > 0">
+                    <button mat-stroked-button type="button" (click)="fn_abrirFaceId()">
+                        <mat-icon matPrefix class="my-icon">face</mat-icon>
+                        Face ID
+                    </button>
                 </div>
             </div>
 

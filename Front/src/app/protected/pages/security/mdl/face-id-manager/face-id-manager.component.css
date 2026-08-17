@@ -1,7 +1,25 @@
-.fim-container {
+.fim-modal {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+.fim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 4px 0;
+}
+
+.fim-titulo {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.fim-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px !important;
 }
 
 .fim-status {

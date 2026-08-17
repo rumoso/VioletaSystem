@@ -9,6 +9,7 @@ import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces'
 import { CustomersService } from 'src/app/protected/services/customers.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
+import { FaceIdManagerComponent } from '../../security/mdl/face-id-manager/face-id-manager.component';
 
 @Component({
   selector: 'app-customer',
@@ -154,6 +155,14 @@ public inputFocus(idInput: any) {
 
     changeRoute( route: string ): void {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
+    }
+
+    fn_abrirFaceId() {
+      this.servicesGServ.showModalWithParams( FaceIdManagerComponent, {
+        tipoPersona: 'CLIENTE',
+        idPersona: this.id,
+        nombrePersona: this.name
+      }, '420px');
     }
 
     fn_saveCustomer() {

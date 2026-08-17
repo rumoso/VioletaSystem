@@ -1,46 +1,47 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { FaceReferenceService } from 'src/app/protected/services/face-reference.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { FaceVerificationComponent } from '../face-verification/face-verification.component';
 
 // Administración del Face ID de una persona (usuario, cliente o
-// empleado) — componente embebible, reutilizado en los tres modales que
-// hoy lo necesitan. Consulta su propio estado (no depende de que el
-// padre se lo pase) para no desincronizarse.
+// empleado) — modal reutilizado desde los tres lugares que hoy lo
+// necesitan, abierto siempre con un solo botón "Face ID". Consulta su
+// propio estado al abrir (no depende de que el padre se lo pase).
 
 @Component({
   selector: 'app-face-id-manager',
   templateUrl: './face-id-manager.component.html',
   styleUrls: ['./face-id-manager.component.css']
 })
-export class FaceIdManagerComponent implements OnInit, OnChanges {
+export class FaceIdManagerComponent implements OnInit {
 
-  @Input() tipoPersona: string = '';
-  @Input() idPersona: number = 0;
-  @Input() nombrePersona: string = '';
-  @Input() bSoloLectura: boolean = false;
-
-  // Avisa al padre cuando el estado cambia, por si necesita reflejarlo
-  // en otro lado (ej. el icono de un listado que ya se pintó).
-  @Output() cambio = new EventEmitter<boolean>();
+  tipoPersona: string = '';
+  idPersona: number = 0;
+  nombrePersona: string = '';
+  bSoloLectura: boolean = false;
 
   bTieneFaceId: boolean = false;
   bCargando: boolean = false;
 
   constructor(
-    private faceReferenceServ: FaceReferenceService
+    private dialogRef: MatDialogRef<FaceIdManagerComponent>
+    , @Inject(MAT_DIALOG_DATA) public ODataP: any
+
+    , private faceReferenceServ: FaceReferenceService
     , private servicesGServ: ServicesGService
     ) { }
 
   ngOnInit(): void {
-    this.fn_cargarEstado();
-  }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if ((changes['idPersona'] || changes['tipoPersona']) && !changes['idPersona']?.firstChange) {
-      this.fn_cargarEstado();
-    }
+    this.tipoPersona = this.ODataP.tipoPersona;
+    this.idPersona = this.ODataP.idPersona;
+    this.nombrePersona = this.ODataP.nombrePersona || '';
+    this.bSoloLectura = !!this.ODataP.bSoloLectura;
+
+    this.fn_cargarEstado();
+
   }
 
   private fn_cargarEstado() {
@@ -74,7 +75,6 @@ export class FaceIdManagerComponent implements OnInit, OnChanges {
       next: ( resp: any ) => {
         if ( resp?.ok ) {
           this.bTieneFaceId = true;
-          this.cambio.emit(true);
         }
       }
     });
@@ -100,7 +100,6 @@ export class FaceIdManagerComponent implements OnInit, OnChanges {
               this.bCargando = false;
               if ( resp2.status === 0 ) {
                 this.bTieneFaceId = false;
-                this.cambio.emit(false);
               }
             },
             error: () => {
@@ -113,6 +112,10 @@ export class FaceIdManagerComponent implements OnInit, OnChanges {
       }
     });
 
+  }
+
+  fn_close() {
+    this.dialogRef.close();
   }
 
 }
