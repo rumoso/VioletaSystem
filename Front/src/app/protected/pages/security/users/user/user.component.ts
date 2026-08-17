@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
@@ -14,6 +14,7 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ActionsComponent } from '../mdl/actions/actions.component';
 import { ActionsService } from 'src/app/protected/services/actions.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 
 
 
@@ -22,7 +23,7 @@ import { ActionsService } from 'src/app/protected/services/actions.service';
   templateUrl: './user.component.html',
   styleUrls: ['./user.component.css']
 })
-export class UserComponent implements OnInit {
+export class UserComponent implements OnInit, OnDestroy {
 
   private _appMain: string = environment.appMain;
 
@@ -52,6 +53,7 @@ export class UserComponent implements OnInit {
     , private actionsServ: ActionsService
 
     , private authServ: AuthService
+    , private pageTitleServ: PageTitleService
   ) { }
 
   userForm: any = {
@@ -111,6 +113,14 @@ export class UserComponent implements OnInit {
   }
   //-------------------------------
 
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
+
+  private fn_actualizarTitulo() {
+    this.pageTitleServ.set('person', this.idUser ? 'Editar Usuario' : 'Nuevo Usuario', 'Datos de acceso, roles y sucursales');
+  }
+
   ngOnInit(): void {
     this.authServ.checkSession();
 
@@ -118,6 +128,7 @@ export class UserComponent implements OnInit {
     this._adapter.setLocale(this._locale);
 
     if( !this.router.url.includes('editUser') ){
+      this.fn_actualizarTitulo();
       return;
     }
 
@@ -132,6 +143,7 @@ export class UserComponent implements OnInit {
          if(resp.status == 0){
 
             this.idUser = resp.data.idUser;
+            this.fn_actualizarTitulo();
 
             this.userForm.idUser = resp.data.idUser;
             this.addRoleForm.get('idUser')?.setValue( resp.data.idUser );
@@ -215,6 +227,7 @@ export class UserComponent implements OnInit {
           if( resp.status === 0 ){
 
             this.idUser = resp.insertID;
+            this.fn_actualizarTitulo();
 
             this.userForm.idUser = resp.insertID;
             this.addRoleForm.get('idUser')?.setValue( resp.insertID )

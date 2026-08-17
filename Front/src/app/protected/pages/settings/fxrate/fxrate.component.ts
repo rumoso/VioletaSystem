@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnInit, ViewChildren, QueryList } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ViewChildren, QueryList } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { FxrateService } from 'src/app/protected/services/fxrate.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { AddFxRateTypeDialogComponent } from './add-fxrate-type-dialog.component';
 
@@ -13,7 +14,7 @@ import { AddFxRateTypeDialogComponent } from './add-fxrate-type-dialog.component
   templateUrl: './fxrate.component.html',
   styleUrls: ['./fxrate.component.css']
 })
-export class FxrateComponent implements OnInit {
+export class FxrateComponent implements OnInit, OnDestroy {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE VARIABLES
@@ -56,7 +57,13 @@ export class FxrateComponent implements OnInit {
 
     , private dialog: MatDialog
 
+    , private pageTitleServ: PageTitleService
+
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
@@ -65,6 +72,8 @@ export class FxrateComponent implements OnInit {
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
+
+      this.pageTitleServ.set('currency_exchange', 'Tipos de cambio', 'Captura diaria de oro, plata y divisas');
 
       this.fn_getFxRateTypesWithLatestRates();
 
