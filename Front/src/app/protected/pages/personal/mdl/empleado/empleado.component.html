@@ -214,15 +214,14 @@
 
                     <ng-container *ngIf="id > 0">
 
-                        <!-- Rostro enrolado -->
+                        <!-- Face ID (sin él no puede checar en TimeCard) -->
                         <div class="pcm-tc-rostro">
-                            <mat-icon [class.colorGreen]="bTieneRostro" [class.colorOrange]="!bTieneRostro">
-                                {{ bTieneRostro ? 'verified_user' : 'face_retouching_off' }}
-                            </mat-icon>
-                            <span>{{ bTieneRostro ? 'Rostro enrolado' : 'Sin rostro registrado — no puede checar en TimeCard' }}</span>
-                            <button mat-stroked-button type="button" *ngIf="!bSoloLectura" (click)="fn_enrolarRostro()">
-                                <mat-icon matPrefix class="my-icon">face</mat-icon>
-                                {{ bTieneRostro ? 'Reenrolar' : 'Enrolar rostro' }}</button>
+                            <app-face-id-manager
+                                tipoPersona="USUARIO"
+                                [idPersona]="usuarioSeleccionado?.id || 0"
+                                [nombrePersona]="myForm.value.nombre"
+                                [bSoloLectura]="bSoloLectura">
+                            </app-face-id-manager>
                         </div>
 
                         <!-- Horario propio opcional -->

@@ -94,6 +94,7 @@ import { TimecardChecadorComponent } from './pages/personal/timecard-checador/ti
 import { TimecardListComponent } from './pages/personal/timecard-list/timecard-list.component';
 import { TimecardMarcajeManualComponent } from './pages/personal/mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
 import { HorarioSucursalComponent } from './pages/personal/mdl/horario-sucursal/horario-sucursal.component';
+import { FaceIdManagerComponent } from './pages/security/mdl/face-id-manager/face-id-manager.component';
 
 @NgModule({
     declarations: [
@@ -184,6 +185,7 @@ import { HorarioSucursalComponent } from './pages/personal/mdl/horario-sucursal/
     TimecardListComponent,
     TimecardMarcajeManualComponent,
     HorarioSucursalComponent,
+    FaceIdManagerComponent,
   ],
     imports: [
         CommonModule,

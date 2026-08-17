@@ -14,8 +14,6 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
 import { ActionsComponent } from '../mdl/actions/actions.component';
 import { ActionsService } from 'src/app/protected/services/actions.service';
-import { FaceReferenceService } from 'src/app/protected/services/face-reference.service';
-import { FaceVerificationComponent } from '../../mdl/face-verification/face-verification.component';
 
 
 
@@ -52,12 +50,9 @@ export class UserComponent implements OnInit {
     , private rolesServ: RolesService
     , private sucursalesServ: SucursalesService
     , private actionsServ: ActionsService
-    , private faceReferenceServ: FaceReferenceService
 
     , private authServ: AuthService
   ) { }
-
-  bTieneRostro: boolean = false;
 
   userForm: any = {
     idUser: 0,
@@ -157,7 +152,6 @@ export class UserComponent implements OnInit {
 
            this.fn_getRolesByIdUser();
            this.fn_getSucursalesByIdUser();
-           this.fn_checkFaceReference();
          }else{
           this.servicesGServ.showSnakbar(resp.message);
          }
@@ -184,65 +178,6 @@ export class UserComponent implements OnInit {
 
   hasPermissionAction( action: string ): boolean{
     return this.authServ.hasPermissionAction(action);
-  }
-
-  fn_checkFaceReference() {
-    this.faceReferenceServ.CGetFaceReference( 'USUARIO', this.idUser )
-    .subscribe({
-      next: (resp: any) => {
-        this.bTieneRostro = resp.status === 0 && !!resp.data;
-      },
-      error: () => {}
-    });
-  }
-
-  fn_openFaceEnrollment() {
-    this.servicesGServ.showModalWithParams( FaceVerificationComponent, {
-      modo: 'ENROLAR',
-      tipoPersona: 'USUARIO',
-      idPersona: this.idUser,
-      nombrePersona: this.userForm.name
-    }, '480px')
-    .afterClosed().subscribe({
-      next: ( resp: any ) => {
-        if( resp?.ok ){
-          this.bTieneRostro = true;
-        }
-      }
-    });
-  }
-
-  fn_removeFaceReference() {
-
-    this.servicesGServ.showDialog('¿Estás seguro?'
-      , 'Está a punto de eliminar el rostro de referencia de este usuario. Ya no podrá usarlo para checar ni para autorizaciones/login por rostro.'
-      , '¿Desea continuar?'
-      , 'Si', 'No')
-    .afterClosed().subscribe({
-      next: ( resp: any ) => {
-        if( resp ){
-
-          this.bShowSpinner = true;
-
-          this.faceReferenceServ.CDeleteFaceReference( 'USUARIO', this.idUser )
-          .subscribe({
-            next: (resp2: any) => {
-              this.servicesGServ.showSnakbar( resp2.message );
-              this.bShowSpinner = false;
-              if( resp2.status === 0 ){
-                this.bTieneRostro = false;
-              }
-            },
-            error: () => {
-              this.servicesGServ.showSnakbar( "Problemas con el servicio" );
-              this.bShowSpinner = false;
-            }
-          });
-
-        }
-      }
-    });
-
   }
 
   fn_saveUser() {

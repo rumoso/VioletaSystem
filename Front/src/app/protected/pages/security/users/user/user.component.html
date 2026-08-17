@@ -85,23 +85,12 @@
                 <div class="col-md-1">
                     <mat-checkbox class="example-margin" [(ngModel)]="userForm.active" disabled>Activo</mat-checkbox>
                 </div>
-                <div class="col-md-4" *ngIf="idUser > 0">
-                    <button mat-stroked-button
-                    [color]="bTieneRostro ? 'primary' : 'warn'"
-                    type="button"
-                    (click)="fn_openFaceEnrollment()">
-                        <mat-icon matPrefix class="my-icon">face</mat-icon>
-                        {{ bTieneRostro ? 'Rostro registrado (actualizar)' : 'Registrar rostro' }}
-                    </button>
-                </div>
-                <div class="col-md-3" *ngIf="idUser > 0 && bTieneRostro">
-                    <button mat-stroked-button
-                    color="warn"
-                    type="button"
-                    (click)="fn_removeFaceReference()">
-                        <mat-icon matPrefix class="my-icon">face_retouching_off</mat-icon>
-                        Quitar rostro
-                    </button>
+                <div class="col-md-6" *ngIf="idUser > 0">
+                    <app-face-id-manager
+                        tipoPersona="USUARIO"
+                        [idPersona]="idUser"
+                        [nombrePersona]="userForm.name">
+                    </app-face-id-manager>
                 </div>
             </div>
 

@@ -88,7 +88,7 @@
                                 <span class="pcl-principal">
                                     {{ item.nombre }}
                                     <mat-icon *ngIf="!item.bTieneRostro" class="colorOrange pcl-icono-inline"
-                                        matTooltip="Sin rostro registrado — no puede checar en TimeCard">face_retouching_off</mat-icon>
+                                        matTooltip="Sin Face ID registrado — no puede checar en TimeCard">face_retouching_off</mat-icon>
                                 </span>
                                 <span class="pcl-secundario">{{ item.telefono || 'Sin teléfono' }}</span>
                             </div>
@@ -168,7 +168,7 @@
                     <span class="pcl-principal">
                         {{ item.nombre }}
                         <mat-icon *ngIf="!item.bTieneRostro" class="colorOrange pcl-icono-inline"
-                            matTooltip="Sin rostro registrado — no puede checar en TimeCard">face_retouching_off</mat-icon>
+                            matTooltip="Sin Face ID registrado — no puede checar en TimeCard">face_retouching_off</mat-icon>
                     </span>
                     <span class="pcl-secundario">#{{ item.id }} · {{ item.userName }}</span>
                 </div>

@@ -1,0 +1,32 @@
+<div class="fim-container">
+
+    <p class="fim-hint" *ngIf="!idPersona">Guarda primero el registro para poder configurar el Face ID.</p>
+
+    <ng-container *ngIf="idPersona">
+
+        <div class="fim-status">
+            <mat-icon [class.colorGreen]="bTieneFaceId" [class.colorOrange]="!bTieneFaceId">
+                {{ bTieneFaceId ? 'verified_user' : 'face_retouching_off' }}
+            </mat-icon>
+            <span>{{ bTieneFaceId ? 'Face ID registrado' : 'Sin Face ID registrado' }}</span>
+        </div>
+
+        <div class="fim-actions" *ngIf="!bSoloLectura">
+            <button mat-stroked-button type="button" [disabled]="bCargando" (click)="fn_crearActualizar()">
+                <mat-icon matPrefix class="my-icon">face</mat-icon>
+                {{ bTieneFaceId ? 'Actualizar Face ID' : 'Crear Face ID' }}
+            </button>
+            <button mat-stroked-button color="warn" type="button" *ngIf="bTieneFaceId"
+                [disabled]="bCargando" (click)="fn_eliminar()">
+                <mat-icon matPrefix class="my-icon">face_retouching_off</mat-icon>
+                Eliminar Face ID
+            </button>
+        </div>
+
+        <p class="fim-hint" *ngIf="bTieneFaceId && !bSoloLectura">
+            Recomendación: actualiza el Face ID cada año.
+        </p>
+
+    </ng-container>
+
+</div>

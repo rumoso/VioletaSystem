@@ -4,7 +4,7 @@
         <div class="fv-header-title">
             <mat-icon class="fv-header-icon">face</mat-icon>
             <span>
-                {{ modo === 'ENROLAR' ? 'Registrar rostro de referencia'
+                {{ modo === 'ENROLAR' ? 'Registrar Face ID'
                     : modo === 'VERIFICAR' ? 'Verificar identidad'
                     : 'Identificar persona' }}
             </span>
@@ -37,7 +37,7 @@
         <!-- Sin foto de referencia enrolada (modo VERIFICAR) -->
         <div class="fv-estado" *ngIf="bSinReferencia">
             <mat-icon class="fv-estado-icon warn">person_off</mat-icon>
-            <p>Esta persona no tiene un rostro de referencia registrado — no se puede verificar.</p>
+            <p>Esta persona no tiene un Face ID registrado — no se puede verificar.</p>
         </div>
 
         <!-- Cargando modelos / cámara -->

@@ -505,7 +505,7 @@ export class FaceVerificationComponent implements OnDestroy {
         }
       },
       error: () => {
-        this.servicesGServ.showSnakbar('Error al guardar el rostro de referencia');
+        this.servicesGServ.showSnakbar('Error al guardar el Face ID');
         this.bShowSpinner = false;
         this.bCapturing = false;
       }

@@ -12,7 +12,6 @@ import { UsersService } from 'src/app/protected/services/users.service';
 import { TimecardService } from 'src/app/protected/services/timecard.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { NominaHistorialEmpleadoComponent } from '../nomina-historial-empleado/nomina-historial-empleado.component';
-import { FaceVerificationComponent } from '../../../security/mdl/face-verification/face-verification.component';
 
 const DIAS_SEMANA = [
   { diaSemana: 1, nombre: 'Lunes' },
@@ -78,9 +77,8 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
   nuevoMontoControl: FormControl = new FormControl('');
   conceptoEditando: any = null;
 
-  // TimeCard (analisis/011, T16): horario propio opcional y rostro
-  // enrolado — ninguno bloquea guardar los datos del empleado.
-  bTieneRostro: boolean = false;
+  // TimeCard (analisis/011, T16): horario propio opcional y Face ID
+  // — ninguno bloquea guardar los datos del empleado.
   horarioDias: any[] = DIAS_SEMANA.map(d => ({ ...d, bTrabaja: false, horaEntrada: '09:00', horaSalida: '18:00' }));
   bShowSpinnerHorario: boolean = false;
   bGuardandoHorario: boolean = false;
@@ -193,7 +191,6 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
             });
             this.bActivo = !!resp.data.active;
             this.fechaBajaDesc = resp.data.fechaBaja || '';
-            this.bTieneRostro = !!resp.data.bTieneRostro;
             this.usuarioSeleccionado = {
               id: resp.data.idUser,
               nombre: resp.data.userNombre,
@@ -473,29 +470,6 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
           this.bannerHorario = { tipo: 'error', mensaje: 'Problemas con el servicio.' };
         }
       });
-
-  }
-
-  fn_enrolarRostro() {
-
-    if (!this.usuarioSeleccionado) {
-      return;
-    }
-
-    this.servicesGServ.showModalWithParams(FaceVerificationComponent, {
-      modo: 'ENROLAR',
-      tipoPersona: 'USUARIO',
-      idPersona: this.usuarioSeleccionado.id,
-      nombrePersona: this.myForm.value.nombre
-    }, '480px')
-    .afterClosed().subscribe({
-      next: (resp: any) => {
-        if (resp?.ok) {
-          this.bTieneRostro = true;
-          this.servicesGServ.showSnakbar('Rostro enrolado con éxito.');
-        }
-      }
-    });
 
   }
 

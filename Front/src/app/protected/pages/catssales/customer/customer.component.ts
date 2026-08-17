@@ -7,10 +7,8 @@ import { switchMap } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { CustomersService } from 'src/app/protected/services/customers.service';
-import { FaceReferenceService } from 'src/app/protected/services/face-reference.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { environment } from 'src/environments/environment';
-import { FaceVerificationComponent } from 'src/app/protected/pages/security/mdl/face-verification/face-verification.component';
 
 @Component({
   selector: 'app-customer',
@@ -44,10 +42,7 @@ export class CustomerComponent implements OnInit {
     , @Inject(MAT_DATE_LOCALE) private _locale: string
 
     , private authServ: AuthService
-    , private faceReferenceServ: FaceReferenceService
     ) { }
-
-    bTieneRostro: boolean = false;
 
     customerForm: any = {
       idCustomer: 0,
@@ -92,8 +87,6 @@ export class CustomerComponent implements OnInit {
                };
 
                this.name = this.event_getDescCustomer();
-
-               this.fn_checkFaceReference();
 
              }else{
               this.servicesGServ.showSnakbar(resp.message);
@@ -161,65 +154,6 @@ public inputFocus(idInput: any) {
 
     changeRoute( route: string ): void {
       this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
-    }
-
-    fn_checkFaceReference() {
-      this.faceReferenceServ.CGetFaceReference( 'CLIENTE', this.id )
-      .subscribe({
-        next: (resp: any) => {
-          this.bTieneRostro = resp.status === 0 && !!resp.data;
-        },
-        error: () => {}
-      });
-    }
-
-    fn_openFaceEnrollment() {
-      this.servicesGServ.showModalWithParams( FaceVerificationComponent, {
-        modo: 'ENROLAR',
-        tipoPersona: 'CLIENTE',
-        idPersona: this.id,
-        nombrePersona: this.name
-      }, '480px')
-      .afterClosed().subscribe({
-        next: ( resp: any ) => {
-          if( resp?.ok ){
-            this.bTieneRostro = true;
-          }
-        }
-      });
-    }
-
-    fn_removeFaceReference() {
-
-      this.servicesGServ.showDialog('¿Estás seguro?'
-        , 'Está a punto de eliminar el rostro de referencia de este cliente. Ya no podrá usarlo para identificarlo por rostro.'
-        , '¿Desea continuar?'
-        , 'Si', 'No')
-      .afterClosed().subscribe({
-        next: ( resp: any ) => {
-          if( resp ){
-
-            this.bShowSpinner = true;
-
-            this.faceReferenceServ.CDeleteFaceReference( 'CLIENTE', this.id )
-            .subscribe({
-              next: (resp2: any) => {
-                this.servicesGServ.showSnakbar( resp2.message );
-                this.bShowSpinner = false;
-                if( resp2.status === 0 ){
-                  this.bTieneRostro = false;
-                }
-              },
-              error: () => {
-                this.servicesGServ.showSnakbar( "Problemas con el servicio" );
-                this.bShowSpinner = false;
-              }
-            });
-
-          }
-        }
-      });
-
     }
 
     fn_saveCustomer() {
