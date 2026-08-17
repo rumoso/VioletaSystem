@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
@@ -13,6 +13,7 @@ import { ProductsService } from 'src/app/protected/services/products.service';
 import { QualityService } from 'src/app/protected/services/quality.service';
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { InventarylogComponent } from '../mdl/inventarylog/inventarylog.component';
 import { ProductComponent } from '../product/product.component';
@@ -22,7 +23,7 @@ import { ProductComponent } from '../product/product.component';
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css']
 })
-export class ProductListComponent implements OnInit {
+export class ProductListComponent implements OnInit, OnDestroy {
 
   private _appMain: string = environment.appMain;
 
@@ -44,7 +45,12 @@ export class ProductListComponent implements OnInit {
     , private sucursalesServ: SucursalesService
 
     , private authServ: AuthService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
@@ -53,6 +59,8 @@ export class ProductListComponent implements OnInit {
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
+
+      this.pageTitleServ.set('inventory_2', 'Productos', 'Catálogo de productos y precios');
 
       this.fn_getProductsListWithPage();
     }

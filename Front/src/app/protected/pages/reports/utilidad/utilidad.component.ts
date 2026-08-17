@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
@@ -16,6 +16,7 @@ import { RepUtilidadesService } from 'src/app/protected/services/rep-utilidades.
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -23,7 +24,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './utilidad.component.html',
   styleUrls: ['./utilidad.component.css']
 })
-export class UtilidadComponent {
+export class UtilidadComponent implements OnInit, OnDestroy {
   
   private _appMain: string = environment.appMain;
 
@@ -44,12 +45,18 @@ export class UtilidadComponent {
     , private authServ: AuthService
     , private userServ: UsersService
     , private repUtilidadesServ: RepUtilidadesService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
       this.idUserLogON = await this.authServ.getIdUserSession();
+      this.pageTitleServ.set('trending_up', 'Utilidad', 'Reporte de utilidad y comisiones por venta');
 
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);

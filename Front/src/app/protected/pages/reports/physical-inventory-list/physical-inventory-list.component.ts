@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
@@ -12,6 +12,7 @@ import { ProductsService } from 'src/app/protected/services/products.service';
 import { QualityService } from 'src/app/protected/services/quality.service';
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { PhysicalInventoryComponent } from '../physical-inventory/physical-inventory.component';
@@ -22,7 +23,7 @@ import { PhysicalInventoryAuditComponent } from '../physical-inventory-audit/phy
   templateUrl: './physical-inventory-list.component.html',
   styleUrls: ['./physical-inventory-list.component.css']
 })
-export class PhysicalInventoryListComponent {
+export class PhysicalInventoryListComponent implements OnInit, OnDestroy {
 
   private _appMain: string = environment.appMain;
   public _idSucursal: number = environment.idSucursal;
@@ -80,12 +81,18 @@ export class PhysicalInventoryListComponent {
     , private sucursalesServ: SucursalesService
 
     , private authServ: AuthService
+    , private pageTitleServ: PageTitleService
     ) { }
+
+    ngOnDestroy(): void {
+      this.pageTitleServ.clear();
+    }
 
     async ngOnInit() {
 
       this.authServ.checkSession();
       this.idUserLogON = await this.authServ.getIdUserSession();
+      this.pageTitleServ.set('fact_check', 'Inventario Físico', 'Conteos físicos y sus diferencias');
 
       this.showCostPrice = this.authServ.hasPermissionAction('invF_showCostPrice');
       this.bCanDelete = this.authServ.hasPermissionAction('inv_Delete');

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
@@ -7,6 +7,7 @@ import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { ResponseDB_CRUD } from 'src/app/protected/interfaces/global.interfaces';
 import { CustomersService } from 'src/app/protected/services/customers.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { CustomerComponent } from '../customer/customer.component';
 import { ElectronicMoneyMDLComponent } from '../mdl/electronic-money-mdl/electronic-money-mdl.component';
@@ -16,8 +17,8 @@ import { ElectronicMoneyMDLComponent } from '../mdl/electronic-money-mdl/electro
   templateUrl: './customer-list.component.html',
   styleUrls: ['./customer-list.component.css']
 })
-export class CustomerListComponent implements OnInit {
-  
+export class CustomerListComponent implements OnInit, OnDestroy {
+
   private _appMain: string = environment.appMain;
 
   constructor(
@@ -30,8 +31,12 @@ export class CustomerListComponent implements OnInit {
     , private authServ: AuthService
 
     , private customersServ: CustomersService
+    , private pageTitleServ: PageTitleService
     ) { }
-    
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   ngOnInit(): void {
 
@@ -39,6 +44,8 @@ export class CustomerListComponent implements OnInit {
 
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
+
+    this.pageTitleServ.set('people', 'Clientes', 'Catálogo de clientes y dinero electrónico');
 
     this.fn_getCustomersListWithPage();
   }

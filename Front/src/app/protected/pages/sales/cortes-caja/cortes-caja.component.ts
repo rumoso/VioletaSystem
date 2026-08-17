@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
@@ -7,6 +7,7 @@ import { CajasService } from 'src/app/protected/services/cajas.service';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { SalesService } from 'src/app/protected/services/sales.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { SelectPrintComponent } from '../mdl/select-print/select-print.component';
 import { PrintersService } from 'src/app/protected/services/printers.service';
@@ -18,7 +19,7 @@ import { CortecajadetailComponent } from '../mdl/cortecajadetail/cortecajadetail
   templateUrl: './cortes-caja.component.html',
   styleUrls: ['./cortes-caja.component.css']
 })
-export class CortesCajaComponent {
+export class CortesCajaComponent implements OnInit, OnDestroy {
   //////////////////////////////////////////////////////////////////////////////////////////////////
 // SECCIÓN DE VARIABLES
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,13 +81,20 @@ private servicesGServ: ServicesGService
 , private cajasServ: CajasService
 , private printTicketServ: PrintTicketService
 , private printersServ: PrintersService
+, private pageTitleServ: PageTitleService
 
 ) { }
+
+ngOnDestroy(): void {
+  this.pageTitleServ.clear();
+}
 
 async ngOnInit() {
 
   this.authServ.checkSession();
   this.idUserLogON = await this.authServ.getIdUserSession();
+
+  this.pageTitleServ.set('point_of_sale', 'Cortes de Caja', 'Historial de cortes por caja y sucursal');
 
   this._locale = 'mx';
   this._adapter.setLocale(this._locale);

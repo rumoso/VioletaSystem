@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { Subject, debounceTime } from 'rxjs';
@@ -8,6 +8,7 @@ import { Pagination, ResponseDB_CRUD, ResponseGet } from 'src/app/protected/inte
 import { ComisionesService } from 'src/app/protected/services/comisiones.service';
 import { UsersService } from 'src/app/protected/services/users.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
+import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { environment } from 'src/environments/environment';
 import { ComisionComponent } from '../comision/comision.component';
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
@@ -18,7 +19,7 @@ import { GenComisionComponent } from '../gen-comision/gen-comision.component';
   templateUrl: './comisiones.component.html',
   styleUrls: ['./comisiones.component.css']
 })
-export class ComisionesComponent {
+export class ComisionesComponent implements OnInit, OnDestroy {
 
   private _appMain: string = environment.appMain;
   public _idSucursal: number = environment.idSucursal;
@@ -75,11 +76,17 @@ export class ComisionesComponent {
 
     , private comisionesServ: ComisionesService
     , private userServ: UsersService
+    , private pageTitleServ: PageTitleService
   ) { }
+
+  ngOnDestroy(): void {
+    this.pageTitleServ.clear();
+  }
 
   async ngOnInit() {
 
     this.authServ.checkSession();
+    this.pageTitleServ.set('paid', 'Comisiones', 'Generación manual de comisiones de venta');
     this.idUserLogON = await this.authServ.getIdUserSession();
 
     this._locale = 'mx';
