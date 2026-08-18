@@ -278,6 +278,13 @@ const generarNomina = async(req, res = response) => {
     }
 };
 
+// Listado de recibos por empleado (analisis/012 — a pedido de Rubén,
+// "no agrupados"): un renglón por empleado/corrida, no uno por corrida.
+// Cada renglón trae su propia referencia a la nómina (idNomina,
+// periodo, estatus) para poder abrir su recibo o excluirlo, y para
+// pagar/cancelar/eliminar la corrida completa YA DESDE ese recibo
+// (NominaReciboComponent en el Front trae esas acciones — no se pierde
+// nada del flujo por lote al aplanar la vista).
 const getNominasList = async(req, res = response) => {
 
     const {
@@ -287,34 +294,32 @@ const getNominasList = async(req, res = response) => {
         , pageIndex = 0
     } = req.body;
 
-    // Filtro opcional por empleados: corridas que incluyan a
-    // cualquiera de los elegidos (combobox de búsqueda bajo demanda).
     const bFiltrarEmpleados = Array.isArray(idsEmpleados) && idsEmpleados.length > 0;
-    const sJoinEmpleados = bFiltrarEmpleados
-        ? `INNER JOIN ( SELECT DISTINCT idNomina FROM nomina_recibos WHERE idEmpleado IN (:idsEmpleados) ) AS RF ON RF.idNomina = N.idNomina`
-        : '';
+    const sFiltroEmpleados = bFiltrarEmpleados ? `AND R.idEmpleado IN (:idsEmpleados)` : '';
 
     try{
 
         const [countRow] = await dbConnection.query(
-            `SELECT COUNT(*) AS iRows FROM nomina AS N
-             ${ sJoinEmpleados }
-             WHERE ( :estatus = '' OR N.estatus = :estatus )`,
+            `SELECT COUNT(*) AS iRows
+             FROM nomina_recibos AS R
+             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+             WHERE ( :estatus = '' OR N.estatus = :estatus )
+             ${ sFiltroEmpleados }`,
             { replacements: { estatus, idsEmpleados }, type: dbConnection.QueryTypes.SELECT }
         );
 
         const rows = await dbConnection.query(
             `SELECT
-                N.idNomina AS id, N.fechaInicio, N.fechaFin, N.estatus,
+                R.idNominaRecibo AS id, R.idEmpleado, R.nombreEmpleado,
+                R.totalPercepciones, R.totalDeducciones, R.neto,
+                N.idNomina, N.fechaInicio, N.fechaFin, N.estatus,
                 DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
-                DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
-                N.totalPercepciones, N.totalDeducciones, N.totalNeto,
-                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina ) AS iEmpleados,
-                ( SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = N.idNomina LIMIT 1 ) AS idNominaReciboUnico
-             FROM nomina AS N
-             ${ sJoinEmpleados }
+                DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc
+             FROM nomina_recibos AS R
+             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
              WHERE ( :estatus = '' OR N.estatus = :estatus )
-             ORDER BY N.idNomina DESC
+             ${ sFiltroEmpleados }
+             ORDER BY N.idNomina DESC, R.nombreEmpleado ASC
              LIMIT :offset, :limit`,
             { replacements: { estatus, idsEmpleados, offset: Number(pageIndex) * Number(pageSize), limit: Number(pageSize) }, type: dbConnection.QueryTypes.SELECT }
         );

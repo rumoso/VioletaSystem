@@ -9,12 +9,12 @@ import { NominaService } from 'src/app/protected/services/nomina.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
 import { NominaGenerarComponent } from '../mdl/nomina-generar/nomina-generar.component';
-import { NominaDetalleComponent } from '../mdl/nomina-detalle/nomina-detalle.component';
 import { NominaReciboComponent } from '../mdl/nomina-recibo/nomina-recibo.component';
 
-// Lista de corridas de nómina (analisis/007) — patrón maestro-detalle:
-// esta pantalla es el maestro, el detalle de cada corrida se abre en
-// modal (NominaDetalleComponent).
+// Lista de nómina (analisis/007): un renglón por recibo de empleado,
+// SIN agrupar por corrida — cada renglón abre su recibo directo
+// (NominaReciboComponent), que ya trae Pagar/Cancelar/Eliminar de la
+// corrida completa a la que pertenece.
 
 @Component({
   selector: 'app-nomina-list',
@@ -73,8 +73,8 @@ export class NominaListComponent implements OnInit, OnDestroy {
     return this.authServ.hasPermissionAction('nomina_Generar');
   }
 
-  get bPuedeEliminar(): boolean {
-    return this.authServ.hasPermissionAction('nomina_Eliminar');
+  get bPuedeExcluir(): boolean {
+    return this.authServ.hasPermissionAction('nomina_Generar');
   }
 
   private fn_buscarEmpleados( search: string ) {
@@ -141,8 +141,10 @@ export class NominaListComponent implements OnInit, OnDestroy {
     .afterClosed().subscribe({
       next: (idNueva: any) => {
         if (idNueva) {
+          // Sin abrir ningún modal: los recibos de la corrida nueva ya
+          // aparecen directo en el listado (renglón por empleado, sin
+          // agrupar) al refrescar.
           this.fn_getList();
-          this.fn_abrirDetalle({ id: idNueva });
         }
       }
     });
@@ -157,42 +159,34 @@ export class NominaListComponent implements OnInit, OnDestroy {
     return 'Todas las comisiones pendientes';
   }
 
-  // Con un solo empleado en la corrida, el paso intermedio de
-  // nomina-detalle no aporta nada — se abre el recibo directo (que ya
-  // trae sus propias acciones de Pagar/Cancelar/Eliminar).
-  fn_abrirDetalle( item: any ) {
+  // Cada renglón ya ES un recibo — se abre directo. Ese modal trae sus
+  // propias acciones de Pagar/Cancelar/Eliminar de la corrida completa
+  // (nomina-recibo.component), así que aplanar la lista no le quita
+  // nada al flujo por lote.
+  fn_abrirRecibo( item: any ) {
 
-    if (item.iEmpleados === 1 && item.idNominaReciboUnico) {
-      this.servicesGServ.showModalWithParams(NominaReciboComponent, { idNominaRecibo: item.idNominaReciboUnico }, '620px')
-      .afterClosed().subscribe({
-        next: () => { this.fn_getList(); }
-      });
-      return;
-    }
-
-    this.servicesGServ.showModalWithParams(NominaDetalleComponent, { id: item.id }, '900px')
+    this.servicesGServ.showModalWithParams(NominaReciboComponent, { idNominaRecibo: item.id }, '620px')
     .afterClosed().subscribe({
-      next: (huboCambios: any) => {
-        if (huboCambios) {
-          this.fn_getList();
-        }
-      }
+      next: () => { this.fn_getList(); }
     });
+
   }
 
-  // Eliminación física (permiso especial nomina_Eliminar, solo
-  // BORRADOR) directamente desde el listado, sin entrar al detalle.
-  fn_eliminar( item: any ) {
+  // Excluye solo a este empleado de su corrida (permiso nomina_Generar,
+  // solo BORRADOR) — para borrar la corrida completa, esa acción vive
+  // en el recibo (fn_abrirRecibo), donde el contexto de "a quiénes
+  // afecta" es claro.
+  fn_excluir( item: any ) {
 
     this.servicesGServ.showDialog('¿Estás seguro?'
-      , `Está a punto de ELIMINAR POR COMPLETO la nómina "${ this.fn_periodoDesc(item) }". Esta acción no se puede deshacer.`
+      , `Está a punto de excluir a "${ item.nombreEmpleado }" de esta nómina`
       , '¿Desea continuar?'
       , 'Si', 'No')
     .afterClosed().subscribe({
       next: (resp) => {
         if (resp) {
           this.bShowSpinner = true;
-          this.nominaServ.CDelete(item.id)
+          this.nominaServ.CExcluirRecibo(item.id)
             .subscribe({
               next: (resp2: any) => {
                 this.servicesGServ.showSnakbar(resp2.message);

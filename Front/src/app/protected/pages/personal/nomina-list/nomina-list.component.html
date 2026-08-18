@@ -68,8 +68,8 @@
         <table class="pcl-tabla">
             <thead>
                 <tr>
+                    <th class="textAlingLeft">Empleado</th>
                     <th class="textAlingLeft">Periodo</th>
-                    <th class="textAlingCenter">Empleados</th>
                     <th class="textAlingRight">Percepciones</th>
                     <th class="textAlingRight">Deducciones</th>
                     <th class="textAlingRight">Neto</th>
@@ -78,14 +78,16 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let item of catlist" class="nl-row" (click)="fn_abrirDetalle(item)">
+                <tr *ngFor="let item of catlist" class="nl-row" (click)="fn_abrirRecibo(item)">
                     <td>
-                        <span class="pcl-principal">{{ fn_periodoDesc(item) }}</span>
+                        <span class="pcl-principal">{{ item.nombreEmpleado }}</span>
                     </td>
-                    <td class="textAlingCenter">{{ item.iEmpleados }}</td>
+                    <td>
+                        <span class="pcl-secundario">{{ fn_periodoDesc(item) }}</span>
+                    </td>
                     <td class="textAlingRight">{{ item.totalPercepciones | currency }}</td>
                     <td class="textAlingRight">{{ item.totalDeducciones | currency }}</td>
-                    <td class="textAlingRight" [class.nl-neto-negativo]="item.totalNeto < 0">{{ item.totalNeto | currency }}</td>
+                    <td class="textAlingRight" [class.nl-neto-negativo]="item.neto < 0">{{ item.neto | currency }}</td>
                     <td class="textAlingCenter">
                         <span class="pcl-chip"
                             [class.pcl-chip-activo]="item.estatus === 'PAGADA'"
@@ -95,14 +97,14 @@
                         </span>
                     </td>
                     <td class="textAlingCenter">
-                        <button mat-icon-button matTooltip="Ver detalle" (click)="$event.stopPropagation(); fn_abrirDetalle(item)">
-                            <mat-icon class="colorGreen">visibility</mat-icon>
+                        <button mat-icon-button matTooltip="Ver recibo" (click)="$event.stopPropagation(); fn_abrirRecibo(item)">
+                            <mat-icon class="colorGreen">receipt_long</mat-icon>
                         </button>
                         <button mat-icon-button
-                        *ngIf="item.estatus !== 'PAGADA' && bPuedeEliminar"
-                        matTooltip="Eliminar nómina"
-                        (click)="$event.stopPropagation(); fn_eliminar(item)">
-                            <mat-icon class="colorRed">delete_forever</mat-icon>
+                        *ngIf="item.estatus === 'BORRADOR' && bPuedeExcluir"
+                        matTooltip="Excluir de la nómina"
+                        (click)="$event.stopPropagation(); fn_excluir(item)">
+                            <mat-icon class="colorRed">person_remove</mat-icon>
                         </button>
                     </td>
                 </tr>
