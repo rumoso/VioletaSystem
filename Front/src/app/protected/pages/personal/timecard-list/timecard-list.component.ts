@@ -8,21 +8,23 @@ import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { TimecardService } from 'src/app/protected/services/timecard.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
-import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
-import { TimecardMarcajeManualComponent } from '../mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
 import { HorarioSucursalComponent } from '../mdl/horario-sucursal/horario-sucursal.component';
+import { TimecardSemanaDetalleComponent } from '../mdl/timecard-semana-detalle/timecard-semana-detalle.component';
+import {
+  RangoSemana,
+  ResumenSemanalItem,
+  fn_semanaDeFecha,
+  fn_rangoConsulta,
+  fn_rangoCorto,
+  fn_horasColumna,
+  fn_horasColor,
+  fn_chipsEstatus
+} from './semana.util';
 
-// Consulta de asistencia (analisis/011, T14): por empleado y rango de
-// fechas, jornadas vs horario esperado y detalle de marcajes.
-
-const ETIQUETAS_TIPO: { [key: string]: string } = {
-  ENTRADA_JORNADA: 'Entrada',
-  SALIDA_COMIDA: 'Salida a comer',
-  ENTRADA_COMIDA: 'Entrada de comer',
-  SALIDA_PERMISO: 'Salida por permiso',
-  ENTRADA_PERMISO: 'Entrada de permiso',
-  SALIDA_JORNADA: 'Salida'
-};
+// Reporte de asistencia agrupado por semana (analisis/012): reemplaza
+// el flujo anterior de "primero elige un empleado" — abre en la semana
+// actual con todos los empleados, y el filtro de empleado queda como
+// opcional. El detalle día por día vive en TimecardSemanaDetalleComponent.
 
 @Component({
   selector: 'app-timecard-list',
@@ -31,19 +33,19 @@ const ETIQUETAS_TIPO: { [key: string]: string } = {
 })
 export class TimecardListComponent implements OnInit, OnDestroy {
 
-  etiquetas = ETIQUETAS_TIPO;
-
   bShowSpinner: boolean = false;
 
   empleadoSearchControl: FormControl = new FormControl('');
   empleadosEncontrados: any[] = [];
   bBuscandoEmpleados: boolean = false;
-  empleadoSeleccionado: any = null;
+  empleadoFiltro: any = null;
 
-  startDate: string = '';
-  endDate: string = '';
+  bSoloNovedades: boolean = false;
 
-  resultado: { nombreEmpleado: string, dias: any[], totales: any, marcajes: any[] } | null = null;
+  semanaSeleccionada: RangoSemana = fn_semanaDeFecha(new Date());
+  bSemanaRecienIniciada: boolean = false;
+
+  resumen: ResumenSemanalItem[] = [];
 
   constructor(
     private authServ: AuthService
@@ -52,13 +54,6 @@ export class TimecardListComponent implements OnInit, OnDestroy {
     , private empleadosServ: EmpleadosService
     , private pageTitleServ: PageTitleService
     ) {
-
-      const hoy = new Date();
-      const hace7 = new Date();
-      hace7.setDate(hoy.getDate() - 7);
-
-      this.endDate = hoy.toISOString().substring(0, 10);
-      this.startDate = hace7.toISOString().substring(0, 10);
 
       this.empleadoSearchControl.valueChanges
         .pipe(debounceTime(500))
@@ -75,6 +70,7 @@ export class TimecardListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.authServ.checkSession();
     this.pageTitleServ.set('schedule', 'Asistencia (TimeCard)', 'Horas trabajadas, retardos y faltas por empleado');
+    this.fn_cargar();
   }
 
   ngOnDestroy(): void {
@@ -89,8 +85,24 @@ export class TimecardListComponent implements OnInit, OnDestroy {
     return this.authServ.hasPermissionAction('timecard_AdministrarHorarios');
   }
 
+  get resumenFiltrado(): ResumenSemanalItem[] {
+    if (!this.bSoloNovedades) {
+      return this.resumen;
+    }
+    return this.resumen.filter(item => item.iFaltas > 0 || item.iRetardos > 0 || item.iIncompletas > 0 || item.bSinHorario);
+  }
+
+  get rangoSemanaDesc(): string {
+    return fn_rangoCorto(this.semanaSeleccionada);
+  }
+
   fn_abrirHorarioSucursal() {
     this.servicesGServ.showModalWithParams(HorarioSucursalComponent, {}, '480px');
+  }
+
+  fn_seleccionarSemana( semana: RangoSemana ) {
+    this.semanaSeleccionada = semana;
+    this.fn_cargar();
   }
 
   private fn_buscarEmpleados( search: string ) {
@@ -110,24 +122,37 @@ export class TimecardListComponent implements OnInit, OnDestroy {
   }
 
   fn_elegirEmpleado( empleado: any ) {
-    this.empleadoSeleccionado = empleado;
+    this.empleadoFiltro = empleado;
     this.empleadoSearchControl.setValue(empleado.nombre, { emitEvent: false });
     this.empleadosEncontrados = [];
-    this.fn_buscar();
+    this.fn_cargar();
   }
 
-  fn_buscar() {
+  fn_limpiarEmpleado() {
+    this.empleadoFiltro = null;
+    this.empleadoSearchControl.setValue('', { emitEvent: false });
+    this.fn_cargar();
+  }
 
-    if (!this.empleadoSeleccionado || !this.startDate || !this.endDate) {
+  fn_cargar() {
+
+    const rango = fn_rangoConsulta(this.semanaSeleccionada);
+
+    if (!rango) {
+      // Semana futura (no seleccionable desde el timeline) o recién
+      // iniciada (hoy es sábado, todavía no hay ningún día cerrado).
+      this.bSemanaRecienIniciada = true;
+      this.resumen = [];
       return;
     }
 
+    this.bSemanaRecienIniciada = false;
     this.bShowSpinner = true;
 
-    this.timecardServ.CGetAsistenciaList(this.empleadoSeleccionado.id, this.startDate, this.endDate)
+    this.timecardServ.CGetAsistenciaSemanal(rango.startDate, rango.endDate, this.empleadoFiltro?.id || null)
       .subscribe({
         next: (resp: ResponseGet) => {
-          this.resultado = resp.status === 0 ? resp.data : null;
+          this.resumen = resp.status === 0 ? (resp.data || []) : [];
           this.bShowSpinner = false;
         },
         error: (ex: HttpErrorResponse) => {
@@ -139,60 +164,48 @@ export class TimecardListComponent implements OnInit, OnDestroy {
 
   }
 
-  fn_estatusDesc( dia: any ): string {
-    if (dia.bSinMarcar) { return dia.bDescanso ? 'Descanso' : 'Sin marcar'; }
-    if (dia.estatus === 'INCLUIDA_EN_NOMINA') { return `Pagada (nómina #${ dia.idNomina })`; }
-    if (dia.estatus === 'CANCELADA') { return 'Cancelada'; }
+  fn_horasColumna( item: ResumenSemanalItem ): string {
+    return fn_horasColumna(item);
+  }
+
+  fn_horasColor( item: ResumenSemanalItem ): string {
+    return fn_horasColor(item);
+  }
+
+  fn_chips( item: ResumenSemanalItem ) {
+    return fn_chipsEstatus(item);
+  }
+
+  fn_pagoDesc( item: ResumenSemanalItem ): string {
+    if (item.bPagada) {
+      return `Pagada (nómina #${ item.idNomina })`;
+    }
+    if (item.bEnNominaBorrador) {
+      return `En nómina #${ item.idNominaBorrador } (borrador)`;
+    }
     return 'Pendiente';
   }
 
-  fn_capturarMarcaje() {
-
-    if (!this.empleadoSeleccionado) {
-      return;
-    }
-
-    this.fn_autorizarYAbrirModal({});
-
+  fn_verDetalle( item: ResumenSemanalItem ) {
+    this.fn_abrirDetalle(item, false);
   }
 
-  fn_corregirMarcaje( marcaje: any ) {
-
-    this.fn_autorizarYAbrirModal({
-      idMarcajeCorrige: marcaje.id,
-      tipo: marcaje.tipo,
-      fechaHora: marcaje.fechaHora
-    });
-
+  fn_editarDetalle( item: ResumenSemanalItem ) {
+    this.fn_abrirDetalle(item, true);
   }
 
-  private fn_autorizarYAbrirModal( extra: any ) {
+  private fn_abrirDetalle( item: ResumenSemanalItem, bModoEdicion: boolean ) {
 
-    this.servicesGServ.showModalWithParams(ActionAuthorizationComponent, {
-      actionName: 'timecard_CapturarManual'
-      , bShowAlert: false
-    }, '400px')
+    this.servicesGServ.showModalWithParams(TimecardSemanaDetalleComponent, {
+      resumenItem: item,
+      semana: this.semanaSeleccionada,
+      bModoEdicion
+    }, '700px')
     .afterClosed().subscribe({
-      next: (auth_idUser: any) => {
-
-        if (!auth_idUser) {
-          return;
+      next: (huboCambios: any) => {
+        if (huboCambios) {
+          this.fn_cargar();
         }
-
-        this.servicesGServ.showModalWithParams(TimecardMarcajeManualComponent, {
-          idEmpleado: this.empleadoSeleccionado.id,
-          nombreEmpleado: this.empleadoSeleccionado.nombre,
-          auth_idUser,
-          ...extra
-        }, '440px')
-        .afterClosed().subscribe({
-          next: (huboCambios: any) => {
-            if (huboCambios) {
-              this.fn_buscar();
-            }
-          }
-        });
-
       }
     });
 

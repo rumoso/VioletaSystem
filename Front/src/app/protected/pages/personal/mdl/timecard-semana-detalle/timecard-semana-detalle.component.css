@@ -1,0 +1,178 @@
+.tsd-modal {
+  min-width: 480px;
+}
+
+/* ══ Encabezado del empleado/semana ══ */
+.tsd-resumen {
+  padding-bottom: 14px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tsd-resumen-linea1 {
+  font-size: 13px;
+  color: #616161;
+}
+
+.tsd-puesto {
+  font-weight: 500;
+}
+
+.tsd-separador {
+  margin: 0 6px;
+  color: #bdbdbd;
+}
+
+.tsd-semana {
+  font-weight: 600;
+  color: #283593;
+}
+
+.tsd-resumen-linea2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tsd-horas-grande {
+  font-size: 16px;
+  padding: 5px 14px;
+}
+
+.tsd-pago {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #757575;
+}
+
+.tsd-pago mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.tsd-pago--pagada { color: #2e7d32; }
+.tsd-pago--borrador { color: #ef6c00; }
+
+/* ══ Días ══ */
+.tsd-dias {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tsd-dia {
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.tsd-dia--futuro {
+  opacity: .55;
+}
+
+.tsd-dia-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed #e8e8e8;
+}
+
+.tsd-dia-titulo {
+  font-weight: 700;
+  font-size: 14px;
+  color: #212121;
+  text-transform: capitalize;
+}
+
+.tsd-dia-horas {
+  font-size: 12.5px;
+  color: #757575;
+}
+
+.tsd-btn-capturar {
+  margin-left: auto;
+  color: #283593;
+}
+
+/* ══ Operaciones ══ */
+.tsd-operaciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tsd-operacion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.tsd-operacion-icono {
+  color: #9e9e9e;
+  margin-top: 2px;
+}
+
+.tsd-operacion--incompleta .tsd-operacion-icono {
+  color: #c62828;
+}
+
+.tsd-operacion-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tsd-operacion-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #212121;
+}
+
+.tsd-operacion-horas {
+  font-size: 13px;
+  color: #424242;
+  font-variant-numeric: tabular-nums;
+}
+
+.tsd-operacion-duracion {
+  color: #9e9e9e;
+  margin-left: 4px;
+}
+
+.tsd-operacion-descontado {
+  font-size: 11px;
+  color: #9e9e9e;
+  font-style: italic;
+}
+
+.tsd-operacion-falta-pareja {
+  font-size: 11.5px;
+  color: #c62828;
+  font-weight: 500;
+}
+
+.tsd-operacion-acciones {
+  display: flex;
+  gap: 0;
+}
+
+.tsd-dia-sin-operaciones {
+  font-size: 12.5px;
+  color: #9e9e9e;
+  font-style: italic;
+  margin: 4px 0 0;
+}

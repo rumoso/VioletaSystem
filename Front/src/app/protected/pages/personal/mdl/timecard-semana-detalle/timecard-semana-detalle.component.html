@@ -1,0 +1,111 @@
+<div class="pcm-modal tsd-modal">
+
+    <div mat-dialog-title class="pcm-header">
+        <span class="pcm-titulo">{{ resumenItem.nombre }}</span>
+        <button mat-icon-button (click)="fn_close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="pcm-content">
+
+        <!-- ═══ Encabezado: resumen de la semana (mismo dato del listado) ═══ -->
+        <div class="tsd-resumen">
+
+            <div class="tsd-resumen-linea1">
+                <span class="tsd-puesto">{{ resumenItem.puesto || '—' }}</span>
+                <span class="tsd-separador">·</span>
+                <span class="tsd-semana">{{ rangoSemanaDesc }}</span>
+            </div>
+
+            <div class="tsd-resumen-linea2">
+                <span class="tcl-horas tsd-horas-grande" [ngClass]="'tcl-horas--' + horasColor">{{ horasDesc }}</span>
+                <div class="tcl-chips">
+                    <span class="tcl-chip" *ngFor="let chip of chips" [ngClass]="'tcl-chip--' + chip.clase">{{ chip.texto }}</span>
+                </div>
+            </div>
+
+            <div class="tsd-pago" [class.tsd-pago--pagada]="resumenItem.bPagada" [class.tsd-pago--borrador]="resumenItem.bEnNominaBorrador">
+                <mat-icon>{{ resumenItem.bPagada ? 'check_circle' : (resumenItem.bEnNominaBorrador ? 'edit_note' : 'schedule') }}</mat-icon>
+                <span>{{ pagoDesc }}</span>
+            </div>
+
+            <div class="pcm-banner pcm-banner-error" *ngIf="resumenItem.bEnNominaBorrador">
+                Esta semana está incluida en una nómina en borrador. Si corriges algo aquí, esa nómina deberá regenerarse para tomar el cambio.
+            </div>
+
+        </div>
+
+        <!-- ═══ Días ═══ -->
+        <div class="tsd-dias" *ngIf="!bShowSpinner">
+
+            <div class="tsd-dia" *ngFor="let dia of dias" [class.tsd-dia--futuro]="fn_diaEsFuturo(dia)">
+
+                <div class="tsd-dia-header">
+                    <span class="tsd-dia-titulo">{{ fn_diaTitulo(dia) }}</span>
+
+                    <ng-container *ngIf="!fn_diaEsFuturo(dia)">
+                        <span class="tsd-dia-horas">{{ dia.horasTrabajadas }}h / {{ dia.horasEsperadas }}h esperadas</span>
+                        <span class="tcl-chip" *ngIf="fn_diaChip(dia) as chip" [ngClass]="'tcl-chip--' + chip.clase">{{ chip.texto }}</span>
+                    </ng-container>
+                    <span class="tcl-chip tcl-chip--sinhorario" *ngIf="fn_diaEsFuturo(dia)">Aún no llega</span>
+
+                    <button mat-icon-button class="tsd-btn-capturar" *ngIf="bModoEdicion && !fn_diaEsFuturo(dia)"
+                        matTooltip="Capturar marcaje en este día"
+                        (click)="fn_capturarEnDia(dia)">
+                        <mat-icon>add_circle_outline</mat-icon>
+                    </button>
+                </div>
+
+                <div class="tsd-operaciones" *ngIf="!fn_diaEsFuturo(dia) && dia.operaciones && dia.operaciones.length > 0">
+
+                    <div class="tsd-operacion" *ngFor="let op of dia.operaciones" [class.tsd-operacion--incompleta]="!op.inicio || !op.fin">
+
+                        <mat-icon class="tsd-operacion-icono">
+                            {{ op.grupo === 'JORNADA' ? 'work' : (op.grupo === 'COMIDA' ? 'restaurant' : 'event_busy') }}
+                        </mat-icon>
+
+                        <div class="tsd-operacion-datos">
+                            <span class="tsd-operacion-label">{{ fn_operacionLabel(op.grupo) }}</span>
+                            <span class="tsd-operacion-horas">
+                                {{ fn_horaDesc(op.inicio) }} — {{ fn_horaDesc(op.fin) }}
+                                <span class="tsd-operacion-duracion" *ngIf="op.duracionMinutos !== null">({{ fn_duracionDesc(op.duracionMinutos) }})</span>
+                            </span>
+                            <span class="tsd-operacion-descontado" *ngIf="op.grupo !== 'JORNADA'">Tiempo descontado, no pagado</span>
+                            <span class="tsd-operacion-falta-pareja" *ngIf="!op.inicio || !op.fin">
+                                Falta {{ !op.inicio ? 'la entrada' : 'la salida' }} — causa de que el día esté incompleto
+                            </span>
+                        </div>
+
+                        <div class="tsd-operacion-acciones" *ngIf="bModoEdicion">
+                            <button mat-icon-button *ngIf="op.inicio" matTooltip="Corregir inicio" (click)="fn_corregirLeg(op, 'inicio')">
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                            <button mat-icon-button *ngIf="op.fin" matTooltip="Corregir fin" (click)="fn_corregirLeg(op, 'fin')">
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <p class="tsd-dia-sin-operaciones" *ngIf="!fn_diaEsFuturo(dia) && (!dia.operaciones || dia.operaciones.length === 0)">
+                    {{ dia.bDescanso ? 'Día de descanso.' : 'Sin marcajes este día.' }}
+                </p>
+
+            </div>
+
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="pcm-actions">
+        <button mat-raised-button type="button" (click)="fn_close()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

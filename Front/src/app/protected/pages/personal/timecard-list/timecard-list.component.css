@@ -1,31 +1,67 @@
-.tcl-totales {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
+/* Reporte de asistencia semanal (analisis/012) */
 
-.tcl-total-item {
+.pcl-inline-wrap {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  min-width: 90px;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.tcl-total-valor {
-  font-size: 22px;
-  font-weight: 600;
-  color: #7B1FA2;
+.pcl-inline-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
 }
 
-.tcl-total-label {
+.pcl-inline-wrap .pcl-slim-input {
+  border: none;
+  height: 34px;
+}
+
+.tcl-toggle-novedades {
+  display: flex;
+  align-items: center;
+  padding-bottom: 6px;
+}
+
+/* Columna de horas: esperadas-trabajadas[:diferencia] */
+.tcl-horas {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tcl-horas--verde   { background: #e8f5e9; color: #2e7d32; }
+.tcl-horas--azul    { background: #e3f2fd; color: #1565c0; }
+.tcl-horas--naranja { background: #fff3e0; color: #ef6c00; }
+.tcl-horas--rojo    { background: #ffebee; color: #c62828; }
+.tcl-horas--neutro  { background: #f5f5f5; color: #616161; }
+
+/* Chips de estatus (varios a la vez) */
+.tcl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tcl-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
   font-size: 11px;
-  color: #757575;
-  text-transform: uppercase;
-  letter-spacing: .3px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.tcl-anulado {
-  opacity: .55;
-  text-decoration: line-through;
-}
+.tcl-chip--completa   { background: #e8f5e9; color: #2e7d32; }
+.tcl-chip--incompleto { background: #ede7f6; color: #4527a0; border: 1px solid #b39ddb; }
+.tcl-chip--falta      { background: #ffebee; color: #c62828; }
+.tcl-chip--retardo    { background: #fff3e0; color: #ef6c00; }
+.tcl-chip--sinhorario { background: #f5f5f5; color: #757575; }

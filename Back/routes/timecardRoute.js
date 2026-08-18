@@ -8,6 +8,7 @@ const {
     , insertMarcaje
     , insertMarcajeManual
     , getAsistenciaList
+    , getAsistenciaSemanal
     , getHorarioSucursal
     , guardarHorarioSucursal
     , getHorarioEmpleado
@@ -48,6 +49,12 @@ router.post('/getAsistenciaList', [
     check('endDate', 'La fecha final es obligatoria').not().isEmpty(),
     validarCampos
 ], getAsistenciaList);
+
+router.post('/getAsistenciaSemanal', [
+    check('startDate', 'La fecha de inicio es obligatoria').not().isEmpty(),
+    check('endDate', 'La fecha final es obligatoria').not().isEmpty(),
+    validarCampos
+], getAsistenciaSemanal);
 
 // --- Horarios ---
 

@@ -1,0 +1,28 @@
+<div class="ttl-timeline">
+
+  <div class="ttl-mes-nav">
+    <button mat-icon-button (click)="fn_mesAnterior()" matTooltip="Mes anterior">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <span class="ttl-mes-nombre">{{ nombreMes | titlecase }}</span>
+    <button mat-icon-button (click)="fn_mesSiguiente()" matTooltip="Mes siguiente">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  <div class="ttl-semanas">
+    <button type="button" class="ttl-semana"
+      *ngFor="let semana of semanas"
+      [class.ttl-semana--actual]="fn_esActual(semana)"
+      [class.ttl-semana--pasada]="fn_esPasado(semana)"
+      [class.ttl-semana--futura]="fn_esFuturo(semana)"
+      [class.ttl-semana--seleccionada]="fn_esSeleccionada(semana)"
+      [disabled]="fn_esFuturo(semana)"
+      [matTooltip]="fn_esFuturo(semana) ? 'Todavía no llega' : ''"
+      (click)="fn_elegir(semana)">
+      <span class="ttl-semana-rango">{{ fn_rangoCorto(semana) }}</span>
+      <span class="ttl-semana-etiqueta" *ngIf="fn_esActual(semana)">Actual</span>
+    </button>
+  </div>
+
+</div>

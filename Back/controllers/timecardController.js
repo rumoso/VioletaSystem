@@ -274,6 +274,7 @@ const fn_getResumenPeriodo = async(idEmpleado, fechaInicio, fechaFin, transactio
     let horasEsperadas = 0;
     let iRetardos = 0;
     let iFaltas = 0;
+    let iIncompletas = 0;
 
     const cursor = moment(fechaInicio, 'YYYY-MM-DD');
     const fin = moment(fechaFin, 'YYYY-MM-DD');
@@ -289,6 +290,7 @@ const fn_getResumenPeriodo = async(idEmpleado, fechaInicio, fechaFin, transactio
             horasEsperadas += parseFloat(jornada.horasEsperadas) || 0;
             if (jornada.bRetardo) iRetardos++;
             if (jornada.bFalta) iFaltas++;
+            if (jornada.bIncompleta) iIncompletas++;
 
             dias.push({
                 fecha: fechaStr,
@@ -334,9 +336,140 @@ const fn_getResumenPeriodo = async(idEmpleado, fechaInicio, fechaFin, transactio
             horasTrabajadas: Math.round(horasTrabajadas * 100) / 100,
             horasEsperadas: Math.round(horasEsperadas * 100) / 100,
             iRetardos,
-            iFaltas
+            iFaltas,
+            iIncompletas
         }
     };
+};
+
+// --------------------------------------------------------------
+// ¿Este empleado tiene ALGÚN horario configurado (propio o de su
+// sucursal)? A diferencia de fn_getHorarioEsperado (que resuelve un
+// día puntual), esto contesta "existe con qué comparar" en general —
+// lo usa el reporte semanal para no pintar de rojo/verde a alguien
+// contra quien no hay nada que comparar (analisis/012).
+// --------------------------------------------------------------
+const fn_tieneHorarioConfigurado = async(idEmpleado, transaction) => {
+
+    const propios = await dbConnection.query(
+        `SELECT 1 FROM empleado_horarios WHERE idEmpleado = :idEmpleado LIMIT 1`,
+        { replacements: { idEmpleado }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (propios.length > 0) {
+        return true;
+    }
+
+    const [empleado] = await dbConnection.query(
+        `SELECT idSucursal FROM empleados WHERE idEmpleado = :idEmpleado LIMIT 1`,
+        { replacements: { idEmpleado }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!empleado || !empleado.idSucursal) {
+        return false;
+    }
+
+    const sucursal = await dbConnection.query(
+        `SELECT 1 FROM sucursal_horarios WHERE idSucursal = :idSucursal LIMIT 1`,
+        { replacements: { idSucursal: empleado.idSucursal }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    return sucursal.length > 0;
+};
+
+// --------------------------------------------------------------
+// Estado de pago de un rango (semana) para un empleado (analisis/012).
+// "Pagada" es una señal directa sobre timecard_jornadas.idNomina, NUNCA
+// se infiere por traslape de fechas contra nomina (una nómina con
+// fechaInicio/fechaFin NULL barre TODAS las jornadas pendientes sin
+// importar la fecha, así que el traslape solo sirve para detectar
+// nóminas en BORRADOR que todavía no marcaron nada).
+// --------------------------------------------------------------
+const fn_getEstadoPagoSemana = async(idEmpleado, fechaInicio, fechaFin, transaction) => {
+
+    const [pagada] = await dbConnection.query(
+        `SELECT J.idNomina, N.fechaInicio, N.fechaFin, N.pagadaDate, COUNT(*) AS c
+         FROM timecard_jornadas AS J
+         INNER JOIN nomina AS N ON N.idNomina = J.idNomina
+         WHERE J.idEmpleado = :idEmpleado AND J.fecha BETWEEN :fechaInicio AND :fechaFin
+           AND J.estatus = 'INCLUIDA_EN_NOMINA' AND J.idNomina IS NOT NULL
+         GROUP BY J.idNomina, N.fechaInicio, N.fechaFin, N.pagadaDate
+         ORDER BY c DESC LIMIT 1`,
+        { replacements: { idEmpleado, fechaInicio, fechaFin }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    // Solo cuenta una nómina BORRADOR con fechaInicio/fechaFin CAPTURADAS
+    // que traslapen la semana. Una nómina con fechas NULL barre TODAS las
+    // jornadas pendientes del empleado sin importar la fecha (ver nota en
+    // fn_getEstadoPagoSemana) — tratarla como traslape aquí marcaría CADA
+    // semana como "en borrador" para siempre mientras esa nómina exista,
+    // un falso positivo mucho peor que el falso negativo de no avisar.
+    const [enBorrador] = await dbConnection.query(
+        `SELECT N.idNomina
+         FROM nomina_recibos AS R
+         INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+         WHERE R.idEmpleado = :idEmpleado AND N.estatus = 'BORRADOR'
+           AND N.fechaInicio IS NOT NULL AND N.fechaFin IS NOT NULL
+           AND N.fechaInicio <= :fechaFin AND N.fechaFin >= :fechaInicio
+         LIMIT 1`,
+        { replacements: { idEmpleado, fechaInicio, fechaFin }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    return {
+        bPagada: !!pagada,
+        idNomina: pagada ? pagada.idNomina : null,
+        pagadaDate: pagada ? pagada.pagadaDate : null,
+        bEnNominaBorrador: !!enBorrador,
+        idNominaBorrador: enBorrador ? enBorrador.idNomina : null
+    };
+};
+
+// --------------------------------------------------------------
+// Resumen semanal (analisis/012): un renglón por empleado con sus
+// horas/chips del rango. Reusa fn_getResumenPeriodo POR EMPLEADO en
+// vez de una query agrupada nueva — cuesta una consulta extra por
+// empleado (aceptable en un padrón de decenas de personas), pero
+// GARANTIZA que el total del listado y el del detalle de un mismo
+// empleado nunca puedan divergir, porque salen del mismo código.
+// --------------------------------------------------------------
+const fn_getResumenSemanal = async(fechaInicio, fechaFin, idEmpleado, transaction) => {
+
+    const filtroEmpleado = idEmpleado ? 'AND idEmpleado = :idEmpleado' : '';
+
+    const empleados = await dbConnection.query(
+        `SELECT idEmpleado, nombre, puesto FROM empleados
+         WHERE fechaIngreso <= :fechaFin
+           AND (fechaBaja IS NULL OR fechaBaja >= :fechaInicio)
+           ${filtroEmpleado}
+         ORDER BY nombre ASC`,
+        { replacements: { idEmpleado, fechaInicio, fechaFin }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    const resultado = [];
+
+    for (const emp of empleados) {
+
+        const resumen = await fn_getResumenPeriodo(emp.idEmpleado, fechaInicio, fechaFin, transaction);
+        const bSinHorario = !(await fn_tieneHorarioConfigurado(emp.idEmpleado, transaction));
+        const estadoPago = await fn_getEstadoPagoSemana(emp.idEmpleado, fechaInicio, fechaFin, transaction);
+
+        resultado.push({
+            idEmpleado: emp.idEmpleado,
+            nombre: emp.nombre,
+            puesto: emp.puesto,
+            horasEsperadas: resumen.totales.horasEsperadas,
+            horasTrabajadas: resumen.totales.horasTrabajadas,
+            diferencia: Math.round((resumen.totales.horasTrabajadas - resumen.totales.horasEsperadas) * 100) / 100,
+            iRetardos: resumen.totales.iRetardos,
+            iFaltas: resumen.totales.iFaltas,
+            iIncompletas: resumen.totales.iIncompletas,
+            bSinHorario,
+            ...estadoPago
+        });
+
+    }
+
+    return resultado;
 };
 
 // ================================================================
@@ -636,6 +769,70 @@ const insertMarcajeManual = async(req, res = response) => {
 // Consulta de asistencia
 // ================================================================
 
+// Qué grupo de operación forma cada tipo de marcaje, y si lo abre
+// (inicio) o lo cierra (fin). Vive en el Back porque es la misma
+// máquina de estados de _fn_tiposValidos vista del otro lado — quién
+// abre con quién no debe poder desincronizarse en dos lugares.
+const _TIPO_A_OPERACION = {
+    'ENTRADA_JORNADA': { grupo: 'JORNADA', rol: 'inicio' },
+    'SALIDA_JORNADA': { grupo: 'JORNADA', rol: 'fin' },
+    'SALIDA_COMIDA': { grupo: 'COMIDA', rol: 'inicio' },
+    'ENTRADA_COMIDA': { grupo: 'COMIDA', rol: 'fin' },
+    'SALIDA_PERMISO': { grupo: 'PERMISO', rol: 'inicio' },
+    'ENTRADA_PERMISO': { grupo: 'PERMISO', rol: 'fin' }
+};
+
+// Empareja los marcajes VIGENTES (no anulados) de un día en
+// operaciones (Jornada laboral / Comida / Permiso especial), cada una
+// con inicio, fin y duración — para que el detalle de la semana
+// (analisis/012) no obligue a leer una lista de eventos sueltos. Un
+// día puede tener más de una comida o permiso: se emparejan en orden
+// cronológico (cola por grupo). Una operación sin su pareja se
+// devuelve igual, con el extremo faltante en null — es la señal de
+// por qué el día quedó incompleto.
+const _fn_construirOperacionesDia = (marcajesDelDia) => {
+
+    const pendientesPorGrupo = { JORNADA: [], COMIDA: [], PERMISO: [] };
+    const operaciones = [];
+
+    for (const m of marcajesDelDia) {
+
+        const info = _TIPO_A_OPERACION[m.tipo];
+        if (!info) continue;
+
+        if (info.rol === 'inicio') {
+            pendientesPorGrupo[info.grupo].push({
+                grupo: info.grupo, inicio: m.fechaHora, idMarcajeInicio: m.id, fin: null, idMarcajeFin: null
+            });
+        } else {
+            const pendiente = pendientesPorGrupo[info.grupo].shift();
+            if (pendiente) {
+                pendiente.fin = m.fechaHora;
+                pendiente.idMarcajeFin = m.id;
+                operaciones.push(pendiente);
+            } else {
+                // Un "fin" sin "inicio" previo no debería pasar por la
+                // máquina de estados normal, pero una captura manual
+                // podría producirlo — se muestra igual, con el inicio vacío.
+                operaciones.push({ grupo: info.grupo, inicio: null, idMarcajeInicio: null, fin: m.fechaHora, idMarcajeFin: m.id });
+            }
+        }
+    }
+
+    // Lo que quedó sin cerrar también se muestra — es la causa de la
+    // jornada incompleta.
+    for (const grupo of Object.keys(pendientesPorGrupo)) {
+        operaciones.push(...pendientesPorGrupo[grupo]);
+    }
+
+    return operaciones
+        .map(op => ({
+            ...op,
+            duracionMinutos: (op.inicio && op.fin) ? moment(op.fin).diff(moment(op.inicio), 'minutes') : null
+        }))
+        .sort((a, b) => moment(a.inicio || a.fin).diff(moment(b.inicio || b.fin)));
+};
+
 const getAsistenciaList = async(req, res = response) => {
 
     const {
@@ -665,6 +862,18 @@ const getAsistenciaList = async(req, res = response) => {
             { replacements: { idEmpleado, startDate: startDate.substring(0, 10), endDate: endDate.substring(0, 10) }, type: dbConnection.QueryTypes.SELECT }
         );
 
+        const marcajesPorDia = {};
+        for (const m of marcajes) {
+            if (m.bAnulado) continue; // los anulados no forman operaciones, la corrección los reemplaza
+            const fechaStr = moment(m.fecha).format('YYYY-MM-DD');
+            if (!marcajesPorDia[fechaStr]) marcajesPorDia[fechaStr] = [];
+            marcajesPorDia[fechaStr].push(m);
+        }
+
+        for (const dia of resumen.dias) {
+            dia.operaciones = _fn_construirOperacionesDia(marcajesPorDia[dia.fecha] || []);
+        }
+
         res.json({
             status: 0,
             message: "Ejecutado correctamente.",
@@ -674,6 +883,43 @@ const getAsistenciaList = async(req, res = response) => {
                 totales: resumen.totales,
                 marcajes
             }
+        });
+
+    } catch (error) {
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// Reporte semanal (analisis/012): el Back solo recibe un rango de
+// fechas ya calculado por el Front — no sabe de "semanas", eso vive
+// del lado del calendario sábado-viernes del Front, igual que
+// getAsistenciaList tampoco sabe de periodos de nómina.
+const getAsistenciaSemanal = async(req, res = response) => {
+
+    const {
+        startDate
+        , endDate
+        , idEmpleado = null
+    } = req.body;
+
+    try {
+
+        const resultado = await fn_getResumenSemanal(
+            startDate.substring(0, 10),
+            endDate.substring(0, 10),
+            idEmpleado || null
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: resultado
         });
 
     } catch (error) {
@@ -823,6 +1069,7 @@ module.exports = {
     , insertMarcaje
     , insertMarcajeManual
     , getAsistenciaList
+    , getAsistenciaSemanal
     , getHorarioSucursal
     , guardarHorarioSucursal
     , getHorarioEmpleado

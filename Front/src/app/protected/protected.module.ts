@@ -94,6 +94,8 @@ import { TimecardChecadorComponent } from './pages/personal/timecard-checador/ti
 import { TimecardListComponent } from './pages/personal/timecard-list/timecard-list.component';
 import { TimecardMarcajeManualComponent } from './pages/personal/mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
 import { HorarioSucursalComponent } from './pages/personal/mdl/horario-sucursal/horario-sucursal.component';
+import { TimecardTimelineComponent } from './pages/personal/timecard-timeline/timecard-timeline.component';
+import { TimecardSemanaDetalleComponent } from './pages/personal/mdl/timecard-semana-detalle/timecard-semana-detalle.component';
 import { FaceIdManagerComponent } from './pages/security/mdl/face-id-manager/face-id-manager.component';
 import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-id-button.component';
 
@@ -186,6 +188,8 @@ import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-
     TimecardListComponent,
     TimecardMarcajeManualComponent,
     HorarioSucursalComponent,
+    TimecardTimelineComponent,
+    TimecardSemanaDetalleComponent,
     FaceIdManagerComponent,
     FaceIdButtonComponent,
   ],

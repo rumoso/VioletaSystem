@@ -46,6 +46,12 @@ export class TimecardService {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getAsistenciaList`, { idEmpleado, startDate, endDate } );
   }
 
+  // ---- Reporte semanal (analisis/012) ----
+
+  CGetAsistenciaSemanal( startDate: string, endDate: string, idEmpleado: number | null = null ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getAsistenciaSemanal`, { startDate, endDate, idEmpleado } );
+  }
+
   // ---- Horarios ----
 
   CGetHorarioSucursal( idSucursal: number ): Observable<ResponseGet> {
