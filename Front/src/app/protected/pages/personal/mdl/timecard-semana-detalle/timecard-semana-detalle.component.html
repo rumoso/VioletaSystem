@@ -39,7 +39,9 @@
         <!-- ═══ Días ═══ -->
         <div class="tsd-dias" *ngIf="!bShowSpinner">
 
-            <div class="tsd-dia" *ngFor="let dia of dias" [class.tsd-dia--futuro]="fn_diaEsFuturo(dia)">
+            <div class="tsd-dia" *ngFor="let dia of dias"
+                [ngClass]="'tsd-dia--' + fn_diaClase(dia)"
+                [class.tsd-dia--futuro]="fn_diaEsFuturo(dia)">
 
                 <div class="tsd-dia-header">
                     <span class="tsd-dia-titulo">{{ fn_diaTitulo(dia) }}</span>

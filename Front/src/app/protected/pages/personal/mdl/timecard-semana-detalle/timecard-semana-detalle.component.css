@@ -2,6 +2,48 @@
   min-width: 480px;
 }
 
+/* ══ Chips y columna de horas — el modal no comparte stylesheet con el
+   listado, así que estas clases se redefinen aquí completas (incluye
+   completo/descanso, que solo existen a nivel día). ══ */
+.tcl-horas {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tcl-horas--verde   { background: #e8f5e9; color: #2e7d32; }
+.tcl-horas--azul    { background: #e3f2fd; color: #1565c0; }
+.tcl-horas--naranja { background: #fff3e0; color: #ef6c00; }
+.tcl-horas--rojo    { background: #ffebee; color: #c62828; }
+.tcl-horas--neutro  { background: #f5f5f5; color: #616161; }
+
+.tcl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tcl-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tcl-chip--completa,
+.tcl-chip--completo   { background: #e8f5e9; color: #2e7d32; }
+.tcl-chip--incompleto { background: #ede7f6; color: #4527a0; border: 1px solid #b39ddb; }
+.tcl-chip--falta      { background: #ffebee; color: #c62828; }
+.tcl-chip--retardo    { background: #fff3e0; color: #ef6c00; }
+.tcl-chip--sinhorario,
+.tcl-chip--descanso   { background: #eceff1; color: #607d8b; }
+
 /* ══ Encabezado del empleado/semana ══ */
 .tsd-resumen {
   padding-bottom: 14px;
@@ -69,10 +111,17 @@
 
 .tsd-dia {
   border: 1px solid #ececec;
+  border-left: 4px solid #ececec;
   border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 10px;
 }
+
+.tsd-dia--completo   { border-left-color: #2e7d32; }
+.tsd-dia--incompleto { border-left-color: #7e57c2; }
+.tsd-dia--falta      { border-left-color: #c62828; }
+.tsd-dia--retardo    { border-left-color: #ef6c00; }
+.tsd-dia--descanso   { border-left-color: #90a4ae; }
 
 .tsd-dia--futuro {
   opacity: .55;
@@ -92,7 +141,6 @@
   font-weight: 700;
   font-size: 14px;
   color: #212121;
-  text-transform: capitalize;
 }
 
 .tsd-dia-horas {

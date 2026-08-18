@@ -130,6 +130,10 @@ export class TimecardSemanaDetalleComponent implements OnInit {
     return dia.fecha > this.hoyISO;
   }
 
+  fn_diaClase( dia: any ): string {
+    return this.fn_diaChip(dia)?.clase || '';
+  }
+
   fn_diaChip( dia: any ): { texto: string, clase: string } | null {
     if (this.fn_diaEsFuturo(dia)) {
       return null;
