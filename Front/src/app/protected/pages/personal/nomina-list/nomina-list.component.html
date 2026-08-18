@@ -153,6 +153,16 @@
                                                 <button mat-icon-button matTooltip="Ver recibo" (click)="$event.stopPropagation(); fn_abrirRecibo(item, r)">
                                                     <mat-icon class="colorGreen">receipt_long</mat-icon>
                                                 </button>
+                                                <button mat-icon-button matTooltip="Exportar recibo a PDF"
+                                                (click)="$event.stopPropagation(); fn_pdfRecibo(r)">
+                                                    <mat-icon>picture_as_pdf</mat-icon>
+                                                </button>
+                                                <button mat-icon-button
+                                                *ngIf="item.estatus === 'BORRADOR' && bPuedePagar"
+                                                matTooltip="Pagar la nómina completa de este lote"
+                                                (click)="$event.stopPropagation(); fn_pagar(item)">
+                                                    <mat-icon class="colorGreen">payments</mat-icon>
+                                                </button>
                                                 <button mat-icon-button
                                                 *ngIf="item.estatus === 'BORRADOR' && bPuedeExcluir"
                                                 matTooltip="Excluir de la nómina"

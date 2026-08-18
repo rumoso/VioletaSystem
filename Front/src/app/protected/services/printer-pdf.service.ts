@@ -86,12 +86,24 @@ export class PrinterPDFService {
   window.open(blobUrl, '_blank');
   }
 
+  // Cómo se reparte un renglón del recibo entre las dos columnas. Las
+  // comisiones son el caso especial: van del lado que les toque según
+  // su signo (la bitácora puede dar un neto negativo), no por su
+  // `tipo`. Vive aquí para que el modal y el listado no puedan
+  // separarse en su criterio.
+  private _fn_esPercepcion(item: any): boolean {
+    return item.bEsComisiones ? Number(item.monto) >= 0 : item.tipo === 'PERCEPCION';
+  }
+
   // Recibo de nómina de un empleado (analisis/007), con el MISMO
   // formato que el modal en pantalla: encabezado con los datos del
   // empleado, tira de horas de TimeCard, estado de cuenta de dos
   // columnas (percepciones a la izquierda, deducciones a la derecha) y
   // el bloque de totales.
-  generarPDFReciboNomina(recibo: any, percepciones: any[], deducciones: any[]) {
+  generarPDFReciboNomina(recibo: any, detalle: any[]) {
+
+    const percepciones = (detalle || []).filter(d => this._fn_esPercepcion(d));
+    const deducciones = (detalle || []).filter(d => !this._fn_esPercepcion(d));
 
     const doc = new jsPDF({ orientation: 'portrait' });
     const pageWidth = doc.internal.pageSize.getWidth();

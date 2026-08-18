@@ -227,7 +227,7 @@ export class NominaReciboComponent implements OnInit {
   }
 
   fn_exportarPDF() {
-    this.printerServ.generarPDFReciboNomina(this.recibo, this.percepciones, this.deducciones);
+    this.printerServ.generarPDFReciboNomina(this.recibo, this.detalle);
   }
 
   // ---- Pagar / cancelar / eliminar la nómina completa (mismas

@@ -8,6 +8,7 @@ import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { NominaService } from 'src/app/protected/services/nomina.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
+import { PrinterPDFService } from 'src/app/protected/services/printer-pdf.service';
 import { NominaGenerarComponent } from '../mdl/nomina-generar/nomina-generar.component';
 import { NominaReciboComponent } from '../mdl/nomina-recibo/nomina-recibo.component';
 
@@ -53,6 +54,7 @@ export class NominaListComponent implements OnInit, OnDestroy {
     , private nominaServ: NominaService
     , private empleadosServ: EmpleadosService
     , private pageTitleServ: PageTitleService
+    , private printerServ: PrinterPDFService
     ) {
       this.empleadoSearchControl.valueChanges
         .pipe(debounceTime(500))
@@ -264,6 +266,31 @@ export class NominaListComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  // PDF del recibo de un empleado sin abrir el modal: se trae su
+  // detalle y se manda al mismo generador que usa el modal (el
+  // servicio decide qué renglón va de cada lado).
+  fn_pdfRecibo( recibo: any ) {
+
+    this.bShowSpinner = true;
+
+    this.nominaServ.CGetRecibo(recibo.id)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.bShowSpinner = false;
+          if (resp.status === 0) {
+            this.printerServ.generarPDFReciboNomina(resp.data.recibo, resp.data.detalle);
+          } else {
+            this.servicesGServ.showSnakbar(resp.message);
+          }
+        },
+        error: (ex: HttpErrorResponse) => {
+          console.log(ex)
+          this.servicesGServ.showSnakbar('Problemas con el servicio');
+          this.bShowSpinner = false;
+        }
+      });
   }
 
   // ---- Acciones sobre la corrida completa (el lote) ----
