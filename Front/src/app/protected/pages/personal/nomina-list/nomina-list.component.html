@@ -68,8 +68,9 @@
         <table class="pcl-tabla">
             <thead>
                 <tr>
-                    <th class="textAlingLeft">Empleado</th>
+                    <th class="nl-th-toggle"></th>
                     <th class="textAlingLeft">Periodo</th>
+                    <th class="textAlingCenter">Empleados</th>
                     <th class="textAlingRight">Percepciones</th>
                     <th class="textAlingRight">Deducciones</th>
                     <th class="textAlingRight">Neto</th>
@@ -78,36 +79,96 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let item of catlist" class="nl-row" (click)="fn_abrirRecibo(item)">
-                    <td>
-                        <span class="pcl-principal">{{ item.nombreEmpleado }}</span>
-                    </td>
-                    <td>
-                        <span class="pcl-secundario">{{ fn_periodoDesc(item) }}</span>
-                    </td>
-                    <td class="textAlingRight">{{ item.totalPercepciones | currency }}</td>
-                    <td class="textAlingRight">{{ item.totalDeducciones | currency }}</td>
-                    <td class="textAlingRight" [class.nl-neto-negativo]="item.neto < 0">{{ item.neto | currency }}</td>
-                    <td class="textAlingCenter">
-                        <span class="pcl-chip"
-                            [class.pcl-chip-activo]="item.estatus === 'PAGADA'"
-                            [class.pcl-chip-neutro]="item.estatus === 'BORRADOR'"
-                            [class.pcl-chip-inactivo]="item.estatus === 'CANCELADA'">
-                            {{ item.estatus }}
-                        </span>
-                    </td>
-                    <td class="textAlingCenter">
-                        <button mat-icon-button matTooltip="Ver recibo" (click)="$event.stopPropagation(); fn_abrirRecibo(item)">
-                            <mat-icon class="colorGreen">receipt_long</mat-icon>
-                        </button>
-                        <button mat-icon-button
-                        *ngIf="item.estatus === 'BORRADOR' && bPuedeExcluir"
-                        matTooltip="Excluir de la nómina"
-                        (click)="$event.stopPropagation(); fn_excluir(item)">
-                            <mat-icon class="colorRed">person_remove</mat-icon>
-                        </button>
-                    </td>
-                </tr>
+                <ng-container *ngFor="let item of catlist">
+
+                    <!-- ═══ Renglón maestro: la corrida (lote) ═══ -->
+                    <tr class="nl-row" [class.nl-row--abierta]="expandidas.has(item.id)" (click)="fn_toggle(item)">
+                        <td class="nl-td-toggle">
+                            <mat-icon class="nl-chevron" [class.nl-chevron--abierta]="expandidas.has(item.id)">chevron_right</mat-icon>
+                        </td>
+                        <td>
+                            <span class="pcl-principal">{{ fn_periodoDesc(item) }}</span>
+                        </td>
+                        <td class="textAlingCenter">{{ item.iEmpleados }}</td>
+                        <td class="textAlingRight">{{ item.totalPercepciones | currency }}</td>
+                        <td class="textAlingRight">{{ item.totalDeducciones | currency }}</td>
+                        <td class="textAlingRight" [class.nl-neto-negativo]="item.totalNeto < 0">{{ item.totalNeto | currency }}</td>
+                        <td class="textAlingCenter">
+                            <span class="pcl-chip"
+                                [class.pcl-chip-activo]="item.estatus === 'PAGADA'"
+                                [class.pcl-chip-neutro]="item.estatus === 'BORRADOR'"
+                                [class.pcl-chip-inactivo]="item.estatus === 'CANCELADA'">
+                                {{ item.estatus }}
+                            </span>
+                        </td>
+                        <td class="textAlingCenter">
+                            <button mat-icon-button
+                            *ngIf="item.estatus === 'BORRADOR' && bPuedePagar"
+                            matTooltip="Pagar nómina"
+                            (click)="$event.stopPropagation(); fn_pagar(item)">
+                                <mat-icon class="colorGreen">payments</mat-icon>
+                            </button>
+                            <button mat-icon-button
+                            *ngIf="item.estatus !== 'PAGADA' && bPuedeEliminar"
+                            matTooltip="Eliminar nómina completa"
+                            (click)="$event.stopPropagation(); fn_eliminar(item)">
+                                <mat-icon class="colorRed">delete_forever</mat-icon>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- ═══ Detalle desplegado: los empleados del lote ═══ -->
+                    <tr class="nl-row-detalle" *ngIf="expandidas.has(item.id)">
+                        <td colspan="8">
+                            <div class="nl-detalle">
+
+                                <p class="nl-detalle-cargando" *ngIf="cargandoRecibos.has(item.id)">
+                                    Cargando empleados...
+                                </p>
+
+                                <p class="nl-detalle-vacio" *ngIf="!cargandoRecibos.has(item.id) && fn_recibos(item.id).length === 0">
+                                    Esta nómina ya no tiene empleados.
+                                </p>
+
+                                <table class="nl-tabla-anidada" *ngIf="!cargandoRecibos.has(item.id) && fn_recibos(item.id).length > 0">
+                                    <thead>
+                                        <tr>
+                                            <th class="textAlingLeft">Empleado</th>
+                                            <th class="textAlingRight">Percepciones</th>
+                                            <th class="textAlingRight">Deducciones</th>
+                                            <th class="textAlingRight">Neto</th>
+                                            <th class="textAlingCenter">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let r of fn_recibos(item.id)" class="nl-row" (click)="fn_abrirRecibo(item, r)">
+                                            <td>
+                                                <span class="pcl-principal">{{ r.nombreEmpleado }}</span>
+                                                <span class="pcl-secundario" *ngIf="r.bSinListadoBase"> · sin conceptos</span>
+                                            </td>
+                                            <td class="textAlingRight">{{ r.totalPercepciones | currency }}</td>
+                                            <td class="textAlingRight">{{ r.totalDeducciones | currency }}</td>
+                                            <td class="textAlingRight" [class.nl-neto-negativo]="r.neto < 0">{{ r.neto | currency }}</td>
+                                            <td class="textAlingCenter">
+                                                <button mat-icon-button matTooltip="Ver recibo" (click)="$event.stopPropagation(); fn_abrirRecibo(item, r)">
+                                                    <mat-icon class="colorGreen">receipt_long</mat-icon>
+                                                </button>
+                                                <button mat-icon-button
+                                                *ngIf="item.estatus === 'BORRADOR' && bPuedeExcluir"
+                                                matTooltip="Excluir de la nómina"
+                                                (click)="$event.stopPropagation(); fn_excluir(item, r)">
+                                                    <mat-icon class="colorRed">person_remove</mat-icon>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </td>
+                    </tr>
+
+                </ng-container>
             </tbody>
         </table>
     </div>

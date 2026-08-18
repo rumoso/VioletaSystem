@@ -11,10 +11,10 @@ import { PageTitleService } from 'src/app/protected/services/page-title.service'
 import { NominaGenerarComponent } from '../mdl/nomina-generar/nomina-generar.component';
 import { NominaReciboComponent } from '../mdl/nomina-recibo/nomina-recibo.component';
 
-// Lista de nómina (analisis/007): un renglón por recibo de empleado,
-// SIN agrupar por corrida — cada renglón abre su recibo directo
-// (NominaReciboComponent), que ya trae Pagar/Cancelar/Eliminar de la
-// corrida completa a la que pertenece.
+// Lista de nómina (analisis/007): un renglón por CORRIDA (lote), con
+// el detalle de sus empleados desplegable en línea — sin modal
+// intermedio, pero sin ensuciar la pantalla con cientos de recibos
+// sueltos. Los recibos se cargan bajo demanda al expandir y se cachean.
 
 @Component({
   selector: 'app-nomina-list',
@@ -25,6 +25,12 @@ export class NominaListComponent implements OnInit, OnDestroy {
 
   bShowSpinner: boolean = false;
   catlist: any[] = [];
+
+  // Expansión en línea: qué corridas están abiertas, sus recibos ya
+  // cargados, y cuáles están cargando en este momento.
+  expandidas: Set<number> = new Set<number>();
+  recibosPorNomina: { [idNomina: number]: any[] } = {};
+  cargandoRecibos: Set<number> = new Set<number>();
 
   estatusControl: FormControl = new FormControl('');
 
@@ -75,6 +81,14 @@ export class NominaListComponent implements OnInit, OnDestroy {
 
   get bPuedeExcluir(): boolean {
     return this.authServ.hasPermissionAction('nomina_Generar');
+  }
+
+  get bPuedeEliminar(): boolean {
+    return this.authServ.hasPermissionAction('nomina_Eliminar');
+  }
+
+  get bPuedePagar(): boolean {
+    return this.authServ.hasPermissionAction('nomina_Pagar');
   }
 
   private fn_buscarEmpleados( search: string ) {
@@ -141,9 +155,10 @@ export class NominaListComponent implements OnInit, OnDestroy {
     .afterClosed().subscribe({
       next: (idNueva: any) => {
         if (idNueva) {
-          // Sin abrir ningún modal: los recibos de la corrida nueva ya
-          // aparecen directo en el listado (renglón por empleado, sin
-          // agrupar) al refrescar.
+          // Sin modal: la corrida nueva queda ya expandida en el
+          // listado, así se ven sus empleados de inmediato.
+          this.expandidas.add(idNueva);
+          this.fn_cargarRecibos(idNueva);
           this.fn_getList();
         }
       }
@@ -151,47 +166,158 @@ export class NominaListComponent implements OnInit, OnDestroy {
   }
 
   // El rango de fechas es opcional (analisis/007): sin fechas, la
-  // corrida tomó todas las comisiones pendientes al generarse.
+  // corrida tomó todo lo pendiente al generarse.
   fn_periodoDesc( item: any ): string {
     if (item.fechaInicioDesc && item.fechaFinDesc) { return `${ item.fechaInicioDesc } — ${ item.fechaFinDesc }`; }
     if (item.fechaInicioDesc) { return `Desde ${ item.fechaInicioDesc }`; }
     if (item.fechaFinDesc) { return `Hasta ${ item.fechaFinDesc }`; }
-    return 'Todas las comisiones pendientes';
+    return `Todo lo pendiente — generada el ${ item.createDateDesc }`;
   }
 
-  // Cada renglón ya ES un recibo — se abre directo. Ese modal trae sus
-  // propias acciones de Pagar/Cancelar/Eliminar de la corrida completa
-  // (nomina-recibo.component), así que aplanar la lista no le quita
-  // nada al flujo por lote.
-  fn_abrirRecibo( item: any ) {
+  // ---- Expansión en línea del detalle por empleado ----
 
-    this.servicesGServ.showModalWithParams(NominaReciboComponent, { idNominaRecibo: item.id }, '620px')
+  // Los recibos de una corrida ya cargada; [] mientras no lo esté (el
+  // template distingue "cargando" de "vacío" con cargandoRecibos).
+  fn_recibos( idNomina: number ): any[] {
+    return this.recibosPorNomina[idNomina] || [];
+  }
+
+  fn_toggle( item: any ) {
+
+    if (this.expandidas.has(item.id)) {
+      this.expandidas.delete(item.id);
+      return;
+    }
+
+    this.expandidas.add(item.id);
+
+    if (!this.recibosPorNomina[item.id]) {
+      this.fn_cargarRecibos(item.id);
+    }
+  }
+
+  private fn_cargarRecibos( idNomina: number ) {
+
+    this.cargandoRecibos.add(idNomina);
+
+    this.nominaServ.CGetDetalle(idNomina)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.recibosPorNomina[idNomina] = resp.status === 0 ? (resp.data.recibos || []) : [];
+          this.cargandoRecibos.delete(idNomina);
+        },
+        error: (ex: HttpErrorResponse) => {
+          console.log(ex)
+          this.servicesGServ.showSnakbar('Problemas con el servicio');
+          this.recibosPorNomina[idNomina] = [];
+          this.cargandoRecibos.delete(idNomina);
+        }
+      });
+  }
+
+  // Tras cualquier cambio dentro de una corrida hay que refrescar sus
+  // recibos Y el renglón maestro (los totales del lote cambiaron).
+  private fn_refrescarCorrida( idNomina: number ) {
+    delete this.recibosPorNomina[idNomina];
+    if (this.expandidas.has(idNomina)) {
+      this.fn_cargarRecibos(idNomina);
+    }
+    this.fn_getList();
+  }
+
+  fn_abrirRecibo( item: any, recibo: any ) {
+
+    this.servicesGServ.showModalWithParams(NominaReciboComponent, { idNominaRecibo: recibo.id }, '620px')
     .afterClosed().subscribe({
-      next: () => { this.fn_getList(); }
+      next: () => { this.fn_refrescarCorrida(item.id); }
     });
 
   }
 
-  // Excluye solo a este empleado de su corrida (permiso nomina_Generar,
-  // solo BORRADOR) — para borrar la corrida completa, esa acción vive
-  // en el recibo (fn_abrirRecibo), donde el contexto de "a quiénes
-  // afecta" es claro.
-  fn_excluir( item: any ) {
+  // Excluye solo a este empleado de la corrida (permiso nomina_Generar,
+  // solo BORRADOR); la corrida sigue viva con los demás.
+  fn_excluir( item: any, recibo: any ) {
 
     this.servicesGServ.showDialog('¿Estás seguro?'
-      , `Está a punto de excluir a "${ item.nombreEmpleado }" de esta nómina`
+      , `Está a punto de excluir a "${ recibo.nombreEmpleado }" de esta nómina`
       , '¿Desea continuar?'
       , 'Si', 'No')
     .afterClosed().subscribe({
       next: (resp) => {
         if (resp) {
           this.bShowSpinner = true;
-          this.nominaServ.CExcluirRecibo(item.id)
+          this.nominaServ.CExcluirRecibo(recibo.id)
             .subscribe({
               next: (resp2: any) => {
                 this.servicesGServ.showSnakbar(resp2.message);
                 this.bShowSpinner = false;
                 if (resp2.status === 0) {
+                  this.fn_refrescarCorrida(item.id);
+                }
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar('Problemas con el servicio');
+                this.bShowSpinner = false;
+              }
+            });
+        }
+      }
+    });
+  }
+
+  // ---- Acciones sobre la corrida completa (el lote) ----
+
+  fn_pagar( item: any ) {
+
+    this.servicesGServ.showDialog('¿Confirmar pago?'
+      , `Está a punto de pagar esta nómina (${ item.iEmpleados } empleado(s), neto ${ item.totalNeto }). Después de pagar no se puede editar.`
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: (resp) => {
+        if (resp) {
+          this.bShowSpinner = true;
+          this.nominaServ.CPagar(item.id)
+            .subscribe({
+              next: (resp2: any) => {
+                this.servicesGServ.showSnakbar(resp2.message);
+                this.bShowSpinner = false;
+                if (resp2.status === 0) {
+                  this.fn_refrescarCorrida(item.id);
+                }
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar('Problemas con el servicio');
+                this.bShowSpinner = false;
+              }
+            });
+        }
+      }
+    });
+  }
+
+  // Eliminación física (permiso especial nomina_Eliminar, solo
+  // BORRADOR) de la corrida completa.
+  fn_eliminar( item: any ) {
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+      , `Está a punto de ELIMINAR POR COMPLETO la nómina "${ this.fn_periodoDesc(item) }" (${ item.iEmpleados } empleado(s)). Esta acción no se puede deshacer.`
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: (resp) => {
+        if (resp) {
+          this.bShowSpinner = true;
+          this.nominaServ.CDelete(item.id)
+            .subscribe({
+              next: (resp2: any) => {
+                this.servicesGServ.showSnakbar(resp2.message);
+                this.bShowSpinner = false;
+                if (resp2.status === 0) {
+                  this.expandidas.delete(item.id);
+                  delete this.recibosPorNomina[item.id];
                   this.fn_getList();
                 }
               },
