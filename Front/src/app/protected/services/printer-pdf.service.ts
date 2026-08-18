@@ -86,36 +86,116 @@ export class PrinterPDFService {
   window.open(blobUrl, '_blank');
   }
 
-  // Recibo de nómina de un empleado (analisis/007), como estado de
-  // cuenta contable de dos columnas — percepciones a la izquierda,
-  // deducciones a la derecha — igual que en pantalla.
+  // Recibo de nómina de un empleado (analisis/007), con el MISMO
+  // formato que el modal en pantalla: encabezado con los datos del
+  // empleado, tira de horas de TimeCard, estado de cuenta de dos
+  // columnas (percepciones a la izquierda, deducciones a la derecha) y
+  // el bloque de totales.
   generarPDFReciboNomina(recibo: any, percepciones: any[], deducciones: any[]) {
 
     const doc = new jsPDF({ orientation: 'portrait' });
     const pageWidth = doc.internal.pageSize.getWidth();
+    const MARGEN = 14;
     const half = pageWidth / 2;
 
+    const INDIGO: [number, number, number] = [40, 53, 147];
+    const VERDE: [number, number, number] = [46, 125, 50];
+    const ROJO: [number, number, number] = [198, 40, 40];
+    const GRIS: [number, number, number] = [120, 120, 120];
+    const MORADO: [number, number, number] = [123, 31, 162];
+
     const fnMoneda = (monto: any) => `$${ (Number(monto) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }`;
+    const fnNum = (n: any) => Number(n) || 0;
 
-    let line = 18;
-    doc.setFontSize(14);
-    doc.text(`Recibo de nómina — ${ recibo.nombreEmpleado }`, 14, line);
+    // ── Encabezado: logo + título + datos del empleado ──
+    doc.addImage(this.imgBase64, 'PNG', MARGEN, 10, 18, 18);
 
-    line += 8;
+    doc.setFontSize(15);
+    doc.setTextColor(INDIGO[0], INDIGO[1], INDIGO[2]);
+    doc.text('RECIBO DE NÓMINA', MARGEN + 24, 17);
+
+    doc.setFontSize(13);
+    doc.setTextColor(33, 33, 33);
+    doc.text(`${ recibo.nombreEmpleado || '' }`, MARGEN + 24, 24);
+
     doc.setFontSize(9);
-    doc.text(`Generado el ${ new Date().toLocaleString('es-MX') }`, 14, line);
-    line += 5;
-    doc.text(`Estatus de la nómina: ${ recibo.estatusNomina }`, 14, line);
+    doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+    doc.text(`${ recibo.puesto || 'Sin puesto' }`, MARGEN + 24, 29);
 
-    line += 6;
+    // Chip de estatus, alineado a la derecha del encabezado
+    const sEstatus = recibo.estatusNomina || '';
+    const colorEstatus: [number, number, number] =
+      sEstatus === 'PAGADA' ? VERDE
+      : sEstatus === 'CANCELADA' ? ROJO
+      : INDIGO;
+    doc.setFontSize(8);
+    const anchoChip = doc.getTextWidth(sEstatus) + 8;
+    doc.setFillColor(colorEstatus[0], colorEstatus[1], colorEstatus[2]);
+    doc.roundedRect(pageWidth - MARGEN - anchoChip, 12, anchoChip, 6, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text(sEstatus, pageWidth - MARGEN - anchoChip / 2, 16.2, { align: 'center' });
 
+    // Periodo y fecha de generación
+    doc.setFontSize(8.5);
+    doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+    const sPeriodo = (recibo.fechaInicioDesc && recibo.fechaFinDesc)
+      ? `Periodo: ${ recibo.fechaInicioDesc } al ${ recibo.fechaFinDesc }`
+      : 'Periodo: todo lo pendiente al generarse';
+    doc.text(sPeriodo, pageWidth - MARGEN, 23, { align: 'right' });
+    doc.text(`Generado el ${ new Date().toLocaleString('es-MX') }`, pageWidth - MARGEN, 28, { align: 'right' });
+
+    doc.setDrawColor(220, 220, 220);
+    doc.line(MARGEN, 33, pageWidth - MARGEN, 33);
+
+    let line = 40;
+
+    // ── Horas de TimeCard (analisis/011): solo informativas, el
+    //    sistema no las convierte a dinero. Se omiten si no hay nada
+    //    que reportar, igual que en pantalla. ──
+    const horasTrab = fnNum(recibo.horasTrabajadas);
+    const horasEsp = fnNum(recibo.horasEsperadas);
+
+    if (horasTrab > 0 || horasEsp > 0) {
+
+      const diferencia = Math.round((horasTrab - horasEsp) * 100) / 100;
+
+      autoTable(doc, {
+        startY: line,
+        margin: { left: MARGEN, right: MARGEN },
+        head: [['Horas trabajadas', 'Horas esperadas', 'Diferencia', 'Retardos', 'Faltas']],
+        body: [[
+          String(horasTrab),
+          String(horasEsp),
+          `${ diferencia > 0 ? '+' : '' }${ diferencia }`,
+          String(fnNum(recibo.iRetardos)),
+          String(fnNum(recibo.iFaltas))
+        ]],
+        theme: 'grid',
+        headStyles: { fillColor: INDIGO, fontSize: 8, halign: 'center' },
+        bodyStyles: { fontSize: 11, halign: 'center', textColor: MORADO, fontStyle: 'bold' },
+        // El dato que "duele" (horas de menos, retardos, faltas) se
+        // pinta en rojo para que salte igual que en pantalla.
+        didParseCell: (data: any) => {
+          if (data.section !== 'body') { return; }
+          const bNegativo =
+            (data.column.index === 2 && diferencia < 0) ||
+            (data.column.index === 3 && fnNum(recibo.iRetardos) > 0) ||
+            (data.column.index === 4 && fnNum(recibo.iFaltas) > 0);
+          if (bNegativo) { data.cell.styles.textColor = ROJO; }
+        }
+      });
+
+      line = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // ── Estado de cuenta: dos columnas ──
     autoTable(doc, {
       startY: line,
-      margin: { left: 14, right: pageWidth - half + 3 },
+      margin: { left: MARGEN, right: pageWidth - half + 3 },
       head: [['Percepciones', 'Monto']],
       body: percepciones.length > 0 ? percepciones.map(p => [ p.conceptoDesc, fnMoneda(p.monto) ]) : [['Sin percepciones', '']],
       theme: 'grid',
-      headStyles: { fillColor: [46, 125, 50], fontSize: 9 },
+      headStyles: { fillColor: VERDE, fontSize: 9 },
       bodyStyles: { fontSize: 8 },
       columnStyles: { 1: { halign: 'right' } }
     });
@@ -123,25 +203,42 @@ export class PrinterPDFService {
 
     autoTable(doc, {
       startY: line,
-      margin: { left: half + 3, right: 14 },
+      margin: { left: half + 3, right: MARGEN },
       head: [['Deducciones', 'Monto']],
       body: deducciones.length > 0 ? deducciones.map(d => [ d.conceptoDesc, fnMoneda(d.bEsComisiones ? -d.monto : d.monto) ]) : [['Sin deducciones', '']],
       theme: 'grid',
-      headStyles: { fillColor: [198, 40, 40], fontSize: 9 },
+      headStyles: { fillColor: ROJO, fontSize: 9 },
       bodyStyles: { fontSize: 8 },
       columnStyles: { 1: { halign: 'right' } }
     });
     const finalYDeducciones = (doc as any).lastAutoTable.finalY;
 
-    let lineTotales = Math.max(finalYPercepciones, finalYDeducciones) + 10;
+    // ── Totales, alineados a la derecha como en pantalla ──
+    const lineTotales = Math.max(finalYPercepciones, finalYDeducciones) + 8;
+    const neto = fnNum(recibo.neto);
 
-    doc.setFontSize(10);
-    doc.text(`Total de percepciones: ${ fnMoneda(recibo.totalPercepciones) }`, 14, lineTotales);
-    lineTotales += 6;
-    doc.text(`Total de deducciones: ${ fnMoneda(-recibo.totalDeducciones) }`, 14, lineTotales);
-    lineTotales += 8;
-    doc.setFontSize(12);
-    doc.text(`Total neto: ${ fnMoneda(recibo.neto) }`, 14, lineTotales);
+    autoTable(doc, {
+      startY: lineTotales,
+      margin: { left: half + 3, right: MARGEN },
+      body: [
+        ['Total de percepciones', fnMoneda(recibo.totalPercepciones)],
+        ['Total de deducciones', fnMoneda(-recibo.totalDeducciones)],
+        ['Total neto', fnMoneda(neto)]
+      ],
+      theme: 'plain',
+      bodyStyles: { fontSize: 9.5 },
+      columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
+      didParseCell: (data: any) => {
+        if (data.row.index === 1 && data.column.index === 1) {
+          data.cell.styles.textColor = ROJO;
+        }
+        if (data.row.index === 2) {
+          data.cell.styles.fontSize = 11;
+          data.cell.styles.fontStyle = 'bold';
+          if (neto < 0) { data.cell.styles.textColor = ROJO; }
+        }
+      }
+    });
 
     const sNombre = (recibo.nombreEmpleado || 'recibo').replace(/\s+/g, '_');
     doc.save(`Recibo_${ sNombre }.pdf`);

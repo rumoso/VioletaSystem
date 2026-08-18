@@ -394,9 +394,21 @@ const getRecibo = async(req, res = response) => {
 
     try{
 
+        // El periodo y el puesto son para el encabezado del recibo (y su
+        // PDF). Ojo: `puesto` sale del catálogo vivo, no de la copia
+        // congelada — si el empleado cambia de puesto, un recibo viejo
+        // mostrará el nuevo. Se acepta porque es un dato de
+        // identificación, no un monto (los montos sí están congelados
+        // en nomina_recibos/nomina_recibo_detalle).
         const cabecera = await dbConnection.query(
-            `SELECT R.*, N.estatus AS estatusNomina
-             FROM nomina_recibos AS R INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+            `SELECT R.*, N.estatus AS estatusNomina,
+                    N.fechaInicio, N.fechaFin,
+                    DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
+                    DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
+                    E.puesto
+             FROM nomina_recibos AS R
+             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+             LEFT JOIN empleados AS E ON E.idEmpleado = R.idEmpleado
              WHERE R.idNominaRecibo = :idNominaRecibo LIMIT 1`,
             { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT }
         );
