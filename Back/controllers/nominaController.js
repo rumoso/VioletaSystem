@@ -2,7 +2,7 @@ const { response } = require('express');
 const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
-const { fn_getResumenPeriodo } = require('./timecardController');
+const { fn_getResumenPeriodo, fn_getResumenPendiente } = require('./timecardController');
 
 // Pago de nómina (analisis/007-pago-nomina.md). Registro histórico en
 // tres niveles (nomina, nomina_recibos, nomina_recibo_detalle) como
@@ -184,8 +184,12 @@ const generarNomina = async(req, res = response) => {
         for (const emp of empleadosAGenerar) {
 
             // Horas de TimeCard (analisis/011, solo informativas — no
-            // generan ninguna línea de dinero). Sin rango de fechas no
-            // hay periodo que resumir, quedan en cero.
+            // generan ninguna línea de dinero). Con rango de fechas se
+            // resume ESE periodo (fn_getResumenPeriodo, sintetiza faltas
+            // de días sin fila). Sin rango, pagarNomina va a ligar TODAS
+            // las jornadas PENDIENTE del empleado sin importar fecha
+            // (ver su UPDATE de timecard_jornadas) — el resumen tiene
+            // que reflejar exactamente eso, no quedar en cero.
             let horasTrabajadas = 0, horasEsperadas = 0, iRetardos = 0, iFaltas = 0;
 
             if (sFechaInicio && sFechaFin) {
@@ -194,6 +198,12 @@ const generarNomina = async(req, res = response) => {
                 horasEsperadas = resumenHoras.totales.horasEsperadas;
                 iRetardos = resumenHoras.totales.iRetardos;
                 iFaltas = resumenHoras.totales.iFaltas;
+            } else {
+                const resumenPendiente = await fn_getResumenPendiente(emp.idEmpleado, transaction);
+                horasTrabajadas = resumenPendiente.horasTrabajadas;
+                horasEsperadas = resumenPendiente.horasEsperadas;
+                iRetardos = resumenPendiente.iRetardos;
+                iFaltas = resumenPendiente.iFaltas;
             }
 
             await dbConnection.query(

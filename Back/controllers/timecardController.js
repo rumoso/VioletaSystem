@@ -343,6 +343,40 @@ const fn_getResumenPeriodo = async(idEmpleado, fechaInicio, fechaFin, transactio
 };
 
 // --------------------------------------------------------------
+// Resumen de TODAS las jornadas PENDIENTE de un empleado, sin acotar
+// fecha — mismo criterio que usa pagarNomina para ligar timecard_jornadas
+// cuando la nómina no tiene fechaInicio/fechaFin (barre todo lo
+// pendiente, sin importar la fecha). generarNomina lo usa en ese mismo
+// caso para que el bloque informativo del recibo refleje exactamente
+// lo que se va a congelar al pagar, en vez de quedar en cero.
+// A diferencia de fn_getResumenPeriodo, NO sintetiza faltas de días sin
+// fila (no hay rango del que partir para saber qué días "deberían"
+// tener jornada) — solo suma jornadas que ya existen.
+// --------------------------------------------------------------
+const fn_getResumenPendiente = async(idEmpleado, transaction) => {
+
+    const [row] = await dbConnection.query(
+        `SELECT
+            COALESCE(SUM(horasTrabajadas), 0) AS horasTrabajadas,
+            COALESCE(SUM(horasEsperadas), 0) AS horasEsperadas,
+            COALESCE(SUM(bRetardo), 0) AS iRetardos,
+            COALESCE(SUM(bFalta), 0) AS iFaltas,
+            COALESCE(SUM(bIncompleta), 0) AS iIncompletas
+         FROM timecard_jornadas
+         WHERE idEmpleado = :idEmpleado AND estatus = 'PENDIENTE'`,
+        { replacements: { idEmpleado }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    return {
+        horasTrabajadas: Math.round(parseFloat(row.horasTrabajadas) * 100) / 100,
+        horasEsperadas: Math.round(parseFloat(row.horasEsperadas) * 100) / 100,
+        iRetardos: Number(row.iRetardos),
+        iFaltas: Number(row.iFaltas),
+        iIncompletas: Number(row.iIncompletas)
+    };
+};
+
+// --------------------------------------------------------------
 // ¿Este empleado tiene ALGÚN horario configurado (propio o de su
 // sucursal)? A diferencia de fn_getHorarioEsperado (que resuelve un
 // día puntual), esto contesta "existe con qué comparar" en general —
@@ -1077,4 +1111,5 @@ module.exports = {
 
     // Helpers reutilizados por nominaController.js (analisis/011 T10)
     , fn_getResumenPeriodo
+    , fn_getResumenPendiente
 }
