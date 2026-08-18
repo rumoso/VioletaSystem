@@ -93,6 +93,10 @@ export class NominaListComponent implements OnInit, OnDestroy {
     return this.authServ.hasPermissionAction('nomina_Pagar');
   }
 
+  get bPuedeCancelar(): boolean {
+    return this.authServ.hasPermissionAction('nomina_Cancelar');
+  }
+
   private fn_buscarEmpleados( search: string ) {
 
     this.bBuscandoEmpleados = true;
@@ -293,12 +297,74 @@ export class NominaListComponent implements OnInit, OnDestroy {
       });
   }
 
+  // ---- Acciones sobre UN empleado (analisis/013) ----
+
+  fn_pagarRecibo( item: any, recibo: any ) {
+
+    this.servicesGServ.showDialog('¿Confirmar pago?'
+      , `Está a punto de pagar a "${ recibo.nombreEmpleado }" por ${ recibo.neto }. Solo se paga a esta persona; los demás del lote quedan igual.`
+      , '¿Desea continuar?'
+      , 'Si', 'No')
+    .afterClosed().subscribe({
+      next: (resp) => {
+        if (resp) {
+          this.bShowSpinner = true;
+          this.nominaServ.CPagarRecibo(recibo.id)
+            .subscribe({
+              next: (resp2: any) => {
+                this.servicesGServ.showSnakbar(resp2.message);
+                this.bShowSpinner = false;
+                if (resp2.status === 0) {
+                  this.fn_refrescarCorrida(item.id);
+                }
+              },
+              error: (ex: HttpErrorResponse) => {
+                console.log(ex)
+                this.servicesGServ.showSnakbar('Problemas con el servicio');
+                this.bShowSpinner = false;
+              }
+            });
+        }
+      }
+    });
+  }
+
+  fn_cancelarRecibo( item: any, recibo: any ) {
+
+    const motivo = window.prompt(`Motivo para cancelar el pago de "${ recibo.nombreEmpleado }":`);
+
+    if (motivo === null) {
+      return;
+    }
+    if (!motivo.trim()) {
+      this.servicesGServ.showSnakbar('El motivo es obligatorio.');
+      return;
+    }
+
+    this.bShowSpinner = true;
+    this.nominaServ.CCancelarRecibo(recibo.id, motivo.trim())
+      .subscribe({
+        next: (resp2: any) => {
+          this.servicesGServ.showSnakbar(resp2.message);
+          this.bShowSpinner = false;
+          if (resp2.status === 0) {
+            this.fn_refrescarCorrida(item.id);
+          }
+        },
+        error: (ex: HttpErrorResponse) => {
+          console.log(ex)
+          this.servicesGServ.showSnakbar('Problemas con el servicio');
+          this.bShowSpinner = false;
+        }
+      });
+  }
+
   // ---- Acciones sobre la corrida completa (el lote) ----
 
   fn_pagar( item: any ) {
 
     this.servicesGServ.showDialog('¿Confirmar pago?'
-      , `Está a punto de pagar esta nómina (${ item.iEmpleados } empleado(s), neto ${ item.totalNeto }). Después de pagar no se puede editar.`
+      , `Está a punto de pagar los ${ item.iPendientes } recibo(s) que siguen pendientes en esta nómina. Después de pagar no se pueden editar.`
       , '¿Desea continuar?'
       , 'Si', 'No')
     .afterClosed().subscribe({

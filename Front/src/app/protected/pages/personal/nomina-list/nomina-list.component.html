@@ -89,7 +89,13 @@
                         <td>
                             <span class="pcl-principal">{{ fn_periodoDesc(item) }}</span>
                         </td>
-                        <td class="textAlingCenter">{{ item.iEmpleados }}</td>
+                        <td class="textAlingCenter">
+                            {{ item.iEmpleados }}
+                            <span class="nl-pagados" *ngIf="item.iPagados > 0"
+                                [class.nl-pagados--completo]="item.iPagados === item.iEmpleados">
+                                {{ item.iPagados }} de {{ item.iEmpleados }} pagados
+                            </span>
+                        </td>
                         <td class="textAlingRight">{{ item.totalPercepciones | currency }}</td>
                         <td class="textAlingRight">{{ item.totalDeducciones | currency }}</td>
                         <td class="textAlingRight" [class.nl-neto-negativo]="item.totalNeto < 0">{{ item.totalNeto | currency }}</td>
@@ -103,13 +109,13 @@
                         </td>
                         <td class="textAlingCenter">
                             <button mat-icon-button
-                            *ngIf="item.estatus === 'BORRADOR' && bPuedePagar"
-                            matTooltip="Pagar nómina"
+                            *ngIf="item.iPendientes > 0 && bPuedePagar"
+                            [matTooltip]="'Pagar los ' + item.iPendientes + ' recibo(s) pendientes'"
                             (click)="$event.stopPropagation(); fn_pagar(item)">
                                 <mat-icon class="colorGreen">payments</mat-icon>
                             </button>
                             <button mat-icon-button
-                            *ngIf="item.estatus !== 'PAGADA' && bPuedeEliminar"
+                            *ngIf="item.iPagados === 0 && bPuedeEliminar"
                             matTooltip="Eliminar nómina completa"
                             (click)="$event.stopPropagation(); fn_eliminar(item)">
                                 <mat-icon class="colorRed">delete_forever</mat-icon>
@@ -137,6 +143,7 @@
                                             <th class="textAlingRight">Percepciones</th>
                                             <th class="textAlingRight">Deducciones</th>
                                             <th class="textAlingRight">Neto</th>
+                                            <th class="textAlingCenter">Estatus</th>
                                             <th class="textAlingCenter">Acciones</th>
                                         </tr>
                                     </thead>
@@ -150,6 +157,15 @@
                                             <td class="textAlingRight">{{ r.totalDeducciones | currency }}</td>
                                             <td class="textAlingRight" [class.nl-neto-negativo]="r.neto < 0">{{ r.neto | currency }}</td>
                                             <td class="textAlingCenter">
+                                                <span class="pcl-chip"
+                                                    [class.pcl-chip-activo]="r.estatus === 'PAGADA'"
+                                                    [class.pcl-chip-neutro]="r.estatus === 'BORRADOR'"
+                                                    [class.pcl-chip-inactivo]="r.estatus === 'CANCELADA'"
+                                                    [matTooltip]="r.estatus === 'PAGADA' && r.pagadaDateDesc ? 'Pagado el ' + r.pagadaDateDesc : (r.motivoCancelacion || '')">
+                                                    {{ r.estatus }}
+                                                </span>
+                                            </td>
+                                            <td class="textAlingCenter">
                                                 <button mat-icon-button matTooltip="Ver recibo" (click)="$event.stopPropagation(); fn_abrirRecibo(item, r)">
                                                     <mat-icon class="colorGreen">receipt_long</mat-icon>
                                                 </button>
@@ -158,13 +174,19 @@
                                                     <mat-icon>picture_as_pdf</mat-icon>
                                                 </button>
                                                 <button mat-icon-button
-                                                *ngIf="item.estatus === 'BORRADOR' && bPuedePagar"
-                                                matTooltip="Pagar la nómina completa de este lote"
-                                                (click)="$event.stopPropagation(); fn_pagar(item)">
+                                                *ngIf="r.estatus === 'BORRADOR' && bPuedePagar"
+                                                matTooltip="Pagar a este empleado"
+                                                (click)="$event.stopPropagation(); fn_pagarRecibo(item, r)">
                                                     <mat-icon class="colorGreen">payments</mat-icon>
                                                 </button>
                                                 <button mat-icon-button
-                                                *ngIf="item.estatus === 'BORRADOR' && bPuedeExcluir"
+                                                *ngIf="r.estatus === 'PAGADA' && bPuedeCancelar"
+                                                matTooltip="Cancelar el pago de este empleado"
+                                                (click)="$event.stopPropagation(); fn_cancelarRecibo(item, r)">
+                                                    <mat-icon class="colorOrange">undo</mat-icon>
+                                                </button>
+                                                <button mat-icon-button
+                                                *ngIf="r.estatus === 'BORRADOR' && bPuedeExcluir"
                                                 matTooltip="Excluir de la nómina"
                                                 (click)="$event.stopPropagation(); fn_excluir(item, r)">
                                                     <mat-icon class="colorRed">person_remove</mat-icon>

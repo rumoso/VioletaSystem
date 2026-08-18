@@ -53,6 +53,23 @@
     letter-spacing: .3px;
 }
 
+/* Aviso de horas vivas (analisis/013) */
+.rc-horas-aviso {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: -6px 0 10px;
+    font-size: 11px;
+    color: #1565c0;
+    font-style: normal;
+}
+
+.rc-horas-aviso mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
 .nr-totales {
     margin-top: 14px;
     border-top: 2px solid #e0e0e0;

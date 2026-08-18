@@ -11,6 +11,8 @@ const {
     , insertUpdateReciboDetalle
     , deleteReciboDetalle
     , excluirRecibo
+    , pagarRecibo
+    , cancelarRecibo
     , pagarNomina
     , cancelarNomina
     , deleteNomina
@@ -67,6 +69,19 @@ router.post('/excluirRecibo',[
     validarCampos
 
 ], excluirRecibo );
+
+router.post('/pagarRecibo',[
+    check('idNominaRecibo','El recibo es obligatorio').not().isEmpty(),
+    validarCampos
+
+], pagarRecibo );
+
+router.post('/cancelarRecibo',[
+    check('idNominaRecibo','El recibo es obligatorio').not().isEmpty(),
+    check('motivo','El motivo es obligatorio').not().isEmpty(),
+    validarCampos
+
+], cancelarRecibo );
 
 router.post('/pagarNomina',[
     check('id','El id es obligatorio').not().isEmpty(),

@@ -4,10 +4,10 @@
         <div class="pcm-header-titulo">
             <span class="pcm-titulo">Recibo — {{ recibo?.nombreEmpleado }}</span>
             <span class="pcl-chip" *ngIf="recibo"
-                [class.pcl-chip-activo]="recibo.estatusNomina === 'PAGADA'"
-                [class.pcl-chip-neutro]="recibo.estatusNomina === 'BORRADOR'"
-                [class.pcl-chip-inactivo]="recibo.estatusNomina === 'CANCELADA'">
-                {{ recibo.estatusNomina }}
+                [class.pcl-chip-activo]="recibo.estatus === 'PAGADA'"
+                [class.pcl-chip-neutro]="recibo.estatus === 'BORRADOR'"
+                [class.pcl-chip-inactivo]="recibo.estatus === 'CANCELADA'">
+                {{ recibo.estatus }}
             </span>
         </div>
         <button mat-icon-button (click)="fn_close()">
@@ -27,7 +27,7 @@
         </div>
 
         <p class="pcm-slim-hint" *ngIf="bSoloLectura">
-            Esta nómina ya no está en borrador — el recibo es de solo lectura.
+            Este recibo ya no está en borrador — es de solo lectura.
         </p>
         <p class="pcm-slim-hint" *ngIf="recibo.bSinListadoBase">
             Este empleado no tenía conceptos configurados al generarse la nómina.
@@ -94,6 +94,16 @@
                 <span class="rc-horas-label">Faltas</span>
             </div>
         </div>
+
+        <!-- analisis/013: mientras el recibo esté en BORRADOR estas horas
+             se leen vivas de las jornadas, así que una corrección de
+             marcaje se ve aquí sin regenerar la nómina. Al pagar quedan
+             congeladas. -->
+        <p class="pcm-slim-hint rc-horas-aviso"
+            *ngIf="recibo.bHorasVivas && (recibo.horasTrabajadas > 0 || recibo.horasEsperadas > 0)">
+            <mat-icon>sync</mat-icon>
+            Horas al día: se actualizan solas si se corrige un marcaje, y quedan fijas al pagar.
+        </p>
 
         <!-- Estado de cuenta: percepciones a la izquierda, deducciones a la derecha -->
         <div class="rc-ledger">
@@ -167,16 +177,16 @@
             Eliminar nómina</button>
 
         <button mat-raised-button color="warn" type="button"
-        *ngIf="recibo?.estatusNomina === 'PAGADA' && fn_hasPermission('nomina_Cancelar')"
+        *ngIf="recibo?.estatus === 'PAGADA' && fn_hasPermission('nomina_Cancelar')"
         (click)="fn_cancelar()">
             <mat-icon matPrefix class="my-icon">cancel</mat-icon>
-            Cancelar nómina</button>
+            Cancelar pago</button>
 
         <button mat-raised-button color="primary" type="button"
-        *ngIf="recibo?.estatusNomina === 'BORRADOR' && fn_hasPermission('nomina_Pagar')"
+        *ngIf="recibo?.estatus === 'BORRADOR' && fn_hasPermission('nomina_Pagar')"
         (click)="fn_pagar()">
             <mat-icon matPrefix class="my-icon">payments</mat-icon>
-            Pagar nómina</button>
+            Pagar a este empleado</button>
 
         <button mat-raised-button type="button" (click)="fn_close()">
             <mat-icon matPrefix class="my-icon">close</mat-icon>

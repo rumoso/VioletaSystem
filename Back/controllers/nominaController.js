@@ -85,18 +85,21 @@ const _fn_recalcularNomina = async(idNomina, transaction) => {
     );
 };
 
-const _fn_validarBorrador = async(idNomina, transaction) => {
+// Desde analisis/013 valida el RECIBO, no la corrida: un recibo pagado
+// es inmutable aunque su corrida siga en BORRADOR porque otros
+// compañeros no han cobrado.
+const _fn_validarBorrador = async(idNominaRecibo, transaction) => {
 
     const [row] = await dbConnection.query(
-        `SELECT estatus FROM nomina WHERE idNomina = :idNomina LIMIT 1`,
-        { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+        `SELECT estatus FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo LIMIT 1`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
     );
 
     if (!row) {
-        return 'La nómina no existe.';
+        return 'El recibo no existe.';
     }
     if (row.estatus !== 'BORRADOR') {
-        return 'La nómina ya no está en borrador — no se puede editar.';
+        return 'Este recibo ya no está en borrador — no se puede editar.';
     }
     return null;
 };
@@ -148,10 +151,11 @@ const generarNomina = async(req, res = response) => {
         // (evita duplicar). Si el empleado se eligió explícitamente se
         // rechaza toda la operación con su nombre; sin elegir empleados
         // (todos los activos) simplemente se omite de la corrida.
+        // Mira el estatus del RECIBO, no el de la corrida (analisis/013):
+        // lo que estorba es que la persona tenga un recibo sin cobrar, no
+        // que la corrida siga abierta porque otros no han cobrado.
         const pendientesRows = await dbConnection.query(
-            `SELECT DISTINCT R.idEmpleado FROM nomina_recibos AS R
-             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
-             WHERE N.estatus = 'BORRADOR'`,
+            `SELECT DISTINCT idEmpleado FROM nomina_recibos WHERE estatus = 'BORRADOR'`,
             { type: dbConnection.QueryTypes.SELECT, transaction }
         );
         const idsConPendiente = new Set(pendientesRows.map(r => r.idEmpleado));
@@ -324,7 +328,9 @@ const getNominasList = async(req, res = response) => {
                 DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
                 DATE_FORMAT(N.createDate, '%d-%m-%Y') AS createDateDesc,
                 N.totalPercepciones, N.totalDeducciones, N.totalNeto,
-                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina ) AS iEmpleados
+                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina ) AS iEmpleados,
+                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina AND estatus = 'PAGADA' ) AS iPagados,
+                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina AND estatus = 'BORRADOR' ) AS iPendientes
              FROM nomina AS N
              ${ sJoinEmpleados }
              WHERE ( :estatus = '' OR N.estatus = :estatus )
@@ -366,7 +372,9 @@ const getNominaDetalle = async(req, res = response) => {
         }
 
         const recibos = await dbConnection.query(
-            `SELECT idNominaRecibo AS id, idEmpleado, nombreEmpleado, totalPercepciones, totalDeducciones, neto, bSinListadoBase
+            `SELECT idNominaRecibo AS id, idEmpleado, nombreEmpleado, totalPercepciones, totalDeducciones, neto, bSinListadoBase,
+                    estatus, pagadaDate, motivoCancelacion,
+                    DATE_FORMAT(pagadaDate, '%d-%m-%Y') AS pagadaDateDesc
              FROM nomina_recibos WHERE idNomina = :id ORDER BY nombreEmpleado ASC`,
             { replacements: { id }, type: dbConnection.QueryTypes.SELECT }
         );
@@ -417,6 +425,31 @@ const getRecibo = async(req, res = response) => {
             return res.json({ status: 1, message: "El recibo no existe." });
         }
 
+        const recibo = cabecera[0];
+
+        // Horas VIVAS mientras el recibo siga en BORRADOR (analisis/013):
+        // las columnas guardadas son la foto del momento de generar, y si
+        // despues se corrigio un marcaje quedaron viejas — justo el numero
+        // con el que se decide el descuento por faltas. Al pagar se
+        // congelan (ver _fn_pagarUnRecibo) y a partir de ahi se leen tal
+        // cual, porque el recibo ya es un comprobante.
+        recibo.bHorasVivas = recibo.estatus === 'BORRADOR';
+
+        if (recibo.bHorasVivas) {
+
+            const sIni = recibo.fechaInicio ? moment(recibo.fechaInicio).format('YYYY-MM-DD') : null;
+            const sFin = recibo.fechaFin ? moment(recibo.fechaFin).format('YYYY-MM-DD') : null;
+
+            const horas = (sIni && sFin)
+                ? (await fn_getResumenPeriodo(recibo.idEmpleado, sIni, sFin)).totales
+                : await fn_getResumenPendiente(recibo.idEmpleado);
+
+            recibo.horasTrabajadas = horas.horasTrabajadas;
+            recibo.horasEsperadas = horas.horasEsperadas;
+            recibo.iRetardos = horas.iRetardos;
+            recibo.iFaltas = horas.iFaltas;
+        }
+
         const detalle = await dbConnection.query(
             `SELECT idNominaReciboDetalle AS id, idNominaConcepto, conceptoDesc, tipo, monto, bEsComisiones
              FROM nomina_recibo_detalle WHERE idNominaRecibo = :idNominaRecibo
@@ -427,7 +460,7 @@ const getRecibo = async(req, res = response) => {
         res.json({
             status: 0,
             message: "Ejecutado correctamente.",
-            data: { recibo: cabecera[0], detalle }
+            data: { recibo, detalle }
         });
 
     }catch(error){
@@ -471,7 +504,7 @@ const insertUpdateReciboDetalle = async(req, res = response) => {
             return res.json({ status: 1, message: "El recibo no existe." });
         }
 
-        const sError = await _fn_validarBorrador(recibo.idNomina, transaction);
+        const sError = await _fn_validarBorrador(idNominaRecibo, transaction);
         if (sError) {
             await transaction.rollback();
             return res.json({ status: 1, message: sError });
@@ -558,7 +591,7 @@ const deleteReciboDetalle = async(req, res = response) => {
             { replacements: { idNominaRecibo: detalle.idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
-        const sError = await _fn_validarBorrador(recibo.idNomina, transaction);
+        const sError = await _fn_validarBorrador(detalle.idNominaRecibo, transaction);
         if (sError) {
             await transaction.rollback();
             return res.json({ status: 1, message: sError });
@@ -607,7 +640,9 @@ const excluirRecibo = async(req, res = response) => {
             return res.json({ status: 1, message: "El recibo no existe." });
         }
 
-        const sError = await _fn_validarBorrador(recibo.idNomina, transaction);
+        // Excluir un recibo YA PAGADO borraria el comprobante de un pago
+        // ya entregado — el guard del recibo (no de la corrida) lo impide.
+        const sError = await _fn_validarBorrador(idNominaRecibo, transaction);
         if (sError) {
             await transaction.rollback();
             return res.json({ status: 1, message: sError });
@@ -643,7 +678,288 @@ const excluirRecibo = async(req, res = response) => {
 };
 
 // ---- Pagar / cancelar ----
+//
+// Desde analisis/013 el pago vive en el RECIBO, no en la corrida. El
+// estatus de `nomina` deja de ser fuente de verdad y pasa a deducirse
+// siempre de sus recibos: cualquier codigo que necesite saber si algo
+// esta pagado debe mirar el recibo.
 
+// Deduce el estatus de la corrida a partir de sus recibos y lo escribe.
+// Se llama despues de CADA pago o cancelacion, individual o por lote.
+const _fn_recalcularEstatusNomina = async(idNomina, transaction) => {
+
+    const [conteo] = await dbConnection.query(
+        `SELECT COUNT(*) AS iTotal,
+                SUM(estatus = 'PAGADA') AS iPagados,
+                SUM(estatus = 'CANCELADA') AS iCancelados
+         FROM nomina_recibos WHERE idNomina = :idNomina`,
+        { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    const iTotal = Number(conteo.iTotal) || 0;
+    const iPagados = Number(conteo.iPagados) || 0;
+    const iCancelados = Number(conteo.iCancelados) || 0;
+
+    let estatus = 'BORRADOR';
+    if (iTotal > 0 && iCancelados === iTotal) {
+        estatus = 'CANCELADA';
+    } else if (iTotal > 0 && (iPagados + iCancelados) === iTotal) {
+        estatus = 'PAGADA';
+    }
+
+    if (estatus === 'PAGADA') {
+
+        // La fecha/usuario de la corrida son los del ultimo recibo
+        // pagado, para que el comprobante conserve cuando y quien.
+        const [ultimo] = await dbConnection.query(
+            `SELECT pagadaDate, idPagoUser FROM nomina_recibos
+             WHERE idNomina = :idNomina AND estatus = 'PAGADA'
+             ORDER BY pagadaDate DESC LIMIT 1`,
+            { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        await dbConnection.query(
+            `UPDATE nomina SET estatus = 'PAGADA', pagadaDate = :f, idPagoUser = :u,
+                    canceladaDate = NULL, idCancelUser = NULL, motivoCancelacion = NULL
+             WHERE idNomina = :idNomina`,
+            { replacements: { f: ultimo ? ultimo.pagadaDate : null, u: ultimo ? ultimo.idPagoUser : null, idNomina }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+    } else if (estatus === 'CANCELADA') {
+
+        const [ultimo] = await dbConnection.query(
+            `SELECT canceladaDate, idCancelUser, motivoCancelacion FROM nomina_recibos
+             WHERE idNomina = :idNomina AND estatus = 'CANCELADA'
+             ORDER BY canceladaDate DESC LIMIT 1`,
+            { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        await dbConnection.query(
+            `UPDATE nomina SET estatus = 'CANCELADA', canceladaDate = :f, idCancelUser = :u, motivoCancelacion = :m
+             WHERE idNomina = :idNomina`,
+            { replacements: { f: ultimo ? ultimo.canceladaDate : null, u: ultimo ? ultimo.idCancelUser : null, m: ultimo ? ultimo.motivoCancelacion : null, idNomina }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+    } else {
+
+        // Vuelve a BORRADOR (ej. se cancelo un recibo de una corrida que
+        // estaba PAGADA): se limpian las marcas de un estado que ya no
+        // aplica, para no dejar una fecha de pago en algo no pagado.
+        await dbConnection.query(
+            `UPDATE nomina SET estatus = 'BORRADOR', pagadaDate = NULL, idPagoUser = NULL,
+                    canceladaDate = NULL, idCancelUser = NULL, motivoCancelacion = NULL
+             WHERE idNomina = :idNomina`,
+            { replacements: { idNomina }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+    }
+};
+
+// Paga UN recibo: congela sus horas con el valor de este momento y liga
+// las comisiones y jornadas de ESE empleado. Lo comparten el pago
+// individual y el pago por lote, para que no puedan divergir.
+// Devuelve { ok, message } en vez de responder — quien llama decide.
+const _fn_pagarUnRecibo = async(idNominaRecibo, idUserLogON, transaction) => {
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const [recibo] = await dbConnection.query(
+        `SELECT R.idNominaRecibo, R.idNomina, R.idEmpleado, R.idUser, R.estatus, R.nombreEmpleado,
+                N.fechaInicio, N.fechaFin
+         FROM nomina_recibos AS R
+         INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+         WHERE R.idNominaRecibo = :idNominaRecibo LIMIT 1`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!recibo) {
+        return { ok: false, message: "El recibo no existe." };
+    }
+    if (recibo.estatus !== 'BORRADOR') {
+        return { ok: false, message: `El recibo de ${ recibo.nombreEmpleado } ya no está en borrador.` };
+    }
+
+    // 1) Congelar las horas CON EL VALOR DE ESTE MOMENTO (analisis/013):
+    //    mientras el recibo estuvo en BORRADOR se leian vivas; aqui
+    //    quedan fijas. Va en la MISMA transaccion que el ligado de
+    //    jornadas de abajo — eso es lo que garantiza que el recibo y las
+    //    jornadas no puedan terminar diciendo cosas distintas.
+    const sIni = recibo.fechaInicio ? moment(recibo.fechaInicio).format('YYYY-MM-DD') : null;
+    const sFin = recibo.fechaFin ? moment(recibo.fechaFin).format('YYYY-MM-DD') : null;
+
+    const horas = (sIni && sFin)
+        ? (await fn_getResumenPeriodo(recibo.idEmpleado, sIni, sFin, transaction)).totales
+        : await fn_getResumenPendiente(recibo.idEmpleado, transaction);
+
+    await dbConnection.query(
+        `UPDATE nomina_recibos
+         SET horasTrabajadas = :ht, horasEsperadas = :he, iRetardos = :ir, iFaltas = :ifa,
+             estatus = 'PAGADA', pagadaDate = :f, idPagoUser = :u, updateDate = :f
+         WHERE idNominaRecibo = :idNominaRecibo`,
+        {
+            replacements: {
+                ht: horas.horasTrabajadas, he: horas.horasEsperadas,
+                ir: horas.iRetardos, ifa: horas.iFaltas,
+                f: oGetDateNow, u: idUserLogON, idNominaRecibo
+            },
+            type: dbConnection.QueryTypes.UPDATE, transaction
+        }
+    );
+
+    // 2) Ligar SOLO lo de este empleado. Mismo criterio de fechas que
+    //    ya usaba el pago por lote, acotado ahora a un recibo.
+    await dbConnection.query(
+        `UPDATE comisiones_track AS CT
+         INNER JOIN nomina_recibos AS R ON R.idUser = CT.idUser AND R.idNominaRecibo = :idNominaRecibo
+         INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+         SET CT.estatus = 'INCLUIDA_EN_NOMINA', CT.idNomina = R.idNomina
+         WHERE CT.estatus = 'PENDIENTE'
+         AND ( N.fechaInicio IS NULL OR CT.fecha >= N.fechaInicio )
+         AND ( N.fechaFin IS NULL OR CT.fecha <= N.fechaFin )`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    await dbConnection.query(
+        `UPDATE timecard_jornadas AS J
+         INNER JOIN nomina_recibos AS R ON R.idEmpleado = J.idEmpleado AND R.idNominaRecibo = :idNominaRecibo
+         INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+         SET J.estatus = 'INCLUIDA_EN_NOMINA', J.idNomina = R.idNomina
+         WHERE J.estatus = 'PENDIENTE'
+         AND ( N.fechaInicio IS NULL OR J.fecha >= N.fechaInicio )
+         AND ( N.fechaFin IS NULL OR J.fecha <= N.fechaFin )`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    return { ok: true, idNomina: recibo.idNomina };
+};
+
+// Cancela UN recibo pagado: libera SUS comisiones y SUS jornadas, sin
+// tocar a los demas empleados del lote.
+const _fn_cancelarUnRecibo = async(idNominaRecibo, motivo, idUserLogON, transaction) => {
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const [recibo] = await dbConnection.query(
+        `SELECT idNominaRecibo, idNomina, idEmpleado, idUser, estatus, nombreEmpleado
+         FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo LIMIT 1`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!recibo) {
+        return { ok: false, message: "El recibo no existe." };
+    }
+    if (recibo.estatus !== 'PAGADA') {
+        return { ok: false, message: `Solo se puede cancelar un recibo pagado (${ recibo.nombreEmpleado }).` };
+    }
+
+    await dbConnection.query(
+        `UPDATE comisiones_track SET estatus = 'PENDIENTE', idNomina = NULL
+         WHERE idNomina = :idNomina AND idUser = :idUser AND estatus = 'INCLUIDA_EN_NOMINA'`,
+        { replacements: { idNomina: recibo.idNomina, idUser: recibo.idUser }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    await dbConnection.query(
+        `UPDATE timecard_jornadas SET estatus = 'PENDIENTE', idNomina = NULL
+         WHERE idNomina = :idNomina AND idEmpleado = :idEmpleado AND estatus = 'INCLUIDA_EN_NOMINA'`,
+        { replacements: { idNomina: recibo.idNomina, idEmpleado: recibo.idEmpleado }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    await dbConnection.query(
+        `UPDATE nomina_recibos
+         SET estatus = 'CANCELADA', canceladaDate = :f, idCancelUser = :u, motivoCancelacion = :m, updateDate = :f
+         WHERE idNominaRecibo = :idNominaRecibo`,
+        { replacements: { f: oGetDateNow, u: idUserLogON, m: motivo, idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    return { ok: true, idNomina: recibo.idNomina };
+};
+
+// Paga un solo recibo (analisis/013): el empleado al que se le dio clic
+// y nadie mas.
+const pagarRecibo = async(req, res = response) => {
+
+    const {
+        idNominaRecibo
+
+        , idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const resultado = await _fn_pagarUnRecibo(idNominaRecibo, idUserLogON, transaction);
+
+        if (!resultado.ok) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: resultado.message });
+        }
+
+        await _fn_recalcularEstatusNomina(resultado.idNomina, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: "Recibo pagado con éxito." });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const cancelarRecibo = async(req, res = response) => {
+
+    const {
+        idNominaRecibo
+        , motivo
+
+        , idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        if (!motivo || !motivo.trim()) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "El motivo es obligatorio." });
+        }
+
+        const resultado = await _fn_cancelarUnRecibo(idNominaRecibo, motivo, idUserLogON, transaction);
+
+        if (!resultado.ok) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: resultado.message });
+        }
+
+        await _fn_recalcularEstatusNomina(resultado.idNomina, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: "Recibo cancelado con éxito." });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// Pago por lote: atajo que paga todos los recibos que sigan en
+// BORRADOR. Conserva su contrato (recibe el id de la CORRIDA) pero por
+// dentro reusa el mismo camino del pago individual.
 const pagarNomina = async(req, res = response) => {
 
     const {
@@ -652,7 +968,6 @@ const pagarNomina = async(req, res = response) => {
         , idUserLogON
     } = req.body;
 
-    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
     const transaction = await dbConnection.transaction();
 
     try{
@@ -666,47 +981,30 @@ const pagarNomina = async(req, res = response) => {
             await transaction.rollback();
             return res.json({ status: 1, message: "La nómina no existe." });
         }
-        if (nomina.estatus !== 'BORRADOR') {
+
+        const pendientes = await dbConnection.query(
+            `SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = :id AND estatus = 'BORRADOR'`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (pendientes.length === 0) {
             await transaction.rollback();
-            return res.json({ status: 1, message: "La nómina ya no está en borrador." });
+            return res.json({ status: 1, message: "Esta nómina ya no tiene recibos pendientes de pago." });
         }
 
-        await dbConnection.query(
-            `UPDATE nomina SET estatus = 'PAGADA', pagadaDate = :pagadaDate, idPagoUser = :idPagoUser WHERE idNomina = :id`,
-            { replacements: { pagadaDate: oGetDateNow, idPagoUser: idUserLogON, id }, type: dbConnection.QueryTypes.UPDATE, transaction }
-        );
+        for (const p of pendientes) {
+            const resultado = await _fn_pagarUnRecibo(p.idNominaRecibo, idUserLogON, transaction);
+            if (!resultado.ok) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: resultado.message });
+            }
+        }
 
-        // Liga (set-based, sin loop) los renglones PENDIENTE de la
-        // bitácora de comisiones cuyo idUser tenga recibo en esta
-        // nómina — dentro del rango de fechas si la nómina tiene uno,
-        // o todos si se generó sin acotar fechas.
-        await dbConnection.query(
-            `UPDATE comisiones_track AS CT
-             INNER JOIN nomina_recibos AS R ON R.idUser = CT.idUser AND R.idNomina = :id
-             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
-             SET CT.estatus = 'INCLUIDA_EN_NOMINA', CT.idNomina = :id
-             WHERE CT.estatus = 'PENDIENTE'
-             AND ( N.fechaInicio IS NULL OR CT.fecha >= N.fechaInicio )
-             AND ( N.fechaFin IS NULL OR CT.fecha <= N.fechaFin )`,
-            { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
-        );
-
-        // Mismo criterio para las jornadas de TimeCard (analisis/011):
-        // liga (set-based) las PENDIENTE del empleado dentro del rango.
-        await dbConnection.query(
-            `UPDATE timecard_jornadas AS J
-             INNER JOIN nomina_recibos AS R ON R.idEmpleado = J.idEmpleado AND R.idNomina = :id
-             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
-             SET J.estatus = 'INCLUIDA_EN_NOMINA', J.idNomina = :id
-             WHERE J.estatus = 'PENDIENTE'
-             AND ( N.fechaInicio IS NULL OR J.fecha >= N.fechaInicio )
-             AND ( N.fechaFin IS NULL OR J.fecha <= N.fechaFin )`,
-            { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
-        );
+        await _fn_recalcularEstatusNomina(id, transaction);
 
         await transaction.commit();
 
-        res.json({ status: 0, message: "Nómina pagada con éxito." });
+        res.json({ status: 0, message: `Nómina pagada con éxito (${ pendientes.length } recibo(s)).` });
 
     }catch(error){
 
@@ -730,7 +1028,6 @@ const cancelarNomina = async(req, res = response) => {
         , idUserLogON
     } = req.body;
 
-    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
     const transaction = await dbConnection.transaction();
 
     try{
@@ -749,31 +1046,30 @@ const cancelarNomina = async(req, res = response) => {
             await transaction.rollback();
             return res.json({ status: 1, message: "La nómina no existe." });
         }
-        if (nomina.estatus !== 'PAGADA') {
+
+        const pagados = await dbConnection.query(
+            `SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = :id AND estatus = 'PAGADA'`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (pagados.length === 0) {
             await transaction.rollback();
-            return res.json({ status: 1, message: "Solo se puede cancelar una nómina pagada." });
+            return res.json({ status: 1, message: "Esta nómina no tiene recibos pagados que cancelar." });
         }
 
-        await dbConnection.query(
-            `UPDATE nomina
-             SET estatus = 'CANCELADA', canceladaDate = :canceladaDate, idCancelUser = :idCancelUser, motivoCancelacion = :motivo
-             WHERE idNomina = :id`,
-            { replacements: { canceladaDate: oGetDateNow, idCancelUser: idUserLogON, motivo, id }, type: dbConnection.QueryTypes.UPDATE, transaction }
-        );
+        for (const p of pagados) {
+            const resultado = await _fn_cancelarUnRecibo(p.idNominaRecibo, motivo, idUserLogON, transaction);
+            if (!resultado.ok) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: resultado.message });
+            }
+        }
 
-        await dbConnection.query(
-            `UPDATE comisiones_track SET estatus = 'PENDIENTE', idNomina = NULL WHERE idNomina = :id AND estatus = 'INCLUIDA_EN_NOMINA'`,
-            { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
-        );
-
-        await dbConnection.query(
-            `UPDATE timecard_jornadas SET estatus = 'PENDIENTE', idNomina = NULL WHERE idNomina = :id AND estatus = 'INCLUIDA_EN_NOMINA'`,
-            { replacements: { id }, type: dbConnection.QueryTypes.UPDATE, transaction }
-        );
+        await _fn_recalcularEstatusNomina(id, transaction);
 
         await transaction.commit();
 
-        res.json({ status: 0, message: "Nómina cancelada con éxito." });
+        res.json({ status: 0, message: `Nómina cancelada con éxito (${ pagados.length } recibo(s)).` });
 
     }catch(error){
 
@@ -811,11 +1107,20 @@ const deleteNomina = async(req, res = response) => {
             await transaction.rollback();
             return res.json({ status: 1, message: "La nómina no existe." });
         }
-        if (nomina.estatus === 'PAGADA') {
+
+        // Basta UN recibo pagado para bloquear (analisis/013): con pago
+        // por empleado la corrida puede seguir en BORRADOR y aun asi
+        // tener dinero ya entregado que quedaria sin comprobante.
+        const [pagados] = await dbConnection.query(
+            `SELECT COUNT(*) AS iPagados FROM nomina_recibos WHERE idNomina = :id AND estatus = 'PAGADA'`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (Number(pagados.iPagados) > 0) {
             await transaction.rollback();
             return res.json({
                 status: 1,
-                message: "No se puede eliminar: ya está pagada. Cancélala en su lugar."
+                message: `No se puede eliminar: ya tiene ${ pagados.iPagados } recibo(s) pagado(s). Cancélalos en su lugar.`
             });
         }
 
@@ -900,6 +1205,8 @@ module.exports = {
     , insertUpdateReciboDetalle
     , deleteReciboDetalle
     , excluirRecibo
+    , pagarRecibo
+    , cancelarRecibo
     , pagarNomina
     , cancelarNomina
     , getNominasByEmpleado

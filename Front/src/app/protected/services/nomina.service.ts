@@ -58,6 +58,20 @@ export class NominaService {
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/excluirRecibo`, { idNominaRecibo } );
   }
 
+  // Pago por empleado (analisis/013): paga solo ese recibo. El pago por
+  // lote (CPagar) se conserva como atajo para pagar todos los pendientes.
+  CPagarRecibo( idNominaRecibo: number ): Observable<any> {
+    const data: any = { idNominaRecibo };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/pagarRecibo`, data );
+  }
+
+  CCancelarRecibo( idNominaRecibo: number, motivo: string ): Observable<any> {
+    const data: any = { idNominaRecibo, motivo };
+    data.idUserLogON = this.authServ.getIdUserSession();
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/cancelarRecibo`, data );
+  }
+
   CPagar( id: number ): Observable<any> {
     const data: any = { id };
     data.idUserLogON = this.authServ.getIdUserSession();

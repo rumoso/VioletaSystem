@@ -77,8 +77,11 @@ export class NominaReciboComponent implements OnInit {
     return this.authServ.hasPermissionAction(name);
   }
 
+  // Desde analisis/013 manda el estatus del RECIBO, no el de la corrida:
+  // un recibo pagado es inmutable aunque su corrida siga en BORRADOR
+  // porque otros compañeros todavía no cobran.
   get bSoloLectura(): boolean {
-    return !this.recibo || this.recibo.estatusNomina !== 'BORRADOR';
+    return !this.recibo || this.recibo.estatus !== 'BORRADOR';
   }
 
   // Mismo criterio de bucketing que el Back (_fn_calcularTotales en
@@ -230,20 +233,22 @@ export class NominaReciboComponent implements OnInit {
     this.printerServ.generarPDFReciboNomina(this.recibo, this.detalle);
   }
 
-  // ---- Pagar / cancelar / eliminar la nómina completa (mismas
-  // acciones y permisos que nomina-detalle) ----
+  // ---- Pagar / cancelar ESTE recibo (analisis/013) ----
+  // Antes estas acciones eran de la corrida completa; ahora aplican al
+  // empleado de este recibo. Eliminar sigue siendo de la corrida, porque
+  // no existe "eliminar un recibo" (para eso está excluir).
 
   fn_pagar() {
 
     this.servicesGServ.showDialog('¿Confirmar pago?'
-      , `Está a punto de pagar esta nómina por un total de ${ this.recibo.neto } (neto). Después de pagar no se puede editar.`
+      , `Está a punto de pagar a "${ this.recibo.nombreEmpleado }" por ${ this.recibo.neto } (neto). Solo se paga a esta persona; los demás del lote quedan igual. Después de pagar, el recibo ya no se puede editar.`
       , '¿Desea continuar?'
       , 'Si', 'No')
     .afterClosed().subscribe({
       next: (resp) => {
         if (resp) {
           this.bShowSpinner = true;
-          this.nominaServ.CPagar(this.recibo.idNomina)
+          this.nominaServ.CPagarRecibo(this.recibo.idNominaRecibo)
             .subscribe({
               next: (resp2: any) => {
                 this.servicesGServ.showSnakbar(resp2.message);
@@ -265,7 +270,7 @@ export class NominaReciboComponent implements OnInit {
 
   fn_cancelar() {
 
-    const motivo = window.prompt('Motivo para cancelar esta nómina pagada:');
+    const motivo = window.prompt(`Motivo para cancelar el pago de "${ this.recibo.nombreEmpleado }":`);
 
     if (motivo === null) {
       return;
@@ -276,7 +281,7 @@ export class NominaReciboComponent implements OnInit {
     }
 
     this.bShowSpinner = true;
-    this.nominaServ.CCancelar(this.recibo.idNomina, motivo.trim())
+    this.nominaServ.CCancelarRecibo(this.recibo.idNominaRecibo, motivo.trim())
       .subscribe({
         next: (resp2: any) => {
           this.servicesGServ.showSnakbar(resp2.message);
