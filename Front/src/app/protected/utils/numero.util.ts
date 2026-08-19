@@ -55,3 +55,91 @@ export function fn_diferenciaDesc( a: any, b: any, decimales: number = 2 ): stri
   const dif = fn_restar(a, b, decimales);
   return `${ dif > 0 ? '+' : '' }${ dif }`;
 }
+
+// ── Importe con letra ──
+// Un recibo de nómina que se entrega en mano lleva el neto escrito con
+// letra: es lo que impide que alguien le agregue un dígito al número.
+
+const _UNIDADES = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE',
+  'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE',
+  'VEINTE', 'VEINTIUNO', 'VEINTIDÓS', 'VEINTITRÉS', 'VEINTICUATRO', 'VEINTICINCO', 'VEINTISÉIS', 'VEINTISIETE', 'VEINTIOCHO', 'VEINTINUEVE'];
+
+const _DECENAS = ['', '', '', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+
+const _CENTENAS = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS',
+  'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+function _fn_hasta999( n: number ): string {
+
+  if (n === 0) return '';
+  if (n === 100) return 'CIEN';
+
+  const c = Math.floor(n / 100);
+  const resto = n % 100;
+
+  const partes: string[] = [];
+  if (c > 0) partes.push(_CENTENAS[c]);
+
+  if (resto > 0) {
+    if (resto < 30) {
+      partes.push(_UNIDADES[resto]);
+    } else {
+      const d = Math.floor(resto / 10);
+      const u = resto % 10;
+      partes.push(u > 0 ? `${ _DECENAS[d] } Y ${ _UNIDADES[u] }` : _DECENAS[d]);
+    }
+  }
+
+  return partes.join(' ');
+}
+
+// Entero a letras (hasta cientos de millones, de sobra para nómina).
+export function fn_numeroALetras( entero: number ): string {
+
+  const n = Math.floor(Math.abs(Number(entero) || 0));
+  if (n === 0) return 'CERO';
+
+  const millones = Math.floor(n / 1000000);
+  const miles = Math.floor((n % 1000000) / 1000);
+  const resto = n % 1000;
+
+  const partes: string[] = [];
+
+  if (millones > 0) {
+    partes.push(millones === 1 ? 'UN MILLÓN' : `${ _fn_hasta999(millones) } MILLONES`);
+  }
+  if (miles > 0) {
+    partes.push(miles === 1 ? 'MIL' : `${ _fn_hasta999(miles) } MIL`);
+  }
+  if (resto > 0) {
+    partes.push(_fn_hasta999(resto));
+  }
+
+  return partes.join(' ');
+}
+
+// "(SON: MIL OCHOCIENTOS PESOS 00/100 M.N.)"
+// Los centavos van en cifra sobre 100, como se acostumbra — escribirlos
+// con letra los haría más difíciles de leer, no menos falsificables.
+export function fn_importeConLetra( monto: any ): string {
+
+  const valor = fn_redondear(monto);
+  const abs = Math.abs(valor);
+  const entero = Math.floor(abs);
+  const centavos = Math.round((abs - entero) * 100);
+
+  const letras = fn_numeroALetras(entero);
+  const moneda = entero === 1 ? 'PESO' : 'PESOS';
+
+  // En moneda el "UNO" final se apocopa: UN PESO, VEINTIÚN PESOS.
+  let texto = letras;
+  if (texto.endsWith('VEINTIUNO')) {
+    texto = `${ texto.slice(0, -9) }VEINTIÚN`;
+  } else if (texto.endsWith('UNO')) {
+    texto = `${ texto.slice(0, -3) }UN`;
+  }
+
+  const signo = valor < 0 ? 'MENOS ' : '';
+
+  return `${ signo }${ texto } ${ moneda } ${ String(centavos).padStart(2, '0') }/100 M.N.`;
+}

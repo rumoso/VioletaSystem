@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { firstValueFrom } from 'rxjs';
-import { fn_restar, fn_cantidadDesc } from 'src/app/protected/utils/numero.util';
+import { fn_restar, fn_redondear, fn_cantidadDesc, fn_importeConLetra } from 'src/app/protected/utils/numero.util';
 
 @Injectable({
   providedIn: 'root'
@@ -96,166 +96,295 @@ export class PrinterPDFService {
     return item.bEsComisiones ? Number(item.monto) >= 0 : item.tipo === 'PERCEPCION';
   }
 
-  // Recibo de nómina de un empleado (analisis/007), con el MISMO
-  // formato que el modal en pantalla: encabezado con los datos del
-  // empleado, tira de horas de TimeCard, estado de cuenta de dos
-  // columnas (percepciones a la izquierda, deducciones a la derecha) y
-  // el bloque de totales.
+  // Recibo de nómina de un empleado (analisis/007 y 013). Es un
+  // documento que se ENTREGA EN MANO al empleado, así que sigue el
+  // formato de un recibo formal y no el de un reporte interno:
+  // identificación del emisor y del empleado, periodo, desglose de
+  // percepciones y deducciones, neto con letra y espacio de firma.
   generarPDFReciboNomina(recibo: any, detalle: any[]) {
 
     const percepciones = (detalle || []).filter(d => this._fn_esPercepcion(d));
     const deducciones = (detalle || []).filter(d => !this._fn_esPercepcion(d));
 
-    const doc = new jsPDF({ orientation: 'portrait' });
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
-    const MARGEN = 14;
-    const half = pageWidth / 2;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const M = 16;                       // margen
+    const anchoUtil = pageWidth - M * 2;
+    const half = M + anchoUtil / 2;
 
+    const TINTA: [number, number, number] = [33, 33, 33];
+    const SUAVE: [number, number, number] = [120, 120, 120];
+    const LINEA: [number, number, number] = [205, 205, 205];
     const INDIGO: [number, number, number] = [40, 53, 147];
-    const VERDE: [number, number, number] = [46, 125, 50];
-    const ROJO: [number, number, number] = [198, 40, 40];
-    const GRIS: [number, number, number] = [120, 120, 120];
-    const MORADO: [number, number, number] = [123, 31, 162];
+    const VERDE: [number, number, number] = [27, 94, 32];
+    const ROJO: [number, number, number] = [183, 28, 28];
+    const FONDO: [number, number, number] = [245, 246, 250];
 
-    const fnMoneda = (monto: any) => `$${ (Number(monto) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }`;
-    const fnNum = (n: any) => Number(n) || 0;
+    const fnMoneda = (monto: any) =>
+      `$${ (fn_redondear(monto)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }`;
 
-    // ── Encabezado: logo + título + datos del empleado ──
-    doc.addImage(this.imgBase64, 'PNG', MARGEN, 10, 18, 18);
+    const sVal = (v: any) => (v === null || v === undefined || String(v).trim() === '') ? '—' : String(v).trim();
 
-    doc.setFontSize(15);
-    doc.setTextColor(INDIGO[0], INDIGO[1], INDIGO[2]);
-    doc.text('RECIBO DE NÓMINA', MARGEN + 24, 17);
+    // ── Encabezado: emisor + identificación del documento ──
+    doc.addImage(this.imgBase64, 'PNG', M, 14, 17, 17);
 
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(TINTA[0], TINTA[1], TINTA[2]);
+    doc.text(sVal(recibo.sucursalNombre).toUpperCase(), M + 22, 19);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(SUAVE[0], SUAVE[1], SUAVE[2]);
+    let yEmisor = 23.5;
+    if (recibo.sucursalDescripcion) {
+      doc.text(String(recibo.sucursalDescripcion), M + 22, yEmisor);
+      yEmisor += 3.6;
+    }
+    if (recibo.sucursalDireccion) {
+      doc.text(String(recibo.sucursalDireccion), M + 22, yEmisor);
+    }
+
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
-    doc.setTextColor(33, 33, 33);
-    doc.text(`${ recibo.nombreEmpleado || '' }`, MARGEN + 24, 24);
+    doc.setTextColor(INDIGO[0], INDIGO[1], INDIGO[2]);
+    doc.text('RECIBO DE NÓMINA', pageWidth - M, 19, { align: 'right' });
 
-    doc.setFontSize(9);
-    doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
-    doc.text(`${ recibo.puesto || 'Sin puesto' }`, MARGEN + 24, 29);
-
-    // Chip de estatus, alineado a la derecha del encabezado
-    const sEstatus = recibo.estatusNomina || '';
-    const colorEstatus: [number, number, number] =
-      sEstatus === 'PAGADA' ? VERDE
-      : sEstatus === 'CANCELADA' ? ROJO
-      : INDIGO;
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    const anchoChip = doc.getTextWidth(sEstatus) + 8;
+    doc.setTextColor(SUAVE[0], SUAVE[1], SUAVE[2]);
+    doc.text(`Folio ${ String(recibo.idNominaRecibo || '').padStart(6, '0') }`, pageWidth - M, 24.5, { align: 'right' });
+
+    // Chip de estatus
+    const sEstatus = String(recibo.estatus || '');
+    const colorEstatus: [number, number, number] =
+      sEstatus === 'PAGADA' ? VERDE : sEstatus === 'CANCELADA' ? ROJO : INDIGO;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    const anchoChip = doc.getTextWidth(sEstatus) + 7;
     doc.setFillColor(colorEstatus[0], colorEstatus[1], colorEstatus[2]);
-    doc.roundedRect(pageWidth - MARGEN - anchoChip, 12, anchoChip, 6, 2, 2, 'F');
+    doc.roundedRect(pageWidth - M - anchoChip, 27, anchoChip, 5, 1.5, 1.5, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.text(sEstatus, pageWidth - MARGEN - anchoChip / 2, 16.2, { align: 'center' });
+    doc.text(sEstatus, pageWidth - M - anchoChip / 2, 30.5, { align: 'center' });
 
-    // Periodo y fecha de generación
-    doc.setFontSize(8.5);
-    doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+    doc.setDrawColor(LINEA[0], LINEA[1], LINEA[2]);
+    doc.setLineWidth(0.4);
+    doc.line(M, 35, pageWidth - M, 35);
+
+    // Rótulo de sección reutilizable
+    const fnSeccion = (titulo: string, y: number): number => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(INDIGO[0], INDIGO[1], INDIGO[2]);
+      doc.text(titulo.toUpperCase(), M, y);
+      doc.setDrawColor(INDIGO[0], INDIGO[1], INDIGO[2]);
+      doc.setLineWidth(0.3);
+      doc.line(M, y + 1.4, pageWidth - M, y + 1.4);
+      return y + 5;
+    };
+
+    let y = fnSeccion('Datos del empleado', 42);
+
+    // Solo se imprimen RFC/CURP/NSS si existen: etiquetas con "—" en un
+    // documento que se entrega en mano se ven a medio llenar.
+    const datos: string[][] = [
+      ['Nombre', sVal(recibo.nombreEmpleado), 'No. de empleado', String(recibo.idEmpleado || '—')],
+      ['Puesto', sVal(recibo.puesto), 'Fecha de ingreso', sVal(recibo.fechaIngresoDesc)]
+    ];
+    const fiscales: string[] = [];
+    if (recibo.rfc) fiscales.push(`RFC: ${ recibo.rfc }`);
+    if (recibo.curp) fiscales.push(`CURP: ${ recibo.curp }`);
+    if (recibo.nss) fiscales.push(`NSS: ${ recibo.nss }`);
+
     const sPeriodo = (recibo.fechaInicioDesc && recibo.fechaFinDesc)
-      ? `Periodo: ${ recibo.fechaInicioDesc } al ${ recibo.fechaFinDesc }`
-      : 'Periodo: todo lo pendiente al generarse';
-    doc.text(sPeriodo, pageWidth - MARGEN, 23, { align: 'right' });
-    doc.text(`Generado el ${ new Date().toLocaleString('es-MX') }`, pageWidth - MARGEN, 28, { align: 'right' });
+      ? `${ recibo.fechaInicioDesc } al ${ recibo.fechaFinDesc }`
+      : 'No especificado';
+    datos.push(['Periodo de pago', sPeriodo, 'Fecha de emisión', new Date().toLocaleDateString('es-MX')]);
+    if (fiscales.length > 0) {
+      datos.push(['Datos fiscales', fiscales.join('   '), '', '']);
+    }
 
-    doc.setDrawColor(220, 220, 220);
-    doc.line(MARGEN, 33, pageWidth - MARGEN, 33);
+    autoTable(doc, {
+      startY: y,
+      margin: { left: M, right: M },
+      body: datos,
+      theme: 'plain',
+      styles: { fontSize: 8.5, cellPadding: { top: 1.4, bottom: 1.4, left: 0, right: 2 }, textColor: TINTA },
+      columnStyles: {
+        0: { cellWidth: 30, textColor: SUAVE, fontSize: 7.5 },
+        1: { cellWidth: 62, fontStyle: 'bold' },
+        2: { cellWidth: 30, textColor: SUAVE, fontSize: 7.5 },
+        3: { fontStyle: 'bold' }
+      }
+    });
+    y = (doc as any).lastAutoTable.finalY + 7;
 
-    let line = 40;
-
-    // ── Horas de TimeCard (analisis/011): solo informativas, el
-    //    sistema no las convierte a dinero. Se omiten si no hay nada
-    //    que reportar, igual que en pantalla. ──
-    const horasTrab = fnNum(recibo.horasTrabajadas);
-    const horasEsp = fnNum(recibo.horasEsperadas);
+    // ── Asistencia del periodo (solo si hay algo que reportar) ──
+    const horasTrab = fn_redondear(recibo.horasTrabajadas);
+    const horasEsp = fn_redondear(recibo.horasEsperadas);
 
     if (horasTrab > 0 || horasEsp > 0) {
 
-      // Redondeada: la resta cruda da cosas como 0.020000000000010232.
+      y = fnSeccion('Asistencia del periodo', y);
+
       const diferencia = fn_restar(horasTrab, horasEsp);
+      const iRetardos = Number(recibo.iRetardos) || 0;
+      const iFaltas = Number(recibo.iFaltas) || 0;
 
       autoTable(doc, {
-        startY: line,
-        margin: { left: MARGEN, right: MARGEN },
+        startY: y,
+        margin: { left: M, right: M },
         head: [['Horas trabajadas', 'Horas esperadas', 'Diferencia', 'Retardos', 'Faltas']],
         body: [[
           fn_cantidadDesc(horasTrab),
           fn_cantidadDesc(horasEsp),
-          `${ diferencia > 0 ? '+' : '' }${ diferencia }`,
-          String(fnNum(recibo.iRetardos)),
-          String(fnNum(recibo.iFaltas))
+          `${ diferencia > 0 ? '+' : '' }${ fn_cantidadDesc(diferencia) }`,
+          String(iRetardos),
+          String(iFaltas)
         ]],
         theme: 'grid',
-        headStyles: { fillColor: INDIGO, fontSize: 8, halign: 'center' },
-        bodyStyles: { fontSize: 11, halign: 'center', textColor: MORADO, fontStyle: 'bold' },
-        // El dato que "duele" (horas de menos, retardos, faltas) se
-        // pinta en rojo para que salte igual que en pantalla.
+        styles: { halign: 'center', lineColor: LINEA, lineWidth: 0.2 },
+        headStyles: { fillColor: FONDO, textColor: SUAVE, fontSize: 7, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 10, fontStyle: 'bold', textColor: TINTA },
         didParseCell: (data: any) => {
           if (data.section !== 'body') { return; }
-          const bNegativo =
+          const bMalo =
             (data.column.index === 2 && diferencia < 0) ||
-            (data.column.index === 3 && fnNum(recibo.iRetardos) > 0) ||
-            (data.column.index === 4 && fnNum(recibo.iFaltas) > 0);
-          if (bNegativo) { data.cell.styles.textColor = ROJO; }
+            (data.column.index === 3 && iRetardos > 0) ||
+            (data.column.index === 4 && iFaltas > 0);
+          if (bMalo) { data.cell.styles.textColor = ROJO; }
         }
       });
 
-      line = (doc as any).lastAutoTable.finalY + 8;
+      y = (doc as any).lastAutoTable.finalY + 7;
     }
 
-    // ── Estado de cuenta: dos columnas ──
+    // ── Percepciones / deducciones ──
+    y = fnSeccion('Percepciones y deducciones', y);
+
+    const anchoCol = (anchoUtil - 6) / 2;
+
     autoTable(doc, {
-      startY: line,
-      margin: { left: MARGEN, right: pageWidth - half + 3 },
-      head: [['Percepciones', 'Monto']],
-      body: percepciones.length > 0 ? percepciones.map(p => [ p.conceptoDesc, fnMoneda(p.monto) ]) : [['Sin percepciones', '']],
+      startY: y,
+      margin: { left: M, right: pageWidth - M - anchoCol },
+      head: [['Percepciones', 'Importe']],
+      body: percepciones.length > 0
+        ? percepciones.map(p => [p.conceptoDesc, fnMoneda(p.monto)])
+        : [['Sin percepciones', '']],
       theme: 'grid',
-      headStyles: { fillColor: VERDE, fontSize: 9 },
-      bodyStyles: { fontSize: 8 },
-      columnStyles: { 1: { halign: 'right' } }
+      styles: { fontSize: 8.5, lineColor: LINEA, lineWidth: 0.2, textColor: TINTA },
+      headStyles: { fillColor: FONDO, textColor: VERDE, fontSize: 7.5, fontStyle: 'bold' },
+      columnStyles: { 1: { halign: 'right', cellWidth: 28 } }
     });
-    const finalYPercepciones = (doc as any).lastAutoTable.finalY;
+    const finPercepciones = (doc as any).lastAutoTable.finalY;
 
     autoTable(doc, {
-      startY: line,
-      margin: { left: half + 3, right: MARGEN },
-      head: [['Deducciones', 'Monto']],
-      body: deducciones.length > 0 ? deducciones.map(d => [ d.conceptoDesc, fnMoneda(d.bEsComisiones ? -d.monto : d.monto) ]) : [['Sin deducciones', '']],
+      startY: y,
+      margin: { left: half + 3, right: M },
+      head: [['Deducciones', 'Importe']],
+      body: deducciones.length > 0
+        ? deducciones.map(d => [d.conceptoDesc, fnMoneda(d.bEsComisiones ? -d.monto : d.monto)])
+        : [['Sin deducciones', '']],
       theme: 'grid',
-      headStyles: { fillColor: ROJO, fontSize: 9 },
-      bodyStyles: { fontSize: 8 },
-      columnStyles: { 1: { halign: 'right' } }
+      styles: { fontSize: 8.5, lineColor: LINEA, lineWidth: 0.2, textColor: TINTA },
+      headStyles: { fillColor: FONDO, textColor: ROJO, fontSize: 7.5, fontStyle: 'bold' },
+      columnStyles: { 1: { halign: 'right', cellWidth: 28 } }
     });
-    const finalYDeducciones = (doc as any).lastAutoTable.finalY;
+    const finDeducciones = (doc as any).lastAutoTable.finalY;
 
-    // ── Totales, alineados a la derecha como en pantalla ──
-    const lineTotales = Math.max(finalYPercepciones, finalYDeducciones) + 8;
-    const neto = fnNum(recibo.neto);
+    y = Math.max(finPercepciones, finDeducciones) + 8;
+
+    // ── Totales y neto ──
+    const neto = fn_redondear(recibo.neto);
+    const anchoTotales = 78;
+    const xTotales = pageWidth - M - anchoTotales;
 
     autoTable(doc, {
-      startY: lineTotales,
-      margin: { left: half + 3, right: MARGEN },
+      startY: y,
+      margin: { left: xTotales, right: M },
       body: [
         ['Total de percepciones', fnMoneda(recibo.totalPercepciones)],
-        ['Total de deducciones', fnMoneda(-recibo.totalDeducciones)],
-        ['Total neto', fnMoneda(neto)]
+        ['Total de deducciones', fnMoneda(-recibo.totalDeducciones)]
       ],
       theme: 'plain',
-      bodyStyles: { fontSize: 9.5 },
+      styles: { fontSize: 9, cellPadding: { top: 1.2, bottom: 1.2, left: 0, right: 0 }, textColor: TINTA },
       columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
       didParseCell: (data: any) => {
         if (data.row.index === 1 && data.column.index === 1) {
           data.cell.styles.textColor = ROJO;
         }
-        if (data.row.index === 2) {
-          data.cell.styles.fontSize = 11;
-          data.cell.styles.fontStyle = 'bold';
-          if (neto < 0) { data.cell.styles.textColor = ROJO; }
-        }
       }
     });
+    y = (doc as any).lastAutoTable.finalY + 2;
 
-    const sNombre = (recibo.nombreEmpleado || 'recibo').replace(/\s+/g, '_');
-    doc.save(`Recibo_${ sNombre }.pdf`);
+    // Caja del neto: es el dato que el empleado busca primero.
+    doc.setFillColor(FONDO[0], FONDO[1], FONDO[2]);
+    doc.setDrawColor(INDIGO[0], INDIGO[1], INDIGO[2]);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(xTotales, y, anchoTotales, 11, 1.5, 1.5, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(INDIGO[0], INDIGO[1], INDIGO[2]);
+    doc.text('NETO A PAGAR', xTotales + 3, y + 7);
+
+    doc.setFontSize(12);
+    doc.setTextColor(neto < 0 ? ROJO[0] : TINTA[0], neto < 0 ? ROJO[1] : TINTA[1], neto < 0 ? ROJO[2] : TINTA[2]);
+    doc.text(fnMoneda(neto), xTotales + anchoTotales - 3, y + 7.5, { align: 'right' });
+
+    y += 15;
+
+    // Importe con letra: lo que impide que alguien altere la cifra.
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(TINTA[0], TINTA[1], TINTA[2]);
+    const sLetra = `SON: ${ fn_importeConLetra(neto) }`;
+    doc.text(doc.splitTextToSize(sLetra, anchoUtil), M, y);
+    y += 4.5 * doc.splitTextToSize(sLetra, anchoUtil).length + 6;
+
+    // ── Firma ──
+    // Si ya no cabe con holgura, se pasa a la hoja siguiente: una firma
+    // pegada al borde inferior no se puede usar.
+    if (y > pageHeight - 46) {
+      doc.addPage();
+      y = 40;
+    }
+
+    const anchoFirma = 78;
+    const xFirma = (pageWidth - anchoFirma) / 2;
+    const yFirma = Math.max(y + 14, pageHeight - 44);
+
+    doc.setDrawColor(TINTA[0], TINTA[1], TINTA[2]);
+    doc.setLineWidth(0.3);
+    doc.line(xFirma, yFirma, xFirma + anchoFirma, yFirma);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(TINTA[0], TINTA[1], TINTA[2]);
+    doc.text(sVal(recibo.nombreEmpleado), pageWidth / 2, yFirma + 4.5, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(SUAVE[0], SUAVE[1], SUAVE[2]);
+    doc.text('Recibí de conformidad el importe neto de este recibo', pageWidth / 2, yFirma + 9, { align: 'center' });
+
+    // ── Pie en todas las hojas ──
+    const totalPaginas = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= totalPaginas; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(LINEA[0], LINEA[1], LINEA[2]);
+      doc.setLineWidth(0.3);
+      doc.line(M, pageHeight - 16, pageWidth - M, pageHeight - 16);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(SUAVE[0], SUAVE[1], SUAVE[2]);
+      doc.text('Documento informativo de control interno. No es un comprobante fiscal digital (CFDI).', M, pageHeight - 11.5);
+      doc.text(`Página ${ i } de ${ totalPaginas }`, pageWidth - M, pageHeight - 11.5, { align: 'right' });
+    }
+
+    const sNombre = (recibo.nombreEmpleado || 'recibo').replace(/[^\wÀ-ÿ]+/g, '_');
+    doc.save(`Recibo_${ sNombre }_${ String(recibo.idNominaRecibo || '') }.pdf`);
     const blobUrl = doc.output('bloburl');
     window.open(blobUrl, '_blank');
   }

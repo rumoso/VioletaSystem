@@ -413,10 +413,14 @@ const getRecibo = async(req, res = response) => {
                     N.fechaInicio, N.fechaFin,
                     DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
                     DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
-                    E.puesto
+                    DATE_FORMAT(R.pagadaDate, '%d-%m-%Y') AS pagadaDateDesc,
+                    E.puesto, E.rfc, E.curp, E.nss,
+                    DATE_FORMAT(E.fechaIngreso, '%d-%m-%Y') AS fechaIngresoDesc,
+                    S.name AS sucursalNombre, S.description AS sucursalDescripcion, S.address AS sucursalDireccion
              FROM nomina_recibos AS R
              INNER JOIN nomina AS N ON N.idNomina = R.idNomina
              LEFT JOIN empleados AS E ON E.idEmpleado = R.idEmpleado
+             LEFT JOIN sucursales AS S ON S.idSucursal = E.idSucursal
              WHERE R.idNominaRecibo = :idNominaRecibo LIMIT 1`,
             { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT }
         );
