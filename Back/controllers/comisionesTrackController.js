@@ -188,12 +188,26 @@ const insertComisionManual = async(req, res = response) => {
             return res.json({ status: 1, message: "El monto no puede ser cero." });
         }
 
+        // Quién autorizó se guarda con NOMBRE y usuario, no con el id:
+        // la bitácora la lee gente, y un "idUser 3" obliga a ir a buscar
+        // a quién corresponde. Se resuelve al insertar y queda congelado
+        // en el renglón — es un registro de auditoría de lo que pasó en
+        // ese momento, no una referencia viva.
+        const [autorizador] = await dbConnection.query(
+            `SELECT name, userName FROM users WHERE idUser = :auth_idUser LIMIT 1`,
+            { replacements: { auth_idUser }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        const sAutorizo = autorizador
+            ? `${ autorizador.name }${ autorizador.userName ? ` (${ autorizador.userName })` : '' }`
+            : `idUser ${ auth_idUser }`;
+
         await dbConnection.query(
             `INSERT INTO comisiones_track
                 (idUser, tipo, concepto, monto, fecha, referencia, estatus, createDate, idCreateUser)
              VALUES
                 (:idUser, :tipo, :concepto, :monto, :fecha, :referencia, 'PENDIENTE', :createDate, :idCreateUser)`,
-            { replacements: { idUser, tipo, concepto, monto, fecha: fecha.substring(0, 10), referencia: `Captura manual — autorizó idUser ${ auth_idUser }`, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT }
+            { replacements: { idUser, tipo, concepto, monto, fecha: fecha.substring(0, 10), referencia: `Captura manual — autorizó: ${ sAutorizo }`, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT }
         );
 
         res.json({
