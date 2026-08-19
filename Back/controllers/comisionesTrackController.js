@@ -202,12 +202,15 @@ const insertComisionManual = async(req, res = response) => {
             ? `${ autorizador.name }${ autorizador.userName ? ` (${ autorizador.userName })` : '' }`
             : `idUser ${ auth_idUser }`;
 
+        // porcentajeAplicado y montoBase quedan NULL: en una captura
+        // manual el monto se decide directo, no sale de aplicar un % a
+        // una base.
         await dbConnection.query(
             `INSERT INTO comisiones_track
-                (idUser, tipo, concepto, monto, fecha, referencia, estatus, createDate, idCreateUser)
+                (idUser, tipo, concepto, monto, fecha, referencia, auth_idUser, estatus, createDate, idCreateUser)
              VALUES
-                (:idUser, :tipo, :concepto, :monto, :fecha, :referencia, 'PENDIENTE', :createDate, :idCreateUser)`,
-            { replacements: { idUser, tipo, concepto, monto, fecha: fecha.substring(0, 10), referencia: `Captura manual — autorizó: ${ sAutorizo }`, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT }
+                (:idUser, :tipo, :concepto, :monto, :fecha, :referencia, :auth_idUser, 'PENDIENTE', :createDate, :idCreateUser)`,
+            { replacements: { idUser, tipo, concepto, monto, fecha: fecha.substring(0, 10), referencia: `Captura manual — autorizó: ${ sAutorizo }`, auth_idUser, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT }
         );
 
         res.json({
@@ -344,9 +347,9 @@ const fn_registrarDestajoByTaller = async(idTaller, oGetDateNow, idUserLogON, tr
 
         await dbConnection.query(
             `INSERT INTO comisiones_track
-                (idUser, tipo, concepto, monto, fecha, idTaller, referencia, estatus, createDate, idCreateUser)
+                (idUser, tipo, concepto, monto, fecha, idTaller, referencia, montoBase, porcentajeAplicado, estatus, createDate, idCreateUser)
              VALUES
-                (:idUser, 'DESTAJO', :concepto, :monto, :fecha, :idTaller, :referencia, 'PENDIENTE', :createDate, :idCreateUser)`,
+                (:idUser, 'DESTAJO', :concepto, :monto, :fecha, :idTaller, :referencia, :montoBase, :porcentajeAplicado, 'PENDIENTE', :createDate, :idCreateUser)`,
             {
                 replacements: {
                     idUser: fila.idUserTecnico,
@@ -355,6 +358,8 @@ const fn_registrarDestajoByTaller = async(idTaller, oGetDateNow, idUserLogON, tr
                     fecha: oGetDateNow.substring(0, 10),
                     idTaller,
                     referencia: `Mano de obra $${ totalManoObra } x ${ destajoPorcentaje }%`,
+                    montoBase: totalManoObra,
+                    porcentajeAplicado: destajoPorcentaje,
                     createDate: oGetDateNow,
                     idCreateUser: idUserLogON
                 },
@@ -505,7 +510,7 @@ const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancela
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     const renglones = await dbConnection.query(
-        `SELECT idComisionTrack, idUser, monto, estatus FROM comisiones_track
+        `SELECT idComisionTrack, idUser, monto, estatus, montoBase, porcentajeAplicado FROM comisiones_track
          WHERE idSale = :idSale AND tipo = 'VENTA' AND estatus IN ('PENDIENTE', 'INCLUIDA_EN_NOMINA')`,
         { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
     );
@@ -523,11 +528,14 @@ const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancela
 
         } else {
 
+            // La reversa hereda la trazabilidad del origen: mismo % y la
+            // misma base pero en negativo, para que al sumar el origen y
+            // su reversa las bases también se cancelen.
             await dbConnection.query(
                 `INSERT INTO comisiones_track
-                    (idUser, tipo, concepto, monto, fecha, idSale, referencia, estatus, idComisionTrackOrigen, createDate, idCreateUser)
+                    (idUser, tipo, concepto, monto, fecha, idSale, referencia, montoBase, porcentajeAplicado, estatus, idComisionTrackOrigen, createDate, idCreateUser)
                  VALUES
-                    (:idUser, 'VENTA', :concepto, :monto, :fecha, :idSale, :referencia, 'PENDIENTE', :idOrigen, :createDate, :idCreateUser)`,
+                    (:idUser, 'VENTA', :concepto, :monto, :fecha, :idSale, :referencia, :montoBase, :porcentajeAplicado, 'PENDIENTE', :idOrigen, :createDate, :idCreateUser)`,
                 {
                     replacements: {
                         idUser: r.idUser,
@@ -536,6 +544,8 @@ const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancela
                         fecha: oGetDateNow.substring(0, 10),
                         idSale,
                         referencia: referenciaCancelacion,
+                        montoBase: r.montoBase === null || r.montoBase === undefined ? null : -Math.abs(Number(r.montoBase)),
+                        porcentajeAplicado: r.porcentajeAplicado ?? null,
                         idOrigen: r.idComisionTrack,
                         createDate: oGetDateNow,
                         idCreateUser: idUserLogON
@@ -648,9 +658,9 @@ const fn_registrarComisionVentaSiPagada = async(idSale, idUserLogON) => {
 
     await dbConnection.query(
         `INSERT INTO comisiones_track
-            (idUser, tipo, concepto, monto, fecha, idSale, referencia, estatus, createDate, idCreateUser)
+            (idUser, tipo, concepto, monto, fecha, idSale, referencia, montoBase, porcentajeAplicado, estatus, createDate, idCreateUser)
          VALUES
-            (:idUser, 'VENTA', :concepto, :monto, :fecha, :idSale, :referencia, 'PENDIENTE', :createDate, :idCreateUser)`,
+            (:idUser, 'VENTA', :concepto, :monto, :fecha, :idSale, :referencia, :montoBase, :porcentajeAplicado, 'PENDIENTE', :createDate, :idCreateUser)`,
         {
             replacements: {
                 idUser: sale.idSeller_idUser,
@@ -659,6 +669,8 @@ const fn_registrarComisionVentaSiPagada = async(idSale, idUserLogON) => {
                 fecha: oGetDateNow.substring(0, 10),
                 idSale,
                 referencia: `Utilidad $${ utilidad.toFixed(2) } x ${ comisionPorcentaje }%`,
+                montoBase: utilidad,
+                porcentajeAplicado: comisionPorcentaje,
                 createDate: oGetDateNow,
                 idCreateUser: idUserLogON
             }
