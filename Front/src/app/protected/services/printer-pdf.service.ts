@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { firstValueFrom } from 'rxjs';
+import { fn_restar, fn_cantidadDesc } from 'src/app/protected/utils/numero.util';
 
 @Injectable({
   providedIn: 'root'
@@ -169,15 +170,16 @@ export class PrinterPDFService {
 
     if (horasTrab > 0 || horasEsp > 0) {
 
-      const diferencia = Math.round((horasTrab - horasEsp) * 100) / 100;
+      // Redondeada: la resta cruda da cosas como 0.020000000000010232.
+      const diferencia = fn_restar(horasTrab, horasEsp);
 
       autoTable(doc, {
         startY: line,
         margin: { left: MARGEN, right: MARGEN },
         head: [['Horas trabajadas', 'Horas esperadas', 'Diferencia', 'Retardos', 'Faltas']],
         body: [[
-          String(horasTrab),
-          String(horasEsp),
+          fn_cantidadDesc(horasTrab),
+          fn_cantidadDesc(horasEsp),
           `${ diferencia > 0 ? '+' : '' }${ diferencia }`,
           String(fnNum(recibo.iRetardos)),
           String(fnNum(recibo.iFaltas))

@@ -3,6 +3,8 @@
 // fechas ya calculados, igual que getAsistenciaList tampoco sabe de
 // periodos de nómina.
 
+import { fn_restar, fn_cantidadDesc } from 'src/app/protected/utils/numero.util';
+
 export interface RangoSemana {
   inicio: Date; // sábado
   fin: Date;    // viernes
@@ -146,15 +148,17 @@ export interface ResumenSemanalItem {
 }
 
 export function fn_horasFmt( n: number ): string {
-  const r = Math.round((n || 0) * 100) / 100;
-  return String(r);
+  return fn_cantidadDesc(n);
 }
 
 // "48-48" o "48-52:+4" — la diferencia solo aparece si la hubo.
-export function fn_horasColumna( item: { horasEsperadas: number, horasTrabajadas: number, diferencia: number } ): string {
+// La diferencia se recalcula desde esperadas/trabajadas en vez de
+// confiar en el campo `diferencia`: así el formato no depende de que
+// quien lo mandó lo haya redondeado.
+export function fn_horasColumna( item: { horasEsperadas: number, horasTrabajadas: number } ): string {
   const esp = fn_horasFmt(item.horasEsperadas);
   const trab = fn_horasFmt(item.horasTrabajadas);
-  const dif = Math.round((item.diferencia || 0) * 100) / 100;
+  const dif = fn_restar(item.horasTrabajadas, item.horasEsperadas);
   if (dif === 0) {
     return `${ esp }-${ trab }`;
   }
@@ -164,11 +168,13 @@ export function fn_horasColumna( item: { horasEsperadas: number, horasTrabajadas
 
 // Sin horario → neutro (no hay contra qué comparar). Exacto → verde.
 // De más → azul. De menos bajo 8h → naranja. De menos 8h o más → rojo.
-export function fn_horasColor( item: { bSinHorario: boolean, diferencia: number } ): 'verde' | 'azul' | 'naranja' | 'rojo' | 'neutro' {
+// El redondeo NO es cosmético aquí: sin él, una diferencia de
+// 0.0000000001 fallaría el `=== 0` y pintaría azul en vez de verde.
+export function fn_horasColor( item: { bSinHorario: boolean, horasEsperadas: number, horasTrabajadas: number } ): 'verde' | 'azul' | 'naranja' | 'rojo' | 'neutro' {
   if (item.bSinHorario) {
     return 'neutro';
   }
-  const dif = item.diferencia || 0;
+  const dif = fn_restar(item.horasTrabajadas, item.horasEsperadas);
   if (dif === 0) return 'verde';
   if (dif > 0) return 'azul';
   if (dif > -8) return 'naranja';

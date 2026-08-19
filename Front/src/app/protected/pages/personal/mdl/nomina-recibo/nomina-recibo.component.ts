@@ -9,6 +9,7 @@ import { NominaService } from 'src/app/protected/services/nomina.service';
 import { PrinterPDFService } from 'src/app/protected/services/printer-pdf.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
+import { fn_restar, fn_diferenciaDesc } from 'src/app/protected/utils/numero.util';
 
 // Recibo de un empleado dentro de una nómina (analisis/007), en
 // formato de estado de cuenta contable: columna de percepciones y
@@ -82,6 +83,17 @@ export class NominaReciboComponent implements OnInit {
   // porque otros compañeros todavía no cobran.
   get bSoloLectura(): boolean {
     return !this.recibo || this.recibo.estatus !== 'BORRADOR';
+  }
+
+  // La diferencia de horas se calcula AQUI y redondeada, nunca cruda en
+  // el template: 180.02 - 180 da 0.020000000000010232 en JavaScript y
+  // eso llegaba tal cual a pantalla.
+  get diferenciaHoras(): number {
+    return fn_restar(this.recibo?.horasTrabajadas, this.recibo?.horasEsperadas);
+  }
+
+  get diferenciaHorasDesc(): string {
+    return fn_diferenciaDesc(this.recibo?.horasTrabajadas, this.recibo?.horasEsperadas);
   }
 
   // Mismo criterio de bucketing que el Back (_fn_calcularTotales en
