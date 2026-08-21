@@ -32,6 +32,10 @@ export class PaymentsComponent {
 
   pendingAmount: number = 0;
   saldoACubrir: number = 0;
+
+  // Aviso que se pinta debajo del input de "Paga" (sustituye a la
+  // alerta modal, que obligaba a cerrar una ventana en cada intento).
+  sMensajePaga: string = '';
   showPending: boolean = false;
   idSale: any = 0;
   idTaller: number = 0;
@@ -216,6 +220,9 @@ public inputFocus(idInput: any) {
 
 addPayment(){
 
+  // El pago quedó registrado: el aviso ya no aplica.
+  this.sMensajePaga = '';
+
   var Payment: any = {
     idRelation: this.ODataP.idSale,
     relationType: this.ODataP.relationType,
@@ -257,9 +264,35 @@ public nextInputFocus( idInput: any, milliseconds: number ) {
 // SECCIÓN DE EVENTOS
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Los inputs de Paga y Paga con son de texto (para poder capturar
+// "105.50" tal cual, sin arrancar desde los centavos), así que ngModel
+// entrega STRING. Hay que volverlos número antes de compararlos: con
+// strings, "9" >= "100" daría verdadero y dejaría pasar un pago menor
+// al que se debe cubrir.
+fn_toNumber( x: any ): number {
+  const n = parseFloat( x );
+  return isNaN( n ) ? 0 : n;
+}
+
 event_fn_Paga( event: any ){
 
+  // Aviso en línea (debajo del input) en lugar de una alerta modal: el
+  // cajero lo ve mientras teclea, sin tener que cerrar una ventana.
+  // Se evalúa en cada tecla, pero SOLO se lee el valor — no se escribe
+  // el modelo, o se borraría el punto decimal al capturarlo.
+  const nPagaEnCaptura = this.fn_toNumber( this.paymentForm.paga );
+
+  this.sMensajePaga = nPagaEnCaptura > this.pendingAmount
+    ? 'Saldas con $' + this.pendingAmount.toFixed(2)
+    : '';
+
   if(event.keyCode == 13) { // PRESS ENTER
+
+    // Se normaliza AQUÍ y no al inicio del handler: este método corre en
+    // cada tecla, y convertir a número mientras se escribe borraría el
+    // punto decimal (parseFloat("91.") es 91, y el input se repintaría
+    // como "91" justo al teclear el punto).
+    this.paymentForm.paga = this.fn_toNumber( this.paymentForm.paga );
 
     if(
       this.paymentForm.paga > 0
@@ -312,7 +345,10 @@ event_fn_Paga( event: any ){
 
     }
     else{
-      this.servicesGServ.showAlert('W', 'Alerta!', "Saldas con " + this.pendingAmount, true);
+      // Mismo aviso en línea: no se abre alerta modal.
+      this.sMensajePaga = this.paymentForm.paga <= 0
+        ? 'Indica cuánto paga'
+        : 'Saldas con $' + this.pendingAmount.toFixed(2);
     }
 
   }
@@ -322,6 +358,11 @@ event_fn_Paga( event: any ){
 event_fn_PagaCon_GetCambio( event: any ){
 
   if(event.keyCode == 13) { // PRESS ENTER
+
+    // Igual que en event_fn_Paga: normalizar solo al confirmar, para no
+    // borrar el punto decimal mientras se escribe.
+    this.paymentForm.paga = this.fn_toNumber( this.paymentForm.paga );
+    this.paymentForm.pagaCon = this.fn_toNumber( this.paymentForm.pagaCon );
 
     if( this.paymentForm.needFxRate && this.paymentForm.pagaCon > 0 && this.paymentForm.paga > 0){
       this.paymentForm.pagaF = this.paymentForm.pagaCon;
@@ -355,6 +396,8 @@ event_fn_PagaCon_GetCambio( event: any ){
 event_fn_Referencia( event: any ){
 
   if(event.keyCode == 13) { // PRESS ENTER
+
+    this.paymentForm.paga = this.fn_toNumber( this.paymentForm.paga );
 
     /// SI ES PAGO EN EFECTIVO
     if( this.paymentForm.referencia != '' ){
@@ -530,13 +573,45 @@ cbxFormasPago_SelectedOption( event: MatAutocompleteSelectedEvent ) {
   this.paymentForm.fxRate = ODataCbx.fxRate;
   this.paymentForm.electronicMoneySum = ODataCbx.electronicMoneySum;
 
+  // Al escoger la forma de pago, precargar "Paga" con el saldo que
+  // falta por cubrir: el caso normal es que el cliente pague justo eso,
+  // así el cajero solo da ENTER. El texto se deja seleccionado (ver el
+  // (focus) del input) para que teclear otro importe lo reemplace sin
+  // tener que borrar.
+  this.paymentForm.paga = this.pendingAmount;
+
+  // En efectivo, "Paga con" suele ser también el saldo (paga justo) o
+  // más si va a recibir cambio. Se precarga igual para que el flujo sea
+  // ENTER, ENTER cuando paga exacto.
+  if( this.paymentForm.idFormaPago == 1 ){
+    this.paymentForm.pagaCon = this.pendingAmount;
+  }
+
     setTimeout (() => {
       this.tbxPaga.nativeElement.focus();
     }, 500);
 
 }
 
+// Selecciona el contenido del input al recibir el foco, para que el
+// cajero pueda dejar el importe con ENTER o teclear otro encima sin
+// borrar primero. El setTimeout deja que el navegador termine de
+// colocar el cursor antes de seleccionar; si no, la selección se
+// deshace sola.
+event_fn_SeleccionarTexto( event: any ){
+
+  const oInput = event?.target;
+
+  if( !oInput ) return;
+
+  setTimeout(() => {
+    oInput.select();
+  }, 0);
+
+}
+
 cbxFormasPago_Clear(){
+  this.sMensajePaga = '';
   this.paymentForm.idFormaPago = 0;
   this.paymentForm.formaPagoDesc = '';
   this.paymentForm.needRef = 0;

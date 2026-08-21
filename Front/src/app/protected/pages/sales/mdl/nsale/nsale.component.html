@@ -231,6 +231,14 @@
                     (click)="fn_habilitarPrice()"
                     (keyup.enter)="ev_fn_cbxPrecio_keyup_enter($event)"
                     [readOnly]="!isPrecioUnitarioEditable">
+
+                <!-- Aviso en línea: antes era una alerta modal genérica
+                     ("No se puede aplicar tanto descuento."), que no
+                     decía cuál era el mínimo. -->
+                <span class="ns-input-msg" *ngIf="sMensajePrecioMinimo">
+                    <mat-icon class="ns-input-msg-icon">error_outline</mat-icon>
+                    {{ sMensajePrecioMinimo }}
+                </span>
             </div>
 
             <div class="ns-slim-field ns-col-3">

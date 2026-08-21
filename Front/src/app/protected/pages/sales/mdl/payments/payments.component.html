@@ -55,12 +55,25 @@
 
             <div class="ns-slim-field ns-col-3">
                 <label class="ns-slim-label">Paga</label>
+                <!-- Sin currencyMask: se captura el importe como se lee
+                     (105.50), no arrancando desde los centavos.
+                     appDecimalNumber sólo deja dígitos y 2 decimales. -->
                 <input #tbxPaga
+                    type="text"
+                    inputmode="decimal"
+                    appDecimalNumber
                     class="ns-slim-input pay-input textAlingRight"
-                    currencyMask
                     placeholder="PAGA"
                     [(ngModel)]="paymentForm.paga"
+                    (focus)="event_fn_SeleccionarTexto( $event )"
                     (keyup)="event_fn_Paga( $event )">
+
+                <!-- Aviso en línea: antes era una alerta modal que había
+                     que cerrar en cada intento. -->
+                <span class="pay-msg" *ngIf="sMensajePaga">
+                    <mat-icon class="pay-msg-icon">error_outline</mat-icon>
+                    {{ sMensajePaga }}
+                </span>
             </div>
 
             <div class="ns-slim-field ns-col-3" *ngIf="paymentForm.needRef == 1">
@@ -76,10 +89,13 @@
             <div class="ns-slim-field ns-col-3" *ngIf="paymentForm.idFormaPago == 1 || paymentForm.idFormaPago == 3">
                 <label class="ns-slim-label">Paga con <strong>{{ ( paymentForm.needFxRate ? " TC: " + paymentForm.fxRate : "" ) }}</strong></label>
                 <input #tbxPagaCon
+                    type="text"
+                    inputmode="decimal"
+                    appDecimalNumber
                     class="ns-slim-input pay-input textAlingRight"
-                    currencyMask
                     placeholder="PAGA CON"
                     [(ngModel)]="paymentForm.pagaCon"
+                    (focus)="event_fn_SeleccionarTexto( $event )"
                     (keyup)="event_fn_PagaCon_GetCambio( $event )">
             </div>
 
