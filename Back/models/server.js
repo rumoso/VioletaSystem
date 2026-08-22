@@ -44,6 +44,7 @@ class Server{
             comisionesTrack:'/api/comisionesTrack',
             nomina:'/api/nomina',
             timecard:'/api/timecard',
+            dashboard:'/api/dashboard',
 
         }
 
@@ -142,6 +143,7 @@ class Server{
         this.app.use(this.paths.comisionesTrack, require('../routes/comisionesTrackRoute'));
         this.app.use(this.paths.nomina, require('../routes/nominaRoute'));
         this.app.use(this.paths.timecard, require('../routes/timecardRoute'));
+        this.app.use(this.paths.dashboard, require('../routes/dashboardRoute'));
     }
 
     listen(){
