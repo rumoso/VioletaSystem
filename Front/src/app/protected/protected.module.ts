@@ -44,6 +44,7 @@ import { ComisionesTrackListComponent } from './pages/personal/comisiones-track-
 import { ComisionManualComponent } from './pages/personal/mdl/comision-manual/comision-manual.component';
 import { ComisionesTrackDetalleComponent } from './pages/personal/mdl/comisiones-track-detalle/comisiones-track-detalle.component';
 import { NominaListComponent } from './pages/personal/nomina-list/nomina-list.component';
+import { DashboardDirectorComponent } from './pages/dashboard-director/dashboard-director.component';
 import { NominaGenerarComponent } from './pages/personal/mdl/nomina-generar/nomina-generar.component';
 import { NominaReciboComponent } from './pages/personal/mdl/nomina-recibo/nomina-recibo.component';
 import { NominaHistorialEmpleadoComponent } from './pages/personal/mdl/nomina-historial-empleado/nomina-historial-empleado.component';
@@ -137,6 +138,7 @@ import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-
     ComisionManualComponent,
     ComisionesTrackDetalleComponent,
     NominaListComponent,
+    DashboardDirectorComponent,
     NominaGenerarComponent,
     NominaReciboComponent,
     NominaHistorialEmpleadoComponent,

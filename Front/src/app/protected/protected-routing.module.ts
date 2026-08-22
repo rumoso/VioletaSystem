@@ -1,6 +1,7 @@
 import { NgModule } from "@angular/core";
 import { Routes, RouterModule } from '@angular/router';
 import { DashboardComponent } from "./pages/dashboard/dashboard.component";
+import { DashboardDirectorComponent } from "./pages/dashboard-director/dashboard-director.component";
 import { MainComponent } from './pages/main/main.component';
 import { UserListComponent } from "./pages/security/users/user-list/user-list.component";
 import { ProductListComponent } from "./pages/catssales/product-list/product-list.component";
@@ -43,6 +44,10 @@ const routes: Routes = [
         {
           path: 'dashboard',
           component: DashboardComponent
+        },
+        {
+          path: 'dashboardDirector',
+          component: DashboardDirectorComponent
         },
         {
           path: 'userList',
