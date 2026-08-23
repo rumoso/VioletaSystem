@@ -26,223 +26,7 @@
 
     </div>
 
-    <!-- ─────────── 1. CARTERA ─────────── -->
-    <div class="dbp-group-label">
-      <span>EL DINERO QUE ESTÁ AFUERA</span>
-    </div>
-
-    <div class="dbp-grid dbp-grid--cartera">
-
-      <!-- Cartera viva -->
-      <div class="dbp-card">
-
-        <ng-container *ngIf="cartera.bCargando">
-          <div class="dbp-cargando"><mat-spinner diameter="28"></mat-spinner></div>
-        </ng-container>
-
-        <ng-container *ngIf="!cartera.bCargando && cartera.bError">
-          <div class="dbp-error">
-            <mat-icon>cloud_off</mat-icon>
-            <span>No se pudo cargar la cartera.</span>
-            <button mat-stroked-button (click)="fn_reintentar('cartera')">Reintentar</button>
-          </div>
-        </ng-container>
-
-        <ng-container *ngIf="!cartera.bCargando && !cartera.bError && cartera.data">
-
-          <div class="dbp-card-head">
-            <div>
-              <div class="dbp-card-titulo">Cartera viva</div>
-              <div class="dbp-cifra dbp-cifra--indigo">{{ cartera.data.total.saldo | currency }}</div>
-              <div class="dbp-sub">{{ cartera.data.total.notas }} notas sin liquidar</div>
-            </div>
-
-            <div class="dbp-mini-row" *ngIf="!cartera.data.bSinDatos">
-              <div class="dbp-mini">
-                <div class="dbp-mini-label">Apartados</div>
-                <div class="dbp-mini-valor">{{ cartera.data.apartados.saldo | currency }}</div>
-                <div class="dbp-mini-sub">{{ cartera.data.apartados.notas }} notas</div>
-              </div>
-              <div class="dbp-mini">
-                <div class="dbp-mini-label">Créditos</div>
-                <div class="dbp-mini-valor">{{ cartera.data.creditos.saldo | currency }}</div>
-                <div class="dbp-mini-sub">{{ cartera.data.creditos.notas }} notas</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="dbp-vacio" *ngIf="cartera.data.bSinDatos">
-            <mat-icon>inbox</mat-icon>
-            <span>Sin registros</span>
-            <small>No hay apartados ni créditos con saldo a esta fecha</small>
-          </div>
-
-          <div class="dbp-card-body" *ngIf="!cartera.data.bSinDatos">
-
-            <div class="dbp-sec-label">Antigüedad</div>
-
-            <div class="dbp-barras">
-              <div class="dbp-barra-row"
-                   *ngFor="let c of cartera.data.antiguedad"
-                   [class.dbp-barra-row--critica]="c.clave === '+90'">
-                <span class="dbp-barra-etq">{{ c.etiqueta }}</span>
-                <span class="dbp-barra-pista">
-                  <span class="dbp-barra-fill"
-                        [class.dbp-barra-fill--critica]="c.clave === '+90'"
-                        [ngStyle]="{ 'width.%': fn_anchoAntiguedad(c.saldo) }"></span>
-                </span>
-                <span class="dbp-barra-valor">{{ c.saldo | currency }}</span>
-                <span class="dbp-barra-notas">{{ c.notas }} notas</span>
-              </div>
-            </div>
-
-          </div>
-
-        </ng-container>
-
-      </div>
-
-      <!-- Mayores saldos vencidos -->
-      <div class="dbp-card">
-
-        <div class="dbp-card-head dbp-card-head--simple">
-          <span class="dbp-card-titulo">Mayores saldos vencidos</span>
-          <span class="dbp-badge" *ngIf="carteraTop.data && !carteraTop.data.bSinDatos">
-            {{ carteraTop.data.rows.length }} clientes
-          </span>
-        </div>
-
-        <div class="dbp-cargando" *ngIf="carteraTop.bCargando"><mat-spinner diameter="28"></mat-spinner></div>
-
-        <div class="dbp-error" *ngIf="!carteraTop.bCargando && carteraTop.bError">
-          <mat-icon>cloud_off</mat-icon>
-          <span>No se pudo cargar el listado.</span>
-          <button mat-stroked-button (click)="fn_reintentar('carteraTop')">Reintentar</button>
-        </div>
-
-        <ng-container *ngIf="!carteraTop.bCargando && !carteraTop.bError && carteraTop.data">
-
-          <div class="dbp-vacio" *ngIf="carteraTop.data.bSinDatos">
-            <mat-icon>inbox</mat-icon>
-            <span>Sin registros</span>
-          </div>
-
-          <div class="dbp-tabla-wrap" *ngIf="!carteraTop.data.bSinDatos">
-            <table class="dbp-tabla">
-              <thead>
-                <tr>
-                  <th class="dbp-th dbp-th--left">Cliente</th>
-                  <th class="dbp-th dbp-th--right">Saldo</th>
-                  <th class="dbp-th dbp-th--center">Días</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="dbp-tr" *ngFor="let x of carteraTop.data.rows" (click)="fn_irAVentas()">
-                  <td class="dbp-td">
-                    <div class="dbp-persona">
-                      <span class="dbp-persona-nombre">{{ x.clienteDesc }}</span>
-                      <span class="dbp-persona-sub">{{ x.tipoDesc }}<ng-container *ngIf="x.tel"> · {{ x.tel }}</ng-container></span>
-                    </div>
-                  </td>
-                  <td class="dbp-td dbp-td--right dbp-td--fuerte">{{ x.saldo | currency }}</td>
-                  <td class="dbp-td dbp-td--center">
-                    <span class="dbp-chip"
-                          [class.dbp-chip--rojo]="x.dias > 90"
-                          [class.dbp-chip--ambar]="x.dias > 60 && x.dias <= 90"
-                          [class.dbp-chip--gris]="x.dias <= 60">{{ x.dias }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="dbp-card-foot" *ngIf="!carteraTop.data.bSinDatos" (click)="fn_irAVentas()">
-            Ver todas las notas con saldo
-          </div>
-
-        </ng-container>
-
-      </div>
-
-    </div>
-
-    <!-- ─────────── 2. CAPITAL DORMIDO ─────────── -->
-    <div class="dbp-group-label">
-      <span>CAPITAL DORMIDO</span>
-    </div>
-
-    <div class="dbp-card dbp-card--suelta">
-
-      <div class="dbp-cargando" *ngIf="inventario.bCargando"><mat-spinner diameter="28"></mat-spinner></div>
-
-      <div class="dbp-error" *ngIf="!inventario.bCargando && inventario.bError">
-        <mat-icon>cloud_off</mat-icon>
-        <span>No se pudo cargar el inventario.</span>
-        <button mat-stroked-button (click)="fn_reintentar('inventario')">Reintentar</button>
-      </div>
-
-      <ng-container *ngIf="!inventario.bCargando && !inventario.bError && inventario.data">
-
-        <div class="dbp-vacio" *ngIf="inventario.data.bSinPermiso">
-          <mat-icon>lock</mat-icon>
-          <span>Sin permiso</span>
-          <small>Este bloque muestra costos y requiere autorización</small>
-        </div>
-
-        <div class="dbp-vacio" *ngIf="!inventario.data.bSinPermiso && inventario.data.bSinDatos">
-          <mat-icon>inbox</mat-icon>
-          <span>Sin registros</span>
-        </div>
-
-        <div class="dbp-card-body" *ngIf="!inventario.data.bSinPermiso && !inventario.data.bSinDatos">
-
-          <div class="dbp-kpis">
-
-            <div class="dbp-kpi dbp-kpi--indigo">
-              <div class="dbp-kpi-label">Inventario a costo</div>
-              <div class="dbp-kpi-valor">{{ inventario.data.costo | currency }}</div>
-              <div class="dbp-kpi-sub">{{ inventario.data.piezas }} piezas activas</div>
-            </div>
-
-            <div class="dbp-kpi dbp-kpi--claro">
-              <div class="dbp-kpi-label">A precio de lista</div>
-              <div class="dbp-kpi-valor">{{ inventario.data.lista | currency }}</div>
-              <div class="dbp-kpi-sub">{{ inventario.data.factorLista }}× sobre el costo</div>
-            </div>
-
-            <div class="dbp-kpi dbp-kpi--rojo" (click)="fn_irAProductos()">
-              <div class="dbp-kpi-label">{{ inventario.data.cubetas[0].etiqueta }}</div>
-              <div class="dbp-kpi-valor dbp-kpi-valor--rojo">{{ inventario.data.cubetas[0].costo | currency }}</div>
-              <div class="dbp-kpi-sub">{{ inventario.data.cubetas[0].piezas }} piezas · {{ inventario.data.cubetas[0].porcentaje }}% del costo</div>
-            </div>
-
-            <div class="dbp-kpi dbp-kpi--ambar" (click)="fn_irAProductos()">
-              <div class="dbp-kpi-label">Precio bajo su piso</div>
-              <div class="dbp-kpi-valor dbp-kpi-valor--ambar">{{ inventario.data.bajoPiso }}</div>
-              <div class="dbp-kpi-sub">productos con costo mal capturado</div>
-            </div>
-
-          </div>
-
-          <div class="dbp-barras dbp-barras--cubetas">
-            <div class="dbp-barra-row" *ngFor="let c of inventario.data.cubetas" (click)="fn_irAProductos()">
-              <span class="dbp-barra-etq dbp-barra-etq--ancha">{{ c.etiqueta }}</span>
-              <span class="dbp-barra-pista">
-                <span class="dbp-barra-fill dbp-barra-fill--gris"
-                      [ngStyle]="{ 'width.%': fn_ancho(c.costo, [inventario.data.costo]) }"></span>
-              </span>
-              <span class="dbp-barra-valor">{{ c.costo | currency }}</span>
-              <span class="dbp-barra-notas">{{ c.piezas }} pzs</span>
-            </div>
-          </div>
-
-        </div>
-
-      </ng-container>
-
-    </div>
-
-    <!-- ─────────── 3. EL DÍA ─────────── -->
+    <!-- ─────────── 1. EL DÍA ─────────── -->
     <div class="dbp-group-label">
       <span>EL DÍA</span>
     </div>
@@ -417,7 +201,7 @@
 
     </ng-container>
 
-    <!-- ─────────── 3b. POR VENDEDOR ─────────── -->
+    <!-- ─────────── 1b. POR VENDEDOR ─────────── -->
     <div class="dbp-group-label">
       <span>POR VENDEDOR</span>
     </div>
@@ -527,6 +311,222 @@
           </div>
 
         </ng-container>
+
+      </ng-container>
+
+    </div>
+
+    <!-- ─────────── 2. CARTERA ─────────── -->
+    <div class="dbp-group-label">
+      <span>EL DINERO QUE ESTÁ AFUERA</span>
+    </div>
+
+    <div class="dbp-grid dbp-grid--cartera">
+
+      <!-- Cartera viva -->
+      <div class="dbp-card">
+
+        <ng-container *ngIf="cartera.bCargando">
+          <div class="dbp-cargando"><mat-spinner diameter="28"></mat-spinner></div>
+        </ng-container>
+
+        <ng-container *ngIf="!cartera.bCargando && cartera.bError">
+          <div class="dbp-error">
+            <mat-icon>cloud_off</mat-icon>
+            <span>No se pudo cargar la cartera.</span>
+            <button mat-stroked-button (click)="fn_reintentar('cartera')">Reintentar</button>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="!cartera.bCargando && !cartera.bError && cartera.data">
+
+          <div class="dbp-card-head">
+            <div>
+              <div class="dbp-card-titulo">Cartera viva</div>
+              <div class="dbp-cifra dbp-cifra--indigo">{{ cartera.data.total.saldo | currency }}</div>
+              <div class="dbp-sub">{{ cartera.data.total.notas }} notas sin liquidar</div>
+            </div>
+
+            <div class="dbp-mini-row" *ngIf="!cartera.data.bSinDatos">
+              <div class="dbp-mini">
+                <div class="dbp-mini-label">Apartados</div>
+                <div class="dbp-mini-valor">{{ cartera.data.apartados.saldo | currency }}</div>
+                <div class="dbp-mini-sub">{{ cartera.data.apartados.notas }} notas</div>
+              </div>
+              <div class="dbp-mini">
+                <div class="dbp-mini-label">Créditos</div>
+                <div class="dbp-mini-valor">{{ cartera.data.creditos.saldo | currency }}</div>
+                <div class="dbp-mini-sub">{{ cartera.data.creditos.notas }} notas</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dbp-vacio" *ngIf="cartera.data.bSinDatos">
+            <mat-icon>inbox</mat-icon>
+            <span>Sin registros</span>
+            <small>No hay apartados ni créditos con saldo a esta fecha</small>
+          </div>
+
+          <div class="dbp-card-body" *ngIf="!cartera.data.bSinDatos">
+
+            <div class="dbp-sec-label">Antigüedad</div>
+
+            <div class="dbp-barras">
+              <div class="dbp-barra-row"
+                   *ngFor="let c of cartera.data.antiguedad"
+                   [class.dbp-barra-row--critica]="c.clave === '+90'">
+                <span class="dbp-barra-etq">{{ c.etiqueta }}</span>
+                <span class="dbp-barra-pista">
+                  <span class="dbp-barra-fill"
+                        [class.dbp-barra-fill--critica]="c.clave === '+90'"
+                        [ngStyle]="{ 'width.%': fn_anchoAntiguedad(c.saldo) }"></span>
+                </span>
+                <span class="dbp-barra-valor">{{ c.saldo | currency }}</span>
+                <span class="dbp-barra-notas">{{ c.notas }} notas</span>
+              </div>
+            </div>
+
+          </div>
+
+        </ng-container>
+
+      </div>
+
+      <!-- Mayores saldos vencidos -->
+      <div class="dbp-card">
+
+        <div class="dbp-card-head dbp-card-head--simple">
+          <span class="dbp-card-titulo">Mayores saldos vencidos</span>
+          <span class="dbp-badge" *ngIf="carteraTop.data && !carteraTop.data.bSinDatos">
+            {{ carteraTop.data.rows.length }} clientes
+          </span>
+        </div>
+
+        <div class="dbp-cargando" *ngIf="carteraTop.bCargando"><mat-spinner diameter="28"></mat-spinner></div>
+
+        <div class="dbp-error" *ngIf="!carteraTop.bCargando && carteraTop.bError">
+          <mat-icon>cloud_off</mat-icon>
+          <span>No se pudo cargar el listado.</span>
+          <button mat-stroked-button (click)="fn_reintentar('carteraTop')">Reintentar</button>
+        </div>
+
+        <ng-container *ngIf="!carteraTop.bCargando && !carteraTop.bError && carteraTop.data">
+
+          <div class="dbp-vacio" *ngIf="carteraTop.data.bSinDatos">
+            <mat-icon>inbox</mat-icon>
+            <span>Sin registros</span>
+          </div>
+
+          <div class="dbp-tabla-wrap" *ngIf="!carteraTop.data.bSinDatos">
+            <table class="dbp-tabla">
+              <thead>
+                <tr>
+                  <th class="dbp-th dbp-th--left">Cliente</th>
+                  <th class="dbp-th dbp-th--right">Saldo</th>
+                  <th class="dbp-th dbp-th--center">Días</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="dbp-tr" *ngFor="let x of carteraTop.data.rows" (click)="fn_irAVentas()">
+                  <td class="dbp-td">
+                    <div class="dbp-persona">
+                      <span class="dbp-persona-nombre">{{ x.clienteDesc }}</span>
+                      <span class="dbp-persona-sub">{{ x.tipoDesc }}<ng-container *ngIf="x.tel"> · {{ x.tel }}</ng-container></span>
+                    </div>
+                  </td>
+                  <td class="dbp-td dbp-td--right dbp-td--fuerte">{{ x.saldo | currency }}</td>
+                  <td class="dbp-td dbp-td--center">
+                    <span class="dbp-chip"
+                          [class.dbp-chip--rojo]="x.dias > 90"
+                          [class.dbp-chip--ambar]="x.dias > 60 && x.dias <= 90"
+                          [class.dbp-chip--gris]="x.dias <= 60">{{ x.dias }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="dbp-card-foot" *ngIf="!carteraTop.data.bSinDatos" (click)="fn_irAVentas()">
+            Ver todas las notas con saldo
+          </div>
+
+        </ng-container>
+
+      </div>
+
+    </div>
+
+    <!-- ─────────── 3. CAPITAL DORMIDO ─────────── -->
+    <div class="dbp-group-label">
+      <span>CAPITAL DORMIDO</span>
+    </div>
+
+    <div class="dbp-card dbp-card--suelta">
+
+      <div class="dbp-cargando" *ngIf="inventario.bCargando"><mat-spinner diameter="28"></mat-spinner></div>
+
+      <div class="dbp-error" *ngIf="!inventario.bCargando && inventario.bError">
+        <mat-icon>cloud_off</mat-icon>
+        <span>No se pudo cargar el inventario.</span>
+        <button mat-stroked-button (click)="fn_reintentar('inventario')">Reintentar</button>
+      </div>
+
+      <ng-container *ngIf="!inventario.bCargando && !inventario.bError && inventario.data">
+
+        <div class="dbp-vacio" *ngIf="inventario.data.bSinPermiso">
+          <mat-icon>lock</mat-icon>
+          <span>Sin permiso</span>
+          <small>Este bloque muestra costos y requiere autorización</small>
+        </div>
+
+        <div class="dbp-vacio" *ngIf="!inventario.data.bSinPermiso && inventario.data.bSinDatos">
+          <mat-icon>inbox</mat-icon>
+          <span>Sin registros</span>
+        </div>
+
+        <div class="dbp-card-body" *ngIf="!inventario.data.bSinPermiso && !inventario.data.bSinDatos">
+
+          <div class="dbp-kpis">
+
+            <div class="dbp-kpi dbp-kpi--indigo">
+              <div class="dbp-kpi-label">Inventario a costo</div>
+              <div class="dbp-kpi-valor">{{ inventario.data.costo | currency }}</div>
+              <div class="dbp-kpi-sub">{{ inventario.data.piezas }} piezas activas</div>
+            </div>
+
+            <div class="dbp-kpi dbp-kpi--claro">
+              <div class="dbp-kpi-label">A precio de lista</div>
+              <div class="dbp-kpi-valor">{{ inventario.data.lista | currency }}</div>
+              <div class="dbp-kpi-sub">{{ inventario.data.factorLista }}× sobre el costo</div>
+            </div>
+
+            <div class="dbp-kpi dbp-kpi--rojo" (click)="fn_irAProductos()">
+              <div class="dbp-kpi-label">{{ inventario.data.cubetas[0].etiqueta }}</div>
+              <div class="dbp-kpi-valor dbp-kpi-valor--rojo">{{ inventario.data.cubetas[0].costo | currency }}</div>
+              <div class="dbp-kpi-sub">{{ inventario.data.cubetas[0].piezas }} piezas · {{ inventario.data.cubetas[0].porcentaje }}% del costo</div>
+            </div>
+
+            <div class="dbp-kpi dbp-kpi--ambar" (click)="fn_irAProductos()">
+              <div class="dbp-kpi-label">Precio bajo su piso</div>
+              <div class="dbp-kpi-valor dbp-kpi-valor--ambar">{{ inventario.data.bajoPiso }}</div>
+              <div class="dbp-kpi-sub">productos con costo mal capturado</div>
+            </div>
+
+          </div>
+
+          <div class="dbp-barras dbp-barras--cubetas">
+            <div class="dbp-barra-row" *ngFor="let c of inventario.data.cubetas" (click)="fn_irAProductos()">
+              <span class="dbp-barra-etq dbp-barra-etq--ancha">{{ c.etiqueta }}</span>
+              <span class="dbp-barra-pista">
+                <span class="dbp-barra-fill dbp-barra-fill--gris"
+                      [ngStyle]="{ 'width.%': fn_ancho(c.costo, [inventario.data.costo]) }"></span>
+              </span>
+              <span class="dbp-barra-valor">{{ c.costo | currency }}</span>
+              <span class="dbp-barra-notas">{{ c.piezas }} pzs</span>
+            </div>
+          </div>
+
+        </div>
 
       </ng-container>
 
