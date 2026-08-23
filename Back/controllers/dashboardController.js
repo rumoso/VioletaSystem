@@ -26,9 +26,17 @@ const _SQL_VENTA_VALIDA = `S.active = 1 AND S.idSaleType <> 6`;
 const _TIPOS_TALLER = [5, 7];
 
 // ── Permisos ──
-// Mismo camino que usa authorizationActionsController: primero por rol
-// (relationType 'R'), luego por usuario directo ('U'). No hay bypass
-// por rol administrador.
+// Mismo camino que el SP `haveActionPermiso` del propio sistema: primero
+// por rol (relationType 'R'), luego por usuario directo ('U'). No hay
+// bypass por rol administrador.
+//
+// Las DOS banderas de active importan y son distintas:
+//   A.active  = 1 -> el permiso existe y sigue vigente en el catálogo.
+//   AC.active = 1 -> la ASIGNACIÓN a ese rol/usuario sigue vigente.
+// La pantalla de permisos revoca poniendo `actionsconf.active = 0`, no
+// borrando el renglón; sin ese segundo filtro un permiso revocado se
+// seguiría concediendo. (Detectado al probar el panel de Sarita: al
+// revocar `dashboard_VerCostos` el servidor seguía mandando los costos.)
 const _fn_tienePermiso = async(idUser, actionName) => {
 
     const porRol = await dbConnection.query(
@@ -36,7 +44,8 @@ const _fn_tienePermiso = async(idUser, actionName) => {
          FROM actions AS A
          INNER JOIN actionsconf AS AC ON A.idAction = AC.idAction
          INNER JOIN rolesconfig AS RC ON AC.idRelation = RC.idRol
-         WHERE AC.relationType = 'R' AND RC.idUser = :idUser AND A.name = :actionName AND A.active = 1
+         WHERE AC.relationType = 'R' AND AC.active = 1
+           AND RC.idUser = :idUser AND A.name = :actionName AND A.active = 1
          LIMIT 1`,
         { replacements: { idUser, actionName }, type: dbConnection.QueryTypes.SELECT }
     );
@@ -49,7 +58,8 @@ const _fn_tienePermiso = async(idUser, actionName) => {
         `SELECT AC.idAction
          FROM actions AS A
          INNER JOIN actionsconf AS AC ON A.idAction = AC.idAction
-         WHERE AC.relationType = 'U' AND AC.idRelation = :idUser AND A.name = :actionName AND A.active = 1
+         WHERE AC.relationType = 'U' AND AC.active = 1
+           AND AC.idRelation = :idUser AND A.name = :actionName AND A.active = 1
          LIMIT 1`,
         { replacements: { idUser, actionName }, type: dbConnection.QueryTypes.SELECT }
     );

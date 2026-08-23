@@ -19,9 +19,16 @@ export class PageTitleService {
   desc: string = '';
 
   set( icon: string, title: string, desc: string = '' ) {
-    this.icon = icon;
-    this.title = title;
-    this.desc = desc;
+    // El set() lo llama la pantalla hija en su ngOnInit, cuando Angular
+    // ya revisó el header (el padre). Escribir de inmediato dispara
+    // NG0100 (ExpressionChangedAfterItHasBeenChecked) en consola. Con
+    // Promise.resolve el cambio se aplica en el siguiente microtask, ya
+    // fuera de ese ciclo de detección — el título se ve igual de rápido.
+    Promise.resolve().then(() => {
+      this.icon = icon;
+      this.title = title;
+      this.desc = desc;
+    });
   }
 
   clear() {
