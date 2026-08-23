@@ -1,0 +1,19 @@
+<div class="fac-barra" *ngIf="bVisible">
+
+    <mat-icon class="fac-icon">filter_alt</mat-icon>
+
+    <span class="fac-texto">
+        <span class="fac-titulo">Filtro activo:</span>
+        <span class="fac-etiqueta" *ngFor="let etiqueta of IEtiquetas; let last = last">{{ etiqueta }}<span *ngIf="!last"> · </span></span>
+    </span>
+
+    <span class="fac-spacer"></span>
+
+    <button mat-icon-button
+            class="fac-btn-quitar"
+            matTooltip="Quitar filtro y ver todo"
+            (click)="fn_quitar()">
+        <mat-icon>close</mat-icon>
+    </button>
+
+</div>

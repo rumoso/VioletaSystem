@@ -130,6 +130,27 @@ import { ColumnFormat } from '../protected/interfaces/global.interfaces';
       this.router.navigate( [route, parameter] );
     }
 
+    // Navega llevando un filtro en la URL, no en memoria — así una
+    // recarga o el botón de atrás dejan al usuario viendo lo mismo que
+    // dejó (analisis/015-clics-con-filtro-panel.md). Se omiten null,
+    // undefined y '' para no ensuciar la URL con parámetros vacíos; un
+    // 0 o un false SÍ se mandan, son valores válidos para filtros como
+    // idSaleType o bPending.
+    changeRouteWithFilters( route: string, filtros: any ): void {
+
+      const queryParams: any = {};
+
+      Object.keys( filtros || {} ).forEach( ( clave ) => {
+        const valor = filtros[ clave ];
+        if( valor !== null && valor !== undefined && valor !== '' ){
+          queryParams[ clave ] = valor;
+        }
+      });
+
+      this.router.navigate( [route], { queryParams } );
+
+    }
+
     disableEnableButton( idHtml: string, bDisable: boolean ): void {
       const myButton = document.getElementById(idHtml) as HTMLButtonElement | null;
       if (myButton) {

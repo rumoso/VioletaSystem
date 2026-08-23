@@ -11,6 +11,7 @@ import { DecimalNumberDirective } from './directives/decimal-number.directive';
 import { DecimalNumberNegDirective } from './directives/decimal-number-neg.directive';
 import { PieChartComponent } from './pie-chart/pie-chart.component';
 import { BarChartComponent } from './bar-chart/bar-chart.component';
+import { FiltroActivoComponent } from './filtro-activo/filtro-activo.component';
 
 
 
@@ -23,7 +24,8 @@ import { BarChartComponent } from './bar-chart/bar-chart.component';
     DecimalNumberDirective,
     DecimalNumberNegDirective,
     PieChartComponent,
-    BarChartComponent
+    BarChartComponent,
+    FiltroActivoComponent
   ],
   exports:[
     SpinnerComponent,
@@ -31,7 +33,8 @@ import { BarChartComponent } from './bar-chart/bar-chart.component';
     DecimalNumberDirective,
     DecimalNumberNegDirective,
     PieChartComponent,
-    BarChartComponent
+    BarChartComponent,
+    FiltroActivoComponent
   ],
   imports: [
     CommonModule,
