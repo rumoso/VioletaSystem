@@ -64,20 +64,25 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- ============================================================
--- TIEMPOS MEDIDOS (respaldo de producción, corte 2024-11-08, mínimo
--- de 5 corridas por endpoint). Criterio de cierre: < 1 s cada uno.
+-- TIEMPOS MEDIDOS sobre producción completa (56,536 ventas activas,
+-- 59,022 pagos, 10,044 productos; corte 2026-08-13, mínimo de 5
+-- corridas). Criterio de cierre: < 1 s cada uno.
 --
---   getCartera              440 ms
---   getCarteraTop           366 ms
---   getInventario            63 ms
---   getResumenDia            90 ms
---   getResumenPorVendedor   118 ms
---   getResumenMes           116 ms
---   getOperacion            309 ms
+--   getCartera              414 ms
+--   getCarteraTop           411 ms
+--   getInventario            53 ms
+--   getResumenDia            59 ms
+--   getResumenPorVendedor    61 ms
+--   getResumenMes            54 ms
+--   getOperacion            139 ms
 --
 -- Los dos de cartera son los pesados: arman el saldo nota por nota
 -- sobre toda la historia de apartados y créditos. Se quedan así — a
--- 440 ms cumplen de sobra el criterio.
+-- 414 ms cumplen de sobra el criterio.
+--
+-- ⚠️ NO MEDIR EN FRÍO. Recién restaurada la base, con el buffer pool
+-- vacío, la cartera daba 1.8 s y parecía una regresión. Con la caché
+-- caliente da 414 ms. Correr varias veces y tomar el mínimo.
 --
 -- ÍNDICE QUE SE PROBÓ Y SE DESCARTÓ, para que nadie lo vuelva a
 -- intentar: `payments (active, relationType, idRelation, pago,
