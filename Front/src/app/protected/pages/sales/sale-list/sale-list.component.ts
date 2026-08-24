@@ -23,8 +23,9 @@ import { SalestypeService } from 'src/app/protected/services/salestype.service';
 import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
 import { IngresosComponent } from '../mdl/ingresos/ingresos.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
+import { fn_precargarDesdeQueryParams, fn_limpiarQueryParamsURL } from 'src/app/protected/utils/query-filtros.util';
 
 @Component({
   selector: 'app-sale-list',
@@ -87,6 +88,44 @@ export class SaleListComponent implements OnInit, OnDestroy {
 
   };
 
+  // Copia congelada de los defaults de arriba, para poder RESETEAR el
+  // formulario cuando se quita un filtro que llegó por query param (ver
+  // fn_quitarFiltro). JSON.parse/stringify porque parametersForm es un
+  // objeto plano de literales — no hay nada dentro que un clonado
+  // superficial no resuelva bien, pero así queda a prueba de que
+  // alguien le agregue un campo anidado después.
+  private readonly _parametersFormDefault: any = JSON.parse( JSON.stringify( this.parametersForm ) );
+
+  // Etiquetas del aviso de "filtro activo" (analisis/015). Se calculan
+  // sobre lo que YA quedó en parametersForm después de precargar los
+  // query params — no sobre los query params crudos — así que también
+  // sirven si el usuario edita los filtros a mano en pantalla.
+  get aEtiquetasFiltro(): string[] {
+
+    const f = this.parametersForm;
+    const etiquetas: string[] = [];
+
+    if( f.bPending )  etiquetas.push( 'Solo notas con saldo' );
+    if( f.bPagada )   etiquetas.push( 'Solo notas pagadas' );
+    if( f.bCancel )   etiquetas.push( 'Solo canceladas' );
+
+    if( f.idSaleType > 0 )  etiquetas.push( f.saleTypeDesc || `Tipo #${ f.idSaleType }` );
+    if( f.idCustomer > 0 )  etiquetas.push( f.customerDesc || `Cliente #${ f.idCustomer }` );
+
+    if( f.createDateStart && f.createDateEnd ){
+      etiquetas.push( `Del ${ f.createDateStart } al ${ f.createDateEnd }` );
+    }else if( f.createDateStart ){
+      etiquetas.push( `Desde el ${ f.createDateStart }` );
+    }else if( f.createDateEnd ){
+      etiquetas.push( `Hasta el ${ f.createDateEnd }` );
+    }
+
+    if( f.idSale ) etiquetas.push( `Folio ${ f.idSale }` );
+
+    return etiquetas;
+
+  }
+
   selectCajas: any = {
     idSucursal: 0,
     idCaja: 0,
@@ -120,6 +159,7 @@ constructor(
   , private printTicketServ: PrintTicketService
   , private salesTypeServ: SalestypeService
   , private router: Router
+  , private activatedRoute: ActivatedRoute
   , private pageTitleServ: PageTitleService
 
   ) { }
@@ -155,10 +195,30 @@ constructor(
     //   this.cbxCustomerCBX.nativeElement.focus();
     // }, 1000);
 
+    // Precarga el filtro que haya llegado por query param (clic desde
+    // el panel del director u otro origen) ANTES de la primera
+    // consulta — si se consultara primero, el usuario vería el listado
+    // completo un instante y luego "saltaría" al filtrado.
+    fn_precargarDesdeQueryParams( this.activatedRoute.snapshot.queryParams, this.parametersForm );
+
     this.fn_getVentasListWithPage();
 
     this.fn_getSelectCajaByIdUser( this.idUserLogON );
     this.fn_getSelectPrintByIdUser( this.idUserLogON );
+
+  }
+
+  // Quita el filtro que llegó por query param: regresa parametersForm a
+  // sus defaults, limpia la URL (para que una recarga posterior no
+  // vuelva a traer el filtro) y refresca el listado completo.
+  fn_quitarFiltro(): void {
+
+    Object.assign( this.parametersForm, JSON.parse( JSON.stringify( this._parametersFormDefault ) ) );
+
+    fn_limpiarQueryParamsURL( this.router, this.activatedRoute );
+
+    this.pagination.pageIndex = 0;
+    this.fn_getVentasListWithPage();
 
   }
 

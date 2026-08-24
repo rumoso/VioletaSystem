@@ -202,6 +202,15 @@
 
   </div>
 
+  <!-- Se llegó filtrado desde un clic del panel del director u otro
+       origen (analisis/015): sin este aviso el listado se ve igual que
+       cuando no trae ningún filtro y el usuario cree que la tienda
+       solo tiene, por ejemplo, 32 notas en total. -->
+  <app-filtro-activo
+    [IEtiquetas]="aEtiquetasFiltro"
+    (OQuitar)="fn_quitarFiltro()">
+  </app-filtro-activo>
+
   <!-- ═══════════════ TABLA ═══════════════ -->
   <div class="sll-card sll-content">
 
