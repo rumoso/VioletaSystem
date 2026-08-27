@@ -192,13 +192,23 @@
         </div>
       </div>
 
-      <!-- T14: precio a mano. Sin cálculo detrás y puede quedarse en 0. -->
+      <!-- T14: precio a mano. Sin cálculo detrás y puede quedarse en 0.
+           Se captura con el mismo formato de dinero que el importe en
+           Pagos: texto con appDecimalNumber (dígitos y 2 decimales),
+           alineado a la derecha y seleccionando al enfocar. El campo
+           arranca vacío — el 0 es el placeholder, no un valor escrito. -->
       <div class="gar-band-precio">
         <mat-form-field appearance="outline" class="gar-band-precio-fld">
           <mat-label>Precio al cliente</mat-label>
           <span matPrefix>$&nbsp;</span>
-          <input matInput type="number" min="0" step="0.01"
+          <input matInput
+                 type="text"
+                 inputmode="decimal"
+                 appDecimalNumber
+                 class="textAlingRight"
+                 placeholder="0"
                  [(ngModel)]="precioGarantia"
+                 (focus)="ev_fn_seleccionarTexto( $event )"
                  (change)="ev_fn_precioGarantia_change()"
                  [disabled]="bIsReadOnly">
         </mat-form-field>

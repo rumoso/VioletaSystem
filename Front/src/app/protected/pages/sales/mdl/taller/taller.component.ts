@@ -105,11 +105,15 @@ export class TallerComponent implements OnInit {
     // Garantías levantadas SOBRE este folio (solo si es un taller normal).
     aGarantias: any[] = [];
 
-    // Precio de la garantía: se captura a mano y arranca en 0. No hay
-    // ningún cálculo detrás — es lo que se le va a cobrar al cliente,
-    // que puede ser nada. El costo interno (refacciones, mano de obra,
-    // metal) se sigue registrando aparte como en cualquier folio.
-    precioGarantia: number = 0;
+    // Precio de la garantía: se captura a mano. No hay ningún cálculo
+    // detrás — es lo que se le va a cobrar al cliente, que puede ser
+    // nada. El costo interno (refacciones, mano de obra, metal) se sigue
+    // registrando aparte como en cualquier folio.
+    //
+    // Arranca VACÍO, no en '0': el 0 va en el placeholder. Un campo de
+    // dinero con un 0 escrito obliga a borrarlo antes de teclear el
+    // importe — es el mismo criterio que ya se aplicó en Pagos.
+    precioGarantia: any = '';
 
     // Control del patrón chip ↔ campo editable en el header
       // Valores: 'seller' | 'customer' | 'fechaPrometida' | 'fechaEntregada' | null
@@ -743,7 +747,11 @@ export class TallerComponent implements OnInit {
           // El precio de la garantía es el que ya tenga guardado el
           // folio. Se lee ANTES de recalcular totales porque
           // fn_calcularTotalTaller lo usa como total cuando es garantía.
-          this.precioGarantia = this.bEsGarantia ? Number( data.saleTotal || 0 ) : 0;
+          // Solo se precarga si el folio ya trae un precio guardado; si
+          // sigue en 0 el campo se queda vacío mostrando el placeholder.
+          this.precioGarantia = ( this.bEsGarantia && Number( data.saleTotal ) > 0 )
+              ? Number( data.saleTotal )
+              : '';
 
           this.fn_calcularTotalRefacciones();
           this.fn_calcularTotalServiciosExternos();
@@ -1189,6 +1197,7 @@ export class TallerComponent implements OnInit {
     // es el precio capturado a mano (normalmente 0). Los costos internos
     // se siguen registrando, pero no forman el precio.
     if( this.bEsGarantia ){
+      // Vacío cuenta como 0 — es un valor válido, no un dato faltante.
       this.totalTaller = Number( this.precioGarantia ) || 0;
       return;
     }
@@ -1210,9 +1219,28 @@ export class TallerComponent implements OnInit {
   }
 
   ev_fn_precioGarantia_change(): void {
+
+    // Se respeta el vacío: no se rellena con 0 a la fuerza.
+    if( this.precioGarantia === '' || this.precioGarantia === null ){
+      this.fn_calcularTotalTaller();
+      return;
+    }
+
     const n = Number( this.precioGarantia );
-    this.precioGarantia = ( isNaN(n) || n < 0 ) ? 0 : Math.round( n * 100 ) / 100;
+    this.precioGarantia = ( isNaN(n) || n < 0 ) ? '' : Math.round( n * 100 ) / 100;
     this.fn_calcularTotalTaller();
+
+  }
+
+  // Al entrar al campo se selecciona lo que haya, para escribir encima
+  // sin borrar primero. Mismo comportamiento que el importe en Pagos.
+  ev_fn_seleccionarTexto( event: any ): void {
+
+    const oInput = event?.target;
+    if( !oInput ) return;
+
+    setTimeout(() => oInput.select(), 0);
+
   }
 
   // Abre el modal con ESTE folio ya preseleccionado: aquí no hay nada
