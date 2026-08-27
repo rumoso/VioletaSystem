@@ -142,6 +142,15 @@
         <mat-icon>add</mat-icon>
         Nueva rápida
       </button>
+      <!-- El folio de garantía nace de un taller ENTREGADO: el modal
+           obliga a escogerlo antes de continuar. -->
+      <button mat-flat-button class="tll-btn-add"
+        (click)="fn_ShowGarantia()"
+        [disabled]="_idSucursal == 0"
+        *ngIf="hasPermissionAction('ventas_Crear')">
+        <mat-icon>verified_user</mat-icon>
+        Garantía
+      </button>
       <div class="tll-divider-v"></div>
       <button mat-stroked-button class="tll-btn-secondary" (click)="goToSaleList()">
         <mat-icon>shopping_cart</mat-icon>

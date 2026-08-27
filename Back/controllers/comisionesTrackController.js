@@ -305,6 +305,27 @@ const cancelarComisionTrack = async(req, res = response) => {
 // ya generó un renglón DESTAJO no cancelado, no se repite.
 const fn_registrarDestajoByTaller = async(idTaller, oGetDateNow, idUserLogON, transaction) => {
 
+    // GARANTÍAS (analisis/016): una garantía NO paga comisión — el
+    // taller original ya la pagó una vez, y la garantía es
+    // responsabilidad de la casa, no un servicio nuevo.
+    //
+    // La excepción vive AQUÍ y no en el `if (idTallerStatus === 4)` que
+    // llama a esta función: así cualquier ruta futura que dispare
+    // destajo la hereda sin tener que acordarse de repetirla. Es una
+    // consulta más, pero de una sola fila por índice primario.
+    //
+    // Ojo: esto NO exime a la garantía de descontar el metal final del
+    // inventario del técnico — eso sigue pasando en el caller. No pagar
+    // comisión no vuelve gratis el material.
+    const [oFolio] = await dbConnection.query(
+        `SELECT idTallerOrigen FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+        { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (oFolio && oFolio.idTallerOrigen) {
+        return;
+    }
+
     const manoObraPorTecnico = await dbConnection.query(
         `SELECT idUserTecnico, SUM(precio) AS totalManoObra
          FROM taller_mano_obra

@@ -24,6 +24,7 @@ import { TallerComponent } from '../mdl/taller/taller.component';
 import { CajasService } from 'src/app/protected/services/cajas.service';
 import { SelectCajaComponent } from '../mdl/select-caja/select-caja.component';
 import { TallerFirmaHistorialModalComponent } from '../mdl/taller/taller-firma-historial-modal.component';
+import { GarantiaComponent } from '../mdl/garantia/garantia.component';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
 
 @Component({
@@ -555,7 +556,36 @@ fn_ShowSale( idTaller: number, bRapida: boolean = false ){
   .afterClosed().subscribe({
     next: ( resp ) =>{
 
+      // El detalle puede pedir saltar a otro folio (de una garantía a su
+      // taller de origen y al revés). Se reabre el modal con el otro id
+      // en vez de dejar al usuario en la lista buscándolo a mano.
+      if( resp && resp.irATaller ){
+        this.fn_ShowSale( resp.irATaller );
+        return;
+      }
+
       this.fn_getVentasListWithPage();
+    }
+  });
+
+}
+
+
+// Levanta una garantía sobre un taller ya entregado. El modal trae su
+// propio buscador porque desde aquí no hay un folio seleccionado.
+// Al crearla, se abre directo el folio nuevo para capturarle el trabajo.
+fn_ShowGarantia(){
+
+  this.servicesGServ.showModalWithParams( GarantiaComponent, {}, '820px')
+  .afterClosed().subscribe({
+    next: ( resp ) =>{
+
+      if( resp && resp.idTaller ){
+        this.fn_ShowSale( resp.idTaller );
+      }else{
+        this.fn_getVentasListWithPage();
+      }
+
     }
   });
 

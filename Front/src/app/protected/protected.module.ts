@@ -90,6 +90,7 @@ import { SeleccionarProductoModalComponent } from './pages/sales/mdl/taller/sele
 import { TallerFirmaModalComponent } from './pages/sales/mdl/taller/taller-firma-modal.component';
 import { TallerFirmaHistorialModalComponent } from './pages/sales/mdl/taller/taller-firma-historial-modal.component';
 import { TallerResponsablesDevolucionModalComponent } from './pages/sales/mdl/taller/taller-responsables-devolucion-modal.component';
+import { GarantiaComponent } from './pages/sales/mdl/garantia/garantia.component';
 import { TimecardChecadorComponent } from './pages/personal/timecard-checador/timecard-checador.component';
 import { TimecardListComponent } from './pages/personal/timecard-list/timecard-list.component';
 import { TimecardMarcajeManualComponent } from './pages/personal/mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
@@ -184,6 +185,7 @@ import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-
     TallerFirmaModalComponent,
     TallerFirmaHistorialModalComponent,
     TallerResponsablesDevolucionModalComponent,
+    GarantiaComponent,
     TimecardChecadorComponent,
     TimecardListComponent,
     TimecardMarcajeManualComponent,

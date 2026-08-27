@@ -1068,4 +1068,31 @@ export class SalesService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteResponsableDevolucion`, data );
   }
 
+  // ── Garantías de taller (analisis/016) ──
+
+  // Talleres ENTREGADOS que pueden recibir una garantía. El Back ya
+  // excluye los que son garantía: una garantía no genera otra.
+  CGetTalleresParaGarantia( search: string, start: number = 0, limiter: number = 10 ): Observable<ResponseGet> {
+    const data: any = {
+      search,
+      start,
+      limiter,
+      idUserLogON: this.authServ.getIdUserSession(),
+      idSucursalLogON: this.idSucursal
+    };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTalleresParaGarantia`, data );
+  }
+
+  // Crea la garantía. Cliente y vendedor NO se mandan: el Back los
+  // hereda del taller de origen para que no se puedan alterar.
+  CInsertGarantiaByTaller( idTallerOrigen: number, descripcion: string ): Observable<ResponseGet> {
+    const data: any = {
+      idTallerOrigen,
+      descripcion,
+      idUserLogON: this.authServ.getIdUserSession(),
+      idSucursalLogON: this.idSucursal
+    };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/insertGarantiaByTaller`, data );
+  }
+
 }

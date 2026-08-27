@@ -1,0 +1,124 @@
+<div class="gar-modal">
+
+  <!-- HEADER -->
+  <div class="gar-header">
+    <div class="gar-header-tit">
+      <mat-icon class="gar-ico">verified_user</mat-icon>
+      <div>
+        <h2>Levantar garantía</h2>
+        <div class="gar-sub">Se crea un folio nuevo ligado al taller original</div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="fn_cerrar()"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <!-- ── PASO 1: elegir el taller de origen ── -->
+  <ng-container *ngIf="!oTallerOrigen">
+
+    <div class="gar-aviso">
+      <mat-icon>info</mat-icon>
+      <span>Solo aparecen talleres <b>entregados</b>. Una garantía se levanta
+            siempre sobre el taller original, no sobre otra garantía.</span>
+    </div>
+
+    <mat-form-field appearance="outline" class="gar-full">
+      <mat-label>Buscar por folio o cliente</mat-label>
+      <input matInput
+             [(ngModel)]="sBusqueda"
+             (keyup)="ev_fn_busqueda_keyup()"
+             placeholder="TALLR1-120, Pérez Juan..." >
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-progress-bar *ngIf="bShowSpinner" mode="indeterminate"></mat-progress-bar>
+
+    <div *ngIf="!bShowSpinner && bBuscado && aTalleres.length === 0" class="gar-vacio">
+      <mat-icon>search_off</mat-icon>
+      <div>No hay talleres entregados con ese criterio</div>
+    </div>
+
+    <div class="gar-lista" *ngIf="!bShowSpinner">
+      <div class="gar-item" *ngFor="let t of aTalleres" (click)="fn_seleccionar(t)">
+        <div class="gar-item-main">
+          <div class="gar-folio">{{ t.idSale }}</div>
+          <div class="gar-cliente">{{ t.customerDesc }}</div>
+          <div class="gar-desc">{{ t.descripcion }}</div>
+        </div>
+        <div class="gar-item-side">
+          <div class="gar-fecha">Entregado {{ t.fechaEntregaDesc }}</div>
+          <div class="gar-vend">{{ t.sellerDesc }}</div>
+          <!-- Aviso, no bloqueo: un taller SÍ puede tener varias garantías. -->
+          <div class="gar-previas" *ngIf="t.iGarantias > 0">
+            <mat-icon>history</mat-icon>
+            {{ t.iGarantias }} garantía(s) previa(s)
+          </div>
+        </div>
+        <mat-icon class="gar-chev">chevron_right</mat-icon>
+      </div>
+    </div>
+
+    <div class="gar-cont" *ngIf="iEncontrados > aTalleres.length">
+      Mostrando {{ aTalleres.length }} de {{ iEncontrados }}. Escribe el folio o el cliente para acotar.
+    </div>
+
+  </ng-container>
+
+  <!-- ── PASO 2: confirmar y describir ── -->
+  <ng-container *ngIf="oTallerOrigen">
+
+    <!-- Lo que se hereda: se muestra, no se captura. -->
+    <div class="gar-origen">
+      <div class="gar-origen-head">
+        <span>Taller de origen</span>
+        <button mat-button color="primary"
+                *ngIf="!ODataP?.oTallerOrigen"
+                (click)="fn_cambiarTaller()">Cambiar</button>
+      </div>
+      <div class="gar-origen-folio">{{ oTallerOrigen.idSale }}</div>
+      <div class="gar-origen-grid">
+        <div>
+          <span class="gar-lbl">Cliente</span>
+          <span class="gar-val">{{ oTallerOrigen.customerDesc }}</span>
+        </div>
+        <div>
+          <span class="gar-lbl">Vendedor</span>
+          <span class="gar-val">{{ oTallerOrigen.sellerDesc }}</span>
+        </div>
+        <div>
+          <span class="gar-lbl">Entregado</span>
+          <span class="gar-val">{{ oTallerOrigen.fechaEntregaDesc }}</span>
+        </div>
+      </div>
+      <div class="gar-hereda">
+        <mat-icon>lock</mat-icon>
+        El cliente y el vendedor se heredan del taller original y no se pueden cambiar.
+      </div>
+    </div>
+
+    <mat-form-field appearance="outline" class="gar-full">
+      <mat-label>¿Qué problema presentó la pieza?</mat-label>
+      <textarea matInput rows="4" [(ngModel)]="descripcion" maxlength="500"
+                placeholder="Se soltó la piedra del engaste, se rompió el broche..."></textarea>
+      <mat-hint align="end">{{ descripcion.length }} / 500</mat-hint>
+    </mat-form-field>
+
+    <div class="gar-aviso">
+      <mat-icon>payments</mat-icon>
+      <span>La garantía nace en <b>$0.00</b> y <b>no paga comisión</b> (el taller
+            original ya la pagó). Si aplica algún cobro, el precio se captura
+            dentro del folio.</span>
+    </div>
+
+    <div class="gar-acciones">
+      <button mat-button (click)="fn_cerrar()">Cancelar</button>
+      <button mat-raised-button color="primary"
+              [disabled]="!bPuedeGuardar"
+              (click)="fn_guardar()">
+        <mat-icon>verified_user</mat-icon>
+        {{ bGuardando ? 'Creando...' : 'Crear garantía' }}
+      </button>
+    </div>
+
+  </ng-container>
+
+</div>

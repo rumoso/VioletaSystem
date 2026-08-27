@@ -1749,3 +1749,61 @@ button:hover {
         justify-content: center;
     }
 }
+
+/* ── Garantías (analisis/016) ───────────────────────────────────── */
+
+.taller-btn-garantia {
+  background-color: #6200EA !important;
+  color: #fff !important;
+}
+
+.gar-band {
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 0 0 14px 0;
+}
+.gar-band--es    { background: #f3e5f5; border-left: 4px solid #6200EA; }
+.gar-band--tiene { background: #fff8e1; border-left: 4px solid #ffa000; }
+
+.gar-band-tit {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: #4a148c; margin-bottom: 10px;
+}
+.gar-band--tiene .gar-band-tit { color: #e65100; }
+.gar-band-tit mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+.gar-band-body { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+
+.gar-band-lbl { display: block; font-size: 11px; color: #999; }
+.gar-band-link {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 20px; font-weight: bold; color: #6200EA; text-decoration: none;
+}
+.gar-band-link:hover { text-decoration: underline; }
+.gar-band-link mat-icon { font-size: 16px; width: 16px; height: 16px; }
+.gar-band-meta { font-size: 12px; color: #777; }
+
+.gar-band-precio { flex: 1; min-width: 260px; }
+.gar-band-precio-fld { width: 180px; }
+.gar-band-nota { font-size: 11px; color: #777; max-width: 460px; }
+
+.gar-band-list { display: flex; flex-direction: column; gap: 6px; }
+.gar-band-item {
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  background: #fff; border: 1px solid #ffe0b2; border-radius: 6px; padding: 8px 12px;
+}
+.gar-band-item:hover { border-color: #ffa000; background: #fffdf7; }
+.gar-band-item-folio { font-weight: bold; color: #6200EA; min-width: 110px; }
+.gar-band-item-desc {
+  flex: 1; min-width: 0; font-size: 12px; color: #555;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gar-band-item-side {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: #777;
+}
+.gar-band-item-monto { font-weight: bold; color: #333; }
+.gar-band-chip {
+  background: #eee; border-radius: 10px; padding: 2px 10px; color: #555;
+}
+.gar-band-chev { color: #bbb; }

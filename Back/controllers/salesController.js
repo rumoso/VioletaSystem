@@ -2932,7 +2932,7 @@ const updateTallerStatus = async(req, res) => {
         let newIdSale = null;
 
         const [tallerInfo] = await dbConnection.query(
-            `SELECT idSale, idSucursal, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            `SELECT idSale, idSucursal, idTallerStatus, idTallerOrigen FROM taller WHERE idTaller = :idTaller LIMIT 1`,
             { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
@@ -3106,7 +3106,19 @@ const updateTallerStatus = async(req, res) => {
             SET idTallerStatus = ${idTallerStatus}`;
         
         // Solo actualizar precioTotal cuando se pasa a status 2
-        if (idTallerStatus === 2) {
+        //
+        // GARANTÍAS (analisis/016): una garantía NACE en estatus 2, así
+        // que este UPDATE nunca se dispararía para ella y su precio se
+        // quedaría clavado en 0 para siempre. Por eso también se guarda
+        // al pasar a 4 (Finalizado/Mostrador), que es el momento en que
+        // ya se sabe qué se le va a cobrar al cliente.
+        //
+        // El sistema NUNCA calcula este precio: guarda lo que se
+        // capture, y 0 es un valor válido (la mayoría de las garantías
+        // no se cobran). Un taller normal se comporta igual que antes.
+        const bEsGarantiaFolio = !!( tallerInfo && tallerInfo.idTallerOrigen );
+
+        if (idTallerStatus === 2 || ( bEsGarantiaFolio && idTallerStatus === 4 )) {
             updateQuery += `, precioTotal = ${precioTotal}`;
         }
         
@@ -3195,6 +3207,16 @@ const getTallerByID = async(req, res = response) => {
                 , T.idTallerStatus
                 , IFNULL( T.manoObraPrecio, 0) AS manoObraPrecio
                 , IFNULL( T.bRapida, 0) AS bRapida
+                -- Garantias (analisis/016): el folio NO lleva dentro el
+                -- taller de origen, asi que esta columna es la UNICA
+                -- fuente de la relacion. bEsGarantia se deriva de ella
+                -- --no hay un campo aparte-- para que no se puedan
+                -- desincronizar.
+                , T.idTallerOrigen
+                , CASE WHEN T.idTallerOrigen IS NULL THEN 0 ELSE 1 END AS bEsGarantia
+                , TO_.idTaller AS idTallerOrigenID
+                , IFNULL( DATE_FORMAT( TO_.fechaEntrega, '%d-%m-%Y'), '') AS origenFechaEntrega
+                , IFNULL( CONCAT( CO.lastName, ' ', CO.name), '') AS origenClienteDesc
                 , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
                 , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
                 , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
@@ -3202,6 +3224,11 @@ const getTallerByID = async(req, res = response) => {
             INNER JOIN sucursales AS SS ON T.idSucursal = SS.idSucursal
             INNER JOIN users AS U ON T.idSeller_idUser = U.idUser
             INNER JOIN customers AS C ON T.idCustomer = C.idCustomer
+            -- Taller de origen, solo cuando este folio es una garantia.
+            -- LEFT JOIN porque la enorme mayoria de los folios NO son
+            -- garantia y no deben desaparecer del resultado.
+            LEFT JOIN taller AS TO_ ON TO_.idSale = T.idTallerOrigen
+            LEFT JOIN customers AS CO ON CO.idCustomer = TO_.idCustomer
             LEFT JOIN (
                 SELECT
                     PP.idRelation
@@ -3317,6 +3344,31 @@ const getTallerByID = async(req, res = response) => {
                 type: dbConnection.QueryTypes.SELECT
             });
 
+            // Garantías levantadas sobre ESTE folio (analisis/016).
+            // Es el otro lado de la relación: desde la garantía se ve su
+            // taller (columnas idTallerOrigen* de arriba), y desde el
+            // taller se ven sus garantías. Un mismo taller puede tener
+            // varias a lo largo del tiempo.
+            const oGarantias = await dbConnection.query(`
+                SELECT
+                    G.idTaller
+                    , G.idSale
+                    , G.createDate
+                    , DATE_FORMAT( G.createDate, '%d-%m-%Y') AS createDateDate
+                    , IFNULL( G.descripcion, '') AS descripcion
+                    , G.idTallerStatus
+                    , TSC.nombre AS estatusDesc
+                    , ROUND( IFNULL( G.precioTotal, 0), 2) AS precioTotal
+                FROM taller AS G
+                LEFT JOIN taller_status_cat AS TSC ON TSC.idTallerStatus = G.idTallerStatus
+                WHERE G.idTallerOrigen = :idSaleActual
+                  AND G.active = 1
+                ORDER BY G.createDate DESC
+            `, {
+                replacements: { idSaleActual: idSaleForPayments },
+                type: dbConnection.QueryTypes.SELECT
+            });
+
             res.json({
                 status: 0,
                 message: "Ejecutado correctamente.",
@@ -3329,7 +3381,8 @@ const getTallerByID = async(req, res = response) => {
                     metalesFinal: oMetalesFinal,
                     oManoObra: oManoObra,
                     oFirmaStatus: oFirmaStatus.length > 0 ? oFirmaStatus[0] : null,
-                    oPagos: oPagos
+                    oPagos: oPagos,
+                    oGarantias
                 }
             });
     
@@ -5271,6 +5324,315 @@ const deleteResponsableDevolucion = async(req, res = response) => {
     }
 };
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// GARANTÍAS DE TALLER (analisis/016-garantias-taller.md)
+//
+// Una garantía es un folio de taller que nace de uno ya ENTREGADO,
+// hereda su cliente y vendedor, lleva precio capturado a mano y no
+// paga comisión (la excepción vive en fn_registrarDestajoByTaller).
+//
+// El folio es `GAR<sucursal>-<consecutivo>` y NO lleva dentro el taller
+// de origen: la relación vive en `taller.idTallerOrigen`. Meterlo en el
+// texto rompería el consecutivo, porque todo el sistema lo lee con
+// SUBSTRING_INDEX(idSale, '-', -1).
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Talleres que pueden recibir una garantía: entregados (estatus 5),
+// activos, y que no sean ellos mismos una garantía (regla del análisis:
+// una garantía no genera otra garantía en cadena — la nueva se liga al
+// taller original).
+const getTalleresParaGarantia = async(req, res = response) => {
+
+    const {
+        search = ''
+        , start = 0
+        , limiter = 10
+    } = req.body;
+
+    try {
+
+        const sTexto = String(search || '').trim();
+        const sBusqueda = `%${ sTexto }%`;
+        const iSinFiltro = sTexto.length === 0 ? 1 : 0;
+
+        const [oCount] = await dbConnection.query(
+            `SELECT COUNT(*) AS iRows
+             FROM taller AS T
+             INNER JOIN customers AS C ON C.idCustomer = T.idCustomer
+             WHERE T.active = 1
+               AND T.idTallerStatus = 5
+               AND T.idTallerOrigen IS NULL
+               AND ( :iSinFiltro = 1
+                     OR T.idSale LIKE :sBusqueda
+                     OR CONCAT( C.lastName, ' ', C.name ) LIKE :sBusqueda )`,
+            { replacements: { sBusqueda, iSinFiltro }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        const rows = await dbConnection.query(
+            `SELECT
+                T.idTaller
+                , T.idSale
+                , IFNULL( T.descripcion, '') AS descripcion
+                , IFNULL( DATE_FORMAT( T.fechaEntrega, '%d-%m-%Y'), '') AS fechaEntregaDesc
+                , T.idCustomer
+                , CONCAT( C.lastName, ' ', C.name ) AS customerDesc
+                , T.idSeller_idUser
+                , U.name AS sellerDesc
+                , ROUND( IFNULL( T.precioTotal, 0), 2) AS precioTotal
+                , ( SELECT COUNT(*) FROM taller AS G
+                    WHERE G.idTallerOrigen = T.idSale AND G.active = 1 ) AS iGarantias
+             FROM taller AS T
+             INNER JOIN customers AS C ON C.idCustomer = T.idCustomer
+             INNER JOIN users AS U ON U.idUser = T.idSeller_idUser
+             WHERE T.active = 1
+               AND T.idTallerStatus = 5
+               AND T.idTallerOrigen IS NULL
+               AND ( :iSinFiltro = 1
+                     OR T.idSale LIKE :sBusqueda
+                     OR CONCAT( C.lastName, ' ', C.name ) LIKE :sBusqueda )
+             ORDER BY T.fechaEntrega DESC, T.idTaller DESC
+             LIMIT :start, :limiter`,
+            {
+                replacements: {
+                    sBusqueda,
+                    iSinFiltro,
+                    start: Number(start) || 0,
+                    limiter: Number(limiter) || 10
+                },
+                type: dbConnection.QueryTypes.SELECT
+            }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { count: oCount ? Number(oCount.iRows) : 0, rows }
+        });
+
+    } catch (error) {
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// Crea el folio de garantía a partir de un taller entregado, en una
+// sola transacción.
+const insertGarantiaByTaller = async(req, res = response) => {
+
+    const {
+        idTallerOrigen = 0
+        , descripcion = ''
+        , idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        // ── 1. Validaciones de la regla de negocio ──
+        const [oOrigen] = await dbConnection.query(
+            `SELECT idTaller, idSale, idCustomer, idSucursal, idSeller_idUser, idTallerStatus, active, idTallerOrigen
+             FROM taller WHERE idTaller = :idTallerOrigen LIMIT 1`,
+            { replacements: { idTallerOrigen }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oOrigen || Number(oOrigen.active) !== 1) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller de origen.' });
+        }
+
+        // "Ya es una garantía" se revisa ANTES que el estatus: si no,
+        // una garantía en curso se rechazaría con el mensaje de estatus
+        // ("todavía no se le entrega al cliente"), que es cierto pero
+        // manda a la persona a esperar la entrega para volver a
+        // intentar algo que nunca va a poder hacer. El motivo real
+        // primero.
+        if (oOrigen.idTallerOrigen) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Ese folio ya es una garantía. Una garantía nueva se levanta sobre el taller original, no sobre otra garantía.'
+            });
+        }
+
+        if (Number(oOrigen.idTallerStatus) !== 5) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Solo se puede levantar una garantía sobre un taller ENTREGADO. Este folio todavía no se le entrega al cliente.'
+            });
+        }
+
+        if (!String(descripcion || '').trim()) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Describe el problema que motiva la garantía.' });
+        }
+
+        // ── 2. Folio: mismo generador que cualquier otro tipo ──
+        // El tipo de la garantía se resuelve por `sig` y no por su
+        // número, para no depender de qué id le tocó al insertarse en
+        // el catálogo.
+        const [oTipoGar] = await dbConnection.query(
+            `SELECT idSaleType, CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE sig = 'GAR' LIMIT 1`,
+            { replacements: { idSucursal: oOrigen.idSucursal }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTipoGar) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Falta el tipo de folio "Garantía" en el catálogo (correr SQL/insert_sales_type_garantia.sql).'
+            });
+        }
+
+        // El CALL y el SELECT de la variable van en la MISMA transacción
+        // a propósito: @idGarNew es una variable de sesión y el pool
+        // puede dar conexiones distintas a dos consultas sueltas — la
+        // transacción fija una sola conexión y evita leer NULL.
+        await dbConnection.query(
+            `CALL getIDs_BySucursal(:idUserC, :idSucursal, :idSaleTypeID, @idGarNew)`,
+            {
+                replacements: { idUserC: idUserLogON, idSucursal: oOrigen.idSucursal, idSaleTypeID: oTipoGar.idSaleType },
+                type: dbConnection.QueryTypes.RAW,
+                transaction
+            }
+        );
+        const [oSeq] = await dbConnection.query(
+            `SELECT @idGarNew AS idGarNew`,
+            { type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oSeq || oSeq.idGarNew === null || oSeq.idGarNew === undefined) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se pudo generar el folio de la garantía.' });
+        }
+
+        // Folio SIN el taller de origen dentro (ver encabezado).
+        const idSaleGarantia = `${ oTipoGar.sig }${ oSeq.idGarNew }`;
+
+        // ── 3. Alta del folio ──
+        // `sales.idSaleType` va como 5 (Taller), NO como el tipo de la
+        // garantía: es exactamente lo que ya hace TallerRápidas con su
+        // 7 (verificado: cero renglones con idSaleType 7 en toda la
+        // base). Así la garantía no se cae de ningún filtro
+        // `idSaleType IN (5,7)` que ya exista — panel del director,
+        // consulta de ventas, reportes de taller. Lo que la distingue
+        // es `taller.idTallerOrigen`, no el tipo de venta.
+        await dbConnection.query(
+            `INSERT INTO sales (idSale, createDate, idSucursal, idSeller_idUser, idCustomer, idSaleType, active)
+             VALUES (:idSale, :createDate, :idSucursal, :idSeller_idUser, :idCustomer, 5, 1)`,
+            {
+                replacements: {
+                    idSale: idSaleGarantia,
+                    createDate: oGetDateNow,
+                    idSucursal: oOrigen.idSucursal,
+                    idSeller_idUser: oOrigen.idSeller_idUser,
+                    idCustomer: oOrigen.idCustomer
+                },
+                type: dbConnection.QueryTypes.INSERT,
+                transaction
+            }
+        );
+
+        // Cliente y vendedor se toman del taller ORIGEN, nunca del body:
+        // así no se pueden alterar al crear la garantía.
+        // Arranca en estatus 2 (Pedido de taller), no en 1: una garantía
+        // no pasa por cotización, ya se decidió que se va a hacer.
+        // precioTotal en 0 — el precio real se captura a mano después.
+        await dbConnection.query(
+            `INSERT INTO taller
+                (idSale, createDate, descripcion, fechaIngreso, fechaPrometida, fechaEntrega,
+                 idCustomer, idSucursal, idSeller_idUser, active, idTallerStatus,
+                 idCotizacion, idTallerOrigen, bRapida, precioTotal)
+             VALUES
+                (:idSale, :createDate, :descripcion, :fechaIngreso, NULL, NULL,
+                 :idCustomer, :idSucursal, :idSeller_idUser, 1, 2,
+                 :idSale, :idTallerOrigenFolio, 0, 0)`,
+            {
+                replacements: {
+                    idSale: idSaleGarantia,
+                    createDate: oGetDateNow,
+                    descripcion: String(descripcion).trim(),
+                    fechaIngreso: oGetDateNow.substring(0, 10),
+                    idCustomer: oOrigen.idCustomer,
+                    idSucursal: oOrigen.idSucursal,
+                    idSeller_idUser: oOrigen.idSeller_idUser,
+                    idTallerOrigenFolio: oOrigen.idSale
+                },
+                type: dbConnection.QueryTypes.INSERT,
+                transaction
+            }
+        );
+
+        const [oNuevo] = await dbConnection.query(
+            `SELECT LAST_INSERT_ID() AS idTaller`,
+            { type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        // ── 4. Guarda de integridad ──
+        // Confirmar que `sales` y `taller` quedaron con el MISMO folio
+        // antes de confirmar. Es barato y evita dejar un folio a medias
+        // si algo raro pasó en medio.
+        const [oCheck] = await dbConnection.query(
+            `SELECT
+                ( SELECT COUNT(*) FROM sales WHERE idSale = :idSale ) AS enSales
+                , ( SELECT COUNT(*) FROM taller WHERE idSale = :idSale ) AS enTaller`,
+            { replacements: { idSale: idSaleGarantia }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oCheck || Number(oCheck.enSales) !== 1 || Number(oCheck.enTaller) !== 1) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'No se pudo crear la garantía de forma consistente. No se guardó nada.'
+            });
+        }
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: `Garantía ${ idSaleGarantia } creada con éxito.`,
+            data: {
+                idTaller: oNuevo.idTaller,
+                idSale: idSaleGarantia,
+                idTallerOrigen: oOrigen.idSale
+            }
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        // El folio es PRIMARY KEY en `sales`. Si el contador de
+        // `ids_BySucursal` viene atrás de los datos (pasa al restaurar
+        // un respaldo sobre otro ambiente sin correr
+        // SQL/fix_ids_bysucursal_realinear.sql), el choque sale como
+        // ER_DUP_ENTRY y sin este mensaje se vería como un error crudo
+        // de MySQL que no dice qué hacer.
+        const bDuplicado = ( error && error.original && error.original.code === 'ER_DUP_ENTRY' )
+            || /Duplicate entry/i.test( ( error && error.message ) || '' );
+
+        res.json({
+            status: bDuplicado ? 1 : 2,
+            message: bDuplicado
+                ? 'El folio generado ya existe. Los contadores de folio están atrasados: correr SQL/fix_ids_bysucursal_realinear.sql.'
+                : 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
+
 module.exports = {
     insertSale
     , getVentasListWithPage
@@ -5361,5 +5723,8 @@ module.exports = {
     , insertResponsableDevolucion
     , updateResponsableDevolucion
     , deleteResponsableDevolucion
+
+    , getTalleresParaGarantia
+    , insertGarantiaByTaller
 }
 

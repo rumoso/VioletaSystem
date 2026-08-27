@@ -602,4 +602,20 @@ router.post('/deleteResponsableDevolucion', [
   validarCampos
 ], deleteResponsableDevolucion);
 
+// ── Garantías de taller (analisis/016) ──
+const {
+  getTalleresParaGarantia,
+  insertGarantiaByTaller
+} = require('../controllers/salesController');
+
+router.post('/getTalleresParaGarantia', [
+  validarCampos
+], getTalleresParaGarantia);
+
+router.post('/insertGarantiaByTaller', [
+  check('idTallerOrigen','El taller de origen es obligatorio').isInt({ gt: 0 }),
+  check('descripcion','Describe el problema que motiva la garantía').not().isEmpty(),
+  validarCampos
+], insertGarantiaByTaller);
+
 module.exports = router;

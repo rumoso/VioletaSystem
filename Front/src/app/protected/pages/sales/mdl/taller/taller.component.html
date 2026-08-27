@@ -113,6 +113,14 @@
           <mat-icon>people</mat-icon>Responsables
         </button>
 
+        <!-- Solo sobre un folio ENTREGADO que no sea ya una garantía.
+             Un mismo taller puede tener varias. -->
+        <button *ngIf="bPuedeLevantarGarantia"
+          mat-raised-button type="button" class="taller-btn-compact taller-btn-garantia"
+          (click)="fn_LevantarGarantia()">
+          <mat-icon>verified_user</mat-icon>Levantar garantía
+        </button>
+
         <!-- Re-firma: aparece cuando el status actual fue rechazado -->
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3 && oFirmaStatus?.firma === 2"
           mat-raised-button color="accent" type="button" class="taller-btn-compact"
@@ -151,6 +159,81 @@
 
   </div>
 
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- GARANTÍAS (analisis/016)                                    -->
+  <!-- El folio NO lleva dentro el taller de origen, así que este  -->
+  <!-- es el único lugar donde se consulta el vínculo. Se muestra  -->
+  <!-- en los dos sentidos: la garantía apunta a su origen, y el   -->
+  <!-- taller original lista las garantías que le levantaron.      -->
+  <!-- ───────────────────────────────────────────────────────── -->
+
+  <!-- ESTE folio ES una garantía -->
+  <div class="gar-band gar-band--es" *ngIf="bEsGarantia">
+
+    <div class="gar-band-tit">
+      <mat-icon>verified_user</mat-icon>
+      <span>Este folio es una <b>garantía</b></span>
+    </div>
+
+    <div class="gar-band-body">
+
+      <div class="gar-band-origen">
+        <span class="gar-band-lbl">Taller de origen</span>
+        <a class="gar-band-link"
+           matTooltip="Abrir el taller de origen"
+           (click)="fn_AbrirTaller( tallerForm.idTallerOrigenID )">
+          {{ tallerForm.idTallerOrigen }}
+          <mat-icon>open_in_new</mat-icon>
+        </a>
+        <div class="gar-band-meta">
+          {{ tallerForm.origenClienteDesc }}
+          <span *ngIf="tallerForm.origenFechaEntrega"> · entregado {{ tallerForm.origenFechaEntrega }}</span>
+        </div>
+      </div>
+
+      <!-- T14: precio a mano. Sin cálculo detrás y puede quedarse en 0. -->
+      <div class="gar-band-precio">
+        <mat-form-field appearance="outline" class="gar-band-precio-fld">
+          <mat-label>Precio al cliente</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" min="0" step="0.01"
+                 [(ngModel)]="precioGarantia"
+                 (change)="ev_fn_precioGarantia_change()"
+                 [disabled]="bIsReadOnly">
+        </mat-form-field>
+        <div class="gar-band-nota">
+          Se captura a mano. <b>Puede quedarse en $0</b> — una garantía
+          normalmente no se cobra. No paga comisión: el taller original ya la pagó.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Este folio TIENE garantías levantadas -->
+  <div class="gar-band gar-band--tiene" *ngIf="!bEsGarantia && aGarantias.length > 0">
+
+    <div class="gar-band-tit">
+      <mat-icon>history</mat-icon>
+      <span>Garantías levantadas sobre este taller ({{ aGarantias.length }})</span>
+    </div>
+
+    <div class="gar-band-list">
+      <div class="gar-band-item" *ngFor="let g of aGarantias"
+           (click)="fn_AbrirTaller( g.idTaller )"
+           matTooltip="Abrir la garantía">
+        <div class="gar-band-item-folio">{{ g.idSale }}</div>
+        <div class="gar-band-item-desc">{{ g.descripcion }}</div>
+        <div class="gar-band-item-side">
+          <span class="gar-band-chip">{{ g.estatusDesc }}</span>
+          <span class="gar-band-item-fecha">{{ g.createDateDate }}</span>
+          <span class="gar-band-item-monto">{{ g.precioTotal | currency }}</span>
+        </div>
+        <mat-icon class="gar-band-chev">chevron_right</mat-icon>
+      </div>
+    </div>
+  </div>
 
   <!-- ─────────────────────────────────────────── -->
   <!-- HEADER COMPACTO: chips ↔ campos editables  -->

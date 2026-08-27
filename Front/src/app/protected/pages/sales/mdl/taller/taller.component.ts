@@ -27,6 +27,7 @@ import { PaymentsComponent } from '../payments/payments.component';
 import { ActionAuthorizationComponent } from '../../../security/users/mdl/action-authorization/action-authorization.component';
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { MetalInventarioService } from 'src/app/protected/services/metal-inventario.service';
+import { GarantiaComponent } from '../garantia/garantia.component';
 
 @Component({
   selector: 'app-taller',
@@ -85,6 +86,13 @@ export class TallerComponent implements OnInit {
     status: '',
     idTallerStatus: 0,
     manoObraPrecio: '',
+    // Garantías (analisis/016): idTallerOrigen es la ÚNICA fuente del
+    // vínculo, porque el folio ya no lo lleva dentro.
+    bEsGarantia: 0,
+    idTallerOrigen: '',
+    idTallerOrigenID: 0,
+    origenClienteDesc: '',
+    origenFechaEntrega: '',
     headerImagesCount: 0,
     pagado: 0,
     pendingAmount: 0,
@@ -93,6 +101,15 @@ export class TallerComponent implements OnInit {
 
   oFirmaStatus: any = null;
     oPagos: any[] = [];
+
+    // Garantías levantadas SOBRE este folio (solo si es un taller normal).
+    aGarantias: any[] = [];
+
+    // Precio de la garantía: se captura a mano y arranca en 0. No hay
+    // ningún cálculo detrás — es lo que se le va a cobrar al cliente,
+    // que puede ser nada. El costo interno (refacciones, mano de obra,
+    // metal) se sigue registrando aparte como en cualquier folio.
+    precioGarantia: number = 0;
 
     // Control del patrón chip ↔ campo editable en el header
       // Valores: 'seller' | 'customer' | 'fechaPrometida' | 'fechaEntregada' | null
@@ -703,6 +720,11 @@ export class TallerComponent implements OnInit {
             sellerDesc: data.sellerDesc || '',
             idTallerStatus: data.idTallerStatus || 0,
             manoObraPrecio: data.manoObraPrecio || '',
+            bEsGarantia: data.bEsGarantia || 0,
+            idTallerOrigen: data.idTallerOrigen || '',
+            idTallerOrigenID: data.idTallerOrigenID || 0,
+            origenClienteDesc: data.origenClienteDesc || '',
+            origenFechaEntrega: data.origenFechaEntrega || '',
             pagado: data.pagado || 0,
             pendingAmount: data.pendingAmount || 0,
             saleTotal: data.saleTotal || 0
@@ -716,6 +738,12 @@ export class TallerComponent implements OnInit {
           this.manoObraList = resp.data.oManoObra || [];
           this.oFirmaStatus = resp.data.oFirmaStatus || null;
           this.oPagos = resp.data.oPagos || [];
+          this.aGarantias = resp.data.oGarantias || [];
+
+          // El precio de la garantía es el que ya tenga guardado el
+          // folio. Se lee ANTES de recalcular totales porque
+          // fn_calcularTotalTaller lo usa como total cuando es garantía.
+          this.precioGarantia = this.bEsGarantia ? Number( data.saleTotal || 0 ) : 0;
 
           this.fn_calcularTotalRefacciones();
           this.fn_calcularTotalServiciosExternos();
@@ -1157,7 +1185,76 @@ export class TallerComponent implements OnInit {
       manoObraTotal += parseFloat(this.tallerForm.manoObraPrecio);
     }
 
+    // En una garantía el total que se le cobra al cliente NO se calcula:
+    // es el precio capturado a mano (normalmente 0). Los costos internos
+    // se siguen registrando, pero no forman el precio.
+    if( this.bEsGarantia ){
+      this.totalTaller = Number( this.precioGarantia ) || 0;
+      return;
+    }
+
     this.totalTaller = this.totalRefacciones + this.totalServiciosExternos + this.totalMetalAgranel + manoObraTotal;
+  }
+
+  // ── Garantías (analisis/016) ──
+
+  get bEsGarantia(): boolean {
+    return Number( this.tallerForm.bEsGarantia ) === 1;
+  }
+
+  // Solo un folio ENTREGADO que no sea ya una garantía puede originar una.
+  get bPuedeLevantarGarantia(): boolean {
+    return Number( this.tallerForm.idTallerStatus ) === 5
+        && !this.bEsGarantia
+        && Number( this.tallerForm.idTaller ) > 0;
+  }
+
+  ev_fn_precioGarantia_change(): void {
+    const n = Number( this.precioGarantia );
+    this.precioGarantia = ( isNaN(n) || n < 0 ) ? 0 : Math.round( n * 100 ) / 100;
+    this.fn_calcularTotalTaller();
+  }
+
+  // Abre el modal con ESTE folio ya preseleccionado: aquí no hay nada
+  // que buscar, ya se sabe sobre cuál se levanta.
+  fn_LevantarGarantia(): void {
+
+    const paramsMDL: any = {
+      oTallerOrigen: {
+        idTaller: this.tallerForm.idTaller,
+        idSale: this.tallerForm.idSale,
+        customerDesc: this.tallerForm.customerDesc,
+        sellerDesc: this.tallerForm.sellerDesc,
+        fechaEntregaDesc: this.tallerForm.fechaEntrega
+      }
+    };
+
+    this.servicesGServ.showModalWithParams( GarantiaComponent, paramsMDL, '820px')
+    .afterClosed().subscribe({
+      next: ( resp ) => {
+
+        if( resp && resp.idTaller ){
+          // Se salta directo al folio nuevo. No se recarga este
+          // primero: se está cerrando de todas formas, y al volver
+          // aquí la garantía ya aparecerá en su lista.
+          this.fn_AbrirTaller( resp.idTaller );
+        }
+
+      }
+    });
+
+  }
+
+  // Navegar entre el folio de origen y sus garantías. Se cierra este
+  // modal devolviendo el id a abrir: quien lo abrió (taller-list) es
+  // el que sabe cómo levantar otro detalle.
+  fn_AbrirTaller( idTaller: number ): void {
+
+    if( !idTaller ){
+      return;
+    }
+
+    this.dialogRef.close({ irATaller: idTaller });
   }
 
   fn_resetManoObraForm() {
