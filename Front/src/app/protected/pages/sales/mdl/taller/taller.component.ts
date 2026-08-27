@@ -791,6 +791,17 @@ export class TallerComponent implements OnInit {
       idUser: this.idUserLogON
     };
 
+    // El precio de una garantía se captura a mano, así que viaja con el
+    // guardado del encabezado — el mismo botón "Actualizar". Solo se
+    // manda cuando el folio ES garantía: en un taller normal el Back
+    // calcula el total desde sus renglones y no debe recibirlo.
+    // Vacío se manda como 0, que es un valor válido.
+    if( this.bEsGarantia ){
+      oParams.precioTotal = this.precioGarantia === '' || this.precioGarantia === null
+        ? 0
+        : Number( this.precioGarantia );
+    }
+
     var bNew = oParams.idTaller === 0;
 
     this.bShowSpinner = true;

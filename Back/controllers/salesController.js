@@ -2778,6 +2778,11 @@ const saveTallerHeader = async(req, res) => {
         fechaIngreso = '',
         fechaPrometidaEntrega = '',
         bRapida = 0,
+        // GARANTIAS (analisis/016): el precio de una garantia se captura
+        // a mano, asi que se guarda desde aqui -- desde el mismo boton
+        // "Actualizar" del encabezado. Llega null/undefined en cualquier
+        // otro caso y entonces NO se toca la columna.
+        precioTotal = null,
         idUserLogON,
         idSucursalLogON
     } = req.body;
@@ -2869,6 +2874,35 @@ const saveTallerHeader = async(req, res) => {
                 { replacements: { idSeller_idUser, idCustomer, idSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
             );
 
+            // El precio solo se guarda aqui cuando el folio ES una
+            // garantia. Un taller normal calcula su precioTotal a partir
+            // de sus renglones y lo escribe `updateTallerStatus`: si esta
+            // ruta lo tocara, guardar el encabezado le borraria el total.
+            const [oFolio] = await dbConnection.query(
+                `SELECT idTallerOrigen FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            const bEsGarantia = !!( oFolio && oFolio.idTallerOrigen );
+
+            // Vacio cuenta como 0: capturar nada es una respuesta valida
+            // (la mayoria de las garantias no se cobran), no un dato que
+            // falte. Lo que no se acepta es un negativo.
+            let sPrecio = '';
+
+            if ( bEsGarantia && precioTotal !== null && precioTotal !== undefined ) {
+
+                const nPrecio = Number( precioTotal === '' ? 0 : precioTotal );
+
+                if ( isNaN( nPrecio ) || nPrecio < 0 ) {
+                    await transaction.rollback();
+                    return res.json({ status: 1, message: 'El precio de la garantía no es válido.' });
+                }
+
+                sPrecio = `, precioTotal = ${ Math.round( nPrecio * 100 ) / 100 }`;
+
+            }
+
             await dbConnection.query(
                 `UPDATE taller
                  SET descripcion    = :descripcion,
@@ -2876,6 +2910,7 @@ const saveTallerHeader = async(req, res) => {
                      fechaPrometida = :fechaPrometida,
                      idCustomer     = :idCustomer,
                      idSucursal     = :idSucursal
+                     ${ sPrecio }
                  WHERE idSale = :idSale AND idTaller = :idTaller`,
                 {
                     replacements: {
