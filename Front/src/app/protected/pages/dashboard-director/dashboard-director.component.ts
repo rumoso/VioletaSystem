@@ -1,4 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
+import { LocationStrategy } from '@angular/common';
+import { Router } from '@angular/router';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { DashboardService } from 'src/app/protected/services/dashboard.service';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
@@ -59,6 +61,8 @@ export class DashboardDirectorComponent implements OnDestroy {
     , private authServ: AuthService
     , private dashboardServ: DashboardService
     , private pageTitleServ: PageTitleService
+    , private router: Router
+    , private locationStrategy: LocationStrategy
   ) { }
 
   ngOnInit(): void {
@@ -294,18 +298,41 @@ export class DashboardDirectorComponent implements OnDestroy {
   //
   // Una cifra en cero no navega: no hay nada que mostrar, y llegar a un
   // listado vacío se leería como "falló".
+  //
+  // Se abre en OTRA pestaña: el panel se queda donde estaba (con su
+  // fecha y su refresco) y el usuario puede revisar varias cifras sin
+  // perderlo. La sesión vive en localStorage, que comparten las pestañas
+  // del mismo sistema, así que la pestaña nueva ya entra con sesión.
+  //
+  // La URL se arma con el Router y la LocationStrategy, no pegando texto:
+  // el sistema usa rutas con "#" (useHash) y así sale bien aunque eso
+  // cambie algún día.
   private fn_irConjunto( sRuta: string, sPanel: string, sFecha: string, n: any, extra: any = {} ): void {
 
     if( !( Number( n ) > 0 ) ){
       return;
     }
 
-    this.servicesGServ.changeRouteWithFilters( `/${ this._appMain }/${ sRuta }`, {
+    const queryParams: any = {
       panel: sPanel,
       fecha: sFecha,
-      n: Number( n ),
-      ...extra
+      n: Number( n )
+    };
+
+    Object.keys( extra || {} ).forEach( ( clave ) => {
+      const valor = extra[ clave ];
+      if( valor !== null && valor !== undefined && valor !== '' ){
+        queryParams[ clave ] = valor;
+      }
     });
+
+    const sRutaInterna = this.router.serializeUrl(
+      this.router.createUrlTree( [ `/${ this._appMain }/${ sRuta }` ], { queryParams } )
+    );
+
+    const sUrl = `${ window.location.origin }${ window.location.pathname }${ this.locationStrategy.prepareExternalUrl( sRutaInterna ) }`;
+
+    window.open( sUrl, '_blank' );
 
   }
 
