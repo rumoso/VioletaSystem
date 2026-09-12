@@ -118,6 +118,18 @@ export class SaleListComponent implements OnInit, OnDestroy {
     return this.oConsultaPanel !== null;
   }
 
+  // Fecha del corte de la consulta del panel, como la lee el usuario.
+  // Pagado y pendiente de la cartera están calculados a esa fecha.
+  get sFechaCortePanel(): string {
+    const sFecha = String( this.oMetaPanel?.sumario?.fechaCorte || '' );
+    const [a, m, d] = sFecha.split('-');
+    return ( a && m && d ) ? `${ d }-${ m }-${ a }` : '';
+  }
+
+  get bSaldoAlCorte(): boolean {
+    return this.bModoPanel && !!this.oMetaPanel?.sumario?.bAlCorte;
+  }
+
   get sTituloFiltro(): string {
     return this.bModoPanel ? 'Consulta del panel del director:' : 'Filtro activo:';
   }

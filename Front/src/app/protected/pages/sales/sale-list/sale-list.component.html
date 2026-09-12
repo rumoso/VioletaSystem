@@ -258,7 +258,7 @@
       <div class="sll-card sll-sum-card sll-sum-card--verde">
         <div class="sll-sum-label">
           <mat-icon class="sll-sum-icon">payments</mat-icon>
-          Pagado
+          Pagado<ng-container *ngIf="S.bAlCorte"> al {{ sFechaCortePanel }}</ng-container>
         </div>
         <div class="sll-sum-valor">{{ S.abonado | currency }}</div>
         <div class="sll-sum-sub" *ngIf="S.total > 0">{{ ( S.abonado / S.total * 100 ) | number:'1.0-1' }}% del total</div>
@@ -268,10 +268,16 @@
            [class.sll-sum-card--rojo]="S.pendiente > 0">
         <div class="sll-sum-label">
           <mat-icon class="sll-sum-icon">pending_actions</mat-icon>
-          Pendiente
+          Pendiente<ng-container *ngIf="S.bAlCorte"> al {{ sFechaCortePanel }}</ng-container>
         </div>
         <div class="sll-sum-valor">{{ S.pendiente | currency }}</div>
         <div class="sll-sum-sub" *ngIf="S.total > 0">{{ ( S.pendiente / S.total * 100 ) | number:'1.0-1' }}% del total</div>
+        <!-- La cartera es la cifra del panel a la fecha del corte. Si esas
+             notas recibieron abonos después, se dice cuánto deben hoy. -->
+        <div class="sll-sum-hoy" *ngIf="S.bAlCorte && S.abonadoDespues > 0">
+          Hoy deben <strong>{{ S.pendienteHoy | currency }}</strong>:
+          se abonaron {{ S.abonadoDespues | currency }} después del {{ sFechaCortePanel }}.
+        </div>
       </div>
 
     </div>
@@ -304,8 +310,8 @@
             <th class="sll-th sll-th--left">Folio</th>
             <th class="sll-th sll-th--left">Tipo de venta</th>
             <th class="sll-th sll-th--right">Total</th>
-            <th class="sll-th sll-th--right">Pagado</th>
-            <th class="sll-th sll-th--right">Pendiente</th>
+            <th class="sll-th sll-th--right">Pagado<ng-container *ngIf="bSaldoAlCorte"> al {{ sFechaCortePanel }}</ng-container></th>
+            <th class="sll-th sll-th--right">Pendiente<ng-container *ngIf="bSaldoAlCorte"> al {{ sFechaCortePanel }}</ng-container></th>
             <th class="sll-th sll-th--center">Fecha</th>
             <th class="sll-th sll-th--left">Descripción</th>
             <th class="sll-th sll-th--left">Cliente</th>

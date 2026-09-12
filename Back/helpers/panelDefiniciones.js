@@ -187,6 +187,11 @@ const fn_conjuntoCartera = (sFiltroTipo, iCubeta, fn_etiqueta) => {
         menu: 'saleList',
         bCostos: false,
         requiere: [],
+        // La cifra del panel es el saldo COMO ESTABA en la fecha de corte
+        // (pagos hasta ese día). El listado tiene que mostrar pagado y
+        // pendiente con ese mismo corte, o con una fecha pasada no cuadra:
+        // los abonos posteriores bajarían el pendiente.
+        bSaldoAlCorte: true,
         fn_sql: () => ({
             ids: `SELECT T.idSale FROM ( ${ _SQL_CARTERA_BASE } ) AS T WHERE ${ sWhere }`,
             resumen: `SELECT COUNT(*) AS conteo, SUM(T.saldo) AS importe FROM ( ${ _SQL_CARTERA_BASE } ) AS T WHERE ${ sWhere }`

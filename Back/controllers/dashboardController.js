@@ -1175,7 +1175,23 @@ const getVentasConjunto = async(req, res = response) => {
         // líneas y pagos cancelados. Los usan la página y el sumario, para
         // que las tarjetas sumen exactamente lo que muestra la tabla.
         const sSqlTotal = `ROUND( IFNULL( ( SELECT SUM(SD.importe) FROM salesdetail AS SD WHERE SD.idSale = S.idSale AND SD.active = S.active ), 0), 2)`;
-        const sSqlAbonado = `ROUND( IFNULL( ( SELECT SUM(PP.pago) FROM payments AS PP WHERE PP.idRelation = S.idSale AND PP.relationType IN ('V','A') AND PP.active = S.active ), 0), 2)`;
+
+        // En la cartera, pagado y pendiente van AL CORTE: solo los pagos
+        // hasta la fecha con la que el panel calculó la cifra. Sin esto, con
+        // una fecha pasada el pendiente salía más bajo que el panel (los
+        // abonos posteriores lo restaban) y las tarjetas no cuadraban.
+        // Con el corte en hoy da exactamente lo mismo que sin él.
+        const bAlCorte = !!o.oDef.bSaldoAlCorte;
+        const sCortePagos = bAlCorte ? `AND DATE(PP.createDate) <= :corte` : '';
+
+        const sSqlAbonado = `ROUND( IFNULL( ( SELECT SUM(PP.pago) FROM payments AS PP WHERE PP.idRelation = S.idSale AND PP.relationType IN ('V','A') AND PP.active = S.active ${ sCortePagos } ), 0), 2)`;
+
+        // Lo abonado DESPUÉS del corte: para decir cuánto deben hoy.
+        const sSqlAbonadoDespues = bAlCorte
+            ? `ROUND( IFNULL( ( SELECT SUM(PP.pago) FROM payments AS PP WHERE PP.idRelation = S.idSale AND PP.relationType IN ('V','A') AND PP.active = S.active AND DATE(PP.createDate) > :corte ), 0), 2)`
+            : `0`;
+
+        oRepl.corte = o.meta.fecha;
 
         const [aVisibles, rows, aSumario] = await Promise.all([
 
@@ -1252,12 +1268,14 @@ const getVentasConjunto = async(req, res = response) => {
                     , ROUND( SUM(X.total), 2) AS total
                     , ROUND( SUM(X.abonado), 2) AS abonado
                     , ROUND( SUM( CASE WHEN X.idSaleType = 6 THEN 0 ELSE ROUND(X.total - X.abonado, 2) END ), 2) AS pendiente
+                    , ROUND( SUM(X.abonadoDespues), 2) AS abonadoDespues
                  FROM (
                     SELECT
                         S.idSaleType
                         , ST.name AS saleTypeName
                         , ${ sSqlTotal } AS total
                         , ${ sSqlAbonado } AS abonado
+                        , ${ sSqlAbonadoDespues } AS abonadoDespues
                     ${ sFromVisibles }
                     ${ sWhereVisibles }
                  ) AS X
@@ -1286,7 +1304,8 @@ const getVentasConjunto = async(req, res = response) => {
             notas: Number(t.notas) || 0,
             total: _fn_r(t.total),
             abonado: _fn_r(t.abonado),
-            pendiente: _fn_r(t.pendiente)
+            pendiente: _fn_r(t.pendiente),
+            abonadoDespues: _fn_r(t.abonadoDespues)
         }));
 
         const sumario = {
@@ -1294,8 +1313,16 @@ const getVentasConjunto = async(req, res = response) => {
             total: _fn_r(aTipos.reduce((n, t) => n + t.total, 0)),
             abonado: _fn_r(aTipos.reduce((n, t) => n + t.abonado, 0)),
             pendiente: _fn_r(aTipos.reduce((n, t) => n + t.pendiente, 0)),
-            tipos: aTipos
+            tipos: aTipos,
+
+            // Pagado y pendiente están calculados a esta fecha (cartera).
+            bAlCorte,
+            fechaCorte: o.meta.fecha
         };
+
+        // Lo que se abonó después del corte y, con eso, lo que deben hoy.
+        sumario.abonadoDespues = _fn_r(aTipos.reduce((n, t) => n + t.abonadoDespues, 0));
+        sumario.pendienteHoy = _fn_r(sumario.pendiente - sumario.abonadoDespues);
 
         res.json({
             status: 0,
