@@ -49,9 +49,11 @@ sumPagos: number = 0;
 //-------------------------------
 // VARIABLES PARA LA PAGINACIÓN
 iRows: number = 0;
+// length arranca en 0: la pantalla no consulta al abrir, y con 10 el
+// contador diría "10 registros" antes de buscar nada.
 pagination: Pagination = {
   search:'',
-  length: 10,
+  length: 0,
   pageSize: 10,
   pageIndex: 0,
   pageSizeOptions: [5, 10, 25, 100]
@@ -217,6 +219,7 @@ constructor(
 
       idSale: '',
       idPayment: '',
+      idCorteCaja: ''
 
     };
 
@@ -224,6 +227,12 @@ constructor(
     this.sumPagos = 0;
     this.pagination.length = 0;
 
+  }
+
+  // Buscar desde el botón o con ENTER: siempre desde la primera página.
+  fn_buscar(): void {
+    this.pagination.pageIndex = 0;
+    this.fn_getRepVentasDetailWithPage();
   }
 
   fn_ShowCorteCajaDetail( idCorteCaja: any ){

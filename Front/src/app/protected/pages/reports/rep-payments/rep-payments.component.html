@@ -1,251 +1,250 @@
-<!-- En modo panel (analisis/015) los filtros no se muestran: la leyenda
-     de abajo ocupa su lugar. -->
-<div class="divMain" style="width: 100%; margin-top: 10px !important;" *ngIf="!bModoPanel">
+<div class="rpg-page">
 
-  <div class="row">
-      <div class="col-md-12">
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="rpg-card rpg-filters">
 
+    <!-- Modo panel (analisis/015): la leyenda va EN LUGAR de los filtros.
+         El conjunto que llegó del panel es cerrado; para salir, la "×". -->
+    <div class="rpg-filters-row" *ngIf="bModoPanel">
+      <app-filtro-activo
+        class="rpg-leyenda-panel"
+        ITitulo="Consulta del panel del director:"
+        [IEtiquetas]="aEtiquetasPanel"
+        [IAvisos]="aAvisosPanel"
+        (OQuitar)="fn_quitarFiltro()">
+      </app-filtro-activo>
+    </div>
 
+    <ng-container *ngIf="!bModoPanel">
 
-          <div class="row">
+      <div class="rpg-filters-row">
 
-              <div class="col-md-3" style="text-align: left;">
-                <mat-form-field class="with100">
-                    <mat-label>Fecha de creación:</mat-label>
-                    <mat-date-range-input [rangePicker]="picker" (click)="!bModoPanel && picker.open()">
-                        <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date" [disabled]="bModoPanel">
-                        <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date" [disabled]="bModoPanel">
-                    </mat-date-range-input>
-                    <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker" [disabled]="bModoPanel"></mat-datepicker-toggle>
-                    <mat-date-range-picker #picker></mat-date-range-picker>
-
-                </mat-form-field>
-              </div>
-
-              <div class="col-md-3">
-
-                  <mat-form-field fxLayout.xs="column" class="with100">
-                    <mat-label>Folio de venta</mat-label>
-                    <input
-                    matInput
-                    placeholder="Ingrese un Folio"
-                    [(ngModel)]="parametersForm.idSale"
-                    [disabled]="bModoPanel">
-                  </mat-form-field>
-
-              </div>
-
-              <div class="col-md-3">
-
-                <mat-form-field fxLayout.xs="column" class="with100">
-                  <mat-label># de Pago</mat-label>
-                  <input
-                  matInput
-                  placeholder="Ingrese un # de Pago"
-                  [(ngModel)]="parametersForm.idPayment"
-                  [disabled]="bModoPanel">
-                </mat-form-field>
-
-              </div>
-
-              <div class="col-md-3">
-
-                <mat-form-field fxLayout.xs="column" class="with100">
-                  <mat-label>Corte de caja</mat-label>
-                  <input
-                  matInput
-                  placeholder="Ingrese un folio de Corte de Caja"
-                  [(ngModel)]="parametersForm.idCorteCaja"
-                  [disabled]="bModoPanel">
-                </mat-form-field>
-
-              </div>
-
+        <div class="rpg-field">
+          <label class="rpg-label">Pagado desde</label>
+          <div class="rpg-wrap">
+            <input type="date"
+              class="rpg-input"
+              [class.rpg-date-vacia]="!parametersForm.createDateStart"
+              [(ngModel)]="parametersForm.createDateStart">
           </div>
-
-          <div class="row">
-
-              <div class="col-md-8">
-                  <mat-label>Cliente: </mat-label>
-                  <mat-form-field
-                  style="width: 100%;">
-                      <input #cbxCustomerCBX
-                      type="text"
-                              id="cbxCustomer"
-                              style="width: 100%;"
-                              placeholder="Selecciona..."
-                              aria-label="Number"
-                              matInput
-                              [(ngModel)]="parametersForm.customerDesc"
-                              [disabled]="bModoPanel"
-                              [matAutocomplete]="cbxCustomer"
-
-                              (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
-
-                              (click)="cbxCustomers_Clear()">
-                              <button *ngIf="parametersForm.customerDesc && !bModoPanel" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
-                                  <mat-icon>close</mat-icon>
-                              </button>
-                      <mat-autocomplete autoActiveFirstOption
-                                          #cbxCustomer="matAutocomplete"
-                                          (optionSelected)="cbxCustomers_SelectedOption( $event )">
-                          <mat-option *ngFor="let item of cbxCustomers" [value]="item">
-                              {{ item.name }}
-                          </mat-option>
-
-                          <mat-option value="" *ngIf="parametersForm.customerResp.length > 0">
-                              {{ parametersForm.customerResp }}
-                          </mat-option>
-
-                      </mat-autocomplete>
-                  </mat-form-field>
-              </div>
-
-
-
-          </div>
-
-          <div class="row top10px">
-              <div class="col-md-3">
-                  <!-- En modo panel no hay nada que buscar ni limpiar: para
-                       salir está la "×" de la leyenda. -->
-                  <div style="float: left;" *ngIf="!bModoPanel">
-
-                      <button mat-raised-button
-                      color="primary"
-                      type="submit"
-                      class="marginRight10px"
-                      (click)="fn_getRepVentasDetailWithPage()">
-                      <mat-icon matPrefix class="my-icon">search</mat-icon>
-                      Buscar</button>
-
-                      <button mat-raised-button
-                      type="button"
-                      (click)="fn_ClearFilters()">
-                      <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                      limpiar</button>
-
-                  </div>
-              </div>
-
-          </div>
-
-      </div>
-
-  </div>
-
-</div>
-
-<!-- Se llegó desde un clic en el panel del director (analisis/015): sin
-     esta leyenda la pantalla se ve igual que una búsqueda normal y el
-     usuario no sabe que está viendo solo los pagos de esa cifra. -->
-<div style="margin-top: 10px;" *ngIf="bModoPanel">
-  <app-filtro-activo
-    ITitulo="Consulta del panel del director:"
-    [IEtiquetas]="aEtiquetasPanel"
-    [IAvisos]="aAvisosPanel"
-    (OQuitar)="fn_quitarFiltro()">
-  </app-filtro-activo>
-</div>
-
-<div class="divSection">
-
-  <div class="row" style="margin-top: -35px;">
-    <div class="col-md-12">
-        <div class="badge bg-primary text-wrap" style="font-size: 15px;">
-            Sumatoria
         </div>
-    </div>
-  </div>
 
-  <div class="row">
-    <div class="col-md-12" style="position: relative;">
-        <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
-        <h2 style="display: inline-block;">Total: {{ sumPagos | currency }}</h2>
-    </div>
-  </div>
-
-</div>
-
-<div class="divMain" style="width: 100%; margin-top: 10px !important;">
-
-  <div class="row top10px">
-      <div class="col-md-12">
-
-          <div class="row">
-              <div class="col-md-12">
-                  <div class="table-responsive">
-                      <table class="table table-hover">
-                          <thead>
-                              <th class="textAlingCenter padding-th"># Pago</th>
-                              <th class="textAlingRight padding-th">Monto Pago</th>
-                              <th class="textAlingCenter padding-th">Folio de venta</th>
-                              <th class="textAlingCenter padding-th">Corte de Caja</th>
-                              <th class="textAlingCenter padding-th">Fecha de cancelación</th>
-                              <th class="textAlingLeft padding-th">Cliente</th>
-                              <th class="textAlingLeft padding-th">Vendedor</th>
-                          </thead>
-
-                          <tbody>
-                              <tr *ngFor="let item of repList; let i = index">
-
-                                  <td style="text-align: Center;">{{ item.idPayment }}</td>
-
-                                  <td style="text-align: right;">{{ item.totalPago | currency }}</td>
-                                  <td style="text-align: Center;">{{ item.idSale }}</td>
-
-                                  <td class="textAlingCenter">
-                                    <div style="width: 150px;">
-
-                                        <span class="material-icons manitaSobre colorGreen" title="Ver"
-                                        (click)="fn_ShowCorteCajaDetail(item.idCorteCaja)"
-                                        *ngIf="item.idCorteCaja.length > 0">
-                                        remove_red_eye
-                                        </span>
-                                        {{ item.idCorteCaja }}
-
-                                    </div>
-                                </td>
-
-                                  <td class="textAlingCenter">
-
-                                      <div style="width: 120px;">
-
-                                          <div class="row">
-                                              <div class="col-md-1">
-                                                  <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-
-                                              </div>
-                                              <div class="col-md-10">
-                                                  <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
-                                                  <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
-                                              </div>
-                                          </div>
-
-                                      </div>
-
-                                  </td>
-
-                                  <td style="text-align:left;">{{ item.customerName }}</td>
-                                  <td style="text-align:left;">{{ item.sellerName }}</td>
-
-                              </tr>
-
-                          </tbody>
-
-                      </table>
-                  </div>
-
-                  <app-pagination *ngIf="repList" [IPagination]="pagination"
-                              (OPagination)="changePagination($event)">
-                  </app-pagination>
-
-              </div>
-
+        <div class="rpg-field">
+          <label class="rpg-label">Pagado hasta</label>
+          <div class="rpg-wrap">
+            <input type="date"
+              class="rpg-input"
+              [class.rpg-date-vacia]="!parametersForm.createDateEnd"
+              [(ngModel)]="parametersForm.createDateEnd">
           </div>
+        </div>
+
+        <div class="rpg-field">
+          <label class="rpg-label">Folio de venta</label>
+          <div class="rpg-wrap">
+            <input type="text"
+              class="rpg-input"
+              placeholder="Folio y ENTER"
+              [(ngModel)]="parametersForm.idSale"
+              (keyup.enter)="fn_buscar()">
+          </div>
+        </div>
+
+        <div class="rpg-field">
+          <label class="rpg-label"># de pago</label>
+          <div class="rpg-wrap">
+            <input type="text"
+              class="rpg-input"
+              placeholder="# de pago y ENTER"
+              [(ngModel)]="parametersForm.idPayment"
+              (keyup.enter)="fn_buscar()">
+          </div>
+        </div>
+
+        <div class="rpg-field">
+          <label class="rpg-label">Corte de caja</label>
+          <div class="rpg-wrap">
+            <input type="text"
+              class="rpg-input"
+              placeholder="Folio de corte y ENTER"
+              [(ngModel)]="parametersForm.idCorteCaja"
+              (keyup.enter)="fn_buscar()">
+          </div>
+        </div>
+
+        <div class="rpg-field rpg-field--customer">
+          <label class="rpg-label">Cliente</label>
+          <div class="rpg-wrap">
+            <mat-icon class="rpg-prefix-icon">person</mat-icon>
+            <input #cbxCustomerCBX
+              type="text"
+              id="cbxCustomer"
+              class="rpg-input rpg-input--with-prefix"
+              placeholder="Buscar cliente..."
+              [(ngModel)]="parametersForm.customerDesc"
+              [matAutocomplete]="cbxCustomer"
+              (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
+              (click)="cbxCustomers_Clear()">
+            <mat-icon *ngIf="parametersForm.customerDesc"
+              class="rpg-clear"
+              (click)="$event.stopPropagation(); cbxCustomers_Clear()">close</mat-icon>
+          </div>
+          <mat-autocomplete autoActiveFirstOption
+            #cbxCustomer="matAutocomplete"
+            (optionSelected)="cbxCustomers_SelectedOption( $event )">
+            <mat-option *ngFor="let item of cbxCustomers" [value]="item">{{ item.name }}</mat-option>
+            <mat-option value="" *ngIf="parametersForm.customerResp.length > 0">{{ parametersForm.customerResp }}</mat-option>
+          </mat-autocomplete>
+        </div>
 
       </div>
+
+      <div class="rpg-filters-btns">
+        <button mat-stroked-button class="rpg-btn-secondary" (click)="fn_ClearFilters()">
+          <mat-icon>filter_alt_off</mat-icon>
+          Limpiar
+        </button>
+        <button mat-flat-button class="rpg-btn-primary" (click)="fn_buscar()">
+          <mat-icon>search</mat-icon>
+          Buscar
+        </button>
+        <div class="rpg-divider-v"></div>
+        <span class="rpg-count-badge">{{ pagination.length | number }} registros</span>
+      </div>
+
+    </ng-container>
+
+  </div>
+
+  <!-- ═══════════════ SUMARIO ═══════════════ -->
+
+  <!-- Consulta del panel: el mismo desglose que la tarjeta "Cobrado" del
+       panel, de TODOS los pagos de la consulta (no solo la página). -->
+  <ng-container *ngIf="bModoPanel && oMetaPanel?.sumario as S">
+
+    <div class="rpg-sum-cards">
+
+      <div class="rpg-card rpg-sum-card">
+        <div class="rpg-sum-label">
+          <mat-icon class="rpg-sum-icon">payments</mat-icon>
+          Total cobrado
+        </div>
+        <div class="rpg-sum-valor">{{ S.total | currency }}</div>
+        <div class="rpg-sum-sub">{{ S.movimientos }} {{ S.movimientos === 1 ? 'pago' : 'pagos' }}</div>
+      </div>
+
+      <div class="rpg-card rpg-sum-card rpg-sum-card--indigo">
+        <div class="rpg-sum-label">
+          <mat-icon class="rpg-sum-icon">shopping_bag</mat-icon>
+          De ventas de ese día
+        </div>
+        <div class="rpg-sum-valor">{{ S.deVentasDelDia | currency }}</div>
+        <div class="rpg-sum-sub" *ngIf="S.total > 0">{{ ( S.deVentasDelDia / S.total * 100 ) | number:'1.0-1' }}% de lo cobrado</div>
+      </div>
+
+      <div class="rpg-card rpg-sum-card rpg-sum-card--ambar">
+        <div class="rpg-sum-label">
+          <mat-icon class="rpg-sum-icon">history</mat-icon>
+          Abonos a notas anteriores
+        </div>
+        <div class="rpg-sum-valor">{{ S.abonos | currency }}</div>
+        <div class="rpg-sum-sub" *ngIf="S.total > 0">{{ ( S.abonos / S.total * 100 ) | number:'1.0-1' }}% de lo cobrado</div>
+      </div>
+
+    </div>
+
+    <div class="rpg-card rpg-sum-formas" *ngIf="S.formas.length > 0">
+      <div class="rpg-sum-formas-titulo">Por forma de pago</div>
+      <div class="rpg-sum-forma" *ngFor="let f of S.formas">
+        <span class="rpg-sum-forma-nombre">{{ f.formaPagoDesc }}</span>
+        <span class="rpg-sum-forma-pista">
+          <span class="rpg-sum-forma-fill" [ngStyle]="{ 'width.%': S.total > 0 ? ( f.monto / S.total * 100 ) : 0 }"></span>
+        </span>
+        <span class="rpg-sum-forma-mov">{{ f.movimientos }} {{ f.movimientos === 1 ? 'pago' : 'pagos' }}</span>
+        <span class="rpg-sum-forma-monto">{{ f.monto | currency }}</span>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- Búsqueda normal: el total de lo que se encontró. -->
+  <div class="rpg-card rpg-sum-card rpg-sum-card--solo" *ngIf="!bModoPanel">
+    <div class="rpg-sum-label">
+      <mat-icon class="rpg-sum-icon">payments</mat-icon>
+      Total de pagos
+    </div>
+    <div class="rpg-sum-valor">{{ sumPagos | currency }}</div>
+    <div class="rpg-sum-sub">{{ pagination.length | number }} {{ pagination.length === 1 ? 'pago' : 'pagos' }}</div>
+  </div>
+
+  <!-- ═══════════════ TABLA ═══════════════ -->
+  <div class="rpg-card rpg-content">
+
+    <div class="rpg-table-wrapper">
+      <table class="rpg-table">
+        <thead>
+          <tr>
+            <th class="rpg-th rpg-th--left"># Pago</th>
+            <th class="rpg-th rpg-th--right">Monto</th>
+            <th class="rpg-th rpg-th--left">Folio de venta</th>
+            <th class="rpg-th rpg-th--left">Corte de caja</th>
+            <th class="rpg-th rpg-th--center">Fecha de pago</th>
+            <th class="rpg-th rpg-th--left">Cliente</th>
+            <th class="rpg-th rpg-th--left">Vendedor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of repList" class="rpg-tr">
+
+            <td class="rpg-td rpg-td--left rpg-td--folio">{{ item.idPayment }}</td>
+
+            <td class="rpg-td rpg-td--right rpg-td--amount">{{ item.totalPago | currency }}</td>
+
+            <td class="rpg-td rpg-td--left">
+              <span class="rpg-folio">#{{ item.idSale }}</span>
+            </td>
+
+            <td class="rpg-td rpg-td--left">
+              <span *ngIf="item.idCorteCaja?.length > 0"
+                class="rpg-corte"
+                matTooltip="Ver el corte de caja"
+                (click)="fn_ShowCorteCajaDetail( item.idCorteCaja )">
+                <mat-icon class="rpg-corte-icon">remove_red_eye</mat-icon>
+                {{ item.idCorteCaja }}
+              </span>
+              <span *ngIf="!item.idCorteCaja" class="rpg-sin-corte">Sin corte</span>
+            </td>
+
+            <td class="rpg-td rpg-td--center rpg-td--date">
+              <span class="rpg-date">{{ item.createDateDate }}</span>
+              <span class="rpg-time">{{ item.createDateHours }}</span>
+            </td>
+
+            <td class="rpg-td rpg-td--left">
+              <div class="rpg-user-chip">
+                <span class="rpg-user-avatar">{{ item.customerName?.charAt(0)?.toUpperCase() }}</span>
+                <span class="rpg-user-name">{{ item.customerName }}</span>
+              </div>
+            </td>
+
+            <td class="rpg-td rpg-td--left">{{ item.sellerName }}</td>
+
+          </tr>
+          <tr *ngIf="!repList || repList.length === 0">
+            <td colspan="7" class="rpg-empty">
+              <mat-icon>inbox</mat-icon>
+              <span>{{ bModoPanel ? 'No hay pagos en esta consulta' : 'Elige un periodo o un filtro y presiona Buscar' }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rpg-pagination">
+      <app-pagination *ngIf="repList" [IPagination]="pagination"
+        (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
 
   </div>
 

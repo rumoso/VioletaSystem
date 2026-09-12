@@ -15,6 +15,8 @@ const {
     _SQL_PIEZAS,
     fn_sqlVentaFrom,
     fn_sqlCobradoFrom,
+    _SQL_COBRADO_DE_VENTAS_DEL_DIA,
+    _SQL_COBRADO_ABONOS,
     _SQL_CARTERA_BASE,
     _SQL_CARTERA_CON_SALDO,
     _SQL_CARTERA_CUBETA,
@@ -467,8 +469,8 @@ const _fn_getCobrado = async(desde, hasta) => {
 
     const filas = await dbConnection.query(
         `SELECT
-            SUM(CASE WHEN DATE(P.createDate) = DATE(S.createDate) THEN P.pago ELSE 0 END) AS deVentasDelDia,
-            SUM(CASE WHEN DATE(P.createDate) > DATE(S.createDate) THEN P.pago ELSE 0 END) AS abonos,
+            ${ _SQL_COBRADO_DE_VENTAS_DEL_DIA } AS deVentasDelDia,
+            ${ _SQL_COBRADO_ABONOS } AS abonos,
             SUM(P.pago) AS total,
             COUNT(*) AS movimientos
          ${ fn_sqlCobradoFrom() }`,
@@ -642,8 +644,8 @@ const getResumenPorVendedor = async(req, res = response) => {
              LEFT JOIN (
                 SELECT
                     P.idSeller_idUser AS idUser,
-                    SUM(CASE WHEN DATE(P.createDate) = DATE(S.createDate) THEN P.pago ELSE 0 END) AS deVentasDelDia,
-                    SUM(CASE WHEN DATE(P.createDate) > DATE(S.createDate) THEN P.pago ELSE 0 END) AS abonos
+                    ${ _SQL_COBRADO_DE_VENTAS_DEL_DIA } AS deVentasDelDia,
+                    ${ _SQL_COBRADO_ABONOS } AS abonos
                 ${ fn_sqlCobradoFrom() }
                 GROUP BY P.idSeller_idUser
              ) AS C ON C.idUser = U.idUser
@@ -1345,10 +1347,18 @@ const getPagosConjunto = async(req, res = response) => {
             INNER JOIN customers AS C ON C.idCustomer = S.idCustomer
             WHERE ( :idSucursal = 0 OR S.idSucursal = :idSucursal )`;
 
-        const [aVisibles, rows] = await Promise.all([
+        const [aVisibles, rows, aFormas] = await Promise.all([
 
+            // Conteo, suma y la misma partición que la tarjeta "Cobrado" del
+            // panel (de ventas del día / abonos), de TODOS los pagos
+            // visibles, no de la página.
             dbConnection.query(
-                `SELECT COUNT(*) AS n, IFNULL(SUM(P.pago), 0) AS sumPagos ${ sFromVisibles }`,
+                `SELECT
+                    COUNT(*) AS n
+                    , IFNULL(SUM(P.pago), 0) AS sumPagos
+                    , IFNULL(${ _SQL_COBRADO_DE_VENTAS_DEL_DIA }, 0) AS deVentasDelDia
+                    , IFNULL(${ _SQL_COBRADO_ABONOS }, 0) AS abonos
+                 ${ sFromVisibles }`,
                 { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
             ),
 
@@ -1371,6 +1381,23 @@ const getPagosConjunto = async(req, res = response) => {
                  ORDER BY P.keyx DESC
                  LIMIT :start, :limiter`,
                 { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
+            ),
+
+            // Por forma de pago, de los mismos pagos visibles. Se agrupa por
+            // id adentro y el nombre se cruza afuera (ONLY_FULL_GROUP_BY).
+            dbConnection.query(
+                `SELECT
+                    IFNULL( F.name, 'Sin forma de pago' ) AS formaPagoDesc
+                    , T.movimientos
+                    , T.monto
+                 FROM (
+                    SELECT X.idFormaPago, COUNT(*) AS movimientos, ROUND( SUM(X.pago), 2) AS monto
+                    FROM ( SELECT P.idFormaPago, P.pago ${ sFromVisibles } ) AS X
+                    GROUP BY X.idFormaPago
+                 ) AS T
+                 LEFT JOIN forma_pago AS F ON F.idFormaPago = T.idFormaPago
+                 ORDER BY T.monto DESC`,
+                { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
             )
 
         ]);
@@ -1379,14 +1406,28 @@ const getPagosConjunto = async(req, res = response) => {
 
         rows.forEach((r) => { r.totalPago = Number(r.totalPago) || 0; });
 
+        const oVis = aVisibles[0] || {};
+
+        const sumario = {
+            movimientos: iVisibles,
+            total: _fn_r(oVis.sumPagos),
+            deVentasDelDia: _fn_r(oVis.deVentasDelDia),
+            abonos: _fn_r(oVis.abonos),
+            formas: aFormas.map((f) => ({
+                formaPagoDesc: f.formaPagoDesc,
+                movimientos: Number(f.movimientos) || 0,
+                monto: _fn_r(f.monto)
+            }))
+        };
+
         res.json({
             status: 0,
             message: "Ejecutado correctamente.",
             data: {
                 count: iVisibles,
                 rows,
-                OSQL_Sum: [{ sumPagos: _fn_r(aVisibles[0] && aVisibles[0].sumPagos) }],
-                meta: { ...o.meta, iVisibles }
+                OSQL_Sum: [{ sumPagos: sumario.total }],
+                meta: { ...o.meta, iVisibles, sumario }
             }
         });
 

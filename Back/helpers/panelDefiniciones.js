@@ -64,6 +64,11 @@ const fn_sqlCobradoFrom = () => `
       AND P.relationType = 'V'
       AND DATE(P.createDate) BETWEEN :desde AND :hasta`;
 
+// Partición del cobrado: lo que vino de ventas del mismo día y lo que vino
+// de abonos a notas anteriores. Sobre payments (P) cruzado con sales (S).
+const _SQL_COBRADO_DE_VENTAS_DEL_DIA = `SUM(CASE WHEN DATE(P.createDate) = DATE(S.createDate) THEN P.pago ELSE 0 END)`;
+const _SQL_COBRADO_ABONOS = `SUM(CASE WHEN DATE(P.createDate) > DATE(S.createDate) THEN P.pago ELSE 0 END)`;
+
 // ── CARTERA AL CORTE ──
 // Apartados (3) y créditos (1) como estaban en la fecha :corte: se
 // descuentan solo los pagos hechos hasta ese día, y cuenta como cartera
@@ -275,6 +280,8 @@ module.exports = {
     _SQL_PIEZAS,
     fn_sqlVentaFrom,
     fn_sqlCobradoFrom,
+    _SQL_COBRADO_DE_VENTAS_DEL_DIA,
+    _SQL_COBRADO_ABONOS,
     _SQL_CARTERA_BASE,
     _SQL_CARTERA_CON_SALDO,
     _SQL_CARTERA_CUBETA,
