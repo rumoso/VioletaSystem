@@ -238,6 +238,61 @@
     (OQuitar)="fn_quitarFiltro()">
   </app-filtro-activo>
 
+  <!-- ═══════════════ SUMARIO (solo consulta del panel) ═══════════════
+       Suma TODAS las notas de la consulta, no solo la página que se ve.
+       Lo calcula el servidor con las mismas fórmulas que las columnas
+       de la tabla, así que las tarjetas cuadran con lo que se lista. -->
+  <div class="sll-sumario" *ngIf="bModoPanel && oMetaPanel?.sumario as S">
+
+    <div class="sll-sum-cards">
+
+      <div class="sll-card sll-sum-card">
+        <div class="sll-sum-label">
+          <mat-icon class="sll-sum-icon">receipt_long</mat-icon>
+          Total de venta
+        </div>
+        <div class="sll-sum-valor">{{ S.total | currency }}</div>
+        <div class="sll-sum-sub">{{ S.notas }} {{ S.notas === 1 ? 'nota' : 'notas' }}</div>
+      </div>
+
+      <div class="sll-card sll-sum-card sll-sum-card--verde">
+        <div class="sll-sum-label">
+          <mat-icon class="sll-sum-icon">payments</mat-icon>
+          Pagado
+        </div>
+        <div class="sll-sum-valor">{{ S.abonado | currency }}</div>
+        <div class="sll-sum-sub" *ngIf="S.total > 0">{{ ( S.abonado / S.total * 100 ) | number:'1.0-1' }}% del total</div>
+      </div>
+
+      <div class="sll-card sll-sum-card"
+           [class.sll-sum-card--rojo]="S.pendiente > 0">
+        <div class="sll-sum-label">
+          <mat-icon class="sll-sum-icon">pending_actions</mat-icon>
+          Pendiente
+        </div>
+        <div class="sll-sum-valor">{{ S.pendiente | currency }}</div>
+        <div class="sll-sum-sub" *ngIf="S.total > 0">{{ ( S.pendiente / S.total * 100 ) | number:'1.0-1' }}% del total</div>
+      </div>
+
+    </div>
+
+    <!-- Cuántas de cada tipo: contado, crédito, apartado, taller... -->
+    <div class="sll-card sll-sum-tipos" *ngIf="S.tipos.length > 0">
+      <div class="sll-sum-tipos-titulo">Por tipo de venta</div>
+      <div class="sll-sum-tipos-lista">
+        <div class="sll-sum-tipo" *ngFor="let t of S.tipos">
+          <div class="sll-sum-tipo-head">
+            <span class="sll-sum-tipo-nombre">{{ t.saleTypeName }}</span>
+            <span class="sll-sum-tipo-notas">{{ t.notas }}</span>
+          </div>
+          <div class="sll-sum-tipo-total">{{ t.total | currency }}</div>
+          <div class="sll-sum-tipo-pend" *ngIf="t.pendiente > 0">Pendiente {{ t.pendiente | currency }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
   <!-- ═══════════════ TABLA ═══════════════ -->
   <div class="sll-card sll-content">
 

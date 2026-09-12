@@ -1167,15 +1167,20 @@ const getVentasConjunto = async(req, res = response) => {
 
         const sWhereVisibles = `WHERE ( :idSucursal = 0 OR S.idSucursal = :idSucursal )`;
 
-        const [aVisibles, rows] = await Promise.all([
+        // Total y abonado de una nota, tal como los pinta la tabla.
+        // `SD.active = S.active` y `PP.active = S.active` reproducen lo que
+        // el SP hace con p_bCancel: de una nota cancelada se suman sus
+        // líneas y pagos cancelados. Los usan la página y el sumario, para
+        // que las tarjetas sumen exactamente lo que muestra la tabla.
+        const sSqlTotal = `ROUND( IFNULL( ( SELECT SUM(SD.importe) FROM salesdetail AS SD WHERE SD.idSale = S.idSale AND SD.active = S.active ), 0), 2)`;
+        const sSqlAbonado = `ROUND( IFNULL( ( SELECT SUM(PP.pago) FROM payments AS PP WHERE PP.idRelation = S.idSale AND PP.relationType IN ('V','A') AND PP.active = S.active ), 0), 2)`;
+
+        const [aVisibles, rows, aSumario] = await Promise.all([
 
             dbConnection.query(`SELECT COUNT(*) AS n ${ sFromVisibles } ${ sWhereVisibles }`, { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }),
 
             // Total y abonado se calculan solo para la página, no para
-            // toda la tabla de ventas. `SD.active = S.active` y
-            // `PP.active = S.active` reproducen lo que el SP hace con
-            // p_bCancel: de una nota cancelada se suman sus líneas y
-            // pagos cancelados.
+            // toda la tabla de ventas.
             dbConnection.query(
                 `SELECT
                     R.*,
@@ -1199,8 +1204,8 @@ const getVentasConjunto = async(req, res = response) => {
                             WHEN S.idSaleType = 5 AND STS.fechaEntrega IS NOT NULL THEN CONCAT( ST.name, ' (', SSC.nombre, ')', ' FE: ', DATE_FORMAT( STS.fechaEntrega, '%d-%m-%Y') )
                             WHEN S.idSaleType = 3 AND S.fechaEntrega IS NOT NULL THEN CONCAT( ST.name, ' - Entregado ', DATE_FORMAT( S.fechaEntrega, '%d-%m-%Y') )
                             ELSE ST.name END AS saleTypeDesc
-                        , ROUND( IFNULL( ( SELECT SUM(SD.importe) FROM salesdetail AS SD WHERE SD.idSale = S.idSale AND SD.active = S.active ), 0), 2) AS total
-                        , ROUND( IFNULL( ( SELECT SUM(PP.pago) FROM payments AS PP WHERE PP.idRelation = S.idSale AND PP.relationType IN ('V','A') AND PP.active = S.active ), 0), 2) AS abonado
+                        , ${ sSqlTotal } AS total
+                        , ${ sSqlAbonado } AS abonado
                         , IFNULL( (
                             SELECT CASE WHEN S.idSaleType <> 5 THEN GROUP_CONCAT( P.name ) ELSE SD.descriptionTaller END
                             FROM salesdetail AS SD
@@ -1232,6 +1237,31 @@ const getVentasConjunto = async(req, res = response) => {
                  ) AS R
                  ORDER BY R._orden DESC`,
                 { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
+            ),
+
+            // Sumario para las tarjetas de la pantalla: de TODAS las notas
+            // visibles del conjunto, no de la página. Pendiente con la
+            // misma regla que la columna (una cotización no debe nada).
+            dbConnection.query(
+                `SELECT
+                    X.idSaleType
+                    , X.saleTypeName
+                    , COUNT(*) AS notas
+                    , ROUND( SUM(X.total), 2) AS total
+                    , ROUND( SUM(X.abonado), 2) AS abonado
+                    , ROUND( SUM( CASE WHEN X.idSaleType = 6 THEN 0 ELSE ROUND(X.total - X.abonado, 2) END ), 2) AS pendiente
+                 FROM (
+                    SELECT
+                        S.idSaleType
+                        , ST.name AS saleTypeName
+                        , ${ sSqlTotal } AS total
+                        , ${ sSqlAbonado } AS abonado
+                    ${ sFromVisibles }
+                    ${ sWhereVisibles }
+                 ) AS X
+                 GROUP BY X.idSaleType, X.saleTypeName
+                 ORDER BY notas DESC, X.idSaleType`,
+                { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
             )
 
         ]);
@@ -1248,10 +1278,27 @@ const getVentasConjunto = async(req, res = response) => {
             r.pagosYaEnCorte = Number(r.pagosYaEnCorte) || 0;
         });
 
+        const aTipos = aSumario.map((t) => ({
+            idSaleType: t.idSaleType,
+            saleTypeName: t.saleTypeName,
+            notas: Number(t.notas) || 0,
+            total: _fn_r(t.total),
+            abonado: _fn_r(t.abonado),
+            pendiente: _fn_r(t.pendiente)
+        }));
+
+        const sumario = {
+            notas: aTipos.reduce((n, t) => n + t.notas, 0),
+            total: _fn_r(aTipos.reduce((n, t) => n + t.total, 0)),
+            abonado: _fn_r(aTipos.reduce((n, t) => n + t.abonado, 0)),
+            pendiente: _fn_r(aTipos.reduce((n, t) => n + t.pendiente, 0)),
+            tipos: aTipos
+        };
+
         res.json({
             status: 0,
             message: "Ejecutado correctamente.",
-            data: { count: iVisibles, rows, meta: { ...o.meta, iVisibles } }
+            data: { count: iVisibles, rows, meta: { ...o.meta, iVisibles, sumario } }
         });
 
     } catch (error) {
