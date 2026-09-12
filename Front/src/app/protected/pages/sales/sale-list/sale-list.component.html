@@ -3,6 +3,21 @@
   <!-- ═══════════════ FILTROS ═══════════════ -->
   <div class="sll-card sll-filters">
 
+    <!-- Modo panel (analisis/015): la leyenda va EN LUGAR de los filtros,
+         no además. Con los filtros a la vista (aunque deshabilitados)
+         parecía que se podían usar sobre la consulta del panel. -->
+    <div class="sll-filters-row" *ngIf="bModoPanel">
+      <app-filtro-activo
+        class="sll-leyenda-panel"
+        [ITitulo]="sTituloFiltro"
+        [IEtiquetas]="aEtiquetasFiltro"
+        [IAvisos]="aAvisosFiltro"
+        (OQuitar)="fn_quitarFiltro()">
+      </app-filtro-activo>
+    </div>
+
+    <ng-container *ngIf="!bModoPanel">
+
     <div class="sll-filters-row">
 
       <div class="sll-field sll-field--folio">
@@ -111,6 +126,8 @@
 
     </div>
 
+    </ng-container>
+
     <div class="sll-filters-btns">
       <!-- En modo panel no hay nada que buscar ni limpiar: el conjunto es
            cerrado. Para salir está la "×" de la leyenda. -->
@@ -214,6 +231,7 @@
        cuando no trae ningún filtro y el usuario cree que la tienda
        solo tiene, por ejemplo, 32 notas en total. -->
   <app-filtro-activo
+    *ngIf="!bModoPanel"
     [ITitulo]="sTituloFiltro"
     [IEtiquetas]="aEtiquetasFiltro"
     [IAvisos]="aAvisosFiltro"

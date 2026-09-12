@@ -33,6 +33,11 @@
 .sll-filters-row--secondary {
   padding-top: 6px;
 }
+/* La leyenda del panel ocupa todo el renglón de los filtros. */
+.sll-leyenda-panel {
+  flex: 1 1 100%;
+  display: block;
+}
 .sll-field            { flex: 1; min-width: 160px; }
 .sll-field--folio     { min-width: 180px; flex: 1.2; }
 .sll-field--date      { min-width: 240px; flex: 1.6; }

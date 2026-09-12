@@ -1,4 +1,6 @@
-<mat-accordion >
+<!-- En modo panel (analisis/015) los filtros no se muestran: la leyenda
+     de abajo ocupa su lugar. -->
+<mat-accordion *ngIf="!bModoPanel">
 
     <!-- En modo panel (analisis/015) los filtros no se pueden abrir: el
          conjunto que llegó del panel es cerrado. -->
@@ -285,7 +287,7 @@
 
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" *ngIf="!bModoPanel">
           <mat-form-field fxLayout.xs="column" class="with100">
               <mat-label>Código de barras</mat-label>
               <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
@@ -296,7 +298,7 @@
             </mat-form-field>
       </div>
 
-      <div class="col-md-5">
+      <div class="col-md-5" *ngIf="!bModoPanel">
           <mat-form-field class="with100">
               <mat-label>Nombre</mat-label>
               <input matInput placeholder="Ingrese un nombre"
