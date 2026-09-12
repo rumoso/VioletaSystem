@@ -2,6 +2,32 @@ const { response } = require('express');
 
 const { dbConnection } = require('../database/config');
 
+// Las definiciones de QUÉ registros componen cada cifra viven en un solo
+// archivo, compartido con los endpoints de conjunto (analisis/015): así
+// el panel y el listado al que lleva un clic no pueden decir cosas
+// distintas.
+const {
+    _TIPOS_TALLER,
+    _SQL_FILTRO_MOSTRADOR,
+    _SQL_FILTRO_TALLER,
+    _SQL_IMPORTE,
+    _SQL_COSTO,
+    _SQL_PIEZAS,
+    fn_sqlVentaFrom,
+    fn_sqlCobradoFrom,
+    _SQL_CARTERA_BASE,
+    _SQL_CARTERA_CON_SALDO,
+    _SQL_CARTERA_CUBETA,
+    _CARTERA_CUBETAS,
+    _SQL_INV_FROM,
+    _SQL_INV_NUNCA,
+    _SQL_INV_12,
+    _SQL_INV_6,
+    _SQL_INV_BAJO_PISO,
+    _INV_ETIQUETAS,
+    _CONJUNTOS
+} = require('../helpers/panelDefiniciones');
+
 // ══════════════════════════════════════════════════════════════
 // PANEL DEL DIRECTOR (analisis/014-dashboard-directivo.md)
 //
@@ -16,14 +42,6 @@ const { dbConnection } = require('../database/config');
 //              cobrado: la utilidad de un apartado se generó el día
 //              que se vendió, no el día que terminó de pagarse.
 // ══════════════════════════════════════════════════════════════
-
-// Exclusiones fijas, en un solo lugar para que seis consultas no se
-// desincronicen: cotizaciones (idSaleType 6) no son ventas, y lo
-// cancelado no cuenta en ningún número.
-const _SQL_VENTA_VALIDA = `S.active = 1 AND S.idSaleType <> 6`;
-
-// Los tipos que son taller, para separar mostrador de taller.
-const _TIPOS_TALLER = [5, 7];
 
 // ── Permisos ──
 // Mismo camino que el SP `haveActionPermiso` del propio sistema: primero
@@ -130,18 +148,6 @@ const _fn_fechas = (fecha) => {
 
 };
 
-// ── Utilidad ──
-// Fórmula única: importe menos costo por cantidad.
-//
-// El LEFT JOIN a products y el CASE no son decorativos: el reporte
-// `rep_getUtilidades` suma importe y costo con un INNER JOIN a
-// products, así que una línea cuyo idProduct no exista en el catálogo
-// (taller/sobre, que van con idProduct = 0) no aporta ni importe ni
-// costo. El panel hace lo mismo para no diferir del reporte por esa
-// razón. (Sí difiere por otra, ver la nota de `getResumenDia`.)
-const _SQL_IMPORTE = `SUM(CASE WHEN PP.idProduct IS NOT NULL THEN D.importe ELSE 0 END)`;
-const _SQL_COSTO = `SUM(CASE WHEN PP.idProduct IS NOT NULL THEN D.cost * D.cantidad ELSE 0 END)`;
-
 // Redondeo de salida. Toda cantidad que sale de aquí va redondeada:
 // es la regla del proyecto y aquí son los números que ve el dueño.
 const _fn_r = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -200,29 +206,7 @@ const _fn_variacion = (actual, anterior) => {
 // existían entonces descontándoles pagos que todavía no ocurrían, y
 // escondería como "entregadas" notas que en esa fecha seguían siendo
 // cartera.
-const _SQL_CARTERA_BASE = `
-    SELECT
-        S.idSale,
-        S.idSaleType,
-        S.idCustomer,
-        S.createDate,
-        DATEDIFF(:corte, S.createDate) AS dias,
-        ROUND(IFNULL(D.importe, 0) - IFNULL(P.pago, 0), 2) AS saldo
-    FROM sales AS S
-    LEFT JOIN ( SELECT idSale, SUM(importe) AS importe FROM salesdetail WHERE active = 1 GROUP BY idSale ) AS D
-        ON D.idSale = S.idSale
-    LEFT JOIN (
-        SELECT idRelation, SUM(pago) AS pago
-        FROM payments
-        WHERE active = 1 AND relationType = 'V' AND DATE(createDate) <= :corte
-        GROUP BY idRelation
-    ) AS P
-        ON P.idRelation = S.idSale
-    WHERE S.active = 1
-      AND S.idSaleType IN (1, 3)
-      AND ( S.fechaEntrega IS NULL OR DATE(S.fechaEntrega) > :corte )
-      AND DATE(S.createDate) <= :corte
-`;
+// (La consulta vive en helpers/panelDefiniciones.js: _SQL_CARTERA_BASE.)
 
 const getCartera = async(req, res = response) => {
 
@@ -240,14 +224,11 @@ const getCartera = async(req, res = response) => {
         const filas = await dbConnection.query(
             `SELECT
                 T.idSaleType,
-                CASE WHEN T.dias <= 30 THEN 1
-                     WHEN T.dias <= 60 THEN 2
-                     WHEN T.dias <= 90 THEN 3
-                     ELSE 4 END AS bucket,
+                ${ _SQL_CARTERA_CUBETA } AS bucket,
                 COUNT(*) AS notas,
                 SUM(T.saldo) AS saldo
              FROM ( ${ _SQL_CARTERA_BASE } ) AS T
-             WHERE T.saldo > 0.01
+             WHERE ${ _SQL_CARTERA_CON_SALDO }
              GROUP BY T.idSaleType, bucket`,
             { replacements: { corte: oFechas.dia }, type: dbConnection.QueryTypes.SELECT }
         );
@@ -259,12 +240,7 @@ const getCartera = async(req, res = response) => {
             total: _fn_vacio(),
             apartados: _fn_vacio(),
             creditos: _fn_vacio(),
-            antiguedad: [
-                { clave: '0-30', etiqueta: '0 a 30 días', ..._fn_vacio() },
-                { clave: '31-60', etiqueta: '31 a 60 días', ..._fn_vacio() },
-                { clave: '61-90', etiqueta: '61 a 90 días', ..._fn_vacio() },
-                { clave: '+90', etiqueta: 'Más de 90 días', ..._fn_vacio() }
-            ]
+            antiguedad: _CARTERA_CUBETAS.map((c) => ({ clave: c.clave, etiqueta: c.etiqueta, ..._fn_vacio() }))
         };
 
         for (const f of filas) {
@@ -335,7 +311,7 @@ const getCarteraTop = async(req, res = response) => {
                 C.tel
              FROM ( ${ _SQL_CARTERA_BASE } ) AS T
              LEFT JOIN customers AS C ON C.idCustomer = T.idCustomer
-             WHERE T.saldo > 0.01
+             WHERE ${ _SQL_CARTERA_CON_SALDO }
              ORDER BY T.saldo DESC
              LIMIT :iTop`,
             {
@@ -408,20 +384,17 @@ const getInventario = async(req, res = response) => {
                 SUM(P.cost) AS costo,
                 SUM(P.price) AS lista,
 
-                SUM(CASE WHEN U.ultima IS NULL THEN 1 ELSE 0 END) AS nuncaPiezas,
-                SUM(CASE WHEN U.ultima IS NULL THEN P.cost ELSE 0 END) AS nuncaCosto,
+                SUM(CASE WHEN ${ _SQL_INV_NUNCA } THEN 1 ELSE 0 END) AS nuncaPiezas,
+                SUM(CASE WHEN ${ _SQL_INV_NUNCA } THEN P.cost ELSE 0 END) AS nuncaCosto,
 
-                SUM(CASE WHEN U.ultima IS NOT NULL AND U.ultima < DATE_SUB(:corte, INTERVAL 12 MONTH) THEN 1 ELSE 0 END) AS sin12Piezas,
-                SUM(CASE WHEN U.ultima IS NOT NULL AND U.ultima < DATE_SUB(:corte, INTERVAL 12 MONTH) THEN P.cost ELSE 0 END) AS sin12Costo,
+                SUM(CASE WHEN ${ _SQL_INV_12 } THEN 1 ELSE 0 END) AS sin12Piezas,
+                SUM(CASE WHEN ${ _SQL_INV_12 } THEN P.cost ELSE 0 END) AS sin12Costo,
 
-                SUM(CASE WHEN U.ultima IS NOT NULL AND U.ultima < DATE_SUB(:corte, INTERVAL 6 MONTH) AND U.ultima >= DATE_SUB(:corte, INTERVAL 12 MONTH) THEN 1 ELSE 0 END) AS sin6Piezas,
-                SUM(CASE WHEN U.ultima IS NOT NULL AND U.ultima < DATE_SUB(:corte, INTERVAL 6 MONTH) AND U.ultima >= DATE_SUB(:corte, INTERVAL 12 MONTH) THEN P.cost ELSE 0 END) AS sin6Costo,
+                SUM(CASE WHEN ${ _SQL_INV_6 } THEN 1 ELSE 0 END) AS sin6Piezas,
+                SUM(CASE WHEN ${ _SQL_INV_6 } THEN P.cost ELSE 0 END) AS sin6Costo,
 
-                SUM(CASE WHEN P.cost > 0 AND P.price < ROUND(P.cost * 1.30, 2) THEN 1 ELSE 0 END) AS bajoPiso
-             FROM products AS P
-             LEFT JOIN ( SELECT idProduct, MAX(createDate) AS ultima FROM salesdetail WHERE active = 1 GROUP BY idProduct ) AS U
-                ON U.idProduct = P.idProduct
-             WHERE P.active = 1`,
+                SUM(CASE WHEN ${ _SQL_INV_BAJO_PISO } THEN 1 ELSE 0 END) AS bajoPiso
+             ${ _SQL_INV_FROM }`,
             { replacements: { corte: oFechas.dia }, type: dbConnection.QueryTypes.SELECT }
         );
 
@@ -444,9 +417,9 @@ const getInventario = async(req, res = response) => {
             // Cuántas veces el costo vale el inventario a precio de lista.
             factorLista: costo > 0 ? _fn_r(_fn_r(f.lista) / costo) : 0,
             cubetas: [
-                _fn_cubeta('Nunca se ha vendido', f.nuncaPiezas, f.nuncaCosto),
-                _fn_cubeta('Sin movimiento 12+ meses', f.sin12Piezas, f.sin12Costo),
-                _fn_cubeta('Sin movimiento 6 a 12 meses', f.sin6Piezas, f.sin6Costo)
+                _fn_cubeta(_INV_ETIQUETAS.nunca, f.nuncaPiezas, f.nuncaCosto),
+                _fn_cubeta(_INV_ETIQUETAS.sin12, f.sin12Piezas, f.sin12Costo),
+                _fn_cubeta(_INV_ETIQUETAS.sin6, f.sin6Piezas, f.sin6Costo)
             ],
             bajoPiso: Number(f.bajoPiso) || 0,
             bSinDatos: (Number(f.piezas) || 0) === 0
@@ -477,13 +450,8 @@ const _fn_getVenta = async(desde, hasta, sFiltroTipo = '') => {
             COUNT(DISTINCT S.idSale) AS notas,
             ${ _SQL_IMPORTE } AS vendido,
             ${ _SQL_COSTO } AS costo,
-            SUM(CASE WHEN PP.idProduct IS NOT NULL THEN D.cantidad ELSE 0 END) AS piezas
-         FROM sales AS S
-         INNER JOIN salesdetail AS D ON D.idSale = S.idSale AND D.active = 1
-         LEFT JOIN products AS PP ON PP.idProduct = D.idProduct
-         WHERE ${ _SQL_VENTA_VALIDA }
-           AND DATE(S.createDate) BETWEEN :desde AND :hasta
-           ${ sFiltroTipo }`,
+            ${ _SQL_PIEZAS } AS piezas
+         ${ fn_sqlVentaFrom(sFiltroTipo) }`,
         { replacements: { desde, hasta }, type: dbConnection.QueryTypes.SELECT }
     );
 
@@ -503,11 +471,7 @@ const _fn_getCobrado = async(desde, hasta) => {
             SUM(CASE WHEN DATE(P.createDate) > DATE(S.createDate) THEN P.pago ELSE 0 END) AS abonos,
             SUM(P.pago) AS total,
             COUNT(*) AS movimientos
-         FROM payments AS P
-         INNER JOIN sales AS S ON S.idSale = P.idRelation AND S.active = 1
-         WHERE P.active = 1
-           AND P.relationType = 'V'
-           AND DATE(P.createDate) BETWEEN :desde AND :hasta`,
+         ${ fn_sqlCobradoFrom() }`,
         { replacements: { desde, hasta }, type: dbConnection.QueryTypes.SELECT }
     );
 
@@ -529,13 +493,11 @@ const getResumenDia = async(req, res = response) => {
         const bVerCostos = await _fn_tienePermiso(idUserLogON, 'dashboard_VerCostos');
         const oFechas = _fn_fechas(fecha);
 
-        const sTaller = _TIPOS_TALLER.join(', ');
-
         const [oHoy, oAntes, oMostrador, oTaller, oCobrado, aFormasPago, aCajas] = await Promise.all([
             _fn_getVenta(oFechas.dia, oFechas.dia),
             _fn_getVenta(oFechas.diaComparativo, oFechas.diaComparativo),
-            _fn_getVenta(oFechas.dia, oFechas.dia, `AND S.idSaleType NOT IN (${ sTaller })`),
-            _fn_getVenta(oFechas.dia, oFechas.dia, `AND S.idSaleType IN (${ sTaller })`),
+            _fn_getVenta(oFechas.dia, oFechas.dia, _SQL_FILTRO_MOSTRADOR),
+            _fn_getVenta(oFechas.dia, oFechas.dia, _SQL_FILTRO_TALLER),
             _fn_getCobrado(oFechas.dia, oFechas.dia),
 
             dbConnection.query(
@@ -672,11 +634,8 @@ const getResumenPorVendedor = async(req, res = response) => {
                     COUNT(DISTINCT S.idSale) AS notas,
                     ${ _SQL_IMPORTE } AS vendido,
                     ${ _SQL_COSTO } AS costo,
-                    SUM(CASE WHEN PP.idProduct IS NOT NULL THEN D.cantidad ELSE 0 END) AS piezas
-                FROM sales AS S
-                INNER JOIN salesdetail AS D ON D.idSale = S.idSale AND D.active = 1
-                LEFT JOIN products AS PP ON PP.idProduct = D.idProduct
-                WHERE ${ _SQL_VENTA_VALIDA } AND DATE(S.createDate) = :dia
+                    ${ _SQL_PIEZAS } AS piezas
+                ${ fn_sqlVentaFrom() }
                 GROUP BY S.idSeller_idUser
              ) AS V ON V.idUser = U.idUser
 
@@ -685,14 +644,12 @@ const getResumenPorVendedor = async(req, res = response) => {
                     P.idSeller_idUser AS idUser,
                     SUM(CASE WHEN DATE(P.createDate) = DATE(S.createDate) THEN P.pago ELSE 0 END) AS deVentasDelDia,
                     SUM(CASE WHEN DATE(P.createDate) > DATE(S.createDate) THEN P.pago ELSE 0 END) AS abonos
-                FROM payments AS P
-                INNER JOIN sales AS S ON S.idSale = P.idRelation AND S.active = 1
-                WHERE P.active = 1 AND P.relationType = 'V' AND DATE(P.createDate) = :dia
+                ${ fn_sqlCobradoFrom() }
                 GROUP BY P.idSeller_idUser
              ) AS C ON C.idUser = U.idUser
 
              WHERE V.idUser IS NOT NULL OR C.idUser IS NOT NULL`,
-            { replacements: { dia: oFechas.dia }, type: dbConnection.QueryTypes.SELECT }
+            { replacements: { desde: oFechas.dia, hasta: oFechas.dia }, type: dbConnection.QueryTypes.SELECT }
         );
 
         const rows = filas.map((f) => {
@@ -783,11 +740,7 @@ const getResumenMes = async(req, res = response) => {
 
             dbConnection.query(
                 `SELECT DATE(S.createDate) AS fecha, ${ _SQL_IMPORTE } AS vendido, COUNT(DISTINCT S.idSale) AS notas
-                 FROM sales AS S
-                 INNER JOIN salesdetail AS D ON D.idSale = S.idSale AND D.active = 1
-                 LEFT JOIN products AS PP ON PP.idProduct = D.idProduct
-                 WHERE ${ _SQL_VENTA_VALIDA }
-                   AND DATE(S.createDate) BETWEEN :desde AND :hasta
+                 ${ fn_sqlVentaFrom() }
                  GROUP BY DATE(S.createDate)
                  ORDER BY fecha`,
                 { replacements: { desde: oFechas.mesIni, hasta: oFechas.mesFin }, type: dbConnection.QueryTypes.SELECT }
@@ -987,6 +940,501 @@ const getOperacion = async(req, res = response) => {
     }
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// CONJUNTOS — lo que hay detrás de cada cifra (analisis/015)
+//
+// Cuando el usuario hace clic en una cifra del panel, la pantalla
+// destino (ventas, pagos o productos) pide aquí EXACTAMENTE los
+// registros que el panel contó. La lista de registros se arma con la
+// misma definición que la cifra (helpers/panelDefiniciones.js) y se
+// cruza del lado del servidor: nunca viaja por la red ni por la URL.
+//
+// Lo que sí se cuida en cada consulta:
+//   - Permiso del panel, permiso del MENÚ de la pantalla destino (las
+//     rutas del Front no tienen guardia: el menú es la única puerta) y,
+//     si el conjunto se deriva de costos, dashboard_VerCostos.
+//   - La misma restricción de sucursal que la pantalla normal. Por eso
+//     se devuelven dos números: iConjunto (lo que contó el panel, toda
+//     la empresa) e iVisibles (lo que este usuario puede ver).
+//   - Los renglones con la MISMA forma que la lista normal, para que la
+//     tabla existente los pinte sin cambios.
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ¿El usuario tiene el menú de la pantalla destino? Mismo camino que el
+// SP `getMenuFathersByPermission` del sistema: por rol ('R', vía
+// rolesconfig) o directo al usuario ('U'), con las dos banderas active.
+const _fn_tieneMenu = async(idUser, linkList) => {
+
+    const filas = await dbConnection.query(
+        `SELECT 1 AS ok
+         FROM menus AS M
+         INNER JOIN menupermisos AS MP ON MP.idMenu = M.idMenu AND MP.typeRelation = 'R' AND MP.active = 1
+         INNER JOIN rolesconfig AS RC ON RC.idRol = MP.idRelation
+         WHERE M.linkList = :linkList AND M.active = 1 AND M.idAplication = 1 AND RC.idUser = :idUser
+         UNION
+         SELECT 1 AS ok
+         FROM menus AS M
+         INNER JOIN menupermisos AS MP ON MP.idMenu = M.idMenu AND MP.typeRelation = 'U' AND MP.active = 1
+         WHERE M.linkList = :linkList AND M.active = 1 AND M.idAplication = 1 AND MP.idRelation = :idUser
+         LIMIT 1`,
+        { replacements: { idUser, linkList }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    return filas.length > 0;
+
+};
+
+// 'AAAA-MM-DD' que además sea una fecha real (no 2026-02-31).
+const _fn_fechaValida = (sFecha) => {
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(sFecha))) {
+        return false;
+    }
+
+    const d = new Date(`${ sFecha }T12:00:00`);
+    const fmt = `${ d.getFullYear() }-${ String(d.getMonth() + 1).padStart(2, '0') }-${ String(d.getDate()).padStart(2, '0') }`;
+
+    return fmt === sFecha;
+
+};
+
+const _fn_entero = (v, iDefault, iMin, iMax) => {
+    const n = Number(v);
+    if (!Number.isInteger(n)) {
+        return iDefault;
+    }
+    return Math.min(Math.max(n, iMin), iMax);
+};
+
+const _fn_error = (message) => ({ oError: { status: 1, message } });
+
+// Valida la petición y resuelve la clave del conjunto. Devuelve
+// { oError } si no puede seguir, o { oDef, sIdsJson, meta }.
+const _fn_resolverConjunto = async(body, sDestino) => {
+
+    const {
+        idUserLogON,
+        panel = '',
+        fecha = '',
+        idVendedor = 0,
+        idSale = ''
+    } = body;
+
+    const oNoAcceso = await _fn_validarAcceso(idUserLogON);
+    if (oNoAcceso) {
+        return { oError: oNoAcceso };
+    }
+
+    // hasOwnProperty y no `in`: una clave como "constructor" no puede
+    // colarse como si fuera un conjunto.
+    const oDef = Object.prototype.hasOwnProperty.call(_CONJUNTOS, panel) ? _CONJUNTOS[panel] : null;
+
+    if (!oDef) {
+        return _fn_error('La consulta del panel no existe.');
+    }
+
+    if (oDef.destino !== sDestino) {
+        return _fn_error('Esa consulta del panel no corresponde a esta pantalla.');
+    }
+
+    if (fecha && !_fn_fechaValida(fecha)) {
+        return _fn_error('La fecha de la consulta no es válida.');
+    }
+
+    const p = { fecha: _fn_fechas(fecha).dia };
+
+    if (oDef.requiere.includes('idVendedor')) {
+
+        const nVendedor = Number(idVendedor);
+
+        if (!Number.isInteger(nVendedor) || nVendedor <= 0) {
+            return _fn_error('Falta el vendedor de la consulta.');
+        }
+
+        p.idVendedor = nVendedor;
+
+        const [oVendedor] = await dbConnection.query(
+            `SELECT name FROM users WHERE idUser = :idVendedor LIMIT 1`,
+            { replacements: { idVendedor: nVendedor }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        p.vendedorDesc = oVendedor ? oVendedor.name : '';
+
+    }
+
+    if (oDef.requiere.includes('idSale')) {
+
+        const sFolio = String(idSale || '').trim();
+
+        if (!sFolio || sFolio.length > 100) {
+            return _fn_error('Falta el folio de la consulta.');
+        }
+
+        p.idSale = sFolio;
+
+    }
+
+    const bMenu = await _fn_tieneMenu(idUserLogON, oDef.menu);
+    if (!bMenu) {
+        return _fn_error('No tienes permiso para ver esa pantalla.');
+    }
+
+    // Saber QUÉ productos están bajo su piso ya es información de
+    // costo, aunque el listado no enseñe la columna.
+    if (oDef.bCostos) {
+        const bVerCostos = await _fn_tienePermiso(idUserLogON, 'dashboard_VerCostos');
+        if (!bVerCostos) {
+            return _fn_error('Esta consulta se deriva de costos y requiere autorización.');
+        }
+    }
+
+    const oSql = oDef.fn_sql();
+    const oRepl = oDef.fn_repl(p);
+
+    // La definición del conjunto se ejecuta UNA sola vez: de aquí sale la
+    // lista de ids, y el conteo, los visibles y la página se cruzan contra
+    // esa lista por llave primaria (JSON_TABLE). Volver a meter la
+    // definición completa en cada una de esas consultas repetiría el
+    // cálculo — en cartera eran cuatro pasadas por página.
+    const [aResumen, aIds] = await Promise.all([
+        dbConnection.query(oSql.resumen, { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }),
+        dbConnection.query(oSql.ids, { replacements: oRepl, type: dbConnection.QueryTypes.SELECT })
+    ]);
+
+    const oResumen = aResumen[0] || {};
+
+    // Cada consulta de ids devuelve una sola columna (idSale, idPayment o
+    // idProduct).
+    const aLista = aIds.map((r) => r[Object.keys(r)[0]]);
+
+    return {
+        oDef,
+        sIdsJson: JSON.stringify(aLista),
+        meta: {
+            panel,
+            etiqueta: oDef.fn_etiqueta(p),
+            fecha: p.fecha,
+            iConjunto: aLista.length,
+            resumen: {
+                conteo: Number(oResumen.conteo) || 0,
+                importe: _fn_r(oResumen.importe)
+            }
+        }
+    };
+
+};
+
+// ── Ventas ──
+// Renglones con la forma de `getVentasListWithPage`. OJO: ese SP excluye
+// idSaleType 5 (sobre de taller) y aquí NO — el panel sí los cuenta en
+// "Vendido" y en "Taller", y el listado tiene que mostrar lo que el panel
+// contó. Tampoco se toca el SP: BackProdLocal lo usa con su firma actual.
+const getVentasConjunto = async(req, res = response) => {
+
+    const { idUserLogON, idSucursalLogON = 0, start = 0, limiter = 10 } = req.body;
+
+    try {
+
+        const o = await _fn_resolverConjunto(req.body, 'ventas');
+        if (o.oError) {
+            return res.json(o.oError);
+        }
+
+        const oRepl = {
+            ids: o.sIdsJson,
+            idUserLogON,
+            idSucursal: _fn_entero(idSucursalLogON, 0, 0, 999999),
+            start: _fn_entero(start, 0, 0, 100000000),
+            limiter: _fn_entero(limiter, 10, 1, 1000)
+        };
+
+        // Los mismos INNER JOIN que el SP de la lista: una nota cuyo
+        // vendedor o cliente no exista tampoco saldría en la lista normal.
+        // FROM y WHERE van separados a propósito: la consulta de renglones
+        // mete sus LEFT JOIN entre los dos.
+        //
+        // La columna de JSON_TABLE lleva la MISMA collation que
+        // sales.idSale (utf8mb3_general_ci): con otra, MySQL no puede usar
+        // la llave primaria para el cruce.
+        const sFromVisibles = `
+            FROM JSON_TABLE( :ids, '$[*]' COLUMNS ( idSale VARCHAR(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci PATH '$' ) ) AS CJ
+            INNER JOIN sales AS S ON S.idSale = CJ.idSale
+            INNER JOIN sucursalesconfig AS SC ON SC.idSucursal = S.idSucursal AND SC.idUser = :idUserLogON
+            INNER JOIN sucursales AS SS ON SS.idSucursal = S.idSucursal
+            INNER JOIN users AS U ON U.idUser = S.idSeller_idUser
+            INNER JOIN customers AS C ON C.idCustomer = S.idCustomer
+            INNER JOIN sales_type AS ST ON ST.idSaleType = S.idSaleType`;
+
+        const sWhereVisibles = `WHERE ( :idSucursal = 0 OR S.idSucursal = :idSucursal )`;
+
+        const [aVisibles, rows] = await Promise.all([
+
+            dbConnection.query(`SELECT COUNT(*) AS n ${ sFromVisibles } ${ sWhereVisibles }`, { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }),
+
+            // Total y abonado se calculan solo para la página, no para
+            // toda la tabla de ventas. `SD.active = S.active` y
+            // `PP.active = S.active` reproducen lo que el SP hace con
+            // p_bCancel: de una nota cancelada se suman sus líneas y
+            // pagos cancelados.
+            dbConnection.query(
+                `SELECT
+                    R.*,
+                    CASE WHEN R.idSaleType = 6 THEN 0 ELSE ROUND(R.total - R.abonado, 2) END AS pendingAmount
+                 FROM (
+                    SELECT
+                        S.keyx AS _orden
+                        , S.idSale
+                        , S.createDate
+                        , DATE_FORMAT( S.createDate, '%d-%m-%Y') AS createDateDate
+                        , DATE_FORMAT( S.createDate, '%h:%i:%s %p') AS createDateHours
+                        , S.idSucursal
+                        , SS.name AS sucursalDesc
+                        , S.idSeller_idUser
+                        , U.name AS sellerName
+                        , S.idCustomer
+                        , CONCAT( C.lastName, ' ', C.name ) AS customerName
+                        , S.idSaleType
+                        , CASE
+                            WHEN S.idSaleType = 5 AND STS.fechaEntrega IS NULL THEN CONCAT( ST.name, ' (', SSC.nombre, ')' )
+                            WHEN S.idSaleType = 5 AND STS.fechaEntrega IS NOT NULL THEN CONCAT( ST.name, ' (', SSC.nombre, ')', ' FE: ', DATE_FORMAT( STS.fechaEntrega, '%d-%m-%Y') )
+                            WHEN S.idSaleType = 3 AND S.fechaEntrega IS NOT NULL THEN CONCAT( ST.name, ' - Entregado ', DATE_FORMAT( S.fechaEntrega, '%d-%m-%Y') )
+                            ELSE ST.name END AS saleTypeDesc
+                        , ROUND( IFNULL( ( SELECT SUM(SD.importe) FROM salesdetail AS SD WHERE SD.idSale = S.idSale AND SD.active = S.active ), 0), 2) AS total
+                        , ROUND( IFNULL( ( SELECT SUM(PP.pago) FROM payments AS PP WHERE PP.idRelation = S.idSale AND PP.relationType IN ('V','A') AND PP.active = S.active ), 0), 2) AS abonado
+                        , IFNULL( (
+                            SELECT CASE WHEN S.idSaleType <> 5 THEN GROUP_CONCAT( P.name ) ELSE SD.descriptionTaller END
+                            FROM salesdetail AS SD
+                            INNER JOIN products AS P ON SD.idProduct = P.idProduct
+                            WHERE SD.idSale = S.idSale AND SD.active = S.active
+                            GROUP BY SD.idSale, SD.descriptionTaller
+                            LIMIT 1
+                        ), 0) AS ventaDesc
+                        , IFNULL( (
+                            SELECT ROUND( SUM( PP.pago ), 2)
+                            FROM payments AS PP
+                            INNER JOIN corte_caja_ingresos AS CCI ON PP.idPayment = CCI.idPayment
+                            WHERE PP.active = 1
+                              AND PP.relationType IN ('V','A')
+                              AND PP.idRelation = S.idSale
+                              AND PP.idFormaPago <> 5
+                        ), 0) AS pagosYaEnCorte
+                        , S.active
+                        , S.fechaEntrega
+                        , S.idUserEntrega
+                        , UE.name AS userEntregaName
+                    ${ sFromVisibles }
+                    LEFT JOIN users AS UE ON UE.idUser = S.idUserEntrega
+                    LEFT JOIN sobre_taller_status AS STS ON STS.idSale = S.idSale AND STS.idSucursal = S.idSucursal
+                    LEFT JOIN sobre_status_cat AS SSC ON SSC.idStatusSobre = STS.idStatusSobre
+                    ${ sWhereVisibles }
+                    ORDER BY S.keyx DESC
+                    LIMIT :start, :limiter
+                 ) AS R
+                 ORDER BY R._orden DESC`,
+                { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
+            )
+
+        ]);
+
+        const iVisibles = Number(aVisibles[0] && aVisibles[0].n) || 0;
+
+        // Mismo tipo que devuelve el SP (sus totales salen de una tabla
+        // temporal FLOAT): números, no los strings de un DECIMAL.
+        rows.forEach((r) => {
+            delete r._orden;
+            r.total = Number(r.total) || 0;
+            r.abonado = Number(r.abonado) || 0;
+            r.pendingAmount = Number(r.pendingAmount) || 0;
+            r.pagosYaEnCorte = Number(r.pagosYaEnCorte) || 0;
+        });
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { count: iVisibles, rows, meta: { ...o.meta, iVisibles } }
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// ── Pagos ──
+// Renglones con la forma de `getRepPagosWithPage`, y la suma en
+// `OSQL_Sum[0].sumPagos`, que es donde la pantalla la lee.
+const getPagosConjunto = async(req, res = response) => {
+
+    const { idUserLogON, idSucursalLogON = 0, start = 0, limiter = 10 } = req.body;
+
+    try {
+
+        const o = await _fn_resolverConjunto(req.body, 'pagos');
+        if (o.oError) {
+            return res.json(o.oError);
+        }
+
+        const oRepl = {
+            ids: o.sIdsJson,
+            idUserLogON,
+            idSucursal: _fn_entero(idSucursalLogON, 0, 0, 999999),
+            start: _fn_entero(start, 0, 0, 100000000),
+            limiter: _fn_entero(limiter, 10, 1, 1000)
+        };
+
+        // Misma collation que payments.idPayment, por la llave primaria.
+        const sFromVisibles = `
+            FROM JSON_TABLE( :ids, '$[*]' COLUMNS ( idPayment VARCHAR(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci PATH '$' ) ) AS CJ
+            INNER JOIN payments AS P ON P.idPayment = CJ.idPayment
+            INNER JOIN sales AS S ON S.idSale = P.idRelation
+            INNER JOIN sucursalesconfig AS SC ON SC.idSucursal = S.idSucursal AND SC.idUser = :idUserLogON
+            INNER JOIN sucursales AS SS ON SS.idSucursal = S.idSucursal
+            INNER JOIN users AS U ON U.idUser = S.idSeller_idUser
+            INNER JOIN customers AS C ON C.idCustomer = S.idCustomer
+            WHERE ( :idSucursal = 0 OR S.idSucursal = :idSucursal )`;
+
+        const [aVisibles, rows] = await Promise.all([
+
+            dbConnection.query(
+                `SELECT COUNT(*) AS n, IFNULL(SUM(P.pago), 0) AS sumPagos ${ sFromVisibles }`,
+                { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
+            ),
+
+            dbConnection.query(
+                `SELECT
+                    P.idPayment
+                    , S.idSale
+                    , P.createDate
+                    , DATE_FORMAT( P.createDate, '%d-%m-%Y') AS createDateDate
+                    , DATE_FORMAT( P.createDate, '%h:%i:%s %p') AS createDateHours
+                    , S.idSucursal
+                    , SS.name AS sucursalDesc
+                    , S.idSeller_idUser
+                    , U.name AS sellerName
+                    , S.idCustomer
+                    , CONCAT( C.lastName, ' ', C.name ) AS customerName
+                    , ROUND( IFNULL( P.pago, 0), 2) AS totalPago
+                    , IFNULL( ( SELECT CCI.idCorteCaja FROM corte_caja_ingresos AS CCI WHERE CCI.idPayment = P.idPayment LIMIT 1 ), '') AS idCorteCaja
+                 ${ sFromVisibles }
+                 ORDER BY P.keyx DESC
+                 LIMIT :start, :limiter`,
+                { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
+            )
+
+        ]);
+
+        const iVisibles = Number(aVisibles[0] && aVisibles[0].n) || 0;
+
+        rows.forEach((r) => { r.totalPago = Number(r.totalPago) || 0; });
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                count: iVisibles,
+                rows,
+                OSQL_Sum: [{ sumPagos: _fn_r(aVisibles[0] && aVisibles[0].sumPagos) }],
+                meta: { ...o.meta, iVisibles }
+            }
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// ── Productos ──
+// Renglones con la forma de `getProductsListWithPage`. Todos estos
+// conjuntos exigen el permiso de costos (lo valida _fn_resolverConjunto).
+const getProductosConjunto = async(req, res = response) => {
+
+    const { idUserLogON, start = 0, limiter = 10 } = req.body;
+
+    try {
+
+        const o = await _fn_resolverConjunto(req.body, 'productos');
+        if (o.oError) {
+            return res.json(o.oError);
+        }
+
+        const oRepl = {
+            ids: o.sIdsJson,
+            idUserLogON,
+            start: _fn_entero(start, 0, 0, 100000000),
+            limiter: _fn_entero(limiter, 10, 1, 1000)
+        };
+
+        // Mismos INNER JOIN que el SP del catálogo (grupos y familias): un
+        // producto sin grupo tampoco sale en la lista normal.
+        const sFromVisibles = `
+            FROM JSON_TABLE( :ids, '$[*]' COLUMNS ( idProduct BIGINT PATH '$' ) ) AS CJ
+            INNER JOIN products AS P ON P.idProduct = CJ.idProduct
+            INNER JOIN \`groups\` AS G ON G.idGroup = P.idGroup
+            INNER JOIN \`families\` AS F ON F.idFamily = P.idFamily
+            INNER JOIN sucursalesconfig AS SC ON SC.idSucursal = P.idSucursal AND SC.idUser = :idUserLogON`;
+
+        const [aVisibles, rows] = await Promise.all([
+
+            dbConnection.query(`SELECT COUNT(*) AS n ${ sFromVisibles }`, { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }),
+
+            dbConnection.query(
+                `SELECT
+                    P.idProduct
+                    , P.createDate
+                    , P.barCode
+                    , CONCAT( UPPER( G.name ), '-', P.name ) AS name
+                    , ROUND( P.gramos, 2) AS gramos
+                    , ROUND( P.cost, 2) AS cost
+                    , ROUND( P.price, 2) AS price
+                    , P.active
+                    , IFNULL( (
+                        SELECT ROUND( SUM( IL.cantidad ), 2)
+                        FROM inventarylog AS IL
+                        WHERE IL.active = 1 AND IL.idProduct = P.idProduct AND ( IL.firmaVer = 0 OR IL.firmaMost = 0 )
+                    ), 0) AS catInventaryVerify
+                    , IFNULL( (
+                        SELECT ROUND( SUM( IL.cantidad ), 2)
+                        FROM inventarylog AS IL
+                        WHERE IL.active = 1 AND IL.idProduct = P.idProduct AND IL.firmaVer = 1 AND IL.firmaMost = 1
+                    ), 0) AS catInventary
+                 ${ sFromVisibles }
+                 ORDER BY P.idProduct DESC
+                 LIMIT :start, :limiter`,
+                { replacements: oRepl, type: dbConnection.QueryTypes.SELECT }
+            )
+
+        ]);
+
+        const iVisibles = Number(aVisibles[0] && aVisibles[0].n) || 0;
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { count: iVisibles, rows, meta: { ...o.meta, iVisibles } }
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
 module.exports = {
     getCartera
     , getCarteraTop
@@ -995,4 +1443,7 @@ module.exports = {
     , getResumenPorVendedor
     , getResumenMes
     , getOperacion
+    , getVentasConjunto
+    , getPagosConjunto
+    , getProductosConjunto
 }

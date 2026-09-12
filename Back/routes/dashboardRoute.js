@@ -11,6 +11,9 @@ const {
     , getResumenPorVendedor
     , getResumenMes
     , getOperacion
+    , getVentasConjunto
+    , getPagosConjunto
+    , getProductosConjunto
      } = require('../controllers/dashboardController');
 
 const router = Router();
@@ -39,5 +42,21 @@ router.post('/getResumenPorVendedor', _aValidacion, getResumenPorVendedor);
 router.post('/getResumenMes', _aValidacion, getResumenMes);
 
 router.post('/getOperacion', _aValidacion, getOperacion);
+
+// Conjuntos del panel (analisis/015): los registros que hay detrás de
+// una cifra, para la pantalla a la que lleva su clic. La clave del
+// conjunto y sus parámetros se validan contra el catálogo en el
+// controller; aquí solo lo básico de forma.
+const _aValidacionConjunto = [
+    check('idUserLogON', 'El usuario es obligatorio').isInt({ gt: 0 }),
+    check('panel', 'La consulta del panel es obligatoria').isString().notEmpty(),
+    validarCampos
+];
+
+router.post('/getVentasConjunto', _aValidacionConjunto, getVentasConjunto);
+
+router.post('/getPagosConjunto', _aValidacionConjunto, getPagosConjunto);
+
+router.post('/getProductosConjunto', _aValidacionConjunto, getProductosConjunto);
 
 module.exports = router;
