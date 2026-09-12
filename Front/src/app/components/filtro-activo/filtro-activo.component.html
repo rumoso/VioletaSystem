@@ -12,11 +12,10 @@
 
     <span class="fac-spacer"></span>
 
-    <button mat-icon-button
-            class="fac-btn-quitar"
-            matTooltip="Quitar filtro y ver todo"
-            (click)="fn_quitar()">
-        <mat-icon>close</mat-icon>
-    </button>
+    <!-- Icono solo, sin botón: el círculo del mat-icon-button se veía
+         descentrado y más grande que la barra. -->
+    <mat-icon class="fac-quitar"
+              matTooltip="Quitar filtro y ver todo"
+              (click)="fn_quitar()">close</mat-icon>
 
 </div>

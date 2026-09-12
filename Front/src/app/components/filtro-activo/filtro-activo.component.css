@@ -42,19 +42,21 @@
   flex: 1;
 }
 
-.fac-btn-quitar {
-  width: 30px !important;
-  height: 30px !important;
-  line-height: 30px !important;
+.fac-quitar {
+  font-size: 20px !important;
+  width: 20px;
+  height: 20px;
+  line-height: 20px !important;
+  color: #283593;
+  cursor: pointer;
   flex-shrink: 0;
+  border-radius: 50%;
+  transition: color 0.12s, background 0.12s;
 }
 
-.fac-btn-quitar mat-icon {
-  font-size: 18px !important;
-  width: 18px;
-  height: 18px;
-  line-height: 18px !important;
-  color: #283593;
+.fac-quitar:hover {
+  color: #c62828;
+  background: #d9dcf3;
 }
 
 /* Avisos: un renglón propio cada uno, en ámbar, para que no se lean
