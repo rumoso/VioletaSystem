@@ -56,7 +56,9 @@
         <!-- Los tres números que no se mezclan -->
         <div class="dbp-grid dbp-grid--3">
 
-          <div class="dbp-card dbp-card--kpi">
+          <div class="dbp-card dbp-card--kpi"
+               [class.dbp-clic]="dia.data.venta.notas > 0"
+               (click)="fn_irVentas('dia-vendido', dia.data.fecha, dia.data.venta.notas)">
             <div class="dbp-kpi-head">
               <mat-icon class="dbp-kpi-icon dbp-kpi-icon--indigo">shopping_bag</mat-icon>
               <span class="dbp-kpi-titulo">Vendido hoy</span>
@@ -84,7 +86,9 @@
             <div class="dbp-sub">Costo de lo vendido {{ dia.data.venta.costo | currency }}</div>
           </div>
 
-          <div class="dbp-card dbp-card--kpi">
+          <div class="dbp-card dbp-card--kpi"
+               [class.dbp-clic]="dia.data.cobrado.movimientos > 0"
+               (click)="fn_irPagos('dia-cobrado', dia.data.fecha, dia.data.cobrado.movimientos)">
             <div class="dbp-kpi-head">
               <mat-icon class="dbp-kpi-icon dbp-kpi-icon--ambar">payments</mat-icon>
               <span class="dbp-kpi-titulo">Cobrado hoy</span>
@@ -149,11 +153,15 @@
               </div>
 
               <div class="dbp-mini-row dbp-mini-row--canales">
-                <div class="dbp-mini">
+                <div class="dbp-mini"
+                     [class.dbp-clic]="dia.data.mostrador.notas > 0"
+                     (click)="fn_irVentas('dia-mostrador', dia.data.fecha, dia.data.mostrador.notas)">
                   <div class="dbp-mini-label">Mostrador</div>
                   <div class="dbp-mini-valor">{{ dia.data.mostrador.vendido | currency }}</div>
                 </div>
-                <div class="dbp-mini">
+                <div class="dbp-mini"
+                     [class.dbp-clic]="dia.data.taller.notas > 0"
+                     (click)="fn_irVentas('dia-taller', dia.data.fecha, dia.data.taller.notas)">
                   <div class="dbp-mini-label">Taller</div>
                   <div class="dbp-mini-valor">{{ dia.data.taller.vendido | currency }}</div>
                 </div>
@@ -250,7 +258,9 @@
 
                 <tr class="dbp-tr"
                     *ngFor="let x of vendedores.data.rows"
-                    [class.dbp-tr--cobranza]="x.bSoloCobranza">
+                    [class.dbp-tr--cobranza]="x.bSoloCobranza"
+                    [class.dbp-clic]="!x.bSoloCobranza && x.notas > 0"
+                    (click)="!x.bSoloCobranza && fn_irVentas('vendedor', vendedores.data.fecha, x.notas, { idVendedor: x.idUser })">
 
                   <td class="dbp-td">
                     <div class="dbp-persona">
@@ -341,19 +351,24 @@
         <ng-container *ngIf="!cartera.bCargando && !cartera.bError && cartera.data">
 
           <div class="dbp-card-head">
-            <div>
+            <div [class.dbp-clic]="cartera.data.total.notas > 0"
+                 (click)="fn_irVentas('cartera-total', cartera.data.fecha, cartera.data.total.notas)">
               <div class="dbp-card-titulo">Cartera viva</div>
               <div class="dbp-cifra dbp-cifra--indigo">{{ cartera.data.total.saldo | currency }}</div>
               <div class="dbp-sub">{{ cartera.data.total.notas }} notas sin liquidar</div>
             </div>
 
             <div class="dbp-mini-row" *ngIf="!cartera.data.bSinDatos">
-              <div class="dbp-mini">
+              <div class="dbp-mini"
+                   [class.dbp-clic]="cartera.data.apartados.notas > 0"
+                   (click)="fn_irVentas('cartera-apartados', cartera.data.fecha, cartera.data.apartados.notas)">
                 <div class="dbp-mini-label">Apartados</div>
                 <div class="dbp-mini-valor">{{ cartera.data.apartados.saldo | currency }}</div>
                 <div class="dbp-mini-sub">{{ cartera.data.apartados.notas }} notas</div>
               </div>
-              <div class="dbp-mini">
+              <div class="dbp-mini"
+                   [class.dbp-clic]="cartera.data.creditos.notas > 0"
+                   (click)="fn_irVentas('cartera-creditos', cartera.data.fecha, cartera.data.creditos.notas)">
                 <div class="dbp-mini-label">Créditos</div>
                 <div class="dbp-mini-valor">{{ cartera.data.creditos.saldo | currency }}</div>
                 <div class="dbp-mini-sub">{{ cartera.data.creditos.notas }} notas</div>
@@ -374,7 +389,9 @@
             <div class="dbp-barras">
               <div class="dbp-barra-row"
                    *ngFor="let c of cartera.data.antiguedad"
-                   [class.dbp-barra-row--critica]="c.clave === '+90'">
+                   [class.dbp-barra-row--critica]="c.clave === '+90'"
+                   [class.dbp-clic]="c.notas > 0"
+                   (click)="fn_irVentas(fn_claveCubetaCartera(c.clave), cartera.data.fecha, c.notas)">
                 <span class="dbp-barra-etq">{{ c.etiqueta }}</span>
                 <span class="dbp-barra-pista">
                   <span class="dbp-barra-fill"
@@ -427,7 +444,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr class="dbp-tr" *ngFor="let x of carteraTop.data.rows" (click)="fn_irAVentas()">
+                <tr class="dbp-tr dbp-clic" *ngFor="let x of carteraTop.data.rows" (click)="fn_irVentas('nota', fechaCorte, 1, { idSale: x.idSale })">
                   <td class="dbp-td">
                     <div class="dbp-persona">
                       <span class="dbp-persona-nombre">{{ x.clienteDesc }}</span>
@@ -446,7 +463,7 @@
             </table>
           </div>
 
-          <div class="dbp-card-foot" *ngIf="!carteraTop.data.bSinDatos" (click)="fn_irAVentas()">
+          <div class="dbp-card-foot" *ngIf="!carteraTop.data.bSinDatos" (click)="fn_irVentas('cartera-total', cartera.data?.fecha || fechaCorte, cartera.data?.total?.notas)">
             Ver todas las notas con saldo
           </div>
 
@@ -500,13 +517,17 @@
               <div class="dbp-kpi-sub">{{ inventario.data.factorLista }}× sobre el costo</div>
             </div>
 
-            <div class="dbp-kpi dbp-kpi--rojo" (click)="fn_irAProductos()">
+            <div class="dbp-kpi dbp-kpi--rojo"
+                 [class.dbp-clic]="inventario.data.cubetas[0].piezas > 0"
+                 (click)="fn_irProductos('inv-nunca', inventario.data.fecha, inventario.data.cubetas[0].piezas)">
               <div class="dbp-kpi-label">{{ inventario.data.cubetas[0].etiqueta }}</div>
               <div class="dbp-kpi-valor dbp-kpi-valor--rojo">{{ inventario.data.cubetas[0].costo | currency }}</div>
               <div class="dbp-kpi-sub">{{ inventario.data.cubetas[0].piezas }} piezas · {{ inventario.data.cubetas[0].porcentaje }}% del costo</div>
             </div>
 
-            <div class="dbp-kpi dbp-kpi--ambar" (click)="fn_irAProductos()">
+            <div class="dbp-kpi dbp-kpi--ambar"
+                 [class.dbp-clic]="inventario.data.bajoPiso > 0"
+                 (click)="fn_irProductos('inv-bajo-piso', inventario.data.fecha, inventario.data.bajoPiso)">
               <div class="dbp-kpi-label">Precio bajo su piso</div>
               <div class="dbp-kpi-valor dbp-kpi-valor--ambar">{{ inventario.data.bajoPiso }}</div>
               <div class="dbp-kpi-sub">productos con costo mal capturado</div>
@@ -515,7 +536,10 @@
           </div>
 
           <div class="dbp-barras dbp-barras--cubetas">
-            <div class="dbp-barra-row" *ngFor="let c of inventario.data.cubetas" (click)="fn_irAProductos()">
+            <div class="dbp-barra-row"
+                 *ngFor="let c of inventario.data.cubetas; let i = index"
+                 [class.dbp-clic]="c.piezas > 0"
+                 (click)="fn_irProductos(fn_claveCubetaInventario(i), inventario.data.fecha, c.piezas)">
               <span class="dbp-barra-etq dbp-barra-etq--ancha">{{ c.etiqueta }}</span>
               <span class="dbp-barra-pista">
                 <span class="dbp-barra-fill dbp-barra-fill--gris"
@@ -669,7 +693,7 @@
 
           <div class="dbp-card-body" *ngIf="!operacion.data.taller.bSinDatos">
             <div class="dbp-lista">
-              <div class="dbp-lista-row" *ngFor="let t of operacion.data.taller.estatus" (click)="fn_irATaller()">
+              <div class="dbp-lista-row" *ngFor="let t of operacion.data.taller.estatus">
                 <span class="dbp-chip"
                       [class.dbp-chip--verde]="t.idStatusSobre === 5"
                       [class.dbp-chip--ambar]="t.idStatusSobre === 1"
@@ -680,7 +704,7 @@
 
             <div class="dbp-sec-label" *ngIf="operacion.data.taller.detenidos.length > 0">Más detenidos</div>
             <div class="dbp-lista" *ngIf="operacion.data.taller.detenidos.length > 0">
-              <div class="dbp-lista-row dbp-lista-row--chica" *ngFor="let d of operacion.data.taller.detenidos" (click)="fn_irATaller()">
+              <div class="dbp-lista-row dbp-lista-row--chica" *ngFor="let d of operacion.data.taller.detenidos">
                 <span>{{ d.idSale }} <small>{{ d.estatusDesc }}</small></span>
                 <span class="dbp-chip dbp-chip--rojo">{{ d.dias }} d</span>
               </div>

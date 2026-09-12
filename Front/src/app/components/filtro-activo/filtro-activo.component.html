@@ -3,8 +3,11 @@
     <mat-icon class="fac-icon">filter_alt</mat-icon>
 
     <span class="fac-texto">
-        <span class="fac-titulo">Filtro activo:</span>
+        <span class="fac-titulo">{{ ITitulo }}</span>
         <span class="fac-etiqueta" *ngFor="let etiqueta of IEtiquetas; let last = last">{{ etiqueta }}<span *ngIf="!last"> · </span></span>
+        <span class="fac-aviso" *ngFor="let aviso of IAvisos">
+            <mat-icon class="fac-aviso-icon">error_outline</mat-icon>{{ aviso }}
+        </span>
     </span>
 
     <span class="fac-spacer"></span>

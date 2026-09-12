@@ -17,6 +17,16 @@ import { PageTitleService } from 'src/app/protected/services/page-title.service'
 import { environment } from 'src/environments/environment';
 import { InventarylogComponent } from '../mdl/inventarylog/inventarylog.component';
 import { ProductComponent } from '../product/product.component';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { DashboardService } from 'src/app/protected/services/dashboard.service';
+import {
+  fn_limpiarQueryParamsURL,
+  ConsultaPanel,
+  fn_leerConsultaPanel,
+  fn_etiquetasConsultaPanel,
+  fn_avisosConsultaPanel
+} from 'src/app/protected/utils/query-filtros.util';
 
 @Component({
   selector: 'app-product-list',
@@ -46,10 +56,14 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
     , private authServ: AuthService
     , private pageTitleServ: PageTitleService
+    , private activatedRoute: ActivatedRoute
+    , private router: Router
+    , private dashboardServ: DashboardService
     ) { }
 
     ngOnDestroy(): void {
       this.pageTitleServ.clear();
+      this.subQueryParams?.unsubscribe();
     }
 
     async ngOnInit() {
@@ -62,7 +76,65 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
       this.pageTitleServ.set('inventory_2', 'Productos', 'Catálogo de productos y precios');
 
+      // La URL manda: se escucha el cambio de query params (y no solo la
+      // foto inicial) porque Angular reutiliza el componente al salir del
+      // modo panel o volver a él con el botón de atrás. La primera
+      // emisión llega de inmediato y hace la carga inicial.
+      this.subQueryParams = this.activatedRoute.queryParams
+      .subscribe( ( queryParams ) => this.fn_aplicarQueryParams( queryParams ) );
+    }
+
+    // ── Modo panel (analisis/015) ──
+    // Se llega desde un clic en "Capital dormido" del panel del director:
+    // la pantalla muestra EXACTAMENTE los productos que el panel contó,
+    // con los filtros deshabilitados. La consulta vive en la URL.
+    oConsultaPanel: ConsultaPanel | null = null;
+    oMetaPanel: any = null;
+    sErrorPanel: string = '';
+
+    private subQueryParams?: Subscription;
+
+    get bModoPanel(): boolean {
+      return this.oConsultaPanel !== null;
+    }
+
+    get aEtiquetasPanel(): string[] {
+      if( !this.bModoPanel ){
+        return [];
+      }
+      return this.sErrorPanel ? [ 'No se pudo cargar' ] : fn_etiquetasConsultaPanel( this.oMetaPanel, 'productos' );
+    }
+
+    get aAvisosPanel(): string[] {
+      if( !this.bModoPanel ){
+        return [];
+      }
+      if( this.sErrorPanel ){
+        return [ this.sErrorPanel ];
+      }
+      return fn_avisosConsultaPanel( this.oMetaPanel, this.oConsultaPanel );
+    }
+
+    private fn_aplicarQueryParams( queryParams: any ): void {
+
+      this.oConsultaPanel = fn_leerConsultaPanel( queryParams );
+      this.oMetaPanel = null;
+      this.sErrorPanel = '';
+
+      // En modo panel el panel de filtros queda cerrado y bloqueado.
+      if( this.oConsultaPanel ){
+        this.panelOpenState = false;
+      }
+
+      this.pagination.pageIndex = 0;
       this.fn_getProductsListWithPage();
+
+    }
+
+    // La "×" de la leyenda: sale del modo panel. La suscripción a los
+    // query params vuelve a consultar el catálogo normal.
+    fn_quitarFiltro(): void {
+      fn_limpiarQueryParamsURL( this.router, this.activatedRoute );
     }
 
     showCat( id: number ){
@@ -153,6 +225,13 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   fn_getProductsListWithPage() {
 
+    // En modo panel toda recarga (paginar, editar un producto, registrar
+    // inventario) vuelve a pedir el conjunto, nunca el catálogo completo.
+    if( this.bModoPanel ){
+      this.fn_getProductosConjunto();
+      return;
+    }
+
     this.parametersForm.idUser = this.idUserLogON;
 
     this.bShowSpinner = true;
@@ -167,6 +246,44 @@ export class ProductListComponent implements OnInit, OnDestroy {
       error: (ex: HttpErrorResponse) => {
         console.log( ex )
         this.servicesGServ.showSnakbar( ex.error.data );
+        this.bShowSpinner = false;
+      }
+    })
+  }
+
+  // Los productos que el panel contó (analisis/015).
+  fn_getProductosConjunto() {
+
+    if( !this.oConsultaPanel ){
+      return;
+    }
+
+    this.bShowSpinner = true;
+    this.dashboardServ.CGetProductosConjunto( this.oConsultaPanel, this.pagination )
+    .subscribe({
+      next: (resp: ResponseGet) => {
+
+        if( resp.status === 0 ){
+          this.sErrorPanel = '';
+          this.oMetaPanel = resp.data.meta;
+          this.catlist = resp.data.rows;
+          this.pagination.length = resp.data.count;
+        }else{
+          // Sin permiso de costos, clave desconocida, fecha inválida: se
+          // dice en la leyenda y no se muestra nada — nunca el catálogo.
+          this.sErrorPanel = resp.message;
+          this.oMetaPanel = null;
+          this.catlist = [];
+          this.pagination.length = 0;
+        }
+
+        this.bShowSpinner = false;
+      },
+      error: (ex: HttpErrorResponse) => {
+        this.sErrorPanel = 'No se pudo cargar la consulta del panel.';
+        this.catlist = [];
+        this.pagination.length = 0;
+        this.servicesGServ.showSnakbar( ex.error?.data || this.sErrorPanel );
         this.bShowSpinner = false;
       }
     })

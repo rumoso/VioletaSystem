@@ -13,6 +13,7 @@
           class="sll-slim-input"
           placeholder="Ingrese un Folio y presione ENTER"
           [(ngModel)]="parametersForm.idSale"
+          [disabled]="bModoPanel"
           (keyup.enter)="ev_fn_search_keyup_enter($event)">
         </div>
       </div>
@@ -23,7 +24,8 @@
           <input type="date"
             class="sll-slim-input"
             [class.sll-date-vacia]="!parametersForm.createDateStart"
-            [(ngModel)]="parametersForm.createDateStart">
+            [(ngModel)]="parametersForm.createDateStart"
+            [disabled]="bModoPanel">
         </div>
       </div>
 
@@ -33,7 +35,8 @@
           <input type="date"
             class="sll-slim-input"
             [class.sll-date-vacia]="!parametersForm.createDateEnd"
-            [(ngModel)]="parametersForm.createDateEnd">
+            [(ngModel)]="parametersForm.createDateEnd"
+            [disabled]="bModoPanel">
         </div>
       </div>
 
@@ -47,10 +50,11 @@
             class="sll-slim-input sll-slim-input--with-prefix"
             placeholder="Buscar cliente..."
             [(ngModel)]="parametersForm.customerDesc"
+            [disabled]="bModoPanel"
             [matAutocomplete]="cbxCustomer"
             (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
             (click)="cbxCustomers_Clear()">
-          <mat-icon *ngIf="parametersForm.customerDesc"
+          <mat-icon *ngIf="parametersForm.customerDesc && !bModoPanel"
             class="sll-slim-clear"
             (click)="$event.stopPropagation(); cbxCustomers_Clear()">close</mat-icon>
         </div>
@@ -71,11 +75,12 @@
             class="sll-slim-input sll-slim-input--with-prefix"
             placeholder="Selecciona un tipo..."
             [(ngModel)]="parametersForm.saleTypeDesc"
+            [disabled]="bModoPanel"
             [matAutocomplete]="cbxSaleType"
             (input)="cbxSalesType_Search()"
             (click)="cbxSalesType_Clear()"
             (focus)="cbxSalesType_Search()">
-          <mat-icon *ngIf="parametersForm.saleTypeDesc"
+          <mat-icon *ngIf="parametersForm.saleTypeDesc && !bModoPanel"
             class="sll-slim-clear"
             (click)="$event.stopPropagation(); cbxSalesType_Clear()">close</mat-icon>
         </div>
@@ -93,13 +98,13 @@
 
       <div class="sll-payment-chips">
         <span class="sll-payment-label">Estatus de pago:</span>
-        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bCancel">
+        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bCancel" [disabled]="bModoPanel">
           <span class="sll-chip-check-text">Canceladas</span>
         </mat-checkbox>
-        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPending">
+        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPending" [disabled]="bModoPanel">
           <span class="sll-chip-check-text">Pendientes</span>
         </mat-checkbox>
-        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPagada">
+        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPagada" [disabled]="bModoPanel">
           <span class="sll-chip-check-text">Pagadas</span>
         </mat-checkbox>
       </div>
@@ -107,11 +112,13 @@
     </div>
 
     <div class="sll-filters-btns">
-      <button mat-stroked-button class="sll-btn-secondary" (click)="fn_ClearFilters()">
+      <!-- En modo panel no hay nada que buscar ni limpiar: el conjunto es
+           cerrado. Para salir está la "×" de la leyenda. -->
+      <button mat-stroked-button class="sll-btn-secondary" (click)="fn_ClearFilters()" *ngIf="!bModoPanel">
         <mat-icon>filter_alt_off</mat-icon>
         Limpiar
       </button>
-      <button mat-flat-button class="sll-btn-primary" (click)="fn_getVentasListWithPage()">
+      <button mat-flat-button class="sll-btn-primary" (click)="fn_getVentasListWithPage()" *ngIf="!bModoPanel">
         <mat-icon>search</mat-icon>
         Buscar
       </button>
@@ -207,7 +214,9 @@
        cuando no trae ningún filtro y el usuario cree que la tienda
        solo tiene, por ejemplo, 32 notas en total. -->
   <app-filtro-activo
+    [ITitulo]="sTituloFiltro"
     [IEtiquetas]="aEtiquetasFiltro"
+    [IAvisos]="aAvisosFiltro"
     (OQuitar)="fn_quitarFiltro()">
   </app-filtro-activo>
 

@@ -1,7 +1,11 @@
 <mat-accordion >
 
+    <!-- En modo panel (analisis/015) los filtros no se pueden abrir: el
+         conjunto que llegó del panel es cerrado. -->
     <mat-expansion-panel (opened)="panelOpenState = true"
                          (closed)="panelOpenState = false"
+                         [disabled]="bModoPanel"
+                         [expanded]="panelOpenState && !bModoPanel"
                          class="divMain"
                          style="margin-top: 10px !important;">
       <mat-expansion-panel-header class="autoHeight">
@@ -258,6 +262,18 @@
     </mat-expansion-panel>
   </mat-accordion>
 
+<!-- Se llegó desde un clic en el panel del director (analisis/015): sin
+     esta leyenda el catálogo se ve completo y el usuario no sabe que
+     está viendo solo los productos de esa cifra. -->
+<div style="margin-top: 10px;" *ngIf="bModoPanel">
+  <app-filtro-activo
+    ITitulo="Consulta del panel del director:"
+    [IEtiquetas]="aEtiquetasPanel"
+    [IAvisos]="aAvisosPanel"
+    (OQuitar)="fn_quitarFiltro()">
+  </app-filtro-activo>
+</div>
+
 <div class="divMain" style="width: 100%;">
     <div class="row">
         <div class="col-md-1">
@@ -275,6 +291,7 @@
               <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
               <input matInput placeholder="Ingrese un Código de barras"
               [(ngModel)]="parametersForm.barCode"
+              [disabled]="bModoPanel"
               (keyup.enter)="fn_getProductsListWithPage()">
             </mat-form-field>
       </div>
@@ -284,11 +301,12 @@
               <mat-label>Nombre</mat-label>
               <input matInput placeholder="Ingrese un nombre"
               [(ngModel)]="parametersForm.name"
+              [disabled]="bModoPanel"
               (keyup.enter)="fn_getProductsListWithPage()">
             </mat-form-field>
       </div>
 
-      <div class="col-md-1 top10px">
+      <div class="col-md-1 top10px" *ngIf="!bModoPanel">
         <button mat-raised-button
         type="button"
         (click)="parametersSecound_Clear()">

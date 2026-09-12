@@ -56,3 +56,22 @@
   line-height: 18px !important;
   color: #283593;
 }
+
+/* Avisos: un renglón propio cada uno, en ámbar, para que no se lean
+   como una etiqueta más del filtro. */
+.fac-aviso {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #e65100;
+}
+
+.fac-aviso-icon {
+  font-size: 15px !important;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}

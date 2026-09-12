@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, Subject, Subscription } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { CustomersService } from 'src/app/protected/services/customers.service';
@@ -11,6 +11,15 @@ import { environment } from 'src/environments/environment';
 import { CortecajadetailComponent } from '../../sales/mdl/cortecajadetail/cortecajadetail.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { ActivatedRoute, Router } from '@angular/router';
+import { DashboardService } from 'src/app/protected/services/dashboard.service';
+import {
+  fn_limpiarQueryParamsURL,
+  ConsultaPanel,
+  fn_leerConsultaPanel,
+  fn_etiquetasConsultaPanel,
+  fn_avisosConsultaPanel
+} from 'src/app/protected/utils/query-filtros.util';
 
 @Component({
   selector: 'app-rep-payments',
@@ -66,6 +75,37 @@ parametersForm: any = {
 
 };
 
+// ── Modo panel (analisis/015) ──
+// Se llega desde un clic en "Cobrado" del panel del director: la pantalla
+// muestra EXACTAMENTE los pagos que el panel sumó, con los filtros
+// deshabilitados. La consulta vive en la URL (panel, fecha, n).
+oConsultaPanel: ConsultaPanel | null = null;
+oMetaPanel: any = null;
+sErrorPanel: string = '';
+
+private subQueryParams?: Subscription;
+
+get bModoPanel(): boolean {
+  return this.oConsultaPanel !== null;
+}
+
+get aEtiquetasPanel(): string[] {
+  if( !this.bModoPanel ){
+    return [];
+  }
+  return this.sErrorPanel ? [ 'No se pudo cargar' ] : fn_etiquetasConsultaPanel( this.oMetaPanel, 'pagos' );
+}
+
+get aAvisosPanel(): string[] {
+  if( !this.bModoPanel ){
+    return [];
+  }
+  if( this.sErrorPanel ){
+    return [ this.sErrorPanel ];
+  }
+  return fn_avisosConsultaPanel( this.oMetaPanel, this.oConsultaPanel );
+}
+
 //#end region
 
 constructor(
@@ -78,11 +118,15 @@ constructor(
   , private customersServ: CustomersService
   , private salesServ: SalesService
   , private pageTitleServ: PageTitleService
+  , private activatedRoute: ActivatedRoute
+  , private router: Router
+  , private dashboardServ: DashboardService
 
   ) { }
 
   ngOnDestroy(): void {
     this.pageTitleServ.clear();
+    this.subQueryParams?.unsubscribe();
   }
 
   async ngOnInit() {
@@ -107,6 +151,38 @@ constructor(
       }
     })
 
+    // La URL manda: se escucha el cambio de query params (y no solo la
+    // foto inicial) porque Angular reutiliza el componente al salir del
+    // modo panel o volver a él con el botón de atrás.
+    this.subQueryParams = this.activatedRoute.queryParams
+    .subscribe( ( queryParams ) => this.fn_aplicarQueryParams( queryParams ) );
+
+  }
+
+  // Modo panel si la URL trae `panel`: se consulta el conjunto de una vez.
+  // Sin `panel`, la pantalla queda como siempre — vacía, esperando a que
+  // el usuario busque.
+  private fn_aplicarQueryParams( queryParams: any ): void {
+
+    const bVeniaDelPanel = this.bModoPanel;
+
+    this.oConsultaPanel = fn_leerConsultaPanel( queryParams );
+    this.oMetaPanel = null;
+    this.sErrorPanel = '';
+    this.pagination.pageIndex = 0;
+
+    if( this.oConsultaPanel ){
+      this.fn_getRepVentasDetailWithPage();
+    }else if( bVeniaDelPanel ){
+      this.fn_ClearFilters();
+    }
+
+  }
+
+  // La "×" de la leyenda: sale del modo panel. La suscripción a los query
+  // params deja la pantalla como al entrar normal.
+  fn_quitarFiltro(): void {
+    fn_limpiarQueryParamsURL( this.router, this.activatedRoute );
   }
 
   ////************************************************ */
@@ -171,6 +247,12 @@ constructor(
 
 fn_getRepVentasDetailWithPage() {
 
+  // En modo panel toda recarga vuelve a pedir el conjunto.
+  if( this.bModoPanel ){
+    this.fn_getPagosConjunto();
+    return;
+  }
+
   this.repList = [];
   this.sumPagos = 0;
   this.pagination.length = 0;
@@ -192,6 +274,44 @@ fn_getRepVentasDetailWithPage() {
     },
     error: (ex: HttpErrorResponse) => {
       this.servicesGServ.showSnakbar( ex.error.data );
+      this.bShowSpinner = false;
+    }
+  })
+
+}
+
+// Los pagos que el panel sumó (analisis/015).
+fn_getPagosConjunto() {
+
+  if( !this.oConsultaPanel ){
+    return;
+  }
+
+  this.repList = [];
+  this.sumPagos = 0;
+  this.pagination.length = 0;
+
+  this.bShowSpinner = true;
+  this.dashboardServ.CGetPagosConjunto( this.oConsultaPanel, this.pagination )
+  .subscribe({
+    next: (resp: ResponseGet) => {
+
+      if( resp.status === 0 ){
+        this.sErrorPanel = '';
+        this.oMetaPanel = resp.data.meta;
+        this.repList = resp.data.rows;
+        this.sumPagos = resp.data.OSQL_Sum ? resp.data.OSQL_Sum[0].sumPagos : 0;
+        this.pagination.length = resp.data.count;
+      }else{
+        this.sErrorPanel = resp.message;
+        this.oMetaPanel = null;
+      }
+
+      this.bShowSpinner = false;
+    },
+    error: (ex: HttpErrorResponse) => {
+      this.sErrorPanel = 'No se pudo cargar la consulta del panel.';
+      this.servicesGServ.showSnakbar( ex.error?.data || this.sErrorPanel );
       this.bShowSpinner = false;
     }
   })

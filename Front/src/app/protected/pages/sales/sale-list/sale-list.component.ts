@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
-import { Subject, debounceTime } from 'rxjs';
+import { Subject, Subscription, debounceTime } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { CustomersService } from 'src/app/protected/services/customers.service';
@@ -25,7 +25,15 @@ import { IngresosComponent } from '../mdl/ingresos/ingresos.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
-import { fn_precargarDesdeQueryParams, fn_limpiarQueryParamsURL } from 'src/app/protected/utils/query-filtros.util';
+import {
+  fn_precargarDesdeQueryParams,
+  fn_limpiarQueryParamsURL,
+  ConsultaPanel,
+  fn_leerConsultaPanel,
+  fn_etiquetasConsultaPanel,
+  fn_avisosConsultaPanel
+} from 'src/app/protected/utils/query-filtros.util';
+import { DashboardService } from 'src/app/protected/services/dashboard.service';
 
 @Component({
   selector: 'app-sale-list',
@@ -96,11 +104,43 @@ export class SaleListComponent implements OnInit, OnDestroy {
   // alguien le agregue un campo anidado después.
   private readonly _parametersFormDefault: any = JSON.parse( JSON.stringify( this.parametersForm ) );
 
+  // ── Modo panel (analisis/015) ──
+  // Se llega desde un clic en una cifra del panel del director: la
+  // pantalla muestra EXACTAMENTE las notas que el panel contó, con los
+  // filtros deshabilitados. La consulta vive en la URL (panel, fecha, n).
+  oConsultaPanel: ConsultaPanel | null = null;
+  oMetaPanel: any = null;
+  sErrorPanel: string = '';
+
+  private subQueryParams?: Subscription;
+
+  get bModoPanel(): boolean {
+    return this.oConsultaPanel !== null;
+  }
+
+  get sTituloFiltro(): string {
+    return this.bModoPanel ? 'Consulta del panel del director:' : 'Filtro activo:';
+  }
+
+  get aAvisosFiltro(): string[] {
+    if( !this.bModoPanel ){
+      return [];
+    }
+    if( this.sErrorPanel ){
+      return [ this.sErrorPanel ];
+    }
+    return fn_avisosConsultaPanel( this.oMetaPanel, this.oConsultaPanel );
+  }
+
   // Etiquetas del aviso de "filtro activo" (analisis/015). Se calculan
   // sobre lo que YA quedó en parametersForm después de precargar los
   // query params — no sobre los query params crudos — así que también
   // sirven si el usuario edita los filtros a mano en pantalla.
   get aEtiquetasFiltro(): string[] {
+
+    if( this.bModoPanel ){
+      return this.sErrorPanel ? [ 'No se pudo cargar' ] : fn_etiquetasConsultaPanel( this.oMetaPanel, 'notas' );
+    }
 
     const f = this.parametersForm;
     const etiquetas: string[] = [];
@@ -161,11 +201,13 @@ constructor(
   , private router: Router
   , private activatedRoute: ActivatedRoute
   , private pageTitleServ: PageTitleService
+  , private dashboardServ: DashboardService
 
   ) { }
 
   ngOnDestroy(): void {
     this.pageTitleServ.clear();
+    this.subQueryParams?.unsubscribe();
   }
 
   async ngOnInit() {
@@ -195,27 +237,57 @@ constructor(
     //   this.cbxCustomerCBX.nativeElement.focus();
     // }, 1000);
 
-    // Precarga el filtro que haya llegado por query param (clic desde
-    // el panel del director u otro origen) ANTES de la primera
-    // consulta — si se consultara primero, el usuario vería el listado
-    // completo un instante y luego "saltaría" al filtrado.
-    fn_precargarDesdeQueryParams( this.activatedRoute.snapshot.queryParams, this.parametersForm );
-
-    this.fn_getVentasListWithPage();
+    // La URL manda. Se escucha el cambio de query params, no solo la foto
+    // inicial: Angular reutiliza este componente al navegar a la misma
+    // ruta con otros parámetros (salir del modo panel, o volver a él con
+    // el botón de atrás), y ngOnInit no vuelve a correr.
+    //
+    // La primera emisión llega de inmediato y hace la carga inicial, ya
+    // con el filtro puesto — si se consultara antes, el usuario vería el
+    // listado completo un instante y luego "saltaría" al filtrado.
+    this.subQueryParams = this.activatedRoute.queryParams
+    .subscribe( ( queryParams ) => this.fn_aplicarQueryParams( queryParams ) );
 
     this.fn_getSelectCajaByIdUser( this.idUserLogON );
     this.fn_getSelectPrintByIdUser( this.idUserLogON );
 
   }
 
-  // Quita el filtro que llegó por query param: regresa parametersForm a
-  // sus defaults, limpia la URL (para que una recarga posterior no
-  // vuelva a traer el filtro) y refresca el listado completo.
-  fn_quitarFiltro(): void {
+  // Reinicia la pantalla según lo que diga la URL: modo panel si trae
+  // `panel`, o la consulta normal con los filtros que traiga.
+  private fn_aplicarQueryParams( queryParams: any ): void {
+
+    this.oConsultaPanel = fn_leerConsultaPanel( queryParams );
+    this.oMetaPanel = null;
+    this.sErrorPanel = '';
 
     Object.assign( this.parametersForm, JSON.parse( JSON.stringify( this._parametersFormDefault ) ) );
 
-    fn_limpiarQueryParamsURL( this.router, this.activatedRoute );
+    // En modo panel no se precarga ningún filtro: el conjunto no se
+    // arma con filtros.
+    if( !this.oConsultaPanel ){
+      fn_precargarDesdeQueryParams( queryParams, this.parametersForm );
+    }
+
+    this.pagination.pageIndex = 0;
+    this.fn_getVentasListWithPage();
+
+  }
+
+  // La "×" de la leyenda: quita el filtro o sale del modo panel.
+  //
+  // Si el filtro vino en la URL, basta con limpiarla: la suscripción a
+  // los query params reinicia el formulario y consulta. Si el usuario lo
+  // puso a mano (la URL está limpia), navegar a la misma URL no emite
+  // nada, así que se reinicia aquí.
+  fn_quitarFiltro(): void {
+
+    if( Object.keys( this.activatedRoute.snapshot.queryParams || {} ).length > 0 ){
+      fn_limpiarQueryParamsURL( this.router, this.activatedRoute );
+      return;
+    }
+
+    Object.assign( this.parametersForm, JSON.parse( JSON.stringify( this._parametersFormDefault ) ) );
 
     this.pagination.pageIndex = 0;
     this.fn_getVentasListWithPage();
@@ -272,6 +344,13 @@ constructor(
 
 fn_getVentasListWithPage() {
 
+  // En modo panel toda recarga (paginar, cancelar una nota, entregar un
+  // apartado) vuelve a pedir el conjunto, nunca la lista normal.
+  if( this.bModoPanel ){
+    this.fn_getVentasConjunto();
+    return;
+  }
+
   let OServParams: any = {
     createDateStart: this.parametersForm.createDateStart
     , createDateEnd: this.parametersForm.createDateEnd
@@ -294,6 +373,45 @@ fn_getVentasListWithPage() {
     },
     error: (ex: HttpErrorResponse) => {
       this.servicesGServ.showSnakbar( ex.error.data );
+      this.bShowSpinner = false;
+    }
+  })
+
+}
+
+// Las notas que el panel contó (analisis/015).
+fn_getVentasConjunto() {
+
+  if( !this.oConsultaPanel ){
+    return;
+  }
+
+  this.bShowSpinner = true;
+  this.dashboardServ.CGetVentasConjunto( this.oConsultaPanel, this.pagination )
+  .subscribe({
+    next: (resp: ResponseGet) => {
+
+      if( resp.status === 0 ){
+        this.sErrorPanel = '';
+        this.oMetaPanel = resp.data.meta;
+        this.saleslist = resp.data.rows;
+        this.pagination.length = resp.data.count;
+      }else{
+        // Sin permiso, clave desconocida, fecha inválida: se dice en la
+        // leyenda y no se muestra nada — nunca la lista completa.
+        this.sErrorPanel = resp.message;
+        this.oMetaPanel = null;
+        this.saleslist = [];
+        this.pagination.length = 0;
+      }
+
+      this.bShowSpinner = false;
+    },
+    error: (ex: HttpErrorResponse) => {
+      this.sErrorPanel = 'No se pudo cargar la consulta del panel.';
+      this.saleslist = [];
+      this.pagination.length = 0;
+      this.servicesGServ.showSnakbar( ex.error?.data || this.sErrorPanel );
       this.bShowSpinner = false;
     }
   })

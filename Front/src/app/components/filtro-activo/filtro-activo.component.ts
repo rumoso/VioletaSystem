@@ -21,6 +21,15 @@ export class FiltroActivoComponent {
   // query param.
   @Input() IEtiquetas: string[] = [];
 
+  // Título de la barra. Una consulta que llega del panel del director
+  // no es "un filtro": es un conjunto cerrado de registros, y lo dice.
+  @Input() ITitulo: string = 'Filtro activo:';
+
+  // Renglones de advertencia debajo de las etiquetas (en ámbar): por
+  // ejemplo, que el conjunto cambió desde el clic, o que hay registros
+  // de sucursales que el usuario no puede ver.
+  @Input() IAvisos: string[] = [];
+
   @Output() OQuitar = new EventEmitter<void>();
 
   get bVisible(): boolean {

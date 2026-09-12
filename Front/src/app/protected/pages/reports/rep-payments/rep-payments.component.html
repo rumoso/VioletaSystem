@@ -10,12 +10,12 @@
               <div class="col-md-3" style="text-align: left;">
                 <mat-form-field class="with100">
                     <mat-label>Fecha de creación:</mat-label>
-                    <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
-                        <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date">
-                        <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date">
+                    <mat-date-range-input [rangePicker]="picker" (click)="!bModoPanel && picker.open()">
+                        <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date" [disabled]="bModoPanel">
+                        <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date" [disabled]="bModoPanel">
                     </mat-date-range-input>
                     <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker" [disabled]="bModoPanel"></mat-datepicker-toggle>
                     <mat-date-range-picker #picker></mat-date-range-picker>
 
                 </mat-form-field>
@@ -28,7 +28,8 @@
                     <input
                     matInput
                     placeholder="Ingrese un Folio"
-                    [(ngModel)]="parametersForm.idSale">
+                    [(ngModel)]="parametersForm.idSale"
+                    [disabled]="bModoPanel">
                   </mat-form-field>
 
               </div>
@@ -40,7 +41,8 @@
                   <input
                   matInput
                   placeholder="Ingrese un # de Pago"
-                  [(ngModel)]="parametersForm.idPayment">
+                  [(ngModel)]="parametersForm.idPayment"
+                  [disabled]="bModoPanel">
                 </mat-form-field>
 
               </div>
@@ -52,7 +54,8 @@
                   <input
                   matInput
                   placeholder="Ingrese un folio de Corte de Caja"
-                  [(ngModel)]="parametersForm.idCorteCaja">
+                  [(ngModel)]="parametersForm.idCorteCaja"
+                  [disabled]="bModoPanel">
                 </mat-form-field>
 
               </div>
@@ -73,12 +76,13 @@
                               aria-label="Number"
                               matInput
                               [(ngModel)]="parametersForm.customerDesc"
+                              [disabled]="bModoPanel"
                               [matAutocomplete]="cbxCustomer"
 
                               (keyup)="CBXskeyup( 1, cbxCustomerCBX.value )"
 
                               (click)="cbxCustomers_Clear()">
-                              <button *ngIf="parametersForm.customerDesc" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
+                              <button *ngIf="parametersForm.customerDesc && !bModoPanel" matSuffix mat-icon-button aria-label="Clear" (click)="cbxCustomers_Clear()">
                                   <mat-icon>close</mat-icon>
                               </button>
                       <mat-autocomplete autoActiveFirstOption
@@ -102,7 +106,9 @@
 
           <div class="row top10px">
               <div class="col-md-3">
-                  <div style="float: left;">
+                  <!-- En modo panel no hay nada que buscar ni limpiar: para
+                       salir está la "×" de la leyenda. -->
+                  <div style="float: left;" *ngIf="!bModoPanel">
 
                       <button mat-raised-button
                       color="primary"
@@ -127,6 +133,18 @@
 
   </div>
 
+</div>
+
+<!-- Se llegó desde un clic en el panel del director (analisis/015): sin
+     esta leyenda la pantalla se ve igual que una búsqueda normal y el
+     usuario no sabe que está viendo solo los pagos de esa cifra. -->
+<div style="margin-top: 10px;" *ngIf="bModoPanel">
+  <app-filtro-activo
+    ITitulo="Consulta del panel del director:"
+    [IEtiquetas]="aEtiquetasPanel"
+    [IAvisos]="aAvisosPanel"
+    (OQuitar)="fn_quitarFiltro()">
+  </app-filtro-activo>
 </div>
 
 <div class="divSection">

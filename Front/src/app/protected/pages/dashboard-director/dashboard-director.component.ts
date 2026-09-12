@@ -282,18 +282,58 @@ export class DashboardDirectorComponent implements OnDestroy {
     this.servicesGServ.changeRoute( `/${ this._appMain }/${ route }` );
   }
 
-  // Un listado que no se puede accionar no sirve: de la cartera se va a
-  // la consulta de ventas, y del inventario al catálogo de productos.
-  fn_irAVentas(): void {
-    this.changeRoute( 'saleList' );
+  // Cada cifra clicable lleva a la pantalla que muestra EXACTAMENTE sus
+  // registros (analisis/015). Viajan en la URL: la clave de la cifra, la
+  // fecha de corte con la que se calculó y la cifra que el usuario estaba
+  // viendo (`n`), para que la pantalla destino avise si cambió entre el
+  // clic y la carga.
+  //
+  // La fecha es la que devolvió el bloque (`data.fecha`), no la del
+  // selector: si el usuario acaba de mover el selector y el bloque todavía
+  // no se recarga, el clic tiene que llevar a lo que está viendo.
+  //
+  // Una cifra en cero no navega: no hay nada que mostrar, y llegar a un
+  // listado vacío se leería como "falló".
+  private fn_irConjunto( sRuta: string, sPanel: string, sFecha: string, n: any, extra: any = {} ): void {
+
+    if( !( Number( n ) > 0 ) ){
+      return;
+    }
+
+    this.servicesGServ.changeRouteWithFilters( `/${ this._appMain }/${ sRuta }`, {
+      panel: sPanel,
+      fecha: sFecha,
+      n: Number( n ),
+      ...extra
+    });
+
   }
 
-  fn_irAProductos(): void {
-    this.changeRoute( 'productList' );
+  fn_irVentas( sPanel: string, sFecha: string, n: any, extra: any = {} ): void {
+    this.fn_irConjunto( 'saleList', sPanel, sFecha, n, extra );
   }
 
-  fn_irATaller(): void {
-    this.changeRoute( 'tallerList' );
+  fn_irPagos( sPanel: string, sFecha: string, n: any ): void {
+    this.fn_irConjunto( 'rep_pagos', sPanel, sFecha, n );
   }
+
+  fn_irProductos( sPanel: string, sFecha: string, n: any ): void {
+    this.fn_irConjunto( 'productList', sPanel, sFecha, n );
+  }
+
+  // Clave de cubeta del Back ('0-30', '+90'...) -> clave de su conjunto.
+  fn_claveCubetaCartera( sClave: string ): string {
+    const mapa: any = { '0-30': 'cartera-0-30', '31-60': 'cartera-31-60', '61-90': 'cartera-61-90', '+90': 'cartera-90' };
+    return mapa[ sClave ] || '';
+  }
+
+  // Las cubetas de inventario llegan en orden fijo: nunca, 12+, 6 a 12.
+  fn_claveCubetaInventario( i: number ): string {
+    return [ 'inv-nunca', 'inv-12', 'inv-6' ][ i ] || '';
+  }
+
+  // (El bloque de taller no tiene clic: hay dos flujos de taller
+  // conviviendo y falta decidir cuál le interesa al director —
+  // analisis/015.)
 
 }

@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { environment } from 'src/environments/environment';
+import { Pagination } from 'src/app/interfaces/general.interfaces';
+import { ConsultaPanel } from '../utils/query-filtros.util';
 
 // Panel del director (analisis/014). Un método por bloque, igual que en
 // el Back: cada bloque se pide y falla por separado, para que uno lento
@@ -57,6 +59,50 @@ export class DashboardService {
 
   CGetOperacion( fecha: string ): Observable<ResponseGet> {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getOperacion`, this.fn_body(fecha) );
+  }
+
+  // ── Conjuntos (analisis/015) ──
+  // Los registros que hay detrás de una cifra del panel, para la pantalla
+  // a la que lleva su clic. La paginación se arma igual que en las listas
+  // normales (pageIndex * pageSize), y ventas y pagos mandan la sucursal
+  // de la terminal porque la lista normal también la aplica.
+
+  private fn_bodyConjunto( oConsulta: ConsultaPanel, pagination: Pagination, bSucursal: boolean ): any {
+
+    const body: any = {
+      idUserLogON: this.authServ.getIdUserSession(),
+      panel: oConsulta.panel,
+      fecha: oConsulta.fecha,
+      start: pagination.pageIndex * pagination.pageSize,
+      limiter: pagination.pageSize
+    };
+
+    if( oConsulta.idVendedor > 0 ){
+      body.idVendedor = oConsulta.idVendedor;
+    }
+
+    if( oConsulta.idSale ){
+      body.idSale = oConsulta.idSale;
+    }
+
+    if( bSucursal ){
+      body.idSucursalLogON = environment.idSucursal;
+    }
+
+    return body;
+
+  }
+
+  CGetVentasConjunto( oConsulta: ConsultaPanel, pagination: Pagination ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getVentasConjunto`, this.fn_bodyConjunto( oConsulta, pagination, true ) );
+  }
+
+  CGetPagosConjunto( oConsulta: ConsultaPanel, pagination: Pagination ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getPagosConjunto`, this.fn_bodyConjunto( oConsulta, pagination, true ) );
+  }
+
+  CGetProductosConjunto( oConsulta: ConsultaPanel, pagination: Pagination ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getProductosConjunto`, this.fn_bodyConjunto( oConsulta, pagination, false ) );
   }
 
 }

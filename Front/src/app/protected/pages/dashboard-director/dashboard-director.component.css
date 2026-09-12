@@ -250,8 +250,8 @@
 
 .dbp-kpi { border-left: 4px solid #3949ab; padding: 2px 0 2px 14px; }
 .dbp-kpi--claro { border-left-color: #c5cae9; }
-.dbp-kpi--rojo  { border-left-color: #c62828; cursor: pointer; }
-.dbp-kpi--ambar { border-left-color: #ef6c00; cursor: pointer; }
+.dbp-kpi--rojo  { border-left-color: #c62828; }
+.dbp-kpi--ambar { border-left-color: #ef6c00; }
 
 .dbp-kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #8e97a4; margin-bottom: 6px; }
 .dbp-kpi-valor { font-size: 24px; font-weight: 700; color: #1a237e; line-height: 1; }
@@ -361,10 +361,9 @@
 .dbp-th--center { text-align: center; }
 .dbp-th--right  { text-align: right; }
 
-.dbp-tr { transition: background 0.12s; cursor: pointer; }
-.dbp-tr:hover { background: #f5f7ff; }
+.dbp-tr { transition: background 0.12s; }
+.dbp-tr.dbp-clic:hover { background: #f5f7ff; }
 .dbp-tr--cobranza { background: #fffdf7; }
-.dbp-tr--cobranza:hover { background: #fff8e9; }
 
 .dbp-td {
   padding: 11px 16px;
@@ -434,7 +433,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  cursor: pointer;
 }
 .dbp-lista-row strong { font-size: 19px; font-weight: 700; color: #212121; }
 .dbp-lista-row--chica { font-size: 13px; color: #555; }
@@ -532,3 +530,16 @@
 }
 .dbp-vacio span { font-size: 15px; color: #9e9e9e; }
 .dbp-vacio small { font-size: 12.5px; color: #b0b8c4; margin-top: 6px; }
+
+/* ── Lo que navega (analisis/015) ──
+   El cursor de mano va SOLO en lo que lleva a un listado con los
+   registros de esa cifra, y solo si la cifra no está en cero. Antes
+   estaba puesto a clases genéricas (.dbp-tr, .dbp-lista-row, los KPIs)
+   y parecían clicables tablas y listas que no llevaban a ningún lado. */
+.dbp-clic { cursor: pointer; }
+.dbp-card--kpi.dbp-clic { transition: box-shadow 0.12s; }
+.dbp-card--kpi.dbp-clic:hover { box-shadow: 0 0 0 2px #c5cae9, 0 1px 6px rgba(0, 0, 0, 0.07); }
+.dbp-mini.dbp-clic:hover { border-color: #c5cae9; background: #f5f7ff; }
+.dbp-barra-row.dbp-clic:hover .dbp-barra-etq { color: #283593; text-decoration: underline; }
+.dbp-card-head .dbp-clic:hover .dbp-card-titulo,
+.dbp-kpi.dbp-clic:hover .dbp-kpi-label { color: #283593; text-decoration: underline; }
