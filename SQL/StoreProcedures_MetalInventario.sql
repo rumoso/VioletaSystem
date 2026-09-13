@@ -14,6 +14,16 @@
 -- Worker interno: registra el movimiento en el track y aplica el
 -- efecto en los saldos. No emite result set. No valida saldos (las
 -- validaciones las hacen los SPs públicos que lo llaman).
+--
+-- Guardián de integridad (reemplaza a los triggers de
+-- alter_metal_inventario_guard.sql, retirados 2026-09-12): TODA
+-- escritura a metal_inventario pasa por este SP, así que las reglas
+-- viven aquí y abortan con SIGNAL para que el que llama haga ROLLBACK:
+--   1) El producto debe ser METAL-ORO-% o METAL-PLATA-% — nunca una
+--      joya. Antes el ELSE trataba cualquier otro producto como plata.
+--   2) La sucursal SOLO guarda fino (METAL-ORO-24 / METAL-PLATA-1000):
+--      se garantiza por diseño, porque su efecto siempre usa
+--      v_idProductFino; aquí se valida que ese producto exista.
 -- ------------------------------------------------------------
 DROP PROCEDURE IF EXISTS `metalInventario_apply`;
 
@@ -41,6 +51,17 @@ BEGIN
 	DECLARE v_idProductFino BIGINT;
 
 	SET v_barCode = ( SELECT barCode FROM products WHERE idProduct = p_idProduct );
+
+	IF v_barCode IS NULL OR ( v_barCode NOT LIKE 'METAL-ORO-%' AND v_barCode NOT LIKE 'METAL-PLATA-%' ) THEN
+		SIGNAL SQLSTATE '45000'
+		SET MESSAGE_TEXT = 'El producto no es de metal (METAL-ORO-% / METAL-PLATA-%): no se puede mover al inventario de metal.';
+	END IF;
+
+	IF p_tipoOrigen NOT IN ('SUCURSAL','TECNICO','CLIENTE','EXTERNO') OR p_tipoDestino NOT IN ('SUCURSAL','TECNICO','CLIENTE','EXTERNO') THEN
+		SIGNAL SQLSTATE '45000'
+		SET MESSAGE_TEXT = 'Origen o destino inválido para el inventario de metal.';
+	END IF;
+
 	SET v_medida = CAST( SUBSTRING_INDEX( v_barCode, '-', -1 ) AS DECIMAL(18,2) );
 
 	IF v_barCode LIKE 'METAL-ORO-%' THEN
@@ -49,6 +70,11 @@ BEGIN
 	ELSE
 		SET v_gramosFino = ROUND( p_gramos * v_medida / 1000, 2 );
 		SET v_idProductFino = ( SELECT idProduct FROM products WHERE barCode = 'METAL-PLATA-1000' LIMIT 1 );
+	END IF;
+
+	IF v_idProductFino IS NULL AND ( p_tipoOrigen = 'SUCURSAL' OR p_tipoDestino = 'SUCURSAL' ) THEN
+		SIGNAL SQLSTATE '45000'
+		SET MESSAGE_TEXT = 'No existe el producto fino (METAL-ORO-24 / METAL-PLATA-1000): ejecutar insert_productos_metal.sql.';
 	END IF;
 
 	INSERT INTO metal_inventario_track (

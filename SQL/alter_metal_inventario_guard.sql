@@ -13,7 +13,7 @@
 -- salta igual. Por eso el guardián va como TRIGGER: es el único
 -- mecanismo que se aplica sin importar quién o qué escriba en la tabla.
 --
--- Es el primer trigger de este proyecto (todo lo demás usa validación
+-- (Historia) Fue el primer trigger de este proyecto (todo lo demás usa validación
 -- en SPs/controllers). Se justifica porque la validación a nivel
 -- aplicación YA existía (en `metalInventario_apply` y en
 -- `asignarMetalInventarioByTaller`) y de todos modos se pudo saltar.
@@ -52,55 +52,12 @@ WHERE P.barCode IS NULL
    OR P.barCode NOT LIKE 'METAL-%';
 
 -- ── 2) El guardián ──
-
-DROP TRIGGER IF EXISTS `trg_metal_inventario_valida_bi`;
-DROP TRIGGER IF EXISTS `trg_metal_inventario_valida_bu`;
-
-DELIMITER $$
-
-CREATE TRIGGER `trg_metal_inventario_valida_bi`
-BEFORE INSERT ON `metal_inventario`
-FOR EACH ROW
-BEGIN
-
-    DECLARE v_barCode VARCHAR(500);
-
-    SELECT barCode INTO v_barCode FROM products WHERE idProduct = NEW.idProduct;
-
-    IF v_barCode IS NULL OR v_barCode NOT LIKE 'METAL-%' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'metal_inventario.idProduct debe ser un producto de metal (barCode METAL-%): nunca una joya ni otro producto del catálogo normal.';
-    END IF;
-
-    IF NEW.tipoPropietario = 'SUCURSAL' AND v_barCode NOT IN ('METAL-ORO-24', 'METAL-PLATA-1000') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'El inventario de SUCURSAL solo puede ser oro fino (METAL-ORO-24) o plata fina (METAL-PLATA-1000). Ninguna otra presentación.';
-    END IF;
-
-END$$
-
-CREATE TRIGGER `trg_metal_inventario_valida_bu`
-BEFORE UPDATE ON `metal_inventario`
-FOR EACH ROW
-BEGIN
-
-    DECLARE v_barCode VARCHAR(500);
-
-    SELECT barCode INTO v_barCode FROM products WHERE idProduct = NEW.idProduct;
-
-    IF v_barCode IS NULL OR v_barCode NOT LIKE 'METAL-%' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'metal_inventario.idProduct debe ser un producto de metal (barCode METAL-%): nunca una joya ni otro producto del catálogo normal.';
-    END IF;
-
-    IF NEW.tipoPropietario = 'SUCURSAL' AND v_barCode NOT IN ('METAL-ORO-24', 'METAL-PLATA-1000') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'El inventario de SUCURSAL solo puede ser oro fino (METAL-ORO-24) o plata fina (METAL-PLATA-1000). Ninguna otra presentación.';
-    END IF;
-
-END$$
-
-DELIMITER ;
+-- RETIRADO 2026-09-12: aquí se creaban los triggers
+-- `trg_metal_inventario_valida_bi` / `trg_metal_inventario_valida_bu`.
+-- El proyecto no usa triggers: las mismas reglas ahora viven en código,
+-- dentro de `metalInventario_apply` (StoreProcedures_MetalInventario.sql)
+-- y de `_fn_metalInventarioApply` (salesController.js). Para quitarlos
+-- de una BD donde ya se crearon: drop_metal_inventario_triggers.sql.
 
 -- ============================================================
 -- NOTA IMPORTANTE PARA QUIEN OPERE EL SISTEMA DESPUÉS DE ESTE SCRIPT:

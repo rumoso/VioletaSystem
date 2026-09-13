@@ -3759,6 +3759,18 @@ const _fn_getSaldoFinoSucursal = async (tipo, idSucursal, transaction) => {
 };
 
 const _fn_metalInventarioApply = async (oGetDateNow, tipoMovimiento, tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos, idTaller, idSale, referencia, idUserLogON, transaction) => {
+    // Misma regla que valida metalInventario_apply: al inventario de metal
+    // solo entra producto de metal. Se revisa antes de llamar al SP para
+    // fallar con un mensaje claro sin depender del error de la BD.
+    const [oProducto] = await dbConnection.query(
+        `SELECT barCode FROM products WHERE idProduct = :idProduct LIMIT 1`,
+        { replacements: { idProduct }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    const sBarCode = oProducto ? String(oProducto.barCode || '') : '';
+    if (!sBarCode.startsWith('METAL-ORO-') && !sBarCode.startsWith('METAL-PLATA-')) {
+        throw new Error(`El producto ${ idProduct } no es de metal: no se puede mover al inventario de metal.`);
+    }
+
     await dbConnection.query(
         `CALL metalInventario_apply(:oGetDateNow, :tipoMovimiento, :tipoOrigen, :idOrigen, :tipoDestino, :idDestino, :idProduct, :gramos, :idTaller, :idSale, :referencia, :idUserLogON)`,
         { replacements: { oGetDateNow, tipoMovimiento, tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos, idTaller, idSale, referencia, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
