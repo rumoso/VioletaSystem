@@ -93,7 +93,8 @@ export class TallerListComponent implements OnInit, OnDestroy {
 
     bCancel: false,
     bPending: false,
-    bPagada: false
+    bPagada: false,
+    bVencidos: false
 
   };
 
@@ -138,6 +139,13 @@ constructor(
 
   fn_puedeEliminarOCancelarTaller(): boolean {
     return this.tallerCancelacionServ.fn_puedeEliminarOCancelar();
+  }
+
+  // Fecha prometida vencida (el Back solo la calcula para Cotización,
+  // Pedido y Asignado).
+  fn_textoVencido( item: any ): string {
+    const iDias = Number( item.diasVencido ) || 0;
+    return 'Vencido ' + iDias + ( iDias === 1 ? ' día' : ' días' );
   }
 
   // Los cancelados antes de analisis/022 no tienen fecha ni motivo.
@@ -332,6 +340,7 @@ fn_getVentasListWithPage() {
     , bCancel: this.parametersForm.bCancel
     , bPending: this.parametersForm.bPending
     , bPagada: this.parametersForm.bPagada
+    , bVencidos: this.parametersForm.bVencidos
   }
 
   this.bShowSpinner = true;
@@ -828,7 +837,8 @@ fn_ClearFilters(){
 
     bCancel: false,
     bPending: false,
-    bPagada: false
+    bPagada: false,
+    bVencidos: false
 
   };
 

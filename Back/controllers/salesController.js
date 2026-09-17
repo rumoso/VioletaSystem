@@ -8,6 +8,7 @@ const path = require('path');
 const { dbConnection } = require('../database/config');
 const { Console } = require('console');
 const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_reversarDestajoByTaller, fn_registrarComisionVentaSiPagada } = require('./comisionesTrackController');
+const { fn_recalcularUtilidadTaller, fn_recalcularUtilidadTallerByIdSale } = require('../helpers/tallerUtilidad');
 
 const insertSale = async(req, res) => {
 
@@ -417,6 +418,14 @@ const insertPayments = async(req, res) => {
                     await fn_registrarComisionVentaSiPagada( idSaleTocada, idUserLogON );
                 } catch (comisionError) {
                     console.log('No se pudo generar la comisión de venta:', comisionError.message);
+                }
+
+                // Si la venta es un folio de taller, su utilidad cobrada
+                // sube con este pago (analisis/023).
+                try {
+                    await fn_recalcularUtilidadTallerByIdSale( idSaleTocada );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad del taller:', utilidadError.message);
                 }
             }
 
@@ -1540,6 +1549,17 @@ const disabledPayment = async(req, res) => {
 
         }else{
 
+            // Al cancelar un pago baja lo cobrado: si la venta es un folio
+            // de taller, su utilidad cobrada baja en la misma proporcion
+            // (analisis/023). No debe tumbar la respuesta si falla.
+            if (OSQL[0].bOK > 0) {
+                try {
+                    await fn_recalcularUtilidadTallerByIdSale( idSale );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad del taller:', utilidadError.message);
+                }
+            }
+
             res.json({
                 status: OSQL[0].bOK > 0 ? 0 : 1,
                 message: OSQL[0].message
@@ -2574,6 +2594,11 @@ const _fn_recalcularTotalSaleTaller = async (idSale, idTaller) => {
             `UPDATE taller SET precioTotal = :nuevoTotal WHERE idTaller = :idTaller`,
             { replacements: { nuevoTotal, idTaller }, type: dbConnection.QueryTypes.UPDATE }
         );
+
+        // La utilidad se guarda en el folio (analisis/023): se recalcula
+        // aqui, que es por donde pasan TODOS los cambios de captura.
+        await fn_recalcularUtilidadTaller(idTaller);
+
         return nuevoTotal;
     } catch (err) {
         console.error('_fn_recalcularTotalSaleTaller error:', err.message);
@@ -3269,6 +3294,10 @@ const getTallerByID = async(req, res = response) => {
                 , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
                 , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
                 , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
+                -- Utilidad guardada del folio (analisis/023): el Front solo
+                -- la muestra a quien tiene el permiso de ver costos.
+                , ROUND( IFNULL( T.utilidad, 0), 2) AS utilidad
+                , ROUND( IFNULL( T.utilidadCobrada, 0), 2) AS utilidadCobrada
                 , IFNULL( DATE_FORMAT( T.cancelDate, '%d-%m-%Y %h:%i %p'), '') AS cancelDateDesc
                 , IFNULL( T.motivoCancelacion, '') AS motivoCancelacion
                 , IFNULL( UC.name, '') AS cancelUserDesc
@@ -3477,13 +3506,14 @@ const getTallerPaginado = async(req, res = response) => {
         , bCancel = false
         , bPending = false
         , bPagada = false
+        , bVencidos = false
 
         , limiter = 10
         , start = 0
 
         , idUserLogON
         , idSucursalLogON
-       
+
     } = req.body;
 
     try{
@@ -3491,6 +3521,7 @@ const getTallerPaginado = async(req, res = response) => {
         if (bCancel  === true  || bCancel  === 'true'  || bCancel  == 1) bCancel  = 1; else bCancel  = 0;
         if (bPending === true  || bPending === 'true'  || bPending == 1) bPending = 1; else bPending = 0;
         if (bPagada  === true  || bPagada  === 'true'  || bPagada  == 1) bPagada  = 1; else bPagada  = 0;
+        if (bVencidos === true || bVencidos === 'true' || bVencidos == 1) bVencidos = 1; else bVencidos = 0;
 
         if (bPending && bPagada) {
             bPending = 0;
@@ -3514,6 +3545,19 @@ const getTallerPaginado = async(req, res = response) => {
             ) AS AAA ON AAA.idRelation = T.idSale
         `;
 
+        // Fecha prometida vencida: el trabajo sigue en el taller (Cotización,
+        // Pedido o Asignado) y la fecha prometida al cliente ya pasó. Desde
+        // Finalizado/Mostrador el taller ya cumplió (la pieza espera al
+        // cliente), y un folio sin fecha prometida (rápidas) nunca vence.
+        const sqlDiasVencido = `
+            CASE WHEN T.idTallerStatus IN (1, 2, 3)
+                  AND T.fechaPrometida IS NOT NULL
+                  AND DATE(T.fechaPrometida) < CURDATE()
+                 THEN DATEDIFF(CURDATE(), DATE(T.fechaPrometida))
+                 ELSE 0
+            END
+        `;
+
         // ── Cláusulas WHERE compartidas ──────────────────────────────────────────
         const whereBase = `
             INNER JOIN sucursalesconfig AS SC ON T.idSucursal = SC.idSucursal
@@ -3526,6 +3570,7 @@ const getTallerPaginado = async(req, res = response) => {
               AND ( :bPending        = 0  OR ( ROUND( IFNULL(T.precioTotal, 0), 2) - IFNULL(AAA.abonado, 0) ) > 0 )
               AND ( :bPagada         = 0  OR ( ROUND( IFNULL(T.precioTotal, 0), 2) - IFNULL(AAA.abonado, 0) ) = 0 )
               AND ( :idTallerStatus  = 0  OR T.idTallerStatus = :idTallerStatus )
+              AND ( :bVencidos       = 0  OR ( ${sqlDiasVencido} ) > 0 )
               AND ( :idTecnico       = 0  OR EXISTS (
                     SELECT 1 FROM taller_mano_obra TMO
                     WHERE TMO.idTaller = T.idTaller AND TMO.idUserTecnico = :idTecnico
@@ -3544,6 +3589,7 @@ const getTallerPaginado = async(req, res = response) => {
             idTecnico: idTecnico || 0,
             bPending,
             bPagada,
+            bVencidos,
             start:   Number(start)   || 0,
             limiter: Number(limiter) || 10
         };
@@ -3590,6 +3636,8 @@ const getTallerPaginado = async(req, res = response) => {
                 , IFNULL(DATE_FORMAT(T.cancelDate, '%d-%m-%Y %h:%i %p'), '') AS cancelDateDesc
                 , IFNULL(T.motivoCancelacion, '')            AS motivoCancelacion
                 , IFNULL(UC.name, '')                        AS cancelUserDesc
+                , IFNULL(DATE_FORMAT(T.fechaPrometida, '%d-%m-%Y'), '') AS fechaPrometidaDesc
+                , ${sqlDiasVencido}                          AS diasVencido
                 , ROUND(IFNULL(T.precioTotal, 0), 2)         AS total
                 , ROUND(IFNULL(AAA.abonado, 0), 2)           AS abonado
                 , ROUND(IFNULL(T.precioTotal, 0) - IFNULL(AAA.abonado, 0), 2) AS pendingAmount
@@ -3829,8 +3877,36 @@ const addMetalAgranel = async(req, res) => {
             var tipo = metalAgranel.tipo || 'oro';
             var gramos = metalAgranel.gramos || 0;
             var kilates = metalAgranel.kilates || 8;
-            var valorMetal = metalAgranel.valorMetal || 0;
-            var costoMetal = metalAgranel.costoMetal || 0;
+            var valorMetal = Math.round(( Number(metalAgranel.valorMetal) || 0 ) * 100) / 100;
+
+            // El costo del metal NO se recibe del navegador (analisis/023):
+            // sale de la cotizacion del dia del kilataje o ley, aqui.
+            const [oCotizacion] = await dbConnection.query(
+                `SELECT fxRateCost FROM fxrate
+                 WHERE active = 1 AND referencia IN (:refOro, :refPlata)
+                 ORDER BY createDate DESC LIMIT 1`,
+                {
+                    replacements: { refOro: `${ kilates } Kilates`, refPlata: `${ kilates } Ley` },
+                    type: dbConnection.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+
+            if (!oCotizacion) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: `No hay cotizacion del dia para ${ tipo === 'plata' ? 'la ley' : 'el kilataje' } ${ kilates }. Capturela en Tipos de cambio.` });
+            }
+
+            var costoMetal = Math.round(( Number(gramos) || 0 ) * ( parseFloat(oCotizacion.fxRateCost) || 0 ) * 100) / 100;
+
+            // Mismo piso que el punto de venta: no se puede vender abajo
+            // del costo + 30%.
+            const nPisoMetal = Math.round(costoMetal * 1.3 * 100) / 100;
+
+            if (valorMetal + 0.01 < nPisoMetal) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: `El valor del metal no puede ser menor al costo + 30% ($${ nPisoMetal.toFixed(2) }).` });
+            }
 
             // Folio ya asignado: el inventario se mueve al momento.
             // Modificación = reversa completa del movimiento anterior + alta nueva.
@@ -4921,6 +4997,10 @@ const getTallerByIDSeq = async(req, res = response) => {
                 , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
                 , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
                 , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
+                -- Utilidad guardada del folio (analisis/023): el Front solo
+                -- la muestra a quien tiene el permiso de ver costos.
+                , ROUND( IFNULL( T.utilidad, 0), 2) AS utilidad
+                , ROUND( IFNULL( T.utilidadCobrada, 0), 2) AS utilidadCobrada
             FROM taller AS T
             INNER JOIN sucursales AS SS ON T.idSucursal = SS.idSucursal
             INNER JOIN users AS U ON T.idSeller_idUser = U.idUser
@@ -6046,6 +6126,13 @@ const cancelarTaller = async(req, res = response) => {
         );
 
         await transaction.commit();
+
+        // Un taller cancelado no deja utilidad (analisis/023).
+        try {
+            await fn_recalcularUtilidadTaller( idTaller );
+        } catch (utilidadError) {
+            console.log('No se pudo recalcular la utilidad del taller cancelado:', utilidadError.message);
+        }
 
         res.json({ status: 0, message: `Taller #${ idSale } cancelado con éxito.` });
 

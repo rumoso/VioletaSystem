@@ -3,6 +3,7 @@ const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
 const { TIPO_ROL } = require('../helpers/constantes');
+const { fn_recalcularUtilidadTaller } = require('../helpers/tallerUtilidad');
 
 // Bitácora de comisiones por empleado (analisis/008). Append-only,
 // mismo patrón que metal_inventario_track: cada renglón es una
@@ -389,7 +390,25 @@ const fn_registrarDestajoByTaller = async(idTaller, oGetDateNow, idUserLogON, tr
                 transaction
             }
         );
+
+        // El % queda congelado en los renglones de mano de obra de ese
+        // tecnico: la utilidad del folio (analisis/023) se sigue
+        // calculando con el % que se le pago, aunque despues se lo
+        // cambien en su ficha.
+        await dbConnection.query(
+            `UPDATE taller_mano_obra SET porcentajeDestajo = :porcentaje
+             WHERE idTaller = :idTaller AND idUserTecnico = :idUser`,
+            {
+                replacements: { porcentaje: destajoPorcentaje, idTaller, idUser: fila.idUserTecnico },
+                type: dbConnection.QueryTypes.UPDATE,
+                transaction
+            }
+        );
+
     }
+
+    // Con los % ya congelados, la utilidad del folio se vuelve a cerrar.
+    await fn_recalcularUtilidadTaller(idTaller, transaction);
 
 };
 

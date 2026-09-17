@@ -704,6 +704,7 @@ export class SalesService {
       , bCancel: params.bCancel
       , bPending: params.bPending
       , bPagada: params.bPagada
+      , bVencidos: params.bVencidos
 
       ,start: start
       ,limiter: limiter

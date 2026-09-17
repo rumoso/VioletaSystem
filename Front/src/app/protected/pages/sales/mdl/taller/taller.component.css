@@ -1550,6 +1550,21 @@ button:hover {
 }
 .gar-band--es    { background: #f3e5f5; border-left: 4px solid #6200EA; }
 .gar-band--tiene { background: #fff8e1; border-left: 4px solid #ffa000; }
+.taller-header-vencido {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #fff3e0;
+    color: #bf360c;
+    border: 1px solid #ffcc80;
+}
+.taller-header-vencido mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
 .gar-band--cancelado { background: #ffebee; border-left: 4px solid #c62828; font-size: 13px; color: #5d4037; }
 .gar-band--cancelado .gar-band-tit { color: #b71c1c; margin-bottom: 4px; }
 
@@ -1685,4 +1700,24 @@ button:hover {
     height: 18px;
     color: #9e9e9e;
     pointer-events: none;
+}
+
+/* Utilidad del folio en el encabezado (analisis/023). */
+.taller-header-utilidad {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.taller-header-utilidad .thu-cobrada {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: .8;
 }

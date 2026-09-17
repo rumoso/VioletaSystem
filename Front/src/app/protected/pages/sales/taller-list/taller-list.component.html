@@ -115,6 +115,14 @@
         </mat-checkbox>
       </div>
 
+      <div class="tll-payment-chips">
+        <span class="tll-payment-label">Entrega:</span>
+        <mat-checkbox class="tll-chip-check" [(ngModel)]="parametersForm.bVencidos"
+          matTooltip="Cotización, pedido o asignado con la fecha prometida ya vencida">
+          <span class="tll-chip-check-text">Vencidas</span>
+        </mat-checkbox>
+      </div>
+
     </div>
 
     <div class="tll-filters-btns">
@@ -327,6 +335,10 @@
                 <span *ngIf="item.idTallerStatus != 7" class="tll-status-chip">{{ item.statusName }}</span>
                 <span *ngIf="item.idTallerStatus == 7" class="tll-status-chip tll-status-chip--cancelado"
                   [matTooltip]="fn_tooltipCancelacion( item )">{{ item.statusName }}</span>
+                <span *ngIf="item.diasVencido > 0" class="tll-status-chip tll-status-chip--vencido"
+                  [matTooltip]="'Fecha prometida de entrega: ' + item.fechaPrometidaDesc">
+                  <mat-icon class="tll-vencido-icon">alarm</mat-icon>{{ fn_textoVencido( item ) }}
+                </span>
               </div>
             </td>
 

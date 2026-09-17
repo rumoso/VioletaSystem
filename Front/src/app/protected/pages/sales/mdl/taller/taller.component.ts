@@ -59,6 +59,11 @@ export class TallerComponent implements OnInit {
   @ViewChild('metalClienteKilatesSelect', { read: ElementRef }) metalClienteKilatesSelect!: ElementRef;
   @ViewChild('metalClienteKilatesSelectRef') metalClienteKilatesSelectRef!: MatSelect;
   @ViewChild('metalClienteAgregarBtn', { read: ElementRef }) metalClienteAgregarBtn!: ElementRef;
+  @ViewChild('metalFinalDescripcionInput') metalFinalDescripcionInput!: ElementRef;
+  @ViewChild('metalFinalGramosInput') metalFinalGramosInput!: ElementRef;
+  @ViewChild('metalFinalKilatesSelectRef') metalFinalKilatesSelectRef!: MatSelect;
+  @ViewChild('metalFinalCostoInput') metalFinalCostoInput!: ElementRef;
+  @ViewChild('metalFinalPrecioInput') metalFinalPrecioInput!: ElementRef;
   @ViewChild('cbxServiciosExternosCBX') cbxServiciosExternosCBX!: ElementRef;
   @ViewChild('servicioExternoCantidadInput') servicioExternoCantidadInput!: ElementRef;
   @ViewChild('servicioExternoCostoInput', { read: ElementRef }) servicioExternoCostoInput!: ElementRef;
@@ -89,6 +94,9 @@ export class TallerComponent implements OnInit {
     // Garantías (analisis/016): idTallerOrigen es la ÚNICA fuente del
     // vínculo, porque el folio ya no lo lleva dentro.
     bEsGarantia: 0,
+    // Utilidad guardada del folio (analisis/023): la calcula el servidor.
+    utilidad: 0,
+    utilidadCobrada: 0,
     idTallerOrigen: '',
     idTallerOrigenID: 0,
     origenClienteDesc: '',
@@ -291,6 +299,10 @@ export class TallerComponent implements OnInit {
   metalClienteList: any[] = [];
   totalMetalCliente: number = 0;
 
+  // Metal Final apagado (analisis/023): el cliente no lo va a usar por
+  // ahora. No se borró nada; se vuelve a prender poniendo esto en true.
+  bMostrarMetalFinal: boolean = false;
+
   get kilatajes_cliente(): number[] {
     return this.metalClienteTipo === 'plata' ? this.kilatajes_plata_cliente : this.kilatajes_oro_cliente;
   }
@@ -452,6 +464,36 @@ export class TallerComponent implements OnInit {
 
   get bCancelado(): boolean {
     return Number( this.tallerForm.idTallerStatus ) === 7;
+  }
+
+  // Días que lleva vencida la fecha prometida de entrega. Mismo criterio
+  // que el listado (getTallerPaginado): solo Cotización, Pedido y Asignado;
+  // sin fecha prometida (rápidas) nunca vence.
+  get iDiasVencido(): number {
+
+    const idStatus = Number( this.tallerForm.idTallerStatus );
+    const fecha = this.tallerForm.fechaPrometidaEntrega;
+
+    if( !( Number( this.tallerForm.idTaller ) > 0 ) || idStatus < 1 || idStatus > 3 || !fecha ){
+      return 0;
+    }
+
+    let oPrometida: Date;
+    if( fecha instanceof Date ){
+      oPrometida = new Date( fecha.getFullYear(), fecha.getMonth(), fecha.getDate() );
+    }else{
+      const [ y, m, d ] = String( fecha ).substring( 0, 10 ).split('-').map( Number );
+      if( !y || !m || !d ){
+        return 0;
+      }
+      oPrometida = new Date( y, m - 1, d );
+    }
+
+    const oHoy = new Date();
+    const oHoySinHora = new Date( oHoy.getFullYear(), oHoy.getMonth(), oHoy.getDate() );
+    const iDias = Math.round( ( oHoySinHora.getTime() - oPrometida.getTime() ) / 86400000 );
+
+    return iDias > 0 ? iDias : 0;
   }
 
   //#endregion
@@ -743,7 +785,10 @@ export class TallerComponent implements OnInit {
             saleTotal: data.saleTotal || 0,
             cancelDateDesc: data.cancelDateDesc || '',
             motivoCancelacion: data.motivoCancelacion || '',
-            cancelUserDesc: data.cancelUserDesc || ''
+            cancelUserDesc: data.cancelUserDesc || '',
+            // Utilidad guardada del folio (analisis/023).
+            utilidad: data.utilidad || 0,
+            utilidadCobrada: data.utilidadCobrada || 0
           };
 
           this.refaccionesList = resp.data.refaccionesDetail || [];
@@ -3008,6 +3053,27 @@ export class TallerComponent implements OnInit {
     setTimeout(() => {
       this.metalClienteKilatesSelectRef?.open();
     }, 150);
+  }
+
+  // Metal final: técnico → descripción → gramos → kilataje → costo (solo
+  // con permiso de ver costos) → precio final, con Enter o al elegir en
+  // los combos. Enter en el precio final agrega.
+  fn_focusMetalFinal(campo: 'descripcion' | 'gramos' | 'kilates' | 'costo' | 'precio') {
+    switch (campo) {
+      case 'descripcion': this.nextInputFocus(this.metalFinalDescripcionInput, 50); break;
+      case 'gramos':      this.nextInputFocus(this.metalFinalGramosInput, 50); break;
+      case 'kilates':
+        setTimeout(() => {
+          this.metalFinalKilatesSelectRef?.focus();
+          this.metalFinalKilatesSelectRef?.open();
+        }, 80);
+        break;
+      case 'costo':
+        // Si no se ve el costo, se brinca al precio final.
+        this.nextInputFocus(this.metalFinalCostoInput ?? this.metalFinalPrecioInput, 100);
+        break;
+      case 'precio':      this.nextInputFocus(this.metalFinalPrecioInput, 100); break;
+    }
   }
 
   fn_focusMetalClienteAgregar() {
