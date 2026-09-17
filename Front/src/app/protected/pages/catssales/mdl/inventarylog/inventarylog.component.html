@@ -1,109 +1,85 @@
-<div style="padding: 10px;">
+<div class="ivm-modal">
 
-    <div class="row top20px">
-
-        <div class="col-md-12">
-
-            <h1>Puedes agregar o quitar inventario</h1>
-
-        </div>
-
+    <div mat-dialog-title class="ivm-header">
+        <span class="ivm-titulo">Puedes agregar o quitar inventario</span>
+        <button mat-icon-button type="button" (click)="fn_CerrarMDL()">
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
 
-    <div class="row">
+    <mat-dialog-content class="ivm-content">
 
-        <div class="col-md-4">
+        <div class="ivm-grid">
 
-            <mat-form-field class="example-full-width with100">
-                <mat-label># Entrada</mat-label>
-                <input #tbxNoEntrada
-                matInput
-                cdkTextareaAutosize
-                placeholder="Ingrese número de entrada"
-                [(ngModel)]="inventaryLogForm.noEntrada"
-                (keyup)="ev_fn_noEntrada_keyup_enter( $event )">
-            </mat-form-field>
-
-        </div>
-
-        <div class="col-md-6">
-
-            <mat-form-field class="example-full-width with100">
-                <mat-label>Descripción</mat-label>
-                <input #tbxDescription
-                matInput
-                cdkTextareaAutosize
-                placeholder="Ingrese el motivo"
-                [(ngModel)]="inventaryLogForm.description"
-                (keyup)="ev_fn_description_keyup_enter( $event )">
-            </mat-form-field>
-
-        </div>
-
-        <div class="col-md-2">
-
-            <mat-form-field class="with100">
-                <mat-label>Cantidad</mat-label>
-                <input #tbxCantidad
-                class="textAlingRight colorGreen fontSize"
-                type="number"
-                matInput
-                placeholder="Cantidad"
-                [(ngModel)]="inventaryLogForm.cantidad"
-                (keyup)="ev_fn_amount_keyup_enter( $event )">
-            </mat-form-field>
-
-        </div>
-
-        <div class="col-md-3">
-            <mat-form-field class="with100">
-                <mat-label>Nuevo Costo:</mat-label>
-                <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
-                <input id="tbxCostM" matInput placeholder="Ingrese un costo"
-                type="number"
-                [(ngModel)]="inventaryLogForm.newCost">
-            </mat-form-field>
-        </div>
-        <div class="col-md-3">
-            <mat-form-field class="with100">
-                <mat-label>Nuevo Precio:</mat-label>
-                <mat-icon matPrefix class="my-icon">monetization_on</mat-icon>
-                <input id="tbxPriceM" matInput placeholder="Ingrese un precio"
-                type="number"
-                [(ngModel)]="inventaryLogForm.newPrice"
-                (keyup)="ev_fn_amount_keyup_enter( $event )">
-            </mat-form-field>
-        </div>
-    </div>
-
-    <div class="row top10px">
-        <div class="col-md-12">
-            <div style="float: left;">
-                <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px"
-                (click)="fn_insertInventaryLog()">
-                <mat-icon matPrefix class="my-icon">save</mat-icon>
-                Guardar</button>
-
-                <button mat-raised-button
-                type="button"
-                class="marginRight10px"
-                (click)="event_clear()">
-                <mat-icon matPrefix class="my-icon">close</mat-icon>
-                Limpiar</button>
-
-                <button mat-raised-button
-                type="button"
-                class="marginRight10px"
-                (click)="fn_CerrarMDL()">
-                <mat-icon matPrefix class="my-icon">close</mat-icon>
-                Cerrar</button>
-
+            <div class="ivm-slim-field">
+                <label class="ivm-slim-label"># Entrada</label>
+                <input #tbxNoEntrada class="ivm-slim-input" type="text" autocomplete="off"
+                    placeholder="Número de entrada"
+                    [(ngModel)]="inventaryLogForm.noEntrada"
+                    (keydown.enter)="ev_fn_noEntrada_keyup_enter( $event )">
             </div>
+
+            <div class="ivm-slim-field ivm-col-2">
+                <label class="ivm-slim-label">Descripción</label>
+                <input #tbxDescription class="ivm-slim-input" type="text" autocomplete="off"
+                    placeholder="Motivo del movimiento"
+                    [(ngModel)]="inventaryLogForm.description"
+                    (keydown.enter)="ev_fn_description_keyup_enter( $event )">
+            </div>
+
+            <div class="ivm-slim-field">
+                <label class="ivm-slim-label">Cantidad</label>
+                <input #tbxCantidad class="ivm-slim-input ivm-cantidad" type="number"
+                    placeholder="0"
+                    [class.ivm-negativo]="inventaryLogForm.cantidad < 0"
+                    [(ngModel)]="inventaryLogForm.cantidad"
+                    (keydown.enter)="ev_fn_amount_keyup_enter( $event )">
+                <span class="ivm-slim-hint">Negativa para quitar (requiere autorización).</span>
+            </div>
+
+            <div class="ivm-slim-field">
+                <label class="ivm-slim-label">Nuevo costo</label>
+                <div class="ivm-inline-wrap">
+                    <mat-icon class="ivm-inline-icon">attach_money</mat-icon>
+                    <input id="tbxCostM" class="ivm-slim-input ivm-num" type="number"
+                        placeholder="0.00"
+                        [(ngModel)]="inventaryLogForm.newCost"
+                        (keydown.enter)="ev_fn_newCost_keyup_enter( $event )">
+                </div>
+            </div>
+
+            <div class="ivm-slim-field">
+                <label class="ivm-slim-label">Nuevo precio</label>
+                <div class="ivm-inline-wrap">
+                    <mat-icon class="ivm-inline-icon">attach_money</mat-icon>
+                    <input id="tbxPriceM" class="ivm-slim-input ivm-num" type="number"
+                        placeholder="0.00"
+                        [(ngModel)]="inventaryLogForm.newPrice"
+                        (keydown.enter)="ev_fn_newPrice_keyup_enter( $event )">
+                </div>
+            </div>
+
         </div>
-    </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="ivm-actions">
+
+        <button mat-raised-button type="button" (click)="fn_CerrarMDL()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+        <button mat-raised-button type="button" (click)="event_clear()">
+            <mat-icon matPrefix class="my-icon">cleaning_services</mat-icon>
+            Limpiar</button>
+
+        <button mat-raised-button color="primary" type="submit"
+            [disabled]="!fn_validForm()"
+            (click)="fn_insertInventaryLog()">
+            <mat-icon matPrefix class="my-icon">save</mat-icon>
+            Guardar</button>
+
+    </mat-dialog-actions>
 
 </div>
 

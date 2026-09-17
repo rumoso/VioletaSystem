@@ -25,6 +25,7 @@ import { IngresosComponent } from '../mdl/ingresos/ingresos.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
+import { TallerCancelacionService } from 'src/app/protected/services/taller-cancelacion.service';
 import {
   fn_precargarDesdeQueryParams,
   fn_limpiarQueryParamsURL,
@@ -214,8 +215,13 @@ constructor(
   , private activatedRoute: ActivatedRoute
   , private pageTitleServ: PageTitleService
   , private dashboardServ: DashboardService
+  , private tallerCancelacionServ: TallerCancelacionService
 
   ) { }
+
+  fn_puedeEliminarOCancelarTaller(): boolean {
+    return this.tallerCancelacionServ.fn_puedeEliminarOCancelar();
+  }
 
   ngOnDestroy(): void {
     this.pageTitleServ.clear();
@@ -747,6 +753,20 @@ fn_disabledSale( data: any ){
   }
 
   this.bShowActionAuthorization = true;
+
+  // Taller: elimina si está vacío o cancela si tiene datos (analisis/022).
+  if( data.idSaleType == 5 ){
+    this.tallerCancelacionServ.fn_eliminarOCancelar( data, ( b ) => this.bShowSpinner = b )
+    .subscribe({
+      next: ( bCambio ) => {
+        this.bShowActionAuthorization = false;
+        if( bCambio ){
+          this.fn_getVentasListWithPage();
+        }
+      }
+    });
+    return;
+  }
 
   this.servicesGServ.showDialog('¿Estás seguro?'
   , 'Está apunto de cancelar la venta #' + data.idSale

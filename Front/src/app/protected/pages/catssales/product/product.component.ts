@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnInit, Optional, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
@@ -41,6 +41,10 @@ export class ProductComponent implements OnInit {
 
   idUserLogON: number = 0;
 
+  // true cuando se abre como modal (product-list); false cuando se entra por
+  // las rutas product / editProduct/:id (no hay MatDialogRef ni MAT_DIALOG_DATA).
+  bModal: boolean = false;
+
   inventaryLoglist: any[] = [];
 
   prod_EditGrupos: boolean = false;
@@ -80,8 +84,8 @@ export class ProductComponent implements OnInit {
     ////************************************************ */
 
   constructor(
-    private dialogRef: MatDialogRef<ProductComponent>
-    ,@Inject(MAT_DIALOG_DATA) public OParamsData: any
+    @Optional() private dialogRef: MatDialogRef<ProductComponent>
+    ,@Optional() @Inject(MAT_DIALOG_DATA) public OParamsData: any
 
     , private servicesGServ: ServicesGService
     , private productsServ: ProductsService
@@ -147,10 +151,14 @@ export class ProductComponent implements OnInit {
       this._locale = 'mx';
       this._adapter.setLocale(this._locale);
 
-      if( this.OParamsData.id > 0 ){
+      // Como modal el id llega en MAT_DIALOG_DATA; por ruta, en el parámetro :id
+      this.bModal = !!this.dialogRef;
+      const idParam: number = Number( this.OParamsData?.id ?? this.activatedRoute.snapshot.params['id'] ?? 0 ) || 0;
 
-        this.idProduct = this.OParamsData.id;
-        this.productForm.idProduct = this.OParamsData.id;
+      if( idParam > 0 ){
+
+        this.idProduct = idParam;
+        this.productForm.idProduct = idParam;
 
         this.bShowSpinner = true;
 
@@ -207,7 +215,16 @@ export class ProductComponent implements OnInit {
     }
 
     close(){
-      this.dialogRef.close( true );
+      if( this.dialogRef ){
+        this.dialogRef.close( true );
+      }else{
+        // Abierto por ruta: regresa a la pantalla anterior o al catálogo
+        if( window.history.length > 1 ){
+          window.history.back();
+        }else{
+          this.changeRoute( 'productList' );
+        }
+      }
     }
 
     fn_ClearForm(){
@@ -242,7 +259,7 @@ export class ProductComponent implements OnInit {
 
     ev_fn_nextInput_keyup_enter( idInput: any ){
       setTimeout (() => {
-        var miElemento = document.getElementById( idInput )!.focus();
+        document.getElementById( idInput )?.focus();
       }, 100);
     }
 
@@ -256,7 +273,12 @@ export class ProductComponent implements OnInit {
         sOption: sOption
       }
 
-      this.servicesGServ.showModalWithParams( CatComponent, OParams, '1500px')
+      // Quita el foco del combo: si no, su panel de opciones queda abierto
+      // encima del modal del catálogo.
+      const oFoco = document.activeElement as HTMLElement | null;
+      oFoco?.blur();
+
+      this.servicesGServ.showModalWithParams( CatComponent, OParams, '860px')
       .afterClosed().subscribe({
         next: ( resp: any ) =>{
 
@@ -763,7 +785,7 @@ export class ProductComponent implements OnInit {
       idProduct: this.idProduct
     }
 
-    this.servicesGServ.showModalWithParams( InventarylogComponent, paramsMDL, '1500px')
+    this.servicesGServ.showModalWithParams( InventarylogComponent, paramsMDL, '620px')
     .afterClosed().subscribe({
       next: ( resp ) =>{
 

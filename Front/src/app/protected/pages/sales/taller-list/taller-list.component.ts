@@ -26,6 +26,7 @@ import { SelectCajaComponent } from '../mdl/select-caja/select-caja.component';
 import { TallerFirmaHistorialModalComponent } from '../mdl/taller/taller-firma-historial-modal.component';
 import { GarantiaComponent } from '../mdl/garantia/garantia.component';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
+import { TallerCancelacionService } from 'src/app/protected/services/taller-cancelacion.service';
 
 @Component({
   selector: 'app-taller-list',
@@ -131,8 +132,23 @@ constructor(
   , private router: Router
   , private usersServ: UsersService
   , private pageTitleServ: PageTitleService
+  , private tallerCancelacionServ: TallerCancelacionService
 
   ) { }
+
+  fn_puedeEliminarOCancelarTaller(): boolean {
+    return this.tallerCancelacionServ.fn_puedeEliminarOCancelar();
+  }
+
+  // Los cancelados antes de analisis/022 no tienen fecha ni motivo.
+  fn_tooltipCancelacion( item: any ): string {
+    if( !item.cancelDateDesc ){
+      return 'Cancelado antes de registrar fecha y motivo';
+    }
+    return 'Cancelado el ' + item.cancelDateDesc
+      + ( item.cancelUserDesc ? ' — autorizó ' + item.cancelUserDesc : '' )
+      + ( item.motivoCancelacion ? ' — Motivo: ' + item.motivoCancelacion : '' );
+  }
 
   ngOnDestroy(): void {
     this.pageTitleServ.clear();
@@ -640,6 +656,20 @@ fn_disabledSale( data: any ){
   }
 
   this.bShowActionAuthorization = true;
+
+  // Taller: elimina si está vacío o cancela si tiene datos (analisis/022).
+  if( data.idSaleType == 5 ){
+    this.tallerCancelacionServ.fn_eliminarOCancelar( data, ( b ) => this.bShowSpinner = b )
+    .subscribe({
+      next: ( bCambio ) => {
+        this.bShowActionAuthorization = false;
+        if( bCambio ){
+          this.fn_getVentasListWithPage();
+        }
+      }
+    });
+    return;
+  }
 
   this.servicesGServ.showDialog('¿Estás seguro?'
   , 'Está apunto de cancelar la venta #' + data.idSale

@@ -128,9 +128,15 @@ async ngOnInit() {
 
   fn_getCorteCajaListWithPage() {
 
+    // El SP compara `createDate BETWEEN inicio AND fin` sobre un DATETIME:
+    // el fin va hasta las 23:59:59 para incluir los cortes de ese día. Con
+    // una sola fecha capturada se busca solo ese día.
+    const sInicio = this.parametersForm.createDateStart || this.parametersForm.createDateEnd || '';
+    const sFin = this.parametersForm.createDateEnd || this.parametersForm.createDateStart || '';
+
     let OServParams: any = {
-      createDateStart: this.parametersForm.createDateStart
-      , createDateEnd: this.parametersForm.createDateEnd
+      createDateStart: sInicio ? `${ sInicio } 00:00:00` : ''
+      , createDateEnd: sFin ? `${ sFin } 23:59:59` : ''
       , idSucursal: this.parametersForm.idSucursal
       , idCaja: this.parametersForm.idCaja
     }
@@ -139,8 +145,8 @@ async ngOnInit() {
     this.salesServ.CGetCorteCajaListWithPage( this.pagination, OServParams )
     .subscribe({
       next: (resp: ResponseGet) => {
-        this.cortesCajaList = resp.data.rows;
-        this.pagination.length = resp.data.count;
+        this.cortesCajaList = resp.data.rows || [];
+        this.pagination.length = resp.data.count || 0;
         this.bShowSpinner = false;
       },
       error: (ex: HttpErrorResponse) => {
@@ -173,7 +179,6 @@ async ngOnInit() {
 
         }
 
-        console.log( resp );
       },
       error: (ex: HttpErrorResponse) => {
         this.servicesGServ.showSnakbar( ex.error.data );
@@ -236,6 +241,37 @@ async ngOnInit() {
 // SECCIÓN DE MÉTODOS CON EL FRONT
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+// Buscar desde el botón o con Enter: siempre desde la primera página.
+fn_buscar(){
+
+  if( this.parametersForm.createDateStart && this.parametersForm.createDateEnd
+    && this.parametersForm.createDateStart > this.parametersForm.createDateEnd ){
+    this.servicesGServ.showSnakbar( 'La fecha "desde" no puede ser mayor que la fecha "hasta".' );
+    return;
+  }
+
+  this.pagination.pageIndex = 0;
+  this.fn_getCorteCajaListWithPage();
+
+}
+
+fn_ClearFilters(){
+
+  this.parametersForm = {
+    idSucursal: 0,
+    sucursalDesc: '',
+
+    idCaja: 0,
+    cajaDesc: '',
+
+    createDateStart: '',
+    createDateEnd: '',
+  };
+
+  this.fn_buscar();
+
+}
 
 fn_ShowSelectPrint(){
 

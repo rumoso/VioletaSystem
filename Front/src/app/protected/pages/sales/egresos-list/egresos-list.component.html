@@ -1,153 +1,126 @@
-<mat-accordion >
-    
-    <mat-expansion-panel (opened)="panelOpenState = true"
-                         (closed)="panelOpenState = false"
-                         [expanded]="true"
-                         class="divMain"
-                         style="margin-top: 10px !important;">
-      <mat-expansion-panel-header class="autoHeight">
-        <mat-panel-title class="text-align: center">
-          Filtros
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      
-      <div class="row">
-        <div class="col-md-12">
+<div class="egl-page">
 
-                <br>
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="egl-card egl-filters">
 
-                <div class="row">
+    <div class="egl-filters-row">
 
-                    <div class="col-md-3" style="text-align: center;">
-                        <mat-form-field class="">
-                        <mat-label>Fecha:</mat-label>
-                        <input class="textAlingCenter" matInput [matDatepicker]="picker" placeholder="Seleccione una fecha" [(ngModel)]="egresoForm.date">
-                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                        </mat-form-field>
-                    </div>
-                                    
-                    <div class="col-md-6">
-                        <mat-form-field class="example-full-width with100">
-                            <mat-label>Descripción</mat-label>
-                            <textarea #tbxDesc
-                            matInput
-                            cdkTextareaAutosize
-                            placeholder="Ingrese una descripción"
-                            [(ngModel)]="egresoForm.description"></textarea>
-                        </mat-form-field>
-                    </div>
-            
-            
-                    <div class="col-md-3">
-                    
-                        <mat-form-field class="with100">
-                            <mat-label>Monto</mat-label>
-                            <input #tbxMonto
-                            class="textAlingRight colorGreen"
-                            
-                            matInput
-                            currencyMask
-                            placeholder="PAGA"
-                            [(ngModel)]="egresoForm.amount">
-                        </mat-form-field>
-                        
-                    </div>
-            
-                </div>
-
-                <div class="row top10px">
-                    <div class="col-md-12">
-                        <div style="float: left;">
-                            
-                            <button mat-raised-button
-                            color="primary"
-                            type="submit"
-                            class="marginRight10px"
-                            (click)="fn_getEgresosListWithPage()">
-                            <mat-icon matPrefix class="my-icon">search</mat-icon>
-                            Buscar</button>
-                            
-                            <button mat-raised-button
-                            type="button"
-                            (click)="parametersForm_Clear()">
-                            <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                            limpiar</button>                
-                            
-                        </div>
-                    </div>
-                </div>
-
+      <!-- El SP filtra por un solo día (no por rango) -->
+      <div class="egl-field">
+        <label class="egl-label">Fecha</label>
+        <div class="egl-wrap">
+          <input type="date"
+            class="egl-input"
+            [class.egl-date-vacia]="!egresoForm.date"
+            [(ngModel)]="egresoForm.date"
+            (keyup.enter)="fn_buscar()">
         </div>
+      </div>
+
+      <div class="egl-field egl-field--desc">
+        <label class="egl-label">Descripción</label>
+        <div class="egl-wrap">
+          <mat-icon class="egl-wrap-icon">search</mat-icon>
+          <input type="text"
+            class="egl-input egl-input--with-icon"
+            placeholder="Buscar en la descripción"
+            [(ngModel)]="egresoForm.description"
+            (keyup.enter)="fn_buscar()">
+        </div>
+      </div>
+
+      <div class="egl-field">
+        <label class="egl-label">Monto exacto</label>
+        <div class="egl-wrap">
+          <input class="egl-input egl-input--amount"
+            currencyMask
+            placeholder="$0.00"
+            [(ngModel)]="egresoForm.amount"
+            (keyup.enter)="fn_buscar()">
+        </div>
+      </div>
 
     </div>
 
-    </mat-expansion-panel>
-  </mat-accordion>
-
-<div class="divMain" style="width: 100%; margin-top: 10px !important;">
-
-    <div class="row top20px">
-        <div class="col-md-12">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <th class="textAlingCenter padding-th">Acciones</th>
-                        <th class="textAlingLeft padding-th"># Egreso</th>
-                        <th class="textAlingLeft padding-th">Descripción</th>
-                        <th class="textAlingCenter padding-th">Monto</th>
-                        <th class="textAlingCenter padding-th">Fecha</th>
-                    </thead>
-    
-                    <tbody>
-                        <tr *ngFor="let item of oData">
-                            <td class="textAlingCenter">
-                                <div style="width: 50px;">
-                                    <span *ngIf="selectPrinter.idPrinter > 0" class="material-icons manitaSobre colorGreen" title="Imprimir"
-                                        (click)="fn_btnRePrinter(item.idEgreso)">
-                                        print
-                                        </span>
-                                </div>
-                            </td>
-    
-                            <td style="text-align: left;">{{ item.idEgreso }}</td>
-                            
-                            <td style="text-align: left;">{{ item.description }}</td>
-                            <td style="text-align: right;">{{ item.amount | currency }}</td>
-
-                            <td class="textAlingCenter">
-
-                                <div style="width: 120px;">
-
-                                    <div class="row">
-                                        <div class="col-md-1">
-                                            <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                            
-                                        </div>
-                                        <div class="col-md-10">
-                                            <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
-                                            <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
-                                        </div>
-                                    </div>
-
-                                </div>
-                                
-                            </td>
-                        </tr>
-                        
-                    </tbody>
-                    
-                </table>
-            </div>
-            
-            <app-pagination *ngIf="oData" [IPagination]="pagination"
-                (OPagination)="changePagination($event)">
-            </app-pagination>
-
-        </div>
-    
+    <div class="egl-filters-btns">
+      <button mat-stroked-button class="egl-btn-secondary" (click)="fn_ClearFilters()">
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+      <button mat-flat-button class="egl-btn-primary" (click)="fn_buscar()">
+        <mat-icon>search</mat-icon>
+        Buscar
+      </button>
+      <div class="egl-divider-v"></div>
+      <span class="egl-count-badge">{{ pagination.length | number }} {{ pagination.length === 1 ? 'egreso' : 'egresos' }}</span>
     </div>
-    
+
+  </div>
+
+  <!-- ═══════════════ TABLA ═══════════════ -->
+  <div class="egl-card egl-content">
+
+    <div class="egl-table-wrapper">
+      <table class="egl-table">
+        <thead>
+          <tr>
+            <th class="egl-th egl-th--center">Acciones</th>
+            <th class="egl-th egl-th--left">Folio</th>
+            <th class="egl-th egl-th--left">Descripción</th>
+            <th class="egl-th egl-th--right">Monto</th>
+            <th class="egl-th egl-th--center">Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of oData" class="egl-tr">
+
+            <td class="egl-td egl-td--center egl-td--actions">
+              <div class="egl-actions">
+                <mat-icon class="egl-action-icon egl-action-icon--print"
+                  *ngIf="selectPrinter.idPrinter > 0"
+                  matTooltip="Reimprimir el egreso"
+                  (click)="fn_btnRePrinter(item.idEgreso)">
+                  print
+                </mat-icon>
+                <span class="egl-no-action" *ngIf="selectPrinter.idPrinter == 0"
+                  matTooltip="Sin impresora seleccionada">—</span>
+              </div>
+            </td>
+
+            <td class="egl-td egl-td--left">
+              <span class="egl-folio">#{{ item.idEgreso }}</span>
+            </td>
+
+            <td class="egl-td egl-td--left egl-td--desc">{{ item.description }}</td>
+
+            <td class="egl-td egl-td--right">
+              <span class="egl-amount">{{ item.amount | currency }}</span>
+            </td>
+
+            <td class="egl-td egl-td--center egl-td--date">
+              <span class="egl-date">{{ item.createDateDate }}</span>
+              <span class="egl-time">{{ item.createDateHours }}</span>
+            </td>
+
+          </tr>
+          <tr *ngIf="!oData || oData.length === 0">
+            <td colspan="5" class="egl-empty">
+              <mat-icon>money_off</mat-icon>
+              <span>No hay egresos con estos filtros</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="egl-pagination">
+      <app-pagination *ngIf="oData" [IPagination]="pagination"
+        (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
+
+  </div>
+
 </div>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

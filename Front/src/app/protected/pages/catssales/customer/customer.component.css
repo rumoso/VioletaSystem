@@ -1,0 +1,163 @@
+/* ══════════════════════════════════════════════════
+   CTM — Modal de cliente (alta / edición)  |  formato slim de user.component
+══════════════════════════════════════════════════ */
+
+.ctm-modal {
+    display: flex;
+    flex-direction: column;
+    min-width: 480px;
+}
+
+.ctm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 0;
+}
+
+.ctm-titulo {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.ctm-content {
+    padding-top: 14px !important;
+}
+
+.ctm-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 14px;
+}
+
+.ctm-col-2 {
+    grid-column: span 2;
+}
+
+/* Formato slim */
+.ctm-slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 14px;
+}
+
+.ctm-slim-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #283593;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.ctm-slim-input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #2c2c2c;
+    outline: none;
+    background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ctm-slim-input::placeholder {
+    color: #9e9e9e;
+    font-weight: 400;
+}
+
+.ctm-slim-input:focus {
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
+}
+
+.ctm-inline-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ctm-inline-wrap:focus-within {
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
+}
+
+.ctm-inline-wrap .ctm-slim-input {
+    border: none;
+    height: 34px;
+    padding-left: 6px;
+    box-shadow: none;
+}
+
+.ctm-prefix-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    color: #9e9e9e;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+.ctm-activo {
+    margin-bottom: 4px;
+}
+
+/* Botones al pie */
+.ctm-actions {
+    padding-top: 6px;
+    gap: 8px;
+}
+
+.ctm-faceid {
+    margin-right: auto;
+}
+
+.ctm-btn-primary {
+    background: #283593 !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+.ctm-btn-primary:disabled {
+    background: #c5cae9 !important;
+    color: #fff !important;
+}
+
+.ctm-btn-secondary {
+    border-color: #dadada !important;
+    color: #555 !important;
+    border-radius: 8px !important;
+}
+
+.ctm-btn-primary mat-icon,
+.ctm-btn-secondary mat-icon {
+    font-size: 18px !important;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+@media (max-width: 599.98px) {
+    .ctm-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ctm-col-2 {
+        grid-column: span 1;
+    }
+
+    .ctm-modal {
+        min-width: 0;
+    }
+}

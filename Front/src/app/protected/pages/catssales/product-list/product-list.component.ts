@@ -143,7 +143,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
           id: id
         }
 
-        this.servicesGServ.showModalWithParamsv2( ProductComponent, OParamsIN, { width: '100vw', height: '100vh', maxWidth: '100vw', panelClass: 'full-screen-modal' })
+        this.servicesGServ.showModalWithParamsv2( ProductComponent, OParamsIN, { width: '1080px', maxWidth: '96vw', maxHeight: '96vh', autoFocus: false })
         .afterClosed().subscribe({
           next: ( resp: any ) =>{
 
@@ -176,7 +176,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
         idProduct: idProduct
       }
 
-      this.servicesGServ.showModalWithParams( InventarylogComponent, paramsMDL, '1500px')
+      this.servicesGServ.showModalWithParams( InventarylogComponent, paramsMDL, '620px')
       .afterClosed().subscribe({
         next: ( resp ) =>{
 
@@ -234,8 +234,18 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
     this.parametersForm.idUser = this.idUserLogON;
 
+    // Fechas de <input type="date"> ('YYYY-MM-DD'). El SP compara
+    // CAST( createDate AS DATE ) BETWEEN inicio AND fin y solo filtra si
+    // hay inicio: si falta un extremo se abre el rango (sin fin = hoy,
+    // sin inicio = desde siempre) para no mandar un BETWEEN con ''.
+    const oParams: any = { ...this.parametersForm };
+    if( oParams.createDateStart || oParams.createDateEnd ){
+      oParams.createDateStart = oParams.createDateStart || '1900-01-01';
+      oParams.createDateEnd = oParams.createDateEnd || this.fn_hoyISO();
+    }
+
     this.bShowSpinner = true;
-    this.productsServ.CGetProductsListWithPage( this.pagination, this.parametersForm )
+    this.productsServ.CGetProductsListWithPage( this.pagination, oParams )
     .subscribe({
       next: (resp: ResponseGet) => {
         console.log(resp)
@@ -249,6 +259,14 @@ export class ProductListComponent implements OnInit, OnDestroy {
         this.bShowSpinner = false;
       }
     })
+  }
+
+  // Fecha local de hoy en 'YYYY-MM-DD' (no toISOString: eso es UTC).
+  private fn_hoyISO(): string {
+    const d = new Date();
+    const mm = String( d.getMonth() + 1 ).padStart( 2, '0' );
+    const dd = String( d.getDate() ).padStart( 2, '0' );
+    return `${ d.getFullYear() }-${ mm }-${ dd }`;
   }
 
   // Los productos que el panel contó (analisis/015).

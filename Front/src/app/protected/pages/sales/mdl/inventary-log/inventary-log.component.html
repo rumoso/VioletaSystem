@@ -1,102 +1,140 @@
-<div class="divMain" style="width: 100%; margin-top: -5px !important;">
-    <div class="row">
-        <div class="col-md-4">
-          <mat-form-field fxLayout.xs="column" class="with100">
-              <mat-label>Código de barras</mat-label>
-              <mat-icon matPrefix class="my-icon">qr_code</mat-icon>
-              <input matInput id="barCode" placeholder="Ingrese un Código de barras"
-              [(ngModel)]="parametersForm.barCode"
-              (keyup.enter)="fn_getProductByBarCode()">
-            </mat-form-field>
-      </div>
+<div class="ivl-page">
 
-      <div class="col-md-5">
-          <mat-form-field class="with100">
-              <mat-label>Nombre</mat-label>
-              <input matInput placeholder="Ingrese un nombre"
-              [(ngModel)]="parametersForm.productDesc" readonly>
-            </mat-form-field>
-      </div>
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="ivl-card ivl-filters">
 
-    </div>
+    <div class="ivl-filters-row">
 
-    <div class="row top20px">
-        <div class="col-md-12">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <th class="textAlingCenter padding-th">Fecha</th>
-                        <th class="textAlingLeft padding-th">Descripción</th>
-                        <th class="textAlingLeft padding-th">Estatus</th>
-                        <th class="textAlingCenter padding-th">Cantidad</th>
-                        <th class="textAlingCenter padding-th">Acomulado</th>
-                        <th class="textAlingCenter padding-th">Inventario</th>
-                        <th class="textAlingLeft padding-th">Creador</th>
-                        <th class="textAlingLeft padding-th">Verificó</th>
-                        <th class="textAlingLeft padding-th">Responsable en motrador</th>
-                    </thead>
-
-                    <tbody>
-                        <tr *ngFor="let item of inventaryLoglist; let i = index">
-
-                            <td class="textAlingCenter">
-
-                                <div style="width: 120px;">
-
-                                    <div class="row">
-                                        <div class="col-md-1">
-                                            <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-
-                                        </div>
-                                        <div class="col-md-10">
-                                            <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
-                                            <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-                            <td style="text-align:left;">{{ item.description }}</td>
-                            <td class="textAlingLeft">
-                              <div style="width: 120px;">
-                                <div class="row">
-                                    <div class="col-md-1">
-                                        <mat-icon *ngIf="item.firmaVer == 1 && item.firmaMost == 1" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorGreen">check_circle</mat-icon>
-                                        <mat-icon *ngIf="item.firmaVer == 0 || item.firmaMost == 0" style="margin-top: -5px;" matPrefix class="material-icons manitaSobre colorBlue">error</mat-icon>
-                                    </div>
-                                    <div class="col-md-10">
-                                        <label style="margin-left: 10px;">{{ ( item.firmaVer == 0 || item.firmaMost == 0 ) ? 'Pendiente' : 'Verificado' }}</label>
-                                    </div>
-                                </div>
-                              </div>
-
-                            </td>
-
-                            <td class="textAlingRight">{{ item.cantidad }}</td>
-                            <td class="textAlingRight">{{ item.acumulado }}</td>
-                            <td class="textAlingRight">{{ item.catInventary }}</td>
-
-                            <td class="textAlingLeft">{{ item.userName }}</td>
-                            <td class="textAlingLeft">{{ item.verificacionUserName }}</td>
-                            <td class="textAlingLeft">{{ item.mostradorUserName }}</td>
-
-                        </tr>
-
-                    </tbody>
-
-                </table>
-            </div>
-
-            <app-pagination *ngIf="inventaryLoglist" [IPagination]="pagination"
-                        (OPagination)="changePagination($event)">
-            </app-pagination>
-
+      <div class="ivl-field ivl-field--barcode">
+        <label class="ivl-label">Código de barras</label>
+        <div class="ivl-wrap">
+          <mat-icon class="ivl-prefix-icon">qr_code</mat-icon>
+          <input id="barCode"
+            class="ivl-input ivl-input--prefixed"
+            placeholder="Escanea o escribe el código"
+            autocomplete="off"
+            [(ngModel)]="parametersForm.barCode"
+            (keyup.enter)="fn_buscar()">
+          <mat-icon class="ivl-clear"
+            *ngIf="parametersForm.barCode"
+            matTooltip="Limpiar"
+            (click)="fn_ClearFilters()">close</mat-icon>
         </div>
+      </div>
+
+      <div class="ivl-field ivl-field--product">
+        <label class="ivl-label">Producto</label>
+        <div class="ivl-wrap ivl-wrap--readonly">
+          <mat-icon class="ivl-prefix-icon">inventory_2</mat-icon>
+          <input class="ivl-input ivl-input--prefixed"
+            placeholder="Sin producto seleccionado"
+            [(ngModel)]="parametersForm.productDesc" readonly>
+        </div>
+      </div>
 
     </div>
+
+    <div class="ivl-filters-btns">
+      <button mat-stroked-button class="ivl-btn-secondary" (click)="fn_ClearFilters()">
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+      <button mat-flat-button class="ivl-btn-primary" (click)="fn_buscar()">
+        <mat-icon>search</mat-icon>
+        Buscar
+      </button>
+      <div class="ivl-divider-v"></div>
+      <span class="ivl-count-badge">{{ pagination.length | number }} {{ pagination.length === 1 ? 'movimiento' : 'movimientos' }}</span>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ TABLA ═══════════════ -->
+  <div class="ivl-card ivl-content">
+
+    <div class="ivl-table-wrapper">
+      <table class="ivl-table">
+        <thead>
+          <tr>
+            <th class="ivl-th ivl-th--center">Fecha</th>
+            <th class="ivl-th ivl-th--left">Descripción</th>
+            <th class="ivl-th ivl-th--center">Estatus</th>
+            <th class="ivl-th ivl-th--right">Cantidad</th>
+            <th class="ivl-th ivl-th--right">Acumulado</th>
+            <th class="ivl-th ivl-th--right">Inventario</th>
+            <th class="ivl-th ivl-th--left">Creador</th>
+            <th class="ivl-th ivl-th--left">Verificó</th>
+            <th class="ivl-th ivl-th--left">Responsable en mostrador</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of inventaryLoglist" class="ivl-tr">
+
+            <td class="ivl-td ivl-td--center ivl-td--date">
+              <span class="ivl-date">{{ item.createDateDate }}</span>
+              <span class="ivl-time">{{ item.createDateHours }}</span>
+            </td>
+
+            <td class="ivl-td ivl-td--left ivl-desc">{{ item.description }}</td>
+
+            <td class="ivl-td ivl-td--center">
+              <span class="ivl-status"
+                [class.ivl-status--pending]="item.firmaVer == 0 || item.firmaMost == 0">
+                <mat-icon>{{ ( item.firmaVer == 0 || item.firmaMost == 0 ) ? 'error' : 'check_circle' }}</mat-icon>
+                {{ ( item.firmaVer == 0 || item.firmaMost == 0 ) ? 'Pendiente' : 'Verificado' }}
+              </span>
+            </td>
+
+            <td class="ivl-td ivl-td--right ivl-num"
+              [class.ivl-num--in]="item.cantidad > 0"
+              [class.ivl-num--out]="item.cantidad < 0">
+              {{ item.cantidad > 0 ? '+' : '' }}{{ item.cantidad | number:'1.0-2' }}
+            </td>
+            <td class="ivl-td ivl-td--right ivl-num">{{ item.acumulado | number:'1.0-2' }}</td>
+            <td class="ivl-td ivl-td--right ivl-num ivl-num--strong">{{ item.catInventary | number:'1.0-2' }}</td>
+
+            <td class="ivl-td ivl-td--left">
+              <div class="ivl-user-chip" *ngIf="item.userName; else ivlSinFirma">
+                <span class="ivl-user-avatar">{{ item.userName?.charAt(0)?.toUpperCase() }}</span>
+                <span class="ivl-user-name">{{ item.userName }}</span>
+              </div>
+            </td>
+            <td class="ivl-td ivl-td--left">
+              <div class="ivl-user-chip" *ngIf="item.verificacionUserName; else ivlSinFirma">
+                <span class="ivl-user-avatar ivl-user-avatar--ver">{{ item.verificacionUserName?.charAt(0)?.toUpperCase() }}</span>
+                <span class="ivl-user-name">{{ item.verificacionUserName }}</span>
+              </div>
+            </td>
+            <td class="ivl-td ivl-td--left">
+              <div class="ivl-user-chip" *ngIf="item.mostradorUserName; else ivlSinFirma">
+                <span class="ivl-user-avatar ivl-user-avatar--most">{{ item.mostradorUserName?.charAt(0)?.toUpperCase() }}</span>
+                <span class="ivl-user-name">{{ item.mostradorUserName }}</span>
+              </div>
+            </td>
+
+          </tr>
+          <tr *ngIf="!inventaryLoglist || inventaryLoglist.length === 0">
+            <td colspan="9" class="ivl-empty">
+              <mat-icon>{{ parametersForm.idProduct > 0 ? 'history' : 'qr_code_scanner' }}</mat-icon>
+              <span>{{ parametersForm.idProduct > 0 ? 'Este producto no tiene movimientos' : 'Escanea un código de barras para ver sus movimientos' }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ivl-pagination">
+      <app-pagination *ngIf="inventaryLoglist" [IPagination]="pagination"
+        (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
+
+  </div>
 
 </div>
+
+<ng-template #ivlSinFirma>
+  <span class="ivl-sin-firma">—</span>
+</ng-template>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

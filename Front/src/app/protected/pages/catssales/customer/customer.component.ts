@@ -110,7 +110,9 @@ ev_fn_nextInput_keyup_enter( idInput: any ){
   //console.log(150)
   setTimeout (() => {
     // idInput.nativeElement.focus();
-    var miElemento = document.getElementById( idInput )!.focus();
+    // El destino puede no existir (p. ej. sin botón Guardar para el
+    // cliente 1160): en ese caso no hace nada.
+    document.getElementById( idInput )?.focus();
   }, 100);
 
 }
@@ -118,7 +120,7 @@ ev_fn_nextInput_keyup_enter( idInput: any ){
 fn_validForm(){
   var bOK = false
 
-  if( this.customerForm.name.length > 0){
+  if( ( this.customerForm.name || '' ).trim().length > 0){
     bOK = true;
   }
 

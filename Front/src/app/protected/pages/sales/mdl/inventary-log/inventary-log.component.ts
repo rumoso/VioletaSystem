@@ -92,8 +92,8 @@ export class InventaryLogComponent implements OnInit, OnDestroy {
     this.productsServ.CGetInventarylogByIdProductWithPage( this.pagination, this.parametersForm.idProduct )
     .subscribe({
       next: (resp: ResponseGet) => {
-        this.inventaryLoglist = resp.data.rows;
-        this.pagination.length = resp.data.count;
+        this.inventaryLoglist = resp.data.rows || [];
+        this.pagination.length = resp.data.count || 0;
         this.bShowSpinner = false;
       },
       error: (ex: HttpErrorResponse) => {
@@ -102,6 +102,37 @@ export class InventaryLogComponent implements OnInit, OnDestroy {
         this.bShowSpinner = false;
       }
     })
+  }
+
+  // Busca el producto por código de barras regresando a la primera página
+  fn_buscar() {
+
+    if( !this.parametersForm.barCode || this.parametersForm.barCode.trim().length == 0 ){
+      this.servicesGServ.showSnakbar( 'Ingresa un código de barras.' );
+      this.fn_nextInput('barCode');
+      return;
+    }
+
+    this.pagination.pageIndex = 0;
+    this.fn_getProductByBarCode();
+
+  }
+
+  // Limpia el código, el producto y la lista de movimientos
+  fn_ClearFilters() {
+
+    this.parametersForm = {
+      idProduct: 0,
+      barCode: '',
+      productDesc: '',
+    };
+
+    this.inventaryLoglist = [];
+    this.pagination.pageIndex = 0;
+    this.pagination.length = 0;
+
+    this.fn_nextInput('barCode');
+
   }
 
   fn_getProductByBarCode() {
@@ -121,6 +152,9 @@ export class InventaryLogComponent implements OnInit, OnDestroy {
             }else{
               this.parametersForm.idProduct = 0;
               this.parametersForm.productDesc = '';
+              // Sin producto no deben quedar movimientos del producto anterior
+              this.inventaryLoglist = [];
+              this.pagination.length = 0;
             }
             this.servicesGServ.showAlertIA(resp, false);
             this.bShowSpinner = false;

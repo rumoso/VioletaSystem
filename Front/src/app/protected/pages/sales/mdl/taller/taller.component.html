@@ -20,7 +20,7 @@
         </mat-icon>
         <div class="taller-header-firma-text">
           <div class="taller-header-firma-status">
-            {{ tallerForm.idTallerStatus === 2 ? 'Pedido' : tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : tallerForm.idTallerStatus === 5 ? 'Entregado' : tallerForm.idTallerStatus === 6 ? 'Devolución' : 'Status ' + tallerForm.idTallerStatus }}
+            {{ tallerForm.idTallerStatus === 2 ? 'Pedido' : tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : tallerForm.idTallerStatus === 5 ? 'Entregado' : tallerForm.idTallerStatus === 6 ? 'Devolución' : tallerForm.idTallerStatus === 7 ? 'Cancelado' : 'Status ' + tallerForm.idTallerStatus }}
             <span class="taller-header-firma-sep">·</span>
             <span class="taller-header-firma-result">
               {{ oFirmaStatus?.firma === 1 ? 'Aprobado' : oFirmaStatus?.firma === 2 ? 'Rechazado' : 'Pendiente' }}
@@ -47,7 +47,7 @@
       <!-- Botones de acción (todos en una línea, alineados a la derecha) -->
       <div class="taller-header-actions">
 
-        <button *ngIf="tall_MakePayment && tallerForm.pendingAmount > 0"
+        <button *ngIf="tall_MakePayment && tallerForm.pendingAmount > 0 && !bCancelado"
           mat-raised-button color="primary" type="submit" class="taller-btn-compact"
           (click)="fn_ShowPayments()">
           <mat-icon>payment</mat-icon>Pagar: {{ tallerForm.pendingAmount | currency }}
@@ -168,6 +168,18 @@
   <!-- taller original lista las garantías que le levantaron.      -->
   <!-- ───────────────────────────────────────────────────────── -->
 
+  <!-- Taller cancelado (analisis/022): solo consulta -->
+  <div class="gar-band gar-band--cancelado" *ngIf="bCancelado">
+    <div class="gar-band-tit">
+      <mat-icon>block</mat-icon>
+      <span><b>Taller cancelado</b> — solo consulta</span>
+    </div>
+    <div class="gar-band-body" *ngIf="tallerForm.cancelDateDesc">
+      Cancelado el {{ tallerForm.cancelDateDesc }}<span *ngIf="tallerForm.cancelUserDesc">, autorizó {{ tallerForm.cancelUserDesc }}</span>.
+      <span *ngIf="tallerForm.motivoCancelacion">Motivo: {{ tallerForm.motivoCancelacion }}</span>
+    </div>
+  </div>
+
   <!-- ESTE folio ES una garantía -->
   <div class="gar-band gar-band--es" *ngIf="bEsGarantia">
 
@@ -246,186 +258,122 @@
   </div>
 
   <!-- ─────────────────────────────────────────── -->
-  <!-- HEADER COMPACTO: chips ↔ campos editables  -->
+  <!-- ENCABEZADO: campos normales, mismo formato   -->
+  <!-- que la venta (nsale).                        -->
   <!-- ─────────────────────────────────────────── -->
-  <div class="header-row">
+  <div class="th-grid">
 
     <!-- VENDEDOR -->
-        <div class="header-field">
-          <div *ngIf="editingHeaderField !== 'seller'; else sellerEdit">
-            <div class="header-chip"
-                 [class.vacio]="!tallerForm.sellerDesc"
-                 (click)="fn_editHeaderField('seller')"
-                 [matTooltip]="tallerForm.sellerDesc ? 'Clic para cambiar vendedor' : 'Clic para asignar vendedor'">
-              <span class="chip-label">Vendedor</span>
-              <span class="chip-valor">{{ tallerForm.sellerDesc || 'Sin asignar' }}</span>
-              <mat-icon class="chip-icon">{{ tallerForm.sellerDesc ? 'edit' : 'person_add' }}</mat-icon>
-            </div>
-          </div>
-          <ng-template #sellerEdit>
-            <div class="header-edit">
-              <span class="edit-label">Vendedor</span>
-              <div class="inline-wrap">
-                <input #cbxSellerCBX
-                       type="text"
-                       class="inline-input"
-                       [(ngModel)]="tallerForm.sellerDesc"
-                       [matAutocomplete]="cbxSeller"
-                       (keyup)="comboBoxKeyUp('cbxSellerCBX', cbxSellerCBX.value, $event)"
-                       (click)="cbxSellers_Clear()"
-                       placeholder="Selecciona un vendedor..."
-                       [class.with-suffix]="tallerForm.sellerDesc">
-                <mat-icon *ngIf="tallerForm.sellerDesc"
-                          class="clear-icon"
-                          (click)="cbxSellers_Clear(); fn_closeHeaderField()">close</mat-icon>
-                <mat-autocomplete autoActiveFirstOption
-                                  #cbxSeller="matAutocomplete"
-                                  (optionSelected)="cbxSellers_SelectedOption($event); fn_closeHeaderField()">
-                  <mat-option *ngFor="let item of cbxSellers" [value]="item">
-                    {{ item.name }}
-                  </mat-option>
-                  <mat-option value="" *ngIf="tallerForm.sellerDesc?.length > 0 && tallerForm.sellerResp?.length > 0">
-                    {{ tallerForm.sellerResp }}
-                  </mat-option>
-                </mat-autocomplete>
-              </div>
-            </div>
-          </ng-template>
-        </div>
+    <div class="th-field th-col-6">
+      <label class="th-label">Vendedor</label>
+      <div class="th-wrap">
+        <input #cbxSellerCBX
+               type="text"
+               class="th-input"
+               [class.th-input-con-boton]="tallerForm.sellerDesc"
+               [(ngModel)]="tallerForm.sellerDesc"
+               [matAutocomplete]="cbxSeller"
+               (keyup)="comboBoxKeyUp('cbxSellerCBX', cbxSellerCBX.value, $event)"
+               (click)="cbxSellers_Clear()"
+               placeholder="Selecciona un vendedor...">
+        <button *ngIf="tallerForm.sellerDesc" class="th-clear" mat-icon-button type="button" aria-label="Limpiar" (click)="cbxSellers_Clear()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
+                        #cbxSeller="matAutocomplete"
+                        (optionSelected)="cbxSellers_SelectedOption($event)">
+        <mat-option *ngFor="let item of cbxSellers" [value]="item">
+          {{ item.name }}
+        </mat-option>
+        <mat-option value="" *ngIf="tallerForm.sellerDesc?.length > 0 && tallerForm.sellerResp?.length > 0">
+          {{ tallerForm.sellerResp }}
+        </mat-option>
+      </mat-autocomplete>
+    </div>
 
-        <!-- CLIENTE -->
-        <div class="header-field">
-          <div *ngIf="editingHeaderField !== 'customer'; else customerEdit">
-            <div class="header-chip"
-                 [class.vacio]="!tallerForm.customerDesc"
-                 (click)="fn_editHeaderField('customer')"
-                 [matTooltip]="tallerForm.customerDesc ? 'Clic para cambiar cliente' : 'Clic para asignar cliente'">
-              <span class="chip-label">Cliente</span>
-              <span class="chip-valor">{{ tallerForm.customerDesc || 'Sin asignar' }}</span>
-              <mat-icon class="chip-icon">{{ tallerForm.customerDesc ? 'edit' : 'person_add' }}</mat-icon>
-            </div>
-          </div>
-          <ng-template #customerEdit>
-            <div class="header-edit">
-              <span class="edit-label">Cliente</span>
-              <div class="inline-wrap">
-                <input #cbxCustomerCBX
-                       type="text"
-                       class="inline-input"
-                       [(ngModel)]="tallerForm.customerDesc"
-                       [matAutocomplete]="cbxCustomer"
-                       (keyup)="comboBoxKeyUp('cbxCustomerCBX', cbxCustomerCBX.value, $event)"
-                       (click)="cbxCustomers_Clear()"
-                       placeholder="Selecciona un cliente..."
-                       [class.with-suffix]="tallerForm.customerDesc">
-                <mat-icon *ngIf="tallerForm.customerDesc"
-                          class="clear-icon"
-                          (click)="cbxCustomers_Clear(); fn_closeHeaderField()">close</mat-icon>
-                <mat-autocomplete autoActiveFirstOption
-                                  #cbxCustomer="matAutocomplete"
-                                  (optionSelected)="cbxCustomers_SelectedOption($event); fn_closeHeaderField()">
-                  <mat-option *ngFor="let item of cbxCustomers" [value]="item">
-                    {{ item.name }}
-                  </mat-option>
-                  <mat-option value="" *ngIf="tallerForm.customerResp?.length > 0 && tallerForm.customerResp?.length > 0">
-                    {{ tallerForm.customerResp }}
-                  </mat-option>
-                </mat-autocomplete>
-              </div>
-            </div>
-          </ng-template>
-        </div>
+    <!-- CLIENTE -->
+    <div class="th-field th-col-6">
+      <label class="th-label">Cliente</label>
+      <div class="th-wrap">
+        <input #cbxCustomerCBX
+               type="text"
+               class="th-input"
+               [class.th-input-con-boton]="tallerForm.customerDesc"
+               [(ngModel)]="tallerForm.customerDesc"
+               [matAutocomplete]="cbxCustomer"
+               (keyup)="comboBoxKeyUp('cbxCustomerCBX', cbxCustomerCBX.value, $event)"
+               (click)="cbxCustomers_Clear()"
+               placeholder="Selecciona un cliente...">
+        <button *ngIf="tallerForm.customerDesc" class="th-clear" mat-icon-button type="button" aria-label="Limpiar" (click)="cbxCustomers_Clear()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
+                        #cbxCustomer="matAutocomplete"
+                        (optionSelected)="cbxCustomers_SelectedOption($event)">
+        <mat-option *ngFor="let item of cbxCustomers" [value]="item">
+          {{ item.name }}
+        </mat-option>
+        <mat-option value="" *ngIf="tallerForm.customerResp?.length > 0 && tallerForm.customerResp?.length > 0">
+          {{ tallerForm.customerResp }}
+        </mat-option>
+      </mat-autocomplete>
+    </div>
 
-              </div>
+    <!-- FECHA INGRESO: siempre el día actual, no editable -->
+    <div class="th-field" [ngClass]="bRapida ? 'th-col-6' : 'th-col-4'">
+      <label class="th-label">Fecha de ingreso</label>
+      <div class="th-wrap" matTooltip="La fecha de ingreso siempre es el día actual y no se puede modificar">
+        <input type="text" class="th-input th-input-con-boton"
+               [value]="tallerForm.fechaIngreso | date:'dd/MM/yyyy'"
+               readonly tabindex="-1">
+        <mat-icon class="th-icon">lock</mat-icon>
+      </div>
+    </div>
 
-              <!-- ─────────────────────────────────────────── -->
-              <!-- FILA 2: FECHAS                              -->
-              <!-- ─────────────────────────────────────────── -->
-              <div class="header-row" style="margin-top: 10px;">
+    <!-- FECHA PROMETIDA (no aplica en rápidas) -->
+    <div *ngIf="!bRapida" class="th-field th-col-4">
+      <label class="th-label">Fecha prometida</label>
+      <div class="th-wrap">
+        <input #cbxFechaPrometidaInput
+               type="text"
+               class="th-input th-input-con-boton th-input-fecha"
+               [matDatepicker]="pickerPromesa"
+               [(ngModel)]="tallerForm.fechaPrometidaEntrega"
+               (click)="pickerPromesa.open()"
+               (dateChange)="nextInputFocus(descripcionInput, 80)"
+               placeholder="Selecciona una fecha..."
+               readonly>
+        <mat-datepicker-toggle class="th-datepicker-toggle" [for]="pickerPromesa"></mat-datepicker-toggle>
+        <!-- Sin restoreFocus: al cerrar, el calendario regresaba el foco a
+             este campo y le ganaba al paso a la descripción. -->
+        <mat-datepicker #pickerPromesa [restoreFocus]="false"></mat-datepicker>
+      </div>
+    </div>
 
-                <!-- FECHA INGRESO (bloqueada: siempre el día actual, no editable) -->
-                                <div class="header-field" style="flex: 1 1 0; min-width: 180px;">
-                                  <div class="header-chip locked"
-                                       matTooltip="La fecha de ingreso siempre es el día actual y no se puede modificar">
-                                    <span class="chip-label">F. Ingreso</span>
-                                    <span class="chip-valor">{{ tallerForm.fechaIngreso | date:'dd/MM/yyyy' }}</span>
-                                    <mat-icon class="chip-icon">lock</mat-icon>
-                                  </div>
-                                </div>
+    <!-- FECHA ENTREGADA: se llena sola al entregar -->
+    <div class="th-field" [ngClass]="bRapida ? 'th-col-6' : 'th-col-4'">
+      <label class="th-label">Fecha entregada</label>
+      <div class="th-wrap" matTooltip="Se llena automáticamente al entregar">
+        <input type="text" class="th-input th-input-con-boton"
+               [value]="tallerForm.fechaEntrega ? (tallerForm.fechaEntrega | date:'dd/MM/yyyy') : ''"
+               placeholder="Automática"
+               readonly tabindex="-1">
+        <mat-icon class="th-icon">{{ tallerForm.fechaEntrega ? 'event_available' : 'lock' }}</mat-icon>
+      </div>
+    </div>
 
-                                <!-- FECHA PROMETIDA (oculta en rápidas) -->
-                                <div *ngIf="!bRapida" class="header-field" style="flex: 1 1 0; min-width: 180px;">
-                                  <div *ngIf="editingHeaderField !== 'fechaPrometida'; else fechaPrometidaEdit">
-                                    <div class="header-chip"
-                                         [class.vacio]="!tallerForm.fechaPrometidaEntrega"
-                                         (click)="fn_editHeaderField('fechaPrometida')"
-                                         [matTooltip]="tallerForm.fechaPrometidaEntrega ? 'Clic para cambiar fecha prometida' : 'Clic para asignar fecha prometida'">
-                                      <span class="chip-label">F. Prometida</span>
-                                      <span class="chip-valor">{{ tallerForm.fechaPrometidaEntrega ? (tallerForm.fechaPrometidaEntrega | date:'dd/MM/yyyy') : 'Sin asignar' }}</span>
-                                      <mat-icon class="chip-icon">edit</mat-icon>
-                                    </div>
-                                  </div>
-                                  <ng-template #fechaPrometidaEdit>
-                                                      <div class="header-edit">
-                                                        <span class="edit-label">F. Prometida</span>
-                                                        <div class="inline-wrap">
-                                                          <input type="text"
-                                                                                         #cbxFechaPrometidaInput
-                                                                                         class="inline-input with-suffix"
-                                                                                         [value]="tallerForm.fechaPrometidaEntrega ? (tallerForm.fechaPrometidaEntrega | date:'dd/MM/yyyy') : ''"
-                                                                                         (click)="fn_openHeaderDatepicker('prometida')"
-                                                                                         [matDatepicker]="pickerPromesa"
-                                                                                         (dateChange)="tallerForm.fechaPrometidaEntrega = $event.value; fn_closeHeaderField(); nextInputFocus(descripcionInput, 80);"
-                                                                                         placeholder="Seleccione fecha..."
-                                                                                         readonly>
-                                                          <mat-icon class="datepicker-icon"
-                                                                                            (click)="fn_openHeaderDatepicker('prometida')">calendar_today</mat-icon>
-                                                                                  <mat-datepicker #pickerPromesa
-                                                                                                  (closed)="fn_closeHeaderField()">
-                                                                                  </mat-datepicker>
-                                                        </div>
-                                                      </div>
-                                                    </ng-template>
-                                </div>
-
-                                <!-- FECHA ENTREGADA -->
-                                <div class="header-field" style="flex: 1 1 0; min-width: 180px;">
-                                  <div *ngIf="editingHeaderField !== 'fechaEntregada'; else fechaEntregadaEdit">
-                                    <div class="header-chip"
-                                         [class.vacio]="!tallerForm.fechaEntrega"
-                                         (click)="fn_editHeaderField('fechaEntregada')"
-                                         [matTooltip]="tallerForm.fechaEntrega ? 'Clic para ver fecha entregada' : 'Fecha entregada (se llena automáticamente al entregar)'">
-                                      <span class="chip-label">F. Entregada</span>
-                                      <span class="chip-valor">{{ tallerForm.fechaEntrega ? (tallerForm.fechaEntrega | date:'dd/MM/yyyy') : 'Automática' }}</span>
-                                      <mat-icon class="chip-icon">{{ tallerForm.fechaEntrega ? 'event_available' : 'lock' }}</mat-icon>
-                                    </div>
-                                  </div>
-                                  <ng-template #fechaEntregadaEdit>
-                                                      <div class="header-edit">
-                                                        <span class="edit-label">F. Entregada (solo lectura)</span>
-                                                        <div class="inline-wrap">
-                                                          <input type="text"
-                                                                 class="inline-input with-suffix"
-                                                                 [value]="tallerForm.fechaEntrega ? (tallerForm.fechaEntrega | date:'dd/MM/yyyy') : ''"
-                                                                 placeholder="Se llena automáticamente"
-                                                                 readonly>
-                                                          <mat-icon class="datepicker-icon lock">lock</mat-icon>
-                                                        </div>
-                                                      </div>
-                                                    </ng-template>
-                                </div>
-
-              </div>
-
-              <!-- DESCRIPCIÓN (fila propia, auto-grow) -->
-              <div class="header-row" style="margin-top: 10px;">
-    <div class="header-field" style="flex: 1 1 100%;">
-      <textarea class="descripcion-autogrow"
+    <!-- DESCRIPCIÓN -->
+    <div class="th-field th-col-12">
+      <label class="th-label">Descripción</label>
+      <textarea class="th-input th-textarea"
                 #descripcionInput
                 [(ngModel)]="tallerForm.descripcion"
                 placeholder="Descripción del taller (Enter para nueva línea)"
                 rows="1"></textarea>
     </div>
+
   </div>
 
       <div *ngIf="tallerForm.idTaller > 0">
@@ -1017,7 +965,6 @@
                     </button>
                     Metal Cliente
                 </h3>
-                <span class="total-activo" style="margin-left:auto;">Total: {{ totalMetalCliente | currency }}</span>
                             </div>
 
                             <div class="body-refacciones body-refacciones-metal">
@@ -1036,7 +983,7 @@
 
                 <!-- FORMULARIO METAL CLIENTE (formato slim) -->
                 <div class="agregar-row row g-2 align-items-end top10px">
-                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
+                    <div class="col-12 col-md-4">
                         <label class="inline-label">Gramos</label>
                         <div class="inline-wrap">
                             <input #metalClienteGramosInput
@@ -1049,7 +996,7 @@
                                    placeholder="0.0">
                         </div>
                     </div>
-                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
+                    <div class="col-12 col-md-4">
                                             <label class="inline-label">{{ metalClienteTipo === 'plata' ? 'Ley' : 'Kilataje' }}</label>
                                             <mat-form-field class="field-kilates-slim" subscriptSizing="dynamic">
                                                 <mat-select #metalClienteKilatesSelect
@@ -1063,54 +1010,31 @@
                                                 </mat-select>
                                             </mat-form-field>
                                         </div>
-                    <div class="col-12 col-md-3" *ngIf="tall_verCostos">
-                        <label class="inline-label">Costo del Metal</label>
-                        <div class="inline-wrap">
-                            <input class="inline-input with-suffix text-right"
-                                   type="text" inputmode="decimal"
-                                   [ngModel]="metalClienteForm.costoMetal"
-                                   (ngModelChange)="fn_onDecimalInputChange($event, metalClienteForm, 'costoMetal', 2)"
-                                   placeholder="0.00"
-                                   (blur)="fn_normalizeDecimalBlur(metalClienteForm, 'costoMetal', 2)">
-                            <span class="inline-suffix">$</span>
-                        </div>
-                    </div>
-                    <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
-                        <label class="inline-label">Valor del Metal</label>
-                        <div class="inline-wrap">
-                            <input #metalClienteValorMetalInput
-                                   class="inline-input with-suffix text-right"
-                                   type="text" inputmode="decimal"
-                                   [ngModel]="metalClienteForm.valorMetal"
-                                   (ngModelChange)="fn_onDecimalInputChange($event, metalClienteForm, 'valorMetal', 2)"
-                                   placeholder="0.00"
-                                   (blur)="fn_normalizeDecimalBlur(metalClienteForm, 'valorMetal', 2)"
-                                   (keyup.enter)="fn_agregarMetalCliente()">
-                            <span class="inline-suffix">$</span>
-                        </div>
+                    <!-- Sin costo ni valor: el metal es del cliente, no se cobra. -->
+                    <div class="col-12 col-md-4">
+                        <button #metalClienteAgregarBtn mat-raised-button color="primary" type="button" (click)="fn_agregarMetalCliente()">
+                            <mat-icon matPrefix class="my-icon">add</mat-icon>
+                            {{ metalClienteForm.idMetalCliente > 0 ? 'Actualizar' : 'Agregar' }}
+                        </button>
                     </div>
                 </div>
                 </ng-container>
 
                 <!-- GRID DE ACTIVO DEL CLIENTE -->
                 <div *ngIf="metalClienteList.length > 0" class="metal-grid top15px">
-                    <div class="metal-header" [class.with-costo]="tall_verCostos">
+                    <div class="metal-header metal-cliente">
                         <div>Tipo</div>
                         <div class="text-right">Gramos</div>
                         <div class="text-right">Kilataje / Ley</div>
-                        <div class="text-right" *ngIf="tall_verCostos">Costo</div>
-                        <div class="text-right">Valor</div>
                         <div></div>
                     </div>
-                    <div *ngFor="let item of metalClienteList" class="metal-row" [class.with-costo]="tall_verCostos">
+                    <div *ngFor="let item of metalClienteList" class="metal-row metal-cliente">
                         <div class="metal-tipo">
                             <mat-icon [style.color]="item.tipo === 'oro' ? 'gold' : 'silver'">circle</mat-icon>
                             <span>{{ item.tipo | uppercase }}</span>
                         </div>
                         <div class="metal-gramos text-right">{{ item.gramos | number:'1.0-1' }}</div>
                         <div class="metal-kilates text-right">{{ item.tipo === 'plata' ? 'Ley ' + ( item.kilates * 1 ) : (item.kilates | number:'1.0-0') + ' K' }}</div>
-                        <div class="metal-valor text-right" *ngIf="tall_verCostos">{{ item.costoMetal | currency }}</div>
-                        <div class="metal-valor text-right">{{ item.valorMetal | currency }}</div>
                         <div class="metal-acciones">
                             <mat-icon *ngIf="tall_AddMetalCliente && !bIsReadOnly"
                                       class="metal-action-icon edit"

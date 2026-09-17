@@ -45,7 +45,7 @@ selectPrinter: any = {
 iRows: number = 0;
 pagination: Pagination = {
   search:'',
-  length: 10,
+  length: 0,
   pageSize: 10,
   pageIndex: 0,
   pageSizeOptions: [5, 10, 25, 100]
@@ -82,6 +82,7 @@ async ngOnInit() {
   this._adapter.setLocale(this._locale);
 
   this.fn_getSelectPrintByIdUser( this.idUserLogON );
+  this.fn_getEgresosListWithPage();
 }
 
 
@@ -126,6 +127,21 @@ fn_btnRePrinter( idEgreso: any ){
 
 }
 
+// Buscar desde el botón o con Enter: siempre desde la primera página.
+fn_buscar(){
+
+  this.pagination.pageIndex = 0;
+  this.fn_getEgresosListWithPage();
+
+}
+
+fn_ClearFilters(){
+
+  this.parametersForm_Clear();
+  this.fn_buscar();
+
+}
+
 parametersForm_Clear(){
 
   this.egresoForm = {
@@ -162,21 +178,32 @@ fn_getEgresosListWithPage() {
 
   this.bShowSpinner = true;
 
-  this.salesServ.CGetEgresosListWithPage( this.pagination, this.egresoForm )
+  // El SP compara solo el día: CAST( createDate AS DATE ) = CAST( p_date AS DATE ).
+  // El <input type="date"> ya entrega 'YYYY-MM-DD' (sin desfase de zona horaria
+  // como pasaba al serializar el Date del datepicker a UTC). Se manda una copia
+  // para que el servicio no agregue search/start/limiter al formulario.
+  let OServParams: any = {
+    date: this.egresoForm.date || ''
+    , description: ( this.egresoForm.description || '' ).trim()
+    , amount: this.egresoForm.amount || 0
+  }
+
+  this.salesServ.CGetEgresosListWithPage( this.pagination, OServParams )
   .subscribe({
     next: ( resp: any ) => {
 
       if(resp.status == 0){
 
-        this.oData = resp.data.rows;
-        this.pagination.length = resp.data.count;
+        this.oData = resp.data.rows || [];
+        this.pagination.length = resp.data.count || 0;
 
       }
 
       this.bShowSpinner = false;
 
     },
-    error: (err: any) => {
+    error: (ex: HttpErrorResponse) => {
+      this.servicesGServ.showSnakbar( ex.error?.data || 'Problemas con el servicio' );
       this.bShowSpinner = false;
     }
   }  );

@@ -1,0 +1,29 @@
+.mtc-modal { padding: 24px; max-width: 560px; }
+
+.mtc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; border-bottom: 2px solid #c62828; padding-bottom: 10px;
+}
+.mtc-header-tit { display: flex; align-items: center; gap: 10px; }
+.mtc-header-tit h2 { margin: 0; color: #333; font-size: 20px; }
+.mtc-ico { color: #c62828; font-size: 26px; width: 26px; height: 26px; }
+
+.mtc-aviso {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #ffebee; border-left: 4px solid #c62828; border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: #5d4037;
+}
+.mtc-aviso mat-icon { color: #c62828; font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+
+.mtc-datos { margin-bottom: 16px; }
+.mtc-lbl { font-size: 11px; color: #999; text-transform: uppercase; margin-bottom: 6px; }
+.mtc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mtc-chip {
+  padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: #eceff1; color: #37474f;
+}
+
+.mtc-full { width: 100%; }
+
+.mtc-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.mtc-acciones mat-icon { margin-right: 4px; }

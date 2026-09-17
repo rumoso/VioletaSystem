@@ -281,6 +281,12 @@
   color: #0d47a1;
 }
 
+.tll-status-chip--cancelado {
+  background: #ffebee;
+  color: #b71c1c;
+  cursor: help;
+}
+
 /* Fechas */
 .tll-td--date { min-width: 90px; }
 .tll-date { display: block; font-size: 13px; font-weight: 500; color: #444; }

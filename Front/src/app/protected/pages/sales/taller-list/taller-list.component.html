@@ -273,7 +273,7 @@
                   check_circle
                 </mat-icon>
 
-                <mat-icon *ngIf="item.active && hasPermissionAction('ventas_Cancelar') && ( item.idSaleType != 5 || hasPermissionAction('ventas_CancelarTaller') )"
+                <mat-icon *ngIf="item.active && ( item.idSaleType == 5 ? fn_puedeEliminarOCancelarTaller() : hasPermissionAction('ventas_Cancelar') )"
                   class="tll-action-icon tll-action-icon--delete"
                   matTooltip="Cancelar"
                   (click)="fn_disabledSale( item )">
@@ -298,7 +298,7 @@
 
             <td class="tll-td tll-td--left">
               <div class="tll-status-wrap">
-                <span *ngIf="item.idTallerStatus >= 3" class="tll-firma-inline">
+                <span *ngIf="item.idTallerStatus >= 3 && item.idTallerStatus != 7" class="tll-firma-inline">
                   <mat-icon *ngIf="item.firmaStatus === null || item.firmaStatus === undefined"
                     class="tll-firma-icon tll-firma-icon--none"
                     matTooltip="Sin firma"
@@ -324,7 +324,9 @@
                     cancel
                   </mat-icon>
                 </span>
-                <span class="tll-status-chip">{{ item.statusName }}</span>
+                <span *ngIf="item.idTallerStatus != 7" class="tll-status-chip">{{ item.statusName }}</span>
+                <span *ngIf="item.idTallerStatus == 7" class="tll-status-chip tll-status-chip--cancelado"
+                  [matTooltip]="fn_tooltipCancelacion( item )">{{ item.statusName }}</span>
               </div>
             </td>
 

@@ -1,0 +1,252 @@
+/* ══════════════════════════════════════════════════
+   EGL — Egresos
+   Mismo lenguaje visual que cortes de caja y el reporte de pagos:
+   paleta Indigo #1a237e / #283593 / #3949ab, tarjetas blancas
+   redondeadas e inputs slim de 36px.
+══════════════════════════════════════════════════ */
+
+.egl-page {
+  padding: 20px 24px 40px;
+  background: #f0f2f7;
+  min-height: 100%;
+}
+
+/* ══ TARJETAS ══ */
+.egl-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* ══ FILTROS ══ */
+.egl-filters { padding: 0 0 16px; }
+
+.egl-filters-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 16px 24px 0;
+}
+
+.egl-field       { flex: 1; min-width: 150px; max-width: 220px; }
+.egl-field--desc { flex: 2; max-width: 420px; min-width: 240px; }
+
+.egl-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  margin-bottom: 3px;
+  line-height: 1.2;
+  padding-left: 2px;
+}
+
+.egl-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.egl-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+
+.egl-wrap-icon {
+  position: absolute;
+  left: 8px;
+  font-size: 18px !important;
+  width: 18px;
+  height: 18px;
+  color: #9e9e9e;
+  pointer-events: none;
+}
+
+.egl-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  box-sizing: border-box;
+}
+.egl-input::placeholder { color: #9e9e9e; font-weight: 400; }
+.egl-input--with-icon { padding-left: 32px; }
+.egl-input--amount {
+  text-align: right;
+  color: #2e7d32;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fecha sin valor: el dd/mm/aaaa nativo se atenúa como placeholder. */
+.egl-date-vacia,
+.egl-date-vacia::-webkit-datetime-edit { color: #9e9e9e; font-weight: 400; }
+
+.egl-filters-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
+  padding: 14px 24px 0;
+}
+
+.egl-divider-v {
+  width: 1px;
+  height: 26px;
+  background: #e0e0e0;
+  margin: 0 2px;
+}
+
+.egl-btn-primary {
+  background: #283593 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.egl-btn-secondary {
+  border-color: #dadada !important;
+  color: #555 !important;
+  border-radius: 8px !important;
+}
+.egl-btn-primary mat-icon,
+.egl-btn-secondary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+.egl-count-badge {
+  background: #e8eaf6;
+  border: 1px solid #c5cae9;
+  color: #283593;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ══ TABLA ══ */
+.egl-content { padding: 0; }
+
+.egl-table-wrapper {
+  overflow-x: auto;
+  padding: 4px 0 0;
+}
+.egl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.egl-th {
+  padding: 13px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #8e97a4;
+  background: #fafbfc;
+  border-bottom: 2px solid #ececec;
+  white-space: nowrap;
+}
+.egl-th--left   { text-align: left; }
+.egl-th--center { text-align: center; }
+.egl-th--right  { text-align: right; }
+
+.egl-tr { transition: background 0.12s; }
+.egl-tr:hover { background: #f5f7ff; }
+
+.egl-td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 14px;
+  color: #333;
+  vertical-align: middle;
+}
+.egl-td--center { text-align: center; }
+.egl-td--left   { text-align: left; }
+.egl-td--right  { text-align: right; }
+
+.egl-td--actions { width: 90px; }
+.egl-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Acción del grid: icono simple, sin fondo ni relleno (con relleno el
+   glifo se recorta y se descuadra). */
+.egl-action-icon {
+  font-size: 20px !important;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: opacity 0.15s;
+}
+.egl-action-icon:hover { opacity: 0.7; }
+.egl-action-icon--print { color: #3949ab; }
+.egl-no-action { color: #c4ccd6; }
+
+.egl-folio {
+  display: block;
+  font-weight: 700;
+  color: #1a237e;
+  white-space: nowrap;
+}
+
+.egl-td--desc {
+  font-size: 13px;
+  color: #555;
+  min-width: 220px;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.egl-amount {
+  font-weight: 600;
+  color: #2e7d32;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.egl-td--date { min-width: 100px; }
+.egl-date { display: block; font-size: 13px; font-weight: 500; color: #444; white-space: nowrap; }
+.egl-time { display: block; font-size: 11px; color: #a0aab4; white-space: nowrap; }
+
+.egl-empty {
+  padding: 56px 20px;
+  text-align: center;
+  color: #c4ccd6;
+}
+.egl-empty mat-icon {
+  font-size: 48px !important;
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto 10px;
+}
+.egl-empty span { display: block; font-size: 14px; }
+
+.egl-pagination {
+  padding: 10px 20px;
+  border-top: 1px solid #f2f2f2;
+}
+
+@media (max-width: 599.98px) {
+  .egl-page { padding: 12px 10px 30px; }
+  .egl-field,
+  .egl-field--desc { max-width: none; }
+}

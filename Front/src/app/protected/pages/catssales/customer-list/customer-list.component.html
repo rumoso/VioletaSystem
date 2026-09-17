@@ -1,204 +1,180 @@
-<mat-accordion>
-    
-    <mat-expansion-panel (opened)="panelOpenState = true"
-                         (closed)="panelOpenState = false"
-                         class="divMain"
-                         style="margin-top: 10px !important;">
-      <mat-expansion-panel-header class="autoHeight">
-        <mat-panel-title class="text-align: center">
-          Filtros de clientes
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      
-      <div class="row">
-        <div class="col-md-12">
+<div class="ctl-page">
 
-                <br>
-                
-                <form action=""
-                autocomplete="off"
-                [formGroup]="parametersForm"
-                >
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="ctl-card ctl-filters">
 
-                    <div class="row">
-                        <div class="col-md-12" style="text-align: left;">
-                            <mat-form-field class="with100">
-                                <mat-label>Fecha de creación:</mat-label>
-                                <mat-date-range-input [formGroup]="parametersForm" [rangePicker]="picker" (click)="picker.open()">
-                                  <input matStartDate formControlName="createDateStart" placeholder="Start date">
-                                  <input matEndDate formControlName="createDateEnd" placeholder="End date">
-                                </mat-date-range-input>
-                                <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
-                                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                                <mat-date-range-picker #picker></mat-date-range-picker>
-                              
-                              </mat-form-field>
-                        </div>
-                    </div>
+    <form autocomplete="off" [formGroup]="parametersForm" (ngSubmit)="fn_buscar()">
 
-                    <div class="row top20px">
-                        <div class="col-md-8">
-                            <mat-form-field class="with100">
-                                <mat-label>Apellidos</mat-label>
-                                <input matInput placeholder="Ingrese los apellidos"
-                                formControlName="lastName">
-                              </mat-form-field>
-                        </div>
+      <div class="ctl-filters-row">
 
-                        <div class="col-md-4">
-                            <mat-form-field class="with100">
-                                <mat-label>Nombre</mat-label>
-                                <input matInput placeholder="Ingrese un nombre"
-                                formControlName="name">
-                              </mat-form-field>
-                        </div>
-                        
-                    </div>
-
-                    <div class="row top10px">
-                        <div class="col-md-12">
-                            <div style="float: left;">
-                                
-                                <button mat-raised-button
-                                color="primary"
-                                type="submit"
-                                class="marginRight10px"
-                                (click)="fn_getCustomersListWithPage()">
-                                <mat-icon matPrefix class="my-icon">search</mat-icon>
-                                Buscar</button>
-                                
-                                <button mat-raised-button
-                                type="button"
-                                (click)="parametersForm_Clear()">
-                                <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                                limpiar</button>                
-                                
-                            </div>
-                        </div>
-                    </div>
-
-                </form>   
-                
+        <div class="ctl-field">
+          <label class="ctl-label">Creado desde</label>
+          <div class="ctl-wrap">
+            <input type="date"
+              class="ctl-input"
+              [class.ctl-date-vacia]="!parametersForm.value.createDateStart"
+              formControlName="createDateStart">
+          </div>
         </div>
 
-    </div>
-
-    </mat-expansion-panel>
-  </mat-accordion>
-
-  <div class="divSection" *ngIf="oCustomerHeader.sumDineroElectronico > 0">
-    
-
-    <div class="row" style="margin-top: -35px;">
-        <div class="col-md-12">
-            <div class="badge bg-primary text-wrap" style="font-size: 15px;">
-                Suma de Dinero electrónico
-            </div>
+        <div class="ctl-field">
+          <label class="ctl-label">Creado hasta</label>
+          <div class="ctl-wrap">
+            <input type="date"
+              class="ctl-input"
+              [class.ctl-date-vacia]="!parametersForm.value.createDateEnd"
+              formControlName="createDateEnd">
+          </div>
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-md-3" style="position: relative;">
-            <img style="display: inline-block;" width="60" src="assets/img/icons/currencyIco.gif" alt="">
-            <h2 style="display: inline-block;">{{ oCustomerHeader.sumDineroElectronico | currency }}</h2>
+        <div class="ctl-field ctl-field--wide">
+          <label class="ctl-label">Apellidos</label>
+          <div class="ctl-wrap">
+            <mat-icon class="ctl-prefix-icon">badge</mat-icon>
+            <input type="text"
+              class="ctl-input ctl-input--with-prefix"
+              placeholder="Ingrese los apellidos"
+              formControlName="lastName">
+          </div>
         </div>
-    </div>
-</div>
 
-<div class="divMain" style="width: 100%; margin-top: 50px !important;">
-    <div class="row">
-        <div class="col-md-1">
-            <div class="divSearch">
-                <span class="material-icons manitaSobre colorGreen"
-                (click)="showCustomerCat( 0 )">
-                add_circle_outline
-                </span>
-                
-            </div>
+        <div class="ctl-field">
+          <label class="ctl-label">Nombre</label>
+          <div class="ctl-wrap">
+            <mat-icon class="ctl-prefix-icon">person</mat-icon>
+            <input type="text"
+              class="ctl-input ctl-input--with-prefix"
+              placeholder="Ingrese un nombre"
+              formControlName="name">
+          </div>
         </div>
-    </div>
 
-    <div class="row top20px">
-            <div class="col-md-12">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <th class="textAlingCenter padding-th">Acciones</th>
-                            <th class="textAlingLeft padding-th">Dinero Electrónico</th>
-                            <th class="textAlingLeft padding-th">Apellidos</th>
-                            <th class="textAlingLeft padding-th">Nombre</th>
-                            
-                            <th class="textAlingCenter padding-th">Teléfono</th>
-                            <th class="textAlingLeft padding-th">Correo electrónico</th>
-                            <th class="textAlingLeft padding-th">Dirección</th>
-                            <th class="textAlingCenter padding-th">Creado</th>
-                            <th class="textAlingCenter padding-th">Activo</th>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let item of catlist">
-                                <td class="textAlingCenter">
-                                    <div style="width: 100px;">
-                                        <span class="material-icons manitaSobre colorGreen"
-                                        matTooltip="Editar Cliente"
-                                        (click)="showCustomerCat( item.idCustomer )">
-                                            edit
-                                        </span>
+      </div>
 
-                                        <span class="material-icons manitaSobre colorGreen" title="Abonar"
-                                            (click)="fn_ShowAddElectronicMoney( item.idCustomer )">
-                                            attach_money
-                                        </span>
+      <div class="ctl-filters-btns">
+        <button mat-stroked-button type="button" class="ctl-btn-secondary" (click)="parametersForm_Clear()">
+          <mat-icon>filter_alt_off</mat-icon>
+          Limpiar
+        </button>
+        <button mat-flat-button type="submit" class="ctl-btn-primary">
+          <mat-icon>search</mat-icon>
+          Buscar
+        </button>
+        <div class="ctl-divider-v"></div>
+        <span class="ctl-count-badge">{{ pagination.length | number }} {{ pagination.length === 1 ? 'cliente' : 'clientes' }}</span>
 
-                                        <span class="material-icons manitaSobre colorRed"
-                                        matTooltip="Eliminar Cliente"
-                                        (click)="fn_deleteCustomer(item.idCustomer)">
-                                            delete_outline
-                                        </span>
+        <span class="ctl-money-chip" *ngIf="oCustomerHeader.sumDineroElectronico > 0"
+          matTooltip="Suma de dinero electrónico de los clientes filtrados">
+          <mat-icon>account_balance_wallet</mat-icon>
+          Dinero electrónico: <strong>{{ oCustomerHeader.sumDineroElectronico | currency }}</strong>
+        </span>
 
-                                    </div>
-                                </td>
-                                
-                                <td class="textAlingRight">{{ item.electronicMoneySum | currency }}</td>
+        <button mat-flat-button type="button" class="ctl-btn-primary ctl-btn-add"
+          (click)="showCustomerCat( 0 )">
+          <mat-icon>add</mat-icon>
+          Nuevo cliente
+        </button>
+      </div>
 
-                                <td class="textAlingLeft">{{ item.lastName }}</td>
-                                <td class="textAlingLeft">{{ item.name }}</td>
-                                <td class="textAlingCenter">{{ item.tel }}</td>
-                                <td class="textAlingLeft">{{ item.eMail }}</td>
-                                <td class="textAlingLeft">{{ item.address }}</td>
+    </form>
 
-                                <td class="textAlingCenter">
+  </div>
 
-                                    <div style="width: 120px;">
-    
-                                        <div class="row">
-                                            <div class="col-md-1">
-                                                <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
-                                                
-                                            </div>
-                                            <div class="col-md-10">
-                                                <label style="margin-left: 10px;">{{ item.createDate | date:'dd-MM-yyyy' }}</label>
-                                                <label style="margin-left: 10px;">{{ item.createDate | date:'h:mm:ss a' }}</label>
-                                            </div>
-                                        </div>
-    
-                                    </div>
-                                    
-                                </td>
+  <!-- ═══════════════ TABLA ═══════════════ -->
+  <div class="ctl-card ctl-content">
 
-                                <td class="textAlingCenter">
-                                    <mat-checkbox class="example-margin" [(ngModel)]="item.active" disabled></mat-checkbox>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+    <div class="ctl-table-wrapper">
+      <table class="ctl-table">
+        <thead>
+          <tr>
+            <th class="ctl-th ctl-th--center">Acciones</th>
+            <th class="ctl-th ctl-th--left">Cliente</th>
+            <th class="ctl-th ctl-th--left">Correo electrónico</th>
+            <th class="ctl-th ctl-th--left">Dirección</th>
+            <th class="ctl-th ctl-th--right">Dinero electrónico</th>
+            <th class="ctl-th ctl-th--center">Creado</th>
+            <th class="ctl-th ctl-th--center">Estatus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of catlist" class="ctl-tr">
+
+            <td class="ctl-td ctl-td--center ctl-td--actions">
+              <div class="ctl-actions">
+
+                <mat-icon class="ctl-action-icon ctl-action-icon--edit"
+                  matTooltip="Editar cliente"
+                  (click)="showCustomerCat( item.idCustomer )">
+                  edit
+                </mat-icon>
+
+                <mat-icon class="ctl-action-icon ctl-action-icon--money"
+                  matTooltip="Abonar dinero electrónico"
+                  (click)="fn_ShowAddElectronicMoney( item.idCustomer )">
+                  attach_money
+                </mat-icon>
+
+                <mat-icon class="ctl-action-icon ctl-action-icon--delete"
+                  matTooltip="Eliminar cliente"
+                  (click)="fn_deleteCustomer( item.idCustomer )">
+                  delete_outline
+                </mat-icon>
+
+              </div>
+            </td>
+
+            <td class="ctl-td ctl-td--left">
+              <div class="ctl-user-chip">
+                <span class="ctl-user-avatar">{{ fn_inicial( item ) }}</span>
+                <div class="ctl-user-chip-datos">
+                  <span class="ctl-user-name">{{ item.lastName }} {{ item.name }}</span>
+                  <span class="ctl-user-sub" *ngIf="item.tel">
+                    <mat-icon class="ctl-sub-icon">phone</mat-icon>{{ item.tel }}
+                  </span>
                 </div>
-                <app-pagination *ngIf="catlist" [IPagination]="pagination"
-                                (OPagination)="changePagination($event)">
-                </app-pagination>
-            
-            </div>
+              </div>
+            </td>
+
+            <td class="ctl-td ctl-td--left ctl-td--muted">{{ item.eMail || '—' }}</td>
+
+            <td class="ctl-td ctl-td--left ctl-td--address">{{ item.address || '—' }}</td>
+
+            <td class="ctl-td ctl-td--right">
+              <span class="ctl-money" [class.ctl-money--cero]="!(item.electronicMoneySum > 0)">
+                {{ item.electronicMoneySum | currency }}
+              </span>
+            </td>
+
+            <td class="ctl-td ctl-td--center">
+              <span class="ctl-date">{{ item.createDate | date:'dd-MM-yyyy' }}</span>
+              <span class="ctl-time">{{ item.createDate | date:'h:mm:ss a' }}</span>
+            </td>
+
+            <td class="ctl-td ctl-td--center">
+              <span class="ctl-status-chip" [class.ctl-status-chip--activo]="item.active" [class.ctl-status-chip--inactivo]="!item.active">
+                {{ item.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+
+          </tr>
+          <tr *ngIf="!catlist || catlist.length === 0">
+            <td colspan="7" class="ctl-empty">
+              <mat-icon>people_outline</mat-icon>
+              <span>No hay clientes que mostrar.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    
+
+    <div class="ctl-pagination">
+      <app-pagination *ngIf="catlist" [IPagination]="pagination"
+        (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
+
+  </div>
+
 </div>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

@@ -1,0 +1,46 @@
+<div class="mtc-modal">
+
+  <div class="mtc-header">
+    <div class="mtc-header-tit">
+      <mat-icon class="mtc-ico">block</mat-icon>
+      <h2>{{ ODataP?.titulo || 'Cancelar' }}</h2>
+    </div>
+    <button mat-icon-button type="button" (click)="fn_cerrar()"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <div class="mtc-aviso" *ngIf="ODataP?.mensaje">
+    <mat-icon>warning_amber</mat-icon>
+    <span>{{ ODataP.mensaje }}</span>
+  </div>
+
+  <div class="mtc-datos" *ngIf="aDatos.length > 0">
+    <div class="mtc-lbl">Tiene capturado</div>
+    <div class="mtc-chips">
+      <span class="mtc-chip" *ngFor="let d of aDatos">{{ d.n }} {{ d.desc }}</span>
+    </div>
+  </div>
+
+  <form [formGroup]="motivoForm" (ngSubmit)="fn_confirmar()">
+
+    <mat-form-field appearance="outline" class="mtc-full">
+      <mat-label>Motivo de cancelación</mat-label>
+      <textarea matInput
+                formControlName="motivo"
+                rows="3"
+                cdkFocusInitial
+                [maxlength]="iMaxMotivo"
+                placeholder="Ej. El cliente ya no quiere el trabajo"></textarea>
+      <mat-hint align="end">{{ iCaracteres }} / {{ iMaxMotivo }}</mat-hint>
+      <mat-error *ngIf="motivoForm.get('motivo')?.invalid">El motivo es obligatorio.</mat-error>
+    </mat-form-field>
+
+    <div class="mtc-acciones">
+      <button mat-stroked-button type="button" (click)="fn_cerrar()">No</button>
+      <button mat-raised-button color="warn" type="submit">
+        <mat-icon>block</mat-icon>{{ ODataP?.sBotonConfirmar || 'Cancelar' }}
+      </button>
+    </div>
+
+  </form>
+
+</div>

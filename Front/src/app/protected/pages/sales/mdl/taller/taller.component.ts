@@ -58,7 +58,7 @@ export class TallerComponent implements OnInit {
   @ViewChild('metalClienteGramosInput') metalClienteGramosInput!: ElementRef;
   @ViewChild('metalClienteKilatesSelect', { read: ElementRef }) metalClienteKilatesSelect!: ElementRef;
   @ViewChild('metalClienteKilatesSelectRef') metalClienteKilatesSelectRef!: MatSelect;
-  @ViewChild('metalClienteValorMetalInput') metalClienteValorMetalInput!: ElementRef;
+  @ViewChild('metalClienteAgregarBtn', { read: ElementRef }) metalClienteAgregarBtn!: ElementRef;
   @ViewChild('cbxServiciosExternosCBX') cbxServiciosExternosCBX!: ElementRef;
   @ViewChild('servicioExternoCantidadInput') servicioExternoCantidadInput!: ElementRef;
   @ViewChild('servicioExternoCostoInput', { read: ElementRef }) servicioExternoCostoInput!: ElementRef;
@@ -442,7 +442,16 @@ export class TallerComponent implements OnInit {
   bRapida: boolean = false;
 
   get bIsReadOnly(): boolean {
+    // Un taller cancelado (analisis/022) es solo consulta, sin excepción
+    // de permisos: ni tall_EditAfterEntregado lo abre.
+    if( this.bCancelado ){
+      return true;
+    }
     return (this.oFirmaStatus?.firma === 0 || this.tallerForm.idTallerStatus === 5 || this.tallerForm.idTallerStatus === 6) && !this.tall_EditAfterEntregado;
+  }
+
+  get bCancelado(): boolean {
+    return Number( this.tallerForm.idTallerStatus ) === 7;
   }
 
   //#endregion
@@ -731,7 +740,10 @@ export class TallerComponent implements OnInit {
             origenFechaEntrega: data.origenFechaEntrega || '',
             pagado: data.pagado || 0,
             pendingAmount: data.pendingAmount || 0,
-            saleTotal: data.saleTotal || 0
+            saleTotal: data.saleTotal || 0,
+            cancelDateDesc: data.cancelDateDesc || '',
+            motivoCancelacion: data.motivoCancelacion || '',
+            cancelUserDesc: data.cancelUserDesc || ''
           };
 
           this.refaccionesList = resp.data.refaccionesDetail || [];
@@ -1877,8 +1889,10 @@ export class TallerComponent implements OnInit {
       return;
     }
 
-    if (this.metalClienteForm.valorMetal <= 0) {
-      this.servicesGServ.showSnakbar('El valor del metal debe ser mayor a 0');
+    // Ya no se muestra costo ni valor: no se exige precio del kilataje. Si
+    // existe, se sigue guardando como referencia.
+    if (!this.metalClienteForm.kilates) {
+      this.servicesGServ.showSnakbar('Seleccione el kilataje o la ley');
       return;
     }
 
@@ -2195,7 +2209,8 @@ export class TallerComponent implements OnInit {
 
   openTallerHeaderImagesDialog() {
     let OParams: any = {
-      idTaller: this.tallerForm.idTaller
+      idTaller: this.tallerForm.idTaller,
+      bSoloLectura: this.bCancelado
     }
 
       this.servicesGServ.showModalWithParams( TallerHeaderImagesComponent, OParams, '900px')
@@ -2995,8 +3010,8 @@ export class TallerComponent implements OnInit {
     }, 150);
   }
 
-  fn_focusMetalClienteValor() {
-    this.nextInputFocus(this.metalClienteValorMetalInput, 100);
+  fn_focusMetalClienteAgregar() {
+    this.nextInputFocus(this.metalClienteAgregarBtn, 100);
   }
 
   fn_onMetalAgranelKilatesChange() {
@@ -3006,7 +3021,7 @@ export class TallerComponent implements OnInit {
 
   fn_onMetalClienteKilatesChange() {
     this.fn_calculateMetalClienteValue();
-    this.fn_focusMetalClienteValor();
+    this.fn_focusMetalClienteAgregar();
   }
 
   //--------------------------------------------------------------------------

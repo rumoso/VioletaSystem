@@ -1,120 +1,134 @@
-<div class="" style="padding: 30px;padding-top: 60px;">
-    <div class="divTitle-center">
-        {{title}}
+<div class="ctg-modal">
+
+    <div mat-dialog-title class="ctg-header">
+        <span class="ctg-titulo">{{ title }}</span>
+        <button mat-icon-button (click)="fn_CerrarMDL(0)">
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
 
-    <button mat-icon-button
-        style="position: absolute; top: 10px; right: 10px;"
-        (click)="fn_CerrarMDL(0)">
-    <mat-icon>close</mat-icon>
-    </button>
+    <mat-dialog-content class="ctg-content">
 
-    <div class="row top20px">
+        <!-- ═══ Alta / edición ═══ -->
+        <div class="ctg-seccion">
 
-        <div class="col-md-5">
-            <mat-form-field class="example-full-width with100">
-                <mat-label>Nombre</mat-label>
-                <textarea matInput
-                cdkTextareaAutosize
-                placeholder="Ingresa un nombre"
-                [(ngModel)]="oCatForm.name"></textarea>
-            </mat-form-field>
-        </div>
-        
-        <div class="col-md-6">
-            <mat-form-field class="with100">
-                <mat-label>Descripción</mat-label>
-                <input matInput placeholder="Ingrese una descripción"
-                [(ngModel)]="oCatForm.description">
-            </mat-form-field>
-        </div>
-
-        <div class="col-md-1">
-            <mat-checkbox class="example-margin" [(ngModel)]="oCatForm.active">Activo</mat-checkbox>
-        </div>
-
-    </div>
-
-    <div class="row top20px" *ngIf="ODataP.sOption == 'Quality'">
-
-        <div class="col-md-2">
-            <mat-form-field class="example-full-width with100">
-                <mat-label>Valor</mat-label>
-                <textarea matInput
-                cdkTextareaAutosize
-                placeholder="Ingresa un valor"
-                [(ngModel)]="oCatForm.valor"></textarea>
-            </mat-form-field>
-        </div>
-        
-    </div>
-
-    <div class="row top10px">
-        <div class="col-md-12">
-            <div style="float: left;">
-                <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px"
-                (click)="fn_insertUpdateCat()"
-                [disabled]="!fn_validForm()">Guardar</button>
-                
-                <button mat-raised-button
-                type="button"
-                (click)="fn_clear()">Limpiar</button>                
-                
+            <div class="ctg-seccion-titulo">
+                <mat-icon>{{ oCatForm.idRelation > 0 ? 'edit' : 'add_circle_outline' }}</mat-icon>
+                <span>{{ oCatForm.idRelation > 0 ? 'Editando: ' + sNombreEditando : 'Nuevo registro' }}</span>
             </div>
+
+            <div class="ctg-grid" [class.ctg-grid--valor]="bConValor">
+
+                <div class="ctg-slim-field">
+                    <label class="ctg-slim-label">Nombre *</label>
+                    <input #nameInput id="tbxCatName" class="ctg-slim-input" type="text" autocomplete="off"
+                        placeholder="Ingresa un nombre"
+                        [(ngModel)]="oCatForm.name"
+                        (keydown.enter)="fn_siguiente($event, 'tbxCatDescription')">
+                </div>
+
+                <div class="ctg-slim-field">
+                    <label class="ctg-slim-label">Descripción</label>
+                    <input id="tbxCatDescription" class="ctg-slim-input" type="text" autocomplete="off"
+                        placeholder="Ingresa una descripción"
+                        [(ngModel)]="oCatForm.description"
+                        (keydown.enter)="bConValor ? fn_siguiente($event, 'tbxCatValor') : fn_enterGuardar($event)">
+                </div>
+
+                <div class="ctg-slim-field" *ngIf="bConValor">
+                    <label class="ctg-slim-label">Valor</label>
+                    <input id="tbxCatValor" class="ctg-slim-input ctg-slim-input--num" type="number" autocomplete="off"
+                        [(ngModel)]="oCatForm.valor"
+                        (keydown.enter)="fn_enterGuardar($event)">
+                </div>
+
+            </div>
+
+            <div class="ctg-form-pie">
+                <mat-checkbox color="primary" [(ngModel)]="oCatForm.active">Activo</mat-checkbox>
+
+                <div class="ctg-form-btns">
+                    <button mat-stroked-button class="ctg-btn-secondary" type="button" (click)="fn_clear()">
+                        <mat-icon>{{ oCatForm.idRelation > 0 ? 'close' : 'filter_alt_off' }}</mat-icon>
+                        {{ oCatForm.idRelation > 0 ? 'Cancelar edición' : 'Limpiar' }}
+                    </button>
+                    <button mat-flat-button class="ctg-btn-primary" type="button"
+                        [disabled]="!fn_validForm()"
+                        (click)="fn_insertUpdateCat()">
+                        <mat-icon>save</mat-icon>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+
         </div>
-    </div>
 
-    <div class="row top20px">
-        <div class="col-md-12">
-            <div class="table-responsive">
-                <table class="table table-hover">
+        <!-- ═══ Lista ═══ -->
+        <div class="ctg-card">
+
+            <div class="ctg-lista-head">
+                <span class="ctg-count-badge">{{ pagination.length | number }} registros</span>
+            </div>
+
+            <div class="ctg-table-wrapper">
+                <table class="ctg-table">
                     <thead>
-                        <th class="textAlingCenter">Action</th>
-                        <th class="textAlingLeft">Nombre</th>
-                        <th class="textAlingLeft">Descripción</th>
-                        <th class="textAlingLeft" *ngIf="ODataP.sOption == 'Quality'">Valor</th>
-                        <th class="textAlingCenter">Activo</th>
+                        <tr>
+                            <th class="ctg-th ctg-th--center">Acciones</th>
+                            <th class="ctg-th ctg-th--left">Nombre</th>
+                            <th class="ctg-th ctg-th--left">Descripción</th>
+                            <th class="ctg-th ctg-th--right" *ngIf="bConValor">Valor</th>
+                            <th class="ctg-th ctg-th--center">Estatus</th>
+                        </tr>
                     </thead>
-
                     <tbody>
-                        <tr *ngFor="let item of oCatList; let i = index">
-                            
-                            <td class="textAlingCenter">
-                                <div style="width: 100px;">
-                                    <span class="material-icons manitaSobre colorGreen"
-                                    matTooltip="Editar"
-                                    (click)="fn_editData( item )">
-                                        edit
-                                    </span>
+                        <tr *ngFor="let item of oCatList" class="ctg-tr"
+                            [class.ctg-tr--editando]="item.idRelation === oCatForm.idRelation">
 
-                                </div>
+                            <td class="ctg-td ctg-td--center ctg-td--actions">
+                                <mat-icon class="ctg-action-icon ctg-action-icon--edit"
+                                    matTooltip="Editar"
+                                    (click)="fn_editData( item )">edit</mat-icon>
                             </td>
 
-                            <td class="textAlingLeft">{{ item.name }}</td>
-                            <td class="textAlingLeft">{{ item.description }}</td>
-                            <td class="textAlingLeft" *ngIf="ODataP.sOption == 'Quality'">{{ item.valor }}</td>
-                            <td class="textAlingCenter">
-                                <mat-checkbox class="example-margin" [(ngModel)]="item.active" disabled></mat-checkbox>
+                            <td class="ctg-td ctg-td--left ctg-td--nombre">{{ item.name }}</td>
+                            <td class="ctg-td ctg-td--left ctg-td--desc">{{ item.description }}</td>
+                            <td class="ctg-td ctg-td--right ctg-td--num" *ngIf="bConValor">{{ item.valor }}</td>
+
+                            <td class="ctg-td ctg-td--center">
+                                <span class="ctg-status" [class.ctg-status--off]="!item.active">
+                                    {{ item.active ? 'Activo' : 'Inactivo' }}
+                                </span>
                             </td>
 
                         </tr>
-                        
+                        <tr *ngIf="!oCatList || oCatList.length === 0">
+                            <td [attr.colspan]="bConValor ? 5 : 4" class="ctg-empty">
+                                <mat-icon>inbox</mat-icon>
+                                <span>Sin registros</span>
+                            </td>
+                        </tr>
                     </tbody>
-                    
                 </table>
             </div>
 
-            <app-pagination *ngIf="oCatList" [IPagination]="pagination"
-                        (OPagination)="changePagination($event)">
-            </app-pagination>
-            
+            <div class="ctg-pagination">
+                <app-pagination *ngIf="oCatList" [IPagination]="pagination"
+                    (OPagination)="changePagination($event)">
+                </app-pagination>
+            </div>
+
         </div>
 
-    </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="ctg-footer">
+        <button mat-stroked-button class="ctg-btn-secondary" type="button" (click)="fn_CerrarMDL(0)">
+            <mat-icon>close</mat-icon>
+            Cerrar
+        </button>
+    </mat-dialog-actions>
 
 </div>
-    
+
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

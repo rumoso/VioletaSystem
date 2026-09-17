@@ -82,7 +82,7 @@ constructor(
 
   public nextInputFocus( idInput: any, milliseconds: number ) {
     setTimeout (() => {
-      idInput.nativeElement.focus();
+      idInput?.nativeElement?.focus();
     }, milliseconds);
 }
 
@@ -99,7 +99,7 @@ fn_insertInventaryLog() {
     return;
   }
 
-  if( this.inventaryLogForm.idProduct > 0 && this.inventaryLogForm.cantidad != 0 ){
+  if( this.fn_validForm() ){
 
     this.bInsertInventaryLog = true;
 
@@ -220,6 +220,19 @@ fn_CerrarMDL(){
   this.dialogRef.close( true );
 }
 
+// Válido si hay producto y una cantidad distinta de cero (vacía cuenta como cero)
+fn_validForm(): boolean {
+  const cantidad = Math.round( Number( this.inventaryLogForm.cantidad ) || 0 );
+  return this.inventaryLogForm.idProduct > 0 && cantidad != 0;
+}
+
+// Enfoca un input por id (los de costo/precio no tienen ViewChild)
+fn_focusById( id: string ){
+  setTimeout(() => {
+    document.getElementById( id )?.focus();
+  }, 0);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // FIN SECCIÓN DE MÉTODOS CON EL FRONT
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,6 +252,7 @@ ev_fn_noEntrada_keyup_enter(event: any){
 
   if(event.keyCode == 13) { // PRESS ENTER
 
+    event.preventDefault();
     this.nextInputFocus( this.tbxDescription, 0 );
 
   }
@@ -249,7 +263,8 @@ ev_fn_description_keyup_enter(event: any){
 
   if(event.keyCode == 13) { // PRESS ENTER
 
-    if( this.inventaryLogForm.description.length > 0 ){
+    event.preventDefault();
+    if( (this.inventaryLogForm.description || '').length > 0 ){
       this.nextInputFocus( this.tbxCantidad, 0 );
     }
 
@@ -261,7 +276,35 @@ ev_fn_amount_keyup_enter(event: any){
 
   if(event.keyCode == 13) { // PRESS ENTER
 
-    if( this.inventaryLogForm.cantidad != 0 ){
+    event.preventDefault();
+    // Cantidad → Nuevo costo
+    if( this.fn_validForm() ){
+      this.fn_focusById( 'tbxCostM' );
+    }
+
+  }
+
+}
+
+ev_fn_newCost_keyup_enter(event: any){
+
+  if(event.keyCode == 13) { // PRESS ENTER
+
+    event.preventDefault();
+    // Nuevo costo → Nuevo precio
+    this.fn_focusById( 'tbxPriceM' );
+
+  }
+
+}
+
+ev_fn_newPrice_keyup_enter(event: any){
+
+  if(event.keyCode == 13) { // PRESS ENTER
+
+    event.preventDefault();
+    // Último campo: guarda solo si el formulario es válido
+    if( this.fn_validForm() ){
       this.fn_insertInventaryLog();
     }
 

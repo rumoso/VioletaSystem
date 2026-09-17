@@ -336,7 +336,7 @@
                   check_circle
                 </mat-icon>
 
-                <mat-icon *ngIf="item.active && hasPermissionAction('ventas_Cancelar') && ( item.idSaleType != 5 || hasPermissionAction('ventas_CancelarTaller') )"
+                <mat-icon *ngIf="item.active && ( item.idSaleType == 5 ? fn_puedeEliminarOCancelarTaller() : hasPermissionAction('ventas_Cancelar') )"
                   class="sll-action-icon sll-action-icon--delete"
                   matTooltip="Cancelar"
                   (click)="fn_disabledSale( item )">

@@ -1,0 +1,141 @@
+/* Movimiento de inventario — formato slim (mismo lenguaje visual que el
+   modal de Empleados y Mi contraseña). */
+
+.ivm-modal {
+    display: flex;
+    flex-direction: column;
+    min-width: 420px;
+}
+
+.ivm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 0;
+}
+
+.ivm-titulo {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.ivm-content {
+    padding-top: 6px !important;
+}
+
+.ivm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 12px;
+}
+
+.ivm-col-2 {
+    grid-column: span 2;
+}
+
+/* Formato slim */
+.ivm-slim-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 12px;
+}
+
+.ivm-slim-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #283593;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.ivm-slim-input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ivm-slim-input:focus {
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
+}
+
+.ivm-slim-hint {
+    font-size: 11px;
+    color: #9e9e9e;
+    font-style: italic;
+}
+
+/* Cantidad: verde al agregar, roja al quitar */
+.ivm-cantidad {
+    text-align: right;
+    font-size: 15px;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+.ivm-cantidad.ivm-negativo {
+    color: #c62828;
+}
+
+.ivm-num {
+    text-align: right;
+}
+
+/* Input con icono de $ */
+.ivm-inline-wrap {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ivm-inline-wrap:focus-within {
+    border-color: #283593;
+    box-shadow: 0 0 0 2px rgba(40, 53, 147, .15);
+}
+
+.ivm-inline-wrap .ivm-slim-input {
+    border: none;
+    box-shadow: none;
+    height: 34px;
+    padding-left: 2px;
+}
+
+.ivm-inline-icon {
+    margin-left: 6px;
+    color: #9e9e9e;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.ivm-actions {
+    padding-top: 6px;
+    gap: 8px;
+}
+
+@media (max-width: 599.98px) {
+    .ivm-modal {
+        min-width: 0;
+    }
+
+    .ivm-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ivm-col-2 {
+        grid-column: span 1;
+    }
+}

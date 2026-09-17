@@ -45,7 +45,7 @@ selectPrinter: any = {
 iRows: number = 0;
 pagination: Pagination = {
   search:'',
-  length: 10,
+  length: 0,
   pageSize: 10,
   pageIndex: 0,
   pageSizeOptions: [5, 10, 25, 100]
@@ -81,6 +81,7 @@ async ngOnInit() {
   this._locale = 'mx';
   this._adapter.setLocale(this._locale);
 
+  this.fn_getIngresosListWithPage();
   this.fn_getSelectPrintByIdUser( this.idUserLogON );
 }
 
@@ -126,7 +127,15 @@ fn_btnRePrinter( idIngreso: any ){
 
 }
 
-parametersForm_Clear(){
+// Buscar desde el botón o con Enter: siempre desde la primera página.
+fn_buscar(){
+
+  this.pagination.pageIndex = 0;
+  this.fn_getIngresosListWithPage();
+
+}
+
+fn_ClearFilters(){
 
   this.egresoForm = {
     date: '',
@@ -134,7 +143,7 @@ parametersForm_Clear(){
     amount: 0
   };
 
-  this.oData = [];
+  this.fn_buscar();
 
 }
 
@@ -162,14 +171,23 @@ fn_getIngresosListWithPage() {
 
   this.bShowSpinner = true;
 
-  this.salesServ.CGetIngresosListWithPage( this.pagination, this.egresoForm )
+  // La fecha viaja como 'YYYY-MM-DD' (input type="date"): el SP compara
+  // CAST(createDate AS DATE) contra un solo día. Se manda una copia para que
+  // el servicio no ensucie el formulario con search/start/limiter.
+  let OServParams: any = {
+    date: this.egresoForm.date || ''
+    , description: ( this.egresoForm.description || '' ).trim()
+    , amount: this.egresoForm.amount || 0
+  }
+
+  this.salesServ.CGetIngresosListWithPage( this.pagination, OServParams )
   .subscribe({
     next: ( resp: any ) => {
 
       if(resp.status == 0){
 
-        this.oData = resp.data.rows;
-        this.pagination.length = resp.data.count;
+        this.oData = resp.data.rows || [];
+        this.pagination.length = resp.data.count || 0;
 
       }
 

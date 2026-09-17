@@ -1,191 +1,158 @@
-<mat-accordion >
+<div class="ccl-page">
 
-    <mat-expansion-panel (opened)="panelOpenState = true"
-                         (closed)="panelOpenState = false"
-                         class="divMain"
-                         style="margin-top: 10px !important;">
-      <mat-expansion-panel-header class="autoHeight">
-        <mat-panel-title class="text-align: center">
-          Filtros de Cortes de Caja
-        </mat-panel-title>
-      </mat-expansion-panel-header>
+  <!-- ═══════════════ FILTROS ═══════════════ -->
+  <div class="ccl-card ccl-filters">
 
-      <div class="row">
-        <div class="col-md-12">
+    <div class="ccl-filters-row">
 
-
-
-            <div class="row">
-                <div class="col-md-12" style="text-align: left;">
-                    <mat-form-field class="with100">
-                        <mat-label>Fecha de creación:</mat-label>
-                        <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
-                            <input matStartDate [(ngModel)]="parametersForm.createDateStart" placeholder="Start date">
-                            <input matEndDate [(ngModel)]="parametersForm.createDateEnd" placeholder="End date">
-                        </mat-date-range-input>
-                        <mat-hint>DD/MM/YYYY – DD/MM/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-date-range-picker #picker></mat-date-range-picker>
-
-                        </mat-form-field>
-                </div>
-            </div>
-
-
-
-            <div class="row top10px">
-                <div class="col-md-12">
-                    <div style="float: left;">
-
-                        <button mat-raised-button
-                        color="primary"
-                        type="submit"
-                        class="marginRight10px"
-                        (click)="fn_getCorteCajaListWithPage()">
-                        <mat-icon matPrefix class="my-icon">search</mat-icon>
-                        Buscar</button>
-
-                        <button mat-raised-button
-                        type="button"
-                        >
-                        <mat-icon matPrefix class="my-icon">clear</mat-icon>
-                        limpiar</button>
-
-                    </div>
-                </div>
-            </div>
-
+      <div class="ccl-field">
+        <label class="ccl-label">Corte desde</label>
+        <div class="ccl-wrap">
+          <input type="date"
+            class="ccl-input"
+            [class.ccl-date-vacia]="!parametersForm.createDateStart"
+            [(ngModel)]="parametersForm.createDateStart"
+            (keyup.enter)="fn_buscar()">
         </div>
+      </div>
+
+      <div class="ccl-field">
+        <label class="ccl-label">Corte hasta</label>
+        <div class="ccl-wrap">
+          <input type="date"
+            class="ccl-input"
+            [class.ccl-date-vacia]="!parametersForm.createDateEnd"
+            [(ngModel)]="parametersForm.createDateEnd"
+            (keyup.enter)="fn_buscar()">
+        </div>
+      </div>
+
+      <!-- Impresora seleccionada para reimprimir cortes -->
+      <div class="ccl-field ccl-field--printer">
+        <label class="ccl-label">Impresora</label>
+
+        <button mat-stroked-button class="ccl-btn-secondary ccl-btn-printer"
+          *ngIf="selectPrinter.idPrinter == 0"
+          (click)="fn_ShowSelectPrint()">
+          <mat-icon>print</mat-icon>
+          Seleccionar impresora
+        </button>
+
+        <span class="ccl-printer-chip" *ngIf="selectPrinter.idPrinter > 0"
+          matTooltip="Quitar impresora seleccionada"
+          (click)="fn_btnCerrarPrinter()">
+          <mat-icon class="ccl-printer-icon">print</mat-icon>
+          {{ selectPrinter.printerName }}
+          <mat-icon class="ccl-printer-close">close</mat-icon>
+        </span>
+      </div>
 
     </div>
 
-    </mat-expansion-panel>
-</mat-accordion>
-
-<div class="divMain" style="width: 100%; margin-top: 10px !important;">
-
-    <div class="row">
-
-        <div class="col-md-12">
-            <div style="float: left;">
-
-                <button mat-raised-button
-                color="primary"
-                type="submit"
-                class="marginRight10px"
-                (click)="fn_ShowSelectPrint()"
-                *ngIf="selectPrinter.idPrinter == 0">
-                <mat-icon matPrefix class="my-icon">print</mat-icon>
-                Seleccionar impresora</button>
-
-            </div>
-        </div>
-
-        <div class="col-md-12" style="position: relative;">
-
-            <img *ngIf="selectPrinter.idPrinter > 0" style="display: inline-block;" width="50" src="assets/img/icons/printIco.gif" class="marginRight10px manitaSobre" alt=""
-            (click)="fn_btnCerrarPrinter()">
-            <div *ngIf="selectPrinter.idPrinter > 0" style="display: inline-block;" class="badge bg-primary text-wrap manitaSobre" style="font-size: 15px;"
-                (click)="fn_btnCerrarPrinter()">
-                {{ selectPrinter.printerName }}
-            </div>
-
-        </div>
-
+    <div class="ccl-filters-btns">
+      <button mat-stroked-button class="ccl-btn-secondary" (click)="fn_ClearFilters()">
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+      <button mat-flat-button class="ccl-btn-primary" (click)="fn_buscar()">
+        <mat-icon>search</mat-icon>
+        Buscar
+      </button>
+      <div class="ccl-divider-v"></div>
+      <span class="ccl-count-badge">{{ pagination.length | number }} {{ pagination.length === 1 ? 'corte' : 'cortes' }}</span>
     </div>
 
-    <div class="row">
-        <div class="col-md-12">
+  </div>
 
+  <!-- ═══════════════ TABLA ═══════════════ -->
+  <div class="ccl-card ccl-content">
 
+    <div class="ccl-table-wrapper">
+      <table class="ccl-table">
+        <thead>
+          <tr>
+            <th class="ccl-th ccl-th--center">Acciones</th>
+            <th class="ccl-th ccl-th--left">Folio</th>
+            <th class="ccl-th ccl-th--center">Fecha del corte</th>
+            <th class="ccl-th ccl-th--left">Hecho por</th>
+            <th class="ccl-th ccl-th--left">Sucursal</th>
+            <th class="ccl-th ccl-th--left">Caja</th>
+            <th class="ccl-th ccl-th--center">Estatus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of cortesCajaList" class="ccl-tr">
 
+            <td class="ccl-td ccl-td--center ccl-td--actions">
+              <div class="ccl-actions">
 
-            <div class="row top20px">
-                <div class="col-md-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <th class="textAlingCenter padding-th">Acciones</th>
-                                <th class="textAlingCenter padding-th">Folio</th>
-                                <th class="textAlingCenter padding-th">Creado</th>
-                                <th class="textAlingLeft padding-th">Hecho por</th>
-                                <th class="textAlingLeft padding-th">Sucursal</th>
-                                <th class="textAlingLeft padding-th">Caja</th>
-                                <th class="textAlingCenter padding-th">Activo</th>
-                            </thead>
+                <mat-icon class="ccl-action-icon ccl-action-icon--view"
+                  matTooltip="Ver el corte"
+                  (click)="fn_ShowCorteCajaDetail(item.idCorteCaja)">
+                  remove_red_eye
+                </mat-icon>
 
-                            <tbody>
-                                <tr *ngFor="let item of cortesCajaList; let i = index">
-                                    <td class="textAlingCenter">
-                                        <div style="width: 150px;">
+                <mat-icon class="ccl-action-icon ccl-action-icon--print"
+                  *ngIf="selectPrinter.idPrinter > 0"
+                  matTooltip="Reimprimir el corte"
+                  (click)="fn_btnRePrinter(item.idCorteCaja)">
+                  print
+                </mat-icon>
 
-                                            <span class="material-icons manitaSobre colorGreen" title="Ver"
-                                            (click)="fn_ShowCorteCajaDetail(item.idCorteCaja)"
-                                            >
-                                            remove_red_eye
-                                            </span>
+              </div>
+            </td>
 
-                                            <span *ngIf="selectPrinter.idPrinter > 0" class="material-icons manitaSobre colorGreen" title="Imprimir"
-                                            (click)="fn_btnRePrinter(item.idCorteCaja)">
-                                            print
-                                            </span>
+            <td class="ccl-td ccl-td--left">
+              <span class="ccl-folio">#{{ item.idCorteCaja }}</span>
+              <span class="ccl-cancelados" *ngIf="item.iCountPaymentsCanceled > 0"
+                matTooltip="Este corte tiene pagos cancelados">
+                <mat-icon>backspace</mat-icon>
+                {{ item.iCountPaymentsCanceled }} {{ item.iCountPaymentsCanceled == 1 ? 'pago cancelado' : 'pagos cancelados' }}
+              </span>
+            </td>
 
-                                            <span class="material-icons manitaSobre colorRed"
-                                                        matTooltip="TIENE PADOS CANCELADOS"
-                                                        *ngIf="item.iCountPaymentsCanceled > 0">
-                                                        backspace
-                                                    </span>
-                                        </div>
-                                    </td>
+            <td class="ccl-td ccl-td--center ccl-td--date">
+              <span class="ccl-date">{{ item.createDateDate }}</span>
+              <span class="ccl-time">{{ item.createDateHours }}</span>
+            </td>
 
-                                    <td style="text-align:Center;">#{{ item.idCorteCaja }}</td>
+            <td class="ccl-td ccl-td--left">
+              <div class="ccl-user-chip">
+                <span class="ccl-user-avatar">{{ item.createUserName?.charAt(0)?.toUpperCase() }}</span>
+                <span class="ccl-user-name">{{ item.createUserName }}</span>
+              </div>
+            </td>
 
-                                    <td class="textAlingCenter">
+            <td class="ccl-td ccl-td--left">{{ item.sucursalName }}</td>
 
-                                        <div style="width: 120px;">
+            <td class="ccl-td ccl-td--left">
+              <span class="ccl-caja">{{ item.cajaName }}</span>
+            </td>
 
-                                            <div class="row">
-                                                <div class="col-md-1">
-                                                    <mat-icon style="margin-top: 5px;" matPrefix class="my-icon">calendar_today</mat-icon>
+            <td class="ccl-td ccl-td--center">
+              <span class="ccl-status" [class.ccl-status--off]="!item.active">
+                {{ item.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
 
-                                                </div>
-                                                <div class="col-md-10">
-                                                    <label style="margin-left: 10px;">{{ item.createDateDate }}</label>
-                                                    <label style="margin-left: 10px;">{{ item.createDateHours }}</label>
-                                                </div>
-                                            </div>
-
-                                        </div>
-
-                                    </td>
-
-                                    <td style="text-align:left;">{{ item.createUserName }}</td>
-
-                                    <td style="text-align:left;">{{ item.sucursalName }}</td>
-                                    <td style="text-align:left;">{{ item.cajaName }}</td>
-
-                                    <td class="textAlingCenter">
-                                        <mat-checkbox class="example-margin" [(ngModel)]="item.active"></mat-checkbox>
-                                    </td>
-
-                                </tr>
-
-                            </tbody>
-
-                        </table>
-                    </div>
-
-                    <app-pagination *ngIf="cortesCajaList" [IPagination]="pagination"
-                                (OPagination)="changePagination($event)">
-                    </app-pagination>
-
-                </div>
-
-            </div>
-
-        </div>
-
+          </tr>
+          <tr *ngIf="!cortesCajaList || cortesCajaList.length === 0">
+            <td colspan="7" class="ccl-empty">
+              <mat-icon>point_of_sale</mat-icon>
+              <span>No hay cortes de caja con estos filtros</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+
+    <div class="ccl-pagination">
+      <app-pagination *ngIf="cortesCajaList" [IPagination]="pagination"
+        (OPagination)="changePagination($event)">
+      </app-pagination>
+    </div>
+
+  </div>
 
 </div>
 

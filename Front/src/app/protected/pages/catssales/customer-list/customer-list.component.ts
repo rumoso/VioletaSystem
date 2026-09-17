@@ -102,7 +102,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
       id: id
     }
 
-    this.servicesGServ.showModalWithParams( CustomerComponent, OParamsIN, '1500px')
+    this.servicesGServ.showModalWithParams( CustomerComponent, OParamsIN, '760px')
     .afterClosed().subscribe({
       next: ( resp: any ) =>{
 
@@ -115,7 +115,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   fn_getCustomersListWithPage() {
 
     this.bShowSpinner = true;
-    this.customersServ.CGetCustomersListWithPage( this.pagination, this.parametersForm.value )
+    this.customersServ.CGetCustomersListWithPage( this.pagination, this.fn_getParametros() )
     .subscribe({
       next: (resp: ResponseGet) => {
         console.log(resp)
@@ -131,6 +131,35 @@ export class CustomerListComponent implements OnInit, OnDestroy {
         this.bShowSpinner = false;
       }
     })
+  }
+
+  // Botón Buscar / Enter: siempre regresa a la primera página
+  fn_buscar(){
+    this.pagination.pageIndex = 0;
+    this.fn_getCustomersListWithPage();
+  }
+
+  // El SP compara C.createDate (DATETIME) con BETWEEN, por eso se manda el día completo
+  fn_getParametros(): any {
+    const oForm = this.parametersForm.value;
+    let sInicio: string = oForm.createDateStart || '';
+    let sFin: string = oForm.createDateEnd || '';
+
+    if( !sInicio && sFin ){ sInicio = sFin; }
+    if( sInicio && !sFin ){ sFin = sInicio; }
+
+    return {
+      createDateStart: sInicio ? `${ sInicio } 00:00:00` : ''
+      , createDateEnd: sFin ? `${ sFin } 23:59:59` : ''
+      , name: oForm.name
+      , lastName: oForm.lastName
+    };
+  }
+
+  // Inicial para el avatar del renglón
+  fn_inicial( item: any ): string {
+    const sTexto: string = ( item.lastName || item.name || '' ).toString().trim();
+    return sTexto ? sTexto.charAt(0).toUpperCase() : '?';
   }
 
   fn_deleteCustomer( idCustomer: number ){
@@ -172,7 +201,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     this.parametersForm.get('name')?.setValue( '' );
     this.parametersForm.get('lastName')?.setValue( '' );
 
-    this.fn_getCustomersListWithPage();
+    this.fn_buscar();
   }
 
   edit( id: number ){

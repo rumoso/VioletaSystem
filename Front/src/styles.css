@@ -316,6 +316,19 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     background-color: #b2b2b8 !important;
 }
 
+/* Panel de autocompletado para los inputs "slim" (13px, 36px de alto):
+   las opciones van al mismo tamaño que el combo. Se aplica con
+   class="slim-autocomplete-panel" en <mat-autocomplete>. */
+.slim-autocomplete-panel .mat-mdc-option {
+    min-height: 34px;
+    font-size: 13px;
+    padding: 0 12px;
+}
+.slim-autocomplete-panel .mat-mdc-option .mdc-list-item__primary-text {
+    font-size: 13px;
+    line-height: 1.3;
+}
+
 
 .cdk-global-overlay-wrapper {
     display: flex;
@@ -487,3 +500,20 @@ tr:hover {
   padding: 0;
   border-radius: 0;
 }
+
+/* Acción en un grid: ICONO simple clicable, nunca botón con icono (el botón
+   agrega relleno y descuadra el renglón). */
+.grid-action-icon {
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    cursor: pointer;
+    vertical-align: middle;
+    margin: 0 3px;
+    color: #3949ab;
+    transition: opacity 0.15s ease;
+}
+.grid-action-icon:hover { opacity: 0.7; }
+.grid-action-icon--primary { color: #3949ab; }
+.grid-action-icon--warn { color: #c62828; }

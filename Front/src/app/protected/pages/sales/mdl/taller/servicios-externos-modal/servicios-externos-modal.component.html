@@ -31,12 +31,8 @@
             <td class="col-nombre">{{ servicio.name }}</td>
             <td class="col-descripcion">{{ servicio.description }}</td>
             <td class="col-acciones">
-              <button mat-icon-button (click)="editServicio(servicio)" matTooltip="Editar" class="btn-edit">
-                <mat-icon class="colorGreen">edit</mat-icon>
-              </button>
-              <button mat-icon-button (click)="deleteServicio(servicio)" matTooltip="Eliminar" class="btn-delete">
-                <mat-icon class="icon-delete">delete_outline</mat-icon>
-              </button>
+              <mat-icon class="grid-action-icon btn-edit colorGreen" (click)="editServicio(servicio)" matTooltip="Editar">edit</mat-icon>
+              <mat-icon class="grid-action-icon btn-delete icon-delete" (click)="deleteServicio(servicio)" matTooltip="Eliminar">delete_outline</mat-icon>
             </td>
           </tr>
         </tbody>

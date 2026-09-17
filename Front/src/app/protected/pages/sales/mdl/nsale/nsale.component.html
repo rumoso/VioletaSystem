@@ -42,7 +42,7 @@
                     <mat-icon>close</mat-icon>
                 </button>
             </div>
-            <mat-autocomplete autoActiveFirstOption
+            <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
                                 #cbxSeller="matAutocomplete"
                                 (optionSelected)="cbxSellers_SelectedOption( $event )">
                 <mat-option *ngFor="let item of cbxSellers" [value]="item">
@@ -82,7 +82,7 @@
                     <mat-icon>close</mat-icon>
                 </button>
             </div>
-            <mat-autocomplete autoActiveFirstOption
+            <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
                                 #cbxCustomer="matAutocomplete"
                                 (optionSelected)="cbxCustomers_SelectedOption( $event, cbxSaleTypeCBX )">
                 <mat-option *ngFor="let item of cbxCustomers" [value]="item">
@@ -112,7 +112,7 @@
                     <mat-icon>close</mat-icon>
                 </button>
             </div>
-            <mat-autocomplete autoActiveFirstOption
+            <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
                                 #cbxSaleType="matAutocomplete"
                                 (optionSelected)="cbxSalesType_SelectedOption( $event )">
                 <mat-option *ngFor="let item of cbxSalesType" [value]="item">
@@ -199,7 +199,7 @@
                         <mat-icon>close</mat-icon>
                     </button>
                 </div>
-                <mat-autocomplete autoActiveFirstOption
+                <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
                                     #cbxProduct="matAutocomplete"
                                     (optionSelected)="cbxProducts_SelectedOption( $event )">
                     <mat-option *ngFor="let item of cbxProducts" [value]="item">

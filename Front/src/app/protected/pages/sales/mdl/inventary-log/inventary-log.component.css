@@ -1,0 +1,281 @@
+/* ══════════════════════════════════════════════════
+   IVL — Rastreo de productos (historial de inventario)
+   Mismo lenguaje visual que cortes de caja y el reporte de pagos:
+   paleta Indigo #1a237e / #283593 / #3949ab, tarjetas blancas
+   redondeadas e inputs slim de 36px.
+══════════════════════════════════════════════════ */
+
+.ivl-page {
+  padding: 20px 24px 40px;
+  background: #f0f2f7;
+  min-height: 100%;
+}
+
+/* ══ TARJETAS ══ */
+.ivl-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* ══ FILTROS ══ */
+.ivl-filters { padding: 0 0 16px; }
+
+.ivl-filters-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 16px 24px 0;
+}
+
+.ivl-field          { flex: 1; min-width: 150px; }
+.ivl-field--barcode { max-width: 300px; min-width: 220px; }
+.ivl-field--product { flex: 2; min-width: 260px; max-width: 520px; }
+
+.ivl-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  margin-bottom: 3px;
+  line-height: 1.2;
+  padding-left: 2px;
+}
+
+.ivl-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ivl-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+.ivl-wrap--readonly { background: #fafbfc; }
+.ivl-wrap--readonly:focus-within { border-color: #d0d0d0; box-shadow: none; }
+
+.ivl-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+  box-sizing: border-box;
+}
+.ivl-input::placeholder { color: #9e9e9e; font-weight: 400; }
+.ivl-input--prefixed { padding-left: 0; }
+
+.ivl-prefix-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  color: #9e9e9e !important;
+  margin: 0 6px 0 10px;
+  flex-shrink: 0;
+}
+
+.ivl-clear {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  color: #9e9e9e;
+  margin-right: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ivl-clear:hover { color: #c62828; }
+
+.ivl-filters-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
+  padding: 14px 24px 0;
+}
+
+.ivl-divider-v {
+  width: 1px;
+  height: 26px;
+  background: #e0e0e0;
+  margin: 0 2px;
+}
+
+.ivl-btn-primary {
+  background: #283593 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.ivl-btn-secondary {
+  border-color: #dadada !important;
+  color: #555 !important;
+  border-radius: 8px !important;
+}
+.ivl-btn-primary mat-icon,
+.ivl-btn-secondary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+.ivl-count-badge {
+  background: #e8eaf6;
+  border: 1px solid #c5cae9;
+  color: #283593;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ══ TABLA ══ */
+.ivl-content { padding: 0; }
+
+.ivl-table-wrapper {
+  overflow-x: auto;
+  padding: 4px 0 0;
+}
+.ivl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ivl-th {
+  padding: 13px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #8e97a4;
+  background: #fafbfc;
+  border-bottom: 2px solid #ececec;
+  white-space: nowrap;
+}
+.ivl-th--left   { text-align: left; }
+.ivl-th--center { text-align: center; }
+.ivl-th--right  { text-align: right; }
+
+.ivl-tr { transition: background 0.12s; }
+.ivl-tr:hover { background: #f5f7ff; }
+
+.ivl-td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 14px;
+  color: #333;
+  vertical-align: middle;
+}
+.ivl-td--center { text-align: center; }
+.ivl-td--left   { text-align: left; }
+.ivl-td--right  { text-align: right; }
+
+.ivl-td--date { min-width: 100px; white-space: nowrap; }
+.ivl-date { display: block; font-size: 13px; font-weight: 500; color: #444; }
+.ivl-time { display: block; font-size: 11px; color: #a0aab4; }
+
+.ivl-desc { font-size: 13px; color: #444; min-width: 200px; }
+
+/* Estatus de firmas */
+.ivl-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px 2px 6px;
+  border-radius: 20px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ivl-status mat-icon {
+  font-size: 15px !important;
+  width: 15px;
+  height: 15px;
+}
+.ivl-status--pending {
+  background: #fff8e1;
+  color: #e65100;
+}
+
+/* Cantidades */
+.ivl-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #555;
+}
+.ivl-num--strong { font-weight: 700; color: #1a237e; }
+.ivl-num--in  { color: #2e7d32; font-weight: 700; }
+.ivl-num--out { color: #c62828; font-weight: 700; }
+
+/* Personas */
+.ivl-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+}
+.ivl-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c6bc0, #8e99f3);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ivl-user-avatar--ver  { background: linear-gradient(135deg, #43a047, #81c784); }
+.ivl-user-avatar--most { background: linear-gradient(135deg, #00897b, #4db6ac); }
+.ivl-user-name {
+  font-size: 13px;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ivl-sin-firma { color: #c4ccd6; }
+
+.ivl-empty {
+  padding: 56px 20px;
+  text-align: center;
+  color: #c4ccd6;
+}
+.ivl-empty mat-icon {
+  font-size: 48px !important;
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto 10px;
+}
+.ivl-empty span { display: block; font-size: 14px; }
+
+.ivl-pagination {
+  padding: 10px 20px;
+  border-top: 1px solid #f2f2f2;
+}
+
+@media (max-width: 599.98px) {
+  .ivl-page { padding: 12px 10px 30px; }
+  .ivl-field { max-width: none !important; }
+}

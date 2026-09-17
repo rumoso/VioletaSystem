@@ -1,116 +1,97 @@
-<div class="textAlingCenter" style="padding: 30px;padding-top: 60px;">
+<div class="ctm-modal">
 
-	<button mat-icon-button
-            style="position: absolute; top: 10px; right: 10px;"
-            (click)="close()">
-        <mat-icon>close</mat-icon>
-    </button>
-
-    <div class="divTitle-center">
-        {{
-            ( id )
-                ? 'Editar'
-                : 'Nuevo'
-        }}
-        {{title}}
+    <div mat-dialog-title class="ctm-header">
+        <span class="ctm-titulo">
+            {{ ( id ) ? 'Editar' : 'Nuevo' }} {{ title }}
+        </span>
+        <button mat-icon-button (click)="close()">
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
-    <div class="row">
-        <div class="col-md-12">
 
-            <br>
+    <mat-dialog-content class="ctm-content">
 
-            <div class="row top20px">
-                <div class="col-md-4">
-                    <mat-form-field class="with100">
-                        <mat-label>Apellidos</mat-label>
-                        <input id="tbxLastName" matInput placeholder="Ingrese los apellidos"
-                        [(ngModel)]="customerForm.lastName"
-                        (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxName')">
-                    </mat-form-field>
-                </div>
+        <div class="ctm-grid">
 
-
-                <div class="col-md-4">
-                    <mat-form-field class="with100">
-                        <mat-label>Nombre: </mat-label>
-                        <input id="tbxName" matInput placeholder="Ingrese el nombre"
-                        type="text"
-                        [(ngModel)]="customerForm.name"
-                        (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxTel')">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-md-4">
-                    <mat-form-field class="with100">
-                        <mat-label>Teléfono: </mat-label>
-                        <mat-icon matPrefix class="my-icon">phone</mat-icon>
-                        <input id="tbxTel" matInput placeholder="Ingrese un teléfono"
-                        type="text"
-                        [(ngModel)]="customerForm.tel"
-                        (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxAddress')">
-                    </mat-form-field>
-                </div>
-
+            <div class="ctm-slim-field">
+                <label class="ctm-slim-label">Apellidos</label>
+                <input id="tbxLastName" class="ctm-slim-input" type="text" autocomplete="off"
+                    placeholder="Ingrese los apellidos"
+                    [(ngModel)]="customerForm.lastName"
+                    (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxName')">
             </div>
 
-            <div class="row top20px">
+            <div class="ctm-slim-field">
+                <label class="ctm-slim-label">Nombre *</label>
+                <input id="tbxName" class="ctm-slim-input" type="text" autocomplete="off"
+                    placeholder="Ingrese el nombre"
+                    [(ngModel)]="customerForm.name"
+                    (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxTel')">
+            </div>
 
-                <div class="col-md-6">
-                    <mat-form-field class="example-full-width with100">
-                        <mat-label>Dirección</mat-label>
-                        <input id="tbxAddress" matInput
-                        cdkTextareaAutosize
+            <div class="ctm-slim-field">
+                <label class="ctm-slim-label">Teléfono</label>
+                <div class="ctm-inline-wrap">
+                    <mat-icon class="ctm-prefix-icon">phone</mat-icon>
+                    <input id="tbxTel" class="ctm-slim-input" type="text" autocomplete="off"
+                        placeholder="Ingrese un teléfono"
+                        [(ngModel)]="customerForm.tel"
+                        (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxEmail')">
+                </div>
+            </div>
+
+            <div class="ctm-slim-field">
+                <label class="ctm-slim-label">Correo electrónico</label>
+                <div class="ctm-inline-wrap">
+                    <mat-icon class="ctm-prefix-icon">mail_outline</mat-icon>
+                    <input id="tbxEmail" class="ctm-slim-input" type="text" autocomplete="off"
+                        placeholder="Ingrese un correo electrónico"
+                        [(ngModel)]="customerForm.eMail"
+                        (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxAddress')">
+                </div>
+            </div>
+
+            <div class="ctm-slim-field ctm-col-2">
+                <label class="ctm-slim-label">Dirección</label>
+                <div class="ctm-inline-wrap">
+                    <mat-icon class="ctm-prefix-icon">place</mat-icon>
+                    <input id="tbxAddress" class="ctm-slim-input" type="text" autocomplete="off"
                         placeholder="Ingrese la dirección"
                         [(ngModel)]="customerForm.address"
-                        (keyup.enter)="ev_fn_nextInput_keyup_enter('tbxEmail')">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-md-6">
-                    <mat-form-field class="with100">
-                        <mat-label>Correo electrónico</mat-label>
-                        <input id="tbxEmail" matInput placeholder="Ingrese un correo electrónico"
-                        [(ngModel)]="customerForm.eMail"
                         (keyup.enter)="ev_fn_nextInput_keyup_enter('btnSave')">
-                    </mat-form-field>
-                </div>
-
-            </div>
-
-            <div class="row">
-                <div class="col-md-1">
-                    <mat-checkbox class="example-margin" [(ngModel)]="customerForm.active">Activo</mat-checkbox>
                 </div>
             </div>
 
-            <div class="row top10px">
-                <div class="col-md-12">
-                    <div style="float: left;">
-                        <button id="btnSave" mat-raised-button
-                        color="primary"
-                        type="submit"
-                        class="marginRight10px"
-                        (click)="fn_saveCustomer()"
-                        *ngIf="customerForm.idCustomer != 1160"
-                        [disabled]="!fn_validForm()">Guardar</button>
-
-                        <button mat-raised-button
-                        type="button"
-                        class="marginRight10px"
-                        (click)="close()">Cerrar</button>
-
-                        <app-face-id-button *ngIf="id > 0"
-                            tipoPersona="CLIENTE"
-                            [idPersona]="id"
-                            [nombrePersona]="name">
-                        </app-face-id-button>
-
-                    </div>
-                </div>
+            <div class="ctm-slim-field ctm-col-2 ctm-activo">
+                <mat-checkbox color="primary" [(ngModel)]="customerForm.active">Activo</mat-checkbox>
             </div>
 
         </div>
-    </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="ctm-actions">
+
+        <app-face-id-button *ngIf="id > 0"
+            class="ctm-faceid"
+            tipoPersona="CLIENTE"
+            [idPersona]="id"
+            [nombrePersona]="name">
+        </app-face-id-button>
+
+        <button mat-stroked-button type="button" class="ctm-btn-secondary" (click)="close()">
+            <mat-icon>close</mat-icon>
+            Cerrar</button>
+
+        <button id="btnSave" mat-flat-button type="submit" class="ctm-btn-primary"
+            *ngIf="customerForm.idCustomer != 1160"
+            [disabled]="!fn_validForm()"
+            (click)="fn_saveCustomer()">
+            <mat-icon>save</mat-icon>
+            Guardar</button>
+
+    </mat-dialog-actions>
+
 </div>
 
 <app-spinner [hidden]="!bShowSpinner"></app-spinner>

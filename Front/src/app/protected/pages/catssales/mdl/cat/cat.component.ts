@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Inject, ViewChild } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from 'src/app/auth/services/auth.service';
@@ -15,9 +15,14 @@ import { environment } from 'src/environments/environment';
   templateUrl: './cat.component.html',
   styleUrls: ['./cat.component.css']
 })
-export class CatComponent {
+export class CatComponent implements AfterViewInit {
 
   // #region VARIABLES
+
+  @ViewChild('nameInput') nameInputRef?: ElementRef<HTMLInputElement>;
+
+  // Nombre del registro que se está editando (para el encabezado del form).
+  sNombreEditando: string = '';
 
   private _appMain: string = environment.appMain;
 
@@ -90,18 +95,50 @@ export class CatComponent {
 
   }
 
+  ngAfterViewInit(): void {
+    this.fn_enfocarNombre();
+  }
+
   // #region MÉTODOS DEL FRONT
 
+  // Solo el catálogo de calidades maneja "valor" (kilataje/ley).
+  get bConValor(): boolean {
+    return this.ODataP?.sOption == 'Quality';
+  }
+
+  private fn_enfocarNombre(){
+    setTimeout( () => this.nameInputRef?.nativeElement?.focus(), 150 );
+  }
+
+  // Enter en un campo pasa al siguiente.
+  fn_siguiente( evento: Event, idSiguiente: string ){
+    evento.preventDefault();
+    document.getElementById( idSiguiente )?.focus();
+  }
+
+  // Enter en el último campo guarda, si el formulario es válido.
+  fn_enterGuardar( evento: Event ){
+    evento.preventDefault();
+    if( this.fn_validForm() ){
+      this.fn_insertUpdateCat();
+    }
+  }
+
   fn_editData( item: any ){
+    // El Back regresa `valor` (antes se leía `item.value`, que no existe, y
+    // al guardar una calidad editada se perdía su valor). `active` se toma
+    // del registro: antes se forzaba a true y editar reactivaba sin avisar.
     this.oCatForm = {
 
       idRelation: item.idRelation,
-      name: item.name,
-      description: item.description,
-      valor: item.value,
-      active: true
-  
+      name: item.name || '',
+      description: item.description || '',
+      valor: item.valor ?? 0,
+      active: Number(item.active) === 1
+
     };
+    this.sNombreEditando = item.name || '';
+    this.fn_enfocarNombre();
   }
 
   fn_clear(){
@@ -112,18 +149,14 @@ export class CatComponent {
       description: '',
       valor: 0,
       active: true
-  
+
     };
+    this.sNombreEditando = '';
+    this.fn_enfocarNombre();
   }
 
   fn_validForm(){
-    var bOK = false
-  
-    if( this.oCatForm.name.length > 0){
-      bOK = true;
-    }
-  
-    return bOK;
+    return ( this.oCatForm.name || '' ).trim().length > 0;
   }
 
   fn_CerrarMDL( id: number ){
@@ -170,6 +203,7 @@ export class CatComponent {
   
                 if( resp.status === 0 ){
                   this.servicesGServ.showAlert('S', 'OK!', resp.message, true);
+                  this.fn_clear();
                 }
                 else{
                   this.servicesGServ.showAlert('W', 'Alerta!', resp.message, true);
@@ -208,8 +242,8 @@ export class CatComponent {
     .subscribe({
       next: (resp: ResponseGet) => {
         
-        this.oCatList = resp.data.rows;
-        this.pagination.length = resp.data.count;
+        this.oCatList = resp.data?.rows || [];
+        this.pagination.length = resp.data?.count || 0;
         this.bShowSpinner = false;
   
       },
