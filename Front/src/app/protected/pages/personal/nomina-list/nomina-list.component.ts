@@ -20,7 +20,7 @@ import { NominaReciboComponent } from '../mdl/nomina-recibo/nomina-recibo.compon
 @Component({
   selector: 'app-nomina-list',
   templateUrl: './nomina-list.component.html',
-  styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css', './nomina-list.component.css']
+  styleUrls: ['../estilos/personal-lista.css', './nomina-list.component.css']
 })
 export class NominaListComponent implements OnInit, OnDestroy {
 

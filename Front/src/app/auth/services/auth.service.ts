@@ -31,14 +31,13 @@ export class AuthService {
         );
     }
 
-    // Login con reconocimiento facial: el navegador ya identificó y
-    // confirmó con el operador quién es (idUser) y capturó un descriptor
-    // fresco; el Back vuelve a comparar ese descriptor contra el
-    // guardado antes de emitir el token — nunca se confía solo en lo
-    // que dice el cliente.
-    CLoginByFace( idUser: number, descriptor: number[] ): Observable<ResponseGet> {
+    // Login con reconocimiento facial (analisis/020): el servidor ya
+    // comparó el rostro y entregó un comprobante de un solo uso. Aquí solo
+    // se manda ese comprobante; quién inicia sesión lo decide el servidor
+    // a partir de él, no de un idUser que mande el navegador.
+    CLoginByFace( ticket: string ): Observable<ResponseGet> {
 
-      const data = { idUser, descriptor };
+      const data = { ticket };
 
       return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/loginByFace`, data )
         .pipe(

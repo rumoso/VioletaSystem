@@ -2,7 +2,7 @@
 
     <div mat-dialog-title class="pcm-header">
         <span class="pcm-titulo">
-            {{ modo === 'BAJA' ? 'Baja laboral' : 'Reactivar empleado' }}
+            {{ modo === 'BAJA' ? 'Dar de baja' : 'Reactivar' }}
         </span>
         <button mat-icon-button (click)="fn_close()">
             <mat-icon>close</mat-icon>
@@ -18,31 +18,38 @@
             <span>{{ mensajeError }}</span>
         </div>
 
-        <!-- BAJA: aviso de todo lo que se desactivará en cascada -->
+        <!-- BAJA: qué deja de tener -->
         <ng-container *ngIf="modo === 'BAJA'">
 
             <div class="eb-impacto" *ngIf="!bCargandoImpacto">
                 <p class="eb-impacto-titulo">
                     <mat-icon>warning</mat-icon>
-                    Al confirmar la baja también se desactivará en automático:
+                    Al confirmar la baja:
                 </p>
-                <ul *ngIf="impacto.length > 0">
+                <ul>
                     <li *ngFor="let i of impacto">{{ i }}</li>
+                    <li *ngIf="impacto.length === 0">Queda inactivo en el sistema.</li>
                 </ul>
-                <p class="pcm-slim-hint" *ngIf="impacto.length === 0">
-                    (Nada adicional: no tiene usuario activo ni registros en otros catálogos.)
-                </p>
                 <p class="pcm-slim-hint">
-                    El historial (ventas, talleres, nóminas) queda intacto. La reactivación será manual, catálogo por catálogo.
+                    El historial (ventas, talleres, comisiones, nóminas) queda intacto. Al reactivarlo
+                    recupera sus puestos, permisos y datos.
                 </p>
             </div>
 
-            <div class="pcm-slim-field">
+            <div class="pcm-banner pcm-banner-error" *ngIf="metalACargo.length > 0">
+                <mat-icon>inventory_2</mat-icon>
+                <span>
+                    Tiene metal a su cargo:
+                    <ng-container *ngFor="let m of metalACargo; let ultimo = last">
+                        {{ m.productoDesc }} {{ m.gramos | number:'1.2-2' }} g{{ ultimo ? '' : ',' }}
+                    </ng-container>.
+                    Devuélvelo o reasígnalo en Inventario de metal antes de darlo de baja.
+                </span>
+            </div>
+
+            <div class="pcm-slim-field" *ngIf="bEsEmpleado">
                 <label class="pcm-slim-label">Fecha de baja *</label>
                 <input class="pcm-slim-input" type="date" [formControl]="fechaControl">
-                <span class="pcm-slim-error" *ngIf="fechaControl.touched && fechaControl.invalid">
-                    La fecha de baja es obligatoria
-                </span>
             </div>
 
         </ng-container>
@@ -51,17 +58,13 @@
         <ng-container *ngIf="modo === 'REACTIVAR'">
 
             <p class="pcm-slim-hint">
-                Solo se reactiva el empleado. Su usuario del sistema y sus registros
-                de vendedor/técnico NO se reactivan en automático — hazlo a mano en
-                cada catálogo si aplica.
+                Vuelve a estar activo con sus puestos, permisos y datos: aparece otra vez en los combos
+                que le correspondan y, si tiene acceso, puede iniciar sesión.
             </p>
 
-            <div class="pcm-slim-field">
+            <div class="pcm-slim-field" *ngIf="bEsEmpleado">
                 <label class="pcm-slim-label">Nueva fecha de ingreso *</label>
                 <input class="pcm-slim-input" type="date" [formControl]="fechaControl">
-                <span class="pcm-slim-error" *ngIf="fechaControl.touched && fechaControl.invalid">
-                    La fecha de ingreso es obligatoria
-                </span>
             </div>
 
         </ng-container>

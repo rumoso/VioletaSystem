@@ -29,7 +29,7 @@ import {
 @Component({
   selector: 'app-timecard-list',
   templateUrl: './timecard-list.component.html',
-  styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css', './timecard-list.component.css']
+  styleUrls: ['../estilos/personal-lista.css', './timecard-list.component.css']
 })
 export class TimecardListComponent implements OnInit, OnDestroy {
 

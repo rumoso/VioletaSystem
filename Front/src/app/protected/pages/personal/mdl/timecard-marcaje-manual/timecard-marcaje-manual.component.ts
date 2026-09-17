@@ -19,7 +19,7 @@ const TIPOS_MARCAJE = [
 @Component({
   selector: 'app-timecard-marcaje-manual',
   templateUrl: './timecard-marcaje-manual.component.html',
-  styleUrls: ['../personal-catalogo/personal-catalogo.component.css', './timecard-marcaje-manual.component.css']
+  styleUrls: ['../../estilos/personal-modal.css', './timecard-marcaje-manual.component.css']
 })
 export class TimecardMarcajeManualComponent implements OnInit {
 

@@ -89,6 +89,7 @@ constructor(
       modo: 'IDENTIFICAR',
       tipoPersona: 'USUARIO',
       referencia: `Autorización: ${ this.actionForm.actionName }`,
+      proposito: 'AUTORIZACION',
       ocultarAutorizacionManual: true
     }, '480px')
       .afterClosed().subscribe({
@@ -101,8 +102,9 @@ constructor(
           this.bShow = true;
           this.bShowSpinner = true;
 
+          // Quién autoriza lo toma el servidor del comprobante (analisis/020).
           this.authorizationServ.CAuthorizationActionByFace({
-            idUser: resp.idPersona,
+            ticket: resp.ticket,
             actionName: this.actionForm.actionName
           }).subscribe({
             next: (resp2: ResponseDB_CRUD) => {

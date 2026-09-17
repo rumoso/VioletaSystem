@@ -1,0 +1,220 @@
+/* ══════════════════════════════════════════════════
+   SUC — Catálogo de sucursales
+   Mismo lenguaje visual que la consulta de ventas:
+   paleta Indigo #1a237e / #283593 / #3949ab.
+══════════════════════════════════════════════════ */
+
+.suc-page {
+  padding: 20px 24px 40px;
+  background: #f0f2f7;
+  min-height: 100%;
+}
+
+.suc-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* ══ BARRA ══ */
+.suc-barra {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 24px;
+}
+
+.suc-field--buscar { flex: 1; min-width: 260px; max-width: 460px; }
+
+.suc-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  margin-bottom: 3px;
+  padding-left: 2px;
+}
+
+.suc-wrap {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.suc-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+
+.suc-prefix-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: #9e9e9e !important;
+  margin: 0 6px 0 10px;
+}
+
+.suc-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px 0 4px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+}
+.suc-input::placeholder { color: #9e9e9e; font-weight: 400; }
+
+.suc-check { padding-bottom: 6px; font-size: 13px; color: #555; }
+
+.suc-spacer { flex: 1; }
+
+.suc-count-badge {
+  align-self: center;
+  background: #e8eaf6;
+  border: 1px solid #c5cae9;
+  color: #283593;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.suc-btn-primary {
+  background: #283593 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.suc-btn-primary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+/* ══ TABLA ══ */
+.suc-table-wrapper { overflow-x: auto; padding: 4px 0 0; }
+
+.suc-table { width: 100%; border-collapse: collapse; }
+
+.suc-th {
+  padding: 13px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #8e97a4;
+  background: #fafbfc;
+  border-bottom: 2px solid #ececec;
+  white-space: nowrap;
+  text-align: left;
+}
+.suc-th--center { text-align: center; }
+
+.suc-tr { transition: background 0.12s; }
+.suc-tr:hover { background: #f5f7ff; }
+.suc-tr--inactiva { background: #fafafa; }
+.suc-tr--inactiva .suc-nombre,
+.suc-tr--inactiva .suc-horario { color: #9e9e9e; }
+
+.suc-td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 14px;
+  color: #333;
+  vertical-align: middle;
+}
+.suc-td--center { text-align: center; }
+.suc-td--acciones { width: 100px; white-space: nowrap; }
+.suc-td--direccion { max-width: 260px; color: #555; font-size: 13px; }
+
+.suc-accion {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  margin: 0 3px;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: opacity 0.15s;
+}
+.suc-accion:hover { opacity: 0.75; }
+.suc-accion--ver  { color: #1565c0; }
+.suc-accion--baja { color: #2e7d32; }
+.suc-accion--alta { color: #9e9e9e; }
+.suc-accion--bloqueada { color: #c5cae9; cursor: not-allowed; }
+.suc-accion--bloqueada:hover { opacity: 1; }
+
+.suc-nombre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #1a237e;
+}
+.suc-descripcion { font-size: 12px; color: #8e97a4; margin-top: 2px; }
+
+.suc-chip-terminal {
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #e8eaf6;
+  color: #283593;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.suc-horario { font-size: 13px; color: #37474f; }
+
+.suc-sin-horario {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: #e65100;
+}
+.suc-sin-horario mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+.suc-empleados {
+  display: inline-block;
+  min-width: 28px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: #eceff4;
+  color: #37474f;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.suc-estatus {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eeeeee;
+  color: #757575;
+}
+.suc-estatus--activa { background: #e8f5e9; color: #2e7d32; }
+
+.suc-empty {
+  padding: 56px 20px;
+  text-align: center;
+  color: #c4ccd6;
+}
+.suc-empty mat-icon {
+  font-size: 48px !important;
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto 10px;
+}
+.suc-empty span { display: block; font-size: 14px; }

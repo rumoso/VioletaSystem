@@ -25,12 +25,16 @@ export class TimecardService {
 
   // ---- Checador (público) ----
 
-  CGetEstado( idUser: number ): Observable<ResponseGet> {
-    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getEstadoTimecard`, { idUser } );
+  // Checador (analisis/020): se manda el comprobante que entregó el
+  // servidor al identificar el rostro. Quién es y con qué similitud los
+  // toma el servidor del comprobante. Consultar el estado no lo gasta;
+  // registrar el marcaje sí.
+  CGetEstado( ticket: string ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getEstadoTimecard`, { ticket } );
   }
 
-  CInsertMarcaje( idUser: number, tipo: string, idSucursal: number | null = null, similitud: number | null = null ): Observable<ResponseGet> {
-    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/insertMarcaje`, { idUser, tipo, idSucursal, similitud } );
+  CInsertMarcaje( ticket: string, tipo: string, idSucursal: number | null = null ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/insertMarcaje`, { ticket, tipo, idSucursal } );
   }
 
   // ---- Captura / corrección manual ----

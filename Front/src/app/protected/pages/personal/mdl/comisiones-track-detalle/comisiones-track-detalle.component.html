@@ -108,12 +108,7 @@
                         </td>
 
                         <td class="textAlingCenter">
-                            <button mat-icon-button
-                            *ngIf="item.estatus === 'PENDIENTE'"
-                            matTooltip="Cancelar (requiere autorización)"
-                            (click)="fn_cancelar(item)">
-                                <mat-icon class="colorRed">cancel</mat-icon>
-                            </button>
+                            <mat-icon class="grid-action-icon colorRed" *ngIf="item.estatus === 'PENDIENTE'" matTooltip="Cancelar (requiere autorización)" (click)="fn_cancelar(item)">cancel</mat-icon>
                         </td>
                     </tr>
                 </tbody>

@@ -48,6 +48,10 @@ export class TimecardChecadorComponent implements OnInit, OnDestroy {
   idUser: number = 0;
   tiposValidos: string[] = [];
 
+  // Comprobante que entregó el servidor al identificar el rostro
+  // (analisis/020). Se usa para consultar el estado y se gasta al marcar.
+  private ticket: string = '';
+
   tipoConfirmado: string = '';
   horaConfirmada: string = '';
   bDuplicado: boolean = false;
@@ -90,6 +94,7 @@ export class TimecardChecadorComponent implements OnInit, OnDestroy {
       modo: 'IDENTIFICAR',
       tipoPersona: 'USUARIO',
       referencia: 'TimeCard',
+      proposito: 'TIMECARD',
       ocultarAutorizacionManual: true // sin sesión, o si la hay tampoco aplica el respaldo por código aquí
     }, '480px')
     .afterClosed().subscribe({
@@ -103,6 +108,7 @@ export class TimecardChecadorComponent implements OnInit, OnDestroy {
 
         this.idUser = resp.idPersona;
         this.nombre = resp.nombre;
+        this.ticket = resp.ticket || '';
         this.fn_cargarEstado();
 
       }
@@ -114,11 +120,16 @@ export class TimecardChecadorComponent implements OnInit, OnDestroy {
 
     this.bShowSpinner = true;
 
-    this.timecardServ.CGetEstado(this.idUser)
+    this.timecardServ.CGetEstado(this.ticket)
       .subscribe({
         next: (resp: ResponseGet) => {
 
           this.bShowSpinner = false;
+
+          if (resp.data?.bComprobanteInvalido) {
+            this.fn_comprobanteInvalido(resp.message);
+            return;
+          }
 
           if (!resp.data?.bEsEmpleado) {
             this.estado = 'NO_EMPLEADO';
@@ -186,11 +197,18 @@ export class TimecardChecadorComponent implements OnInit, OnDestroy {
     this.fn_detenerAuto();
     this.bShowSpinner = true;
 
-    this.timecardServ.CInsertMarcaje(this.idUser, tipo)
+    this.timecardServ.CInsertMarcaje(this.ticket, tipo)
       .subscribe({
         next: (resp: ResponseGet) => {
 
           this.bShowSpinner = false;
+
+          // Comprobante vencido o ya usado: no hay estado que reconsultar,
+          // hay que volver a escanear.
+          if (resp.data?.bComprobanteInvalido) {
+            this.fn_comprobanteInvalido(resp.message);
+            return;
+          }
 
           if (resp.status !== 0) {
             this.servicesGServ.showSnakbar(resp.message);
@@ -230,7 +248,21 @@ export class TimecardChecadorComponent implements OnInit, OnDestroy {
     this.idUser = 0;
     this.nombre = '';
     this.tiposValidos = [];
+    this.ticket = '';
     this.fn_escanear();
+  }
+
+  // El comprobante venció o ya se usó: regresa a la pantalla inicial con
+  // el aviso, sin abrir la cámara sola (la persona pudo haberse ido).
+  private fn_comprobanteInvalido(sMensaje: string) {
+    this.fn_detenerAuto();
+    this.fn_detenerRegreso();
+    this.idUser = 0;
+    this.nombre = '';
+    this.tiposValidos = [];
+    this.ticket = '';
+    this.estado = 'INICIAL';
+    this.mensaje = sMensaje || 'Vuelve a escanear tu rostro.';
   }
 
 }

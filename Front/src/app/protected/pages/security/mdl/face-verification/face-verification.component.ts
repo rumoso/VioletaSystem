@@ -7,13 +7,18 @@ import { FaceRecognitionService } from 'src/app/protected/services/face-recognit
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { ActionAuthorizationComponent } from '../../users/mdl/action-authorization/action-authorization.component';
 
-// Componente universal de reconocimiento facial (analisis/004).
+// Componente universal de reconocimiento facial (analisis/004 y 020).
 // Modos:
 //  - ENROLAR: guarda el rostro de referencia de tipoPersona/idPersona.
-//  - VERIFICAR (1:1): compara contra la referencia de tipoPersona/idPersona.
-//  - IDENTIFICAR (1:N): busca coincidencia contra todos los enrolados.
-// Solo regresa el resultado — el flujo de negocio que lo invoque decide
-// qué hacer con él (bloquear, continuar, etc.).
+//  - VERIFICAR (1:1): contra la referencia de tipoPersona/idPersona.
+//  - IDENTIFICAR (1:N): busca entre todos los enrolados.
+//
+// Este componente CAPTURA; quien decide si coincide es el servidor
+// (analisis/020). Cuando coincide, el servidor entrega un comprobante de
+// un solo uso para el `proposito` con que se abrió el modal (LOGIN,
+// TIMECARD o AUTORIZACION), y el resultado lo regresa como `ticket`.
+// El flujo que lo invocó manda ese `ticket` a su endpoint: sin él, el
+// servidor no da acceso, ni autoriza, ni registra marcajes.
 
 @Component({
   selector: 'app-face-verification',
@@ -29,6 +34,7 @@ export class FaceVerificationComponent implements OnDestroy {
   idPersona: number = 0;
   nombrePersona: string = '';
   referencia: string = '';
+  proposito: string = '';
 
   bLoadingModels: boolean = true;
   bCameraReady: boolean = false;
@@ -42,13 +48,13 @@ export class FaceVerificationComponent implements OnDestroy {
 
   // Resultado encontrado (VERIFICAR o IDENTIFICAR) esperando que el
   // operador confirme "sí es esta persona" antes de cerrar el modal.
-  resultadoPendiente: { nombre: string; similitud: number; tipoPersona?: string; idPersona?: number } | null = null;
+  resultadoPendiente: { nombre: string; similitud: number; tipoPersona?: string; idPersona?: number; ticket?: string } | null = null;
   bAceptando: boolean = false;
 
   // IDENTIFICAR con más de una persona plausible: hay que elegir cuál
-  // es antes de pasar a la confirmación de arriba. Se guarda la
-  // referencia cruda (con descriptor) para poder re-verificar contra
-  // ella una vez elegida.
+  // es antes de pasar a la confirmación de arriba. El servidor no entrega
+  // comprobante en este caso; al elegir se verifica 1:1 con una captura
+  // nueva. (La "referencia" solo trae tipo, id y nombre: sin descriptor.)
   candidatosPendientes: Array<{ referencia: any; similitud: number }> | null = null;
 
   camaras: MediaDeviceInfo[] = [];
@@ -61,14 +67,8 @@ export class FaceVerificationComponent implements OnDestroy {
 
   private stream: MediaStream | null = null;
   private referenciaEsperada: any = null;
-  private referenciasTodas: any[] = [];
   private idUserLogON: number = 0;
   private deviceIdPreferido: string | null = null;
-
-  // Descriptor (128 números) de la última captura exitosa — se manda en
-  // el resultado por si quien invoca este modal necesita re-verificarlo
-  // del lado del servidor (ej. login facial).
-  private ultimoDescriptor: number[] | null = null;
 
   // Cuando IDENTIFICAR encontró varias personas plausibles y el
   // operador ya eligió una: la siguiente captura se compara SOLO contra
@@ -102,6 +102,7 @@ export class FaceVerificationComponent implements OnDestroy {
     this.idPersona = this.ODataP.idPersona || 0;
     this.nombrePersona = this.ODataP.nombrePersona || '';
     this.referencia = this.ODataP.referencia || '';
+    this.proposito = this.ODataP.proposito || '';
     // Cuando este modal se invoca DESDE otro flujo de autorización (ej.
     // ActionAuthorizationComponent), su propio fallback manual no aplica
     // — quien lo invoque ya tiene su propia vía alterna (el código).
@@ -140,17 +141,9 @@ export class FaceVerificationComponent implements OnDestroy {
 
     } else if (this.modo === 'IDENTIFICAR') {
 
-      this.faceReferenceServ.CGetFaceReferences(this.tipoPersona)
-        .subscribe({
-          next: (resp: ResponseGet) => {
-            this.referenciasTodas = resp.status === 0 ? (resp.data || []) : [];
-            this.fn_initCamera();
-          },
-          error: () => {
-            this.referenciasTodas = [];
-            this.fn_initCamera();
-          }
-        });
+      // Ya no se descargan las referencias: la búsqueda ocurre en el
+      // servidor con cada captura.
+      this.fn_initCamera();
 
     } else {
       // ENROLAR
@@ -326,93 +319,120 @@ export class FaceVerificationComponent implements OnDestroy {
       return;
     }
 
-    this.ultimoDescriptor = oCaptura.descriptor!;
-
     if (this.modo === 'ENROLAR') {
       this.fn_guardarReferencia(oCaptura.descriptor!, oCaptura.imgThumb!);
       return;
     }
 
     // Re-verificación tras elegir de una lista de candidatos ambiguos:
-    // se compara la foto NUEVA solo contra la persona elegida, el resto
-    // queda excluido — así no puede "volver a salir" otra persona.
+    // la foto NUEVA se compara solo contra la persona elegida — así no
+    // puede "volver a salir" otra persona.
     if (this.candidatoParaReverificar) {
 
       const candidato = this.candidatoParaReverificar;
-      const refDescriptor: number[] = typeof candidato.descriptor === 'string' ? JSON.parse(candidato.descriptor) : candidato.descriptor;
-      const oResultado = this.faceRecognitionServ.compare(oCaptura.descriptor!, refDescriptor);
+      this.candidatoParaReverificar = null;
 
-      if (oResultado.match) {
-        this.resultadoPendiente = {
-          nombre: candidato.nombrePersona,
-          similitud: oResultado.similitud,
-          tipoPersona: candidato.tipoPersona,
-          idPersona: candidato.idPersona
-        };
-        this.candidatoParaReverificar = null;
-        this.bCapturing = false;
-      } else {
-        this.mensaje = `No se pudo confirmar a ${ candidato.nombrePersona } en la segunda verificación (similitud ${ (oResultado.similitud * 100).toFixed(0) }%). Intenta de nuevo o usa la autorización manual.`;
-        this.candidatoParaReverificar = null;
-        await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
-        this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
-        this.bCapturing = false;
-      }
-
+      this.fn_verificarEnServidor(candidato.tipoPersona, candidato.idPersona, oCaptura.descriptor!, candidato.nombrePersona);
       return;
     }
 
     if (this.modo === 'VERIFICAR') {
-
-      const oResultado = this.faceRecognitionServ.compare(oCaptura.descriptor!, this.referenciaEsperada.descriptor ? JSON.parse(this.referenciaEsperada.descriptor) : []);
-
-      if (oResultado.match) {
-        // No se cierra todavía: se muestra a quién identificó y se
-        // espera que el operador lo acepte.
-        this.resultadoPendiente = {
-          nombre: this.nombrePersona || this.referenciaEsperada?.nombrePersona || 'la persona esperada',
-          similitud: oResultado.similitud,
-          tipoPersona: this.tipoPersona,
-          idPersona: this.idPersona
-        };
-        this.bCapturing = false;
-      } else {
-        this.mensaje = `No coincide con ${ this.nombrePersona || 'la persona esperada' } (similitud ${ (oResultado.similitud * 100).toFixed(0) }%).`;
-        await this.fn_logResultado('FALLO', null, 0, oResultado.similitud);
-        this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
-        this.bCapturing = false;
-      }
-
-    } else if (this.modo === 'IDENTIFICAR') {
-
-      const oResultado = this.faceRecognitionServ.identify(oCaptura.descriptor!, this.referenciasTodas);
-
-      if (oResultado.candidatos.length === 1) {
-
-        const c = oResultado.candidatos[0];
-        this.resultadoPendiente = {
-          nombre: c.referencia.nombrePersona,
-          similitud: c.similitud,
-          tipoPersona: c.referencia.tipoPersona,
-          idPersona: c.referencia.idPersona
-        };
-        this.bCapturing = false;
-
-      } else if (oResultado.candidatos.length > 1) {
-
-        // Más de una persona plausible: no se elige sola, se le
-        // pregunta al operador cuál de ellas es.
-        this.candidatosPendientes = oResultado.candidatos;
-        this.bCapturing = false;
-
-      } else {
-        this.mensaje = 'No se encontró coincidencia con nadie enrolado.';
-        await this.fn_logResultado('FALLO', null, 0, 0);
-        this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
-        this.bCapturing = false;
-      }
-
+      this.fn_verificarEnServidor(this.tipoPersona, this.idPersona, oCaptura.descriptor!, this.nombrePersona);
+      return;
     }
+
+    if (this.modo === 'IDENTIFICAR') {
+      this.fn_identificarEnServidor(oCaptura.descriptor!);
+    }
+
+  }
+
+  // 1:N en el servidor. Los FALLOS los registra el servidor.
+  private fn_identificarEnServidor(descriptor: number[]) {
+
+    this.faceReferenceServ.CIdentificarRostro(this.tipoPersona, descriptor, this.proposito, this.referencia)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+
+          this.bCapturing = false;
+
+          if (resp.status !== 0) {
+            this.mensaje = resp.message || 'No se pudo identificar el rostro.';
+            return;
+          }
+
+          const d = resp.data || {};
+
+          if (d.resultado === 'UNICO') {
+
+            // No se cierra todavía: se muestra a quién identificó y se
+            // espera que el operador lo acepte.
+            this.resultadoPendiente = {
+              nombre: d.persona.nombrePersona,
+              similitud: d.persona.similitud,
+              tipoPersona: d.persona.tipoPersona,
+              idPersona: d.persona.idPersona,
+              ticket: d.ticket
+            };
+
+          } else if (d.resultado === 'VARIOS') {
+
+            // Más de una persona plausible: no se elige sola, se le
+            // pregunta al operador cuál de ellas es.
+            this.candidatosPendientes = (d.candidatos || []).map((c: any) => ({ referencia: c, similitud: c.similitud }));
+
+          } else {
+            this.mensaje = 'No se encontró coincidencia con nadie enrolado.';
+            this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
+          }
+
+        },
+        error: () => {
+          this.bCapturing = false;
+          this.mensaje = 'Problemas con el servicio. Intenta de nuevo.';
+        }
+      });
+
+  }
+
+  // 1:1 en el servidor. Los FALLOS los registra el servidor.
+  private fn_verificarEnServidor(tipoPersona: string, idPersona: number, descriptor: number[], nombrePersona: string) {
+
+    this.faceReferenceServ.CVerificarRostro(tipoPersona, idPersona, descriptor, this.proposito, this.referencia)
+      .subscribe({
+        next: (resp: ResponseGet) => {
+
+          this.bCapturing = false;
+
+          if (resp.status !== 0) {
+            this.mensaje = resp.message || 'No se pudo verificar el rostro.';
+            this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
+            return;
+          }
+
+          const d = resp.data || {};
+
+          if (d.resultado === 'COINCIDE') {
+
+            this.resultadoPendiente = {
+              nombre: d.persona.nombrePersona || nombrePersona || 'la persona esperada',
+              similitud: d.persona.similitud,
+              tipoPersona: d.persona.tipoPersona,
+              idPersona: d.persona.idPersona,
+              ticket: d.ticket
+            };
+
+          } else {
+            this.mensaje = `No coincide con ${ nombrePersona || d.nombrePersona || 'la persona esperada' } (similitud ${ ((d.similitud || 0) * 100).toFixed(0) }%). Intenta de nuevo${ this.bOcultarAutorizacionManual ? '' : ' o usa la autorización manual' }.`;
+            this.bMostrarAutorizacionManual = !this.bOcultarAutorizacionManual;
+          }
+
+        },
+        error: () => {
+          this.bCapturing = false;
+          this.mensaje = 'Problemas con el servicio. Intenta de nuevo.';
+        }
+      });
 
   }
 
@@ -458,15 +478,16 @@ export class FaceVerificationComponent implements OnDestroy {
     this.bAceptando = true;
 
     const r = this.resultadoPendiente;
-    await this.fn_logResultado('EXITO', r.tipoPersona || null, r.idPersona || 0, r.similitud);
 
+    // El ÉXITO lo registra el servidor cuando el flujo gasta el
+    // comprobante (analisis/020): aquí solo se entrega.
     this.fn_close({
       ok: true,
       tipoPersona: r.tipoPersona,
       idPersona: r.idPersona,
       nombre: r.nombre,
       similitud: r.similitud,
-      descriptor: this.ultimoDescriptor
+      ticket: r.ticket
     });
 
   }
@@ -504,8 +525,11 @@ export class FaceVerificationComponent implements OnDestroy {
           this.fn_close({ ok: true });
         }
       },
-      error: () => {
-        this.servicesGServ.showSnakbar('Error al guardar el Face ID');
+      error: (ex: any) => {
+        // 401: el servidor exige sesión para registrar un rostro.
+        this.servicesGServ.showSnakbar( ex?.status === 401
+          ? ( ex.error?.message || 'Tu sesión venció. Vuelve a iniciar sesión.' )
+          : 'Error al guardar el Face ID' );
         this.bShowSpinner = false;
         this.bCapturing = false;
       }

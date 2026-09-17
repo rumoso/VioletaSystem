@@ -1,14 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { Subscription, debounceTime } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { NominaConceptosService } from 'src/app/protected/services/nomina-conceptos.service';
 import { SucursalesService } from 'src/app/protected/services/sucursales.service';
-import { UsersService } from 'src/app/protected/services/users.service';
 import { TimecardService } from 'src/app/protected/services/timecard.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { NominaHistorialEmpleadoComponent } from '../nomina-historial-empleado/nomina-historial-empleado.component';
@@ -23,33 +20,44 @@ const DIAS_SEMANA = [
   { diaSemana: 7, nombre: 'Domingo' }
 ];
 
-// Modal de alta/modificación de empleado (analisis/006). Dos pestañas:
-// Datos laborales y Conceptos base de nómina. NO se cierra al guardar
-// (banner interno); tras el alta pasa a modo edición y habilita la
-// pestaña de conceptos.
+// Datos de empleado de una persona (analisis/018). Se embebe en la
+// pestaña "Empleado" del modal de Empleados (antes Usuarios) y solo se
+// muestra cuando la persona tiene el puesto de sistema "Empleado".
+//
+// Tres bloques: datos laborales, conceptos base de nómina y horario.
+// Mientras no existe el registro complementario solo se muestra el de
+// datos laborales (con fecha de ingreso obligatoria); al guardarlo se
+// habilitan los otros dos.
 
 @Component({
-  selector: 'app-empleado',
-  templateUrl: './empleado.component.html',
-  styleUrls: ['./empleado.component.css']
+  selector: 'app-empleado-datos',
+  templateUrl: './empleado-datos.component.html',
+  styleUrls: ['./empleado-datos.component.css']
 })
-export class EmpleadoComponent implements OnInit, OnDestroy {
+export class EmpleadoDatosComponent implements OnInit, OnChanges {
 
+  @Input() idUser: number = 0;
+  @Input() nombre: string = '';
+  @Input() bSoloLectura: boolean = false;
+
+  // Sucursales asignadas al usuario (pestaña Sucursales del modal): la
+  // sucursal base se propone a partir de ellas.
+  @Input() sucursalesAsignadas: any[] = [];
+
+  // Avisa al modal que hubo cambios (para recargar la lista al cerrar).
+  @Output() cambios = new EventEmitter<void>();
+
+  // idEmpleado del registro complementario; 0 = todavía no tiene.
   id: number = 0;
 
-  bSoloLectura: boolean = false;
-  bShowSpinner: boolean = false;
+  bCargando: boolean = false;
   bGuardando: boolean = false;
-  huboCambios: boolean = false;
-  bActivo: boolean = true;
   fechaBajaDesc: string = '';
 
   banner: { tipo: 'ok' | 'error'; mensaje: string } | null = null;
 
   myForm: FormGroup = this.fb.group({
-    nombre: ['', [Validators.required, Validators.maxLength(150)]],
-    fechaIngreso: ['', [Validators.required]],
-    puesto: ['', [Validators.maxLength(100)]],
+    fechaIngreso: [this.fn_hoy(), [Validators.required]],
     idSucursal: [null],
     telefono: ['', [Validators.maxLength(20)]],
     contactoEmergencia: ['', [Validators.maxLength(200)]],
@@ -59,12 +67,6 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     periodicidadComisiones: ['SEMANA', [Validators.required]],
     horasSemana: [48, [Validators.required, Validators.min(1)]]
   });
-
-  usuarioSearchControl: FormControl = new FormControl('');
-  usuariosEncontrados: any[] = [];
-  usuarioSeleccionado: any = null;
-  bBuscandoUsuarios: boolean = false;
-  private usuarioSearchSub: Subscription | null = null;
 
   sucursales: any[] = [];
 
@@ -77,109 +79,109 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
   nuevoMontoControl: FormControl = new FormControl('');
   conceptoEditando: any = null;
 
-  // TimeCard (analisis/011, T16): horario propio opcional y Face ID
-  // — ninguno bloquea guardar los datos del empleado.
+  // Horario propio opcional (analisis/011); sin días capturados se usa
+  // el de la sucursal.
   horarioDias: any[] = DIAS_SEMANA.map(d => ({ ...d, bTrabaja: false, horaEntrada: '09:00', horaSalida: '18:00' }));
-  bShowSpinnerHorario: boolean = false;
   bGuardandoHorario: boolean = false;
   bannerHorario: { tipo: 'ok' | 'error'; mensaje: string } | null = null;
 
   @ViewChild('montoInput') montoInputRef!: ElementRef<HTMLInputElement>;
-  @ViewChild('usuarioInput') usuarioInputRef!: ElementRef<HTMLInputElement>;
-  @ViewChild('fechaIngresoInput') fechaIngresoInputRef!: ElementRef<HTMLInputElement>;
-
-  // Captura sin mouse en la pestaña Datos: Enter en nombre pasa al
-  // usuario (texto seleccionado); al elegir usuario el foco sigue a la
-  // fecha de ingreso; Enter en el último campo (horas/semana) guarda.
-  fn_focusUsuario() {
-    setTimeout(() => {
-      const input = this.usuarioInputRef?.nativeElement;
-      if (input) {
-        input.focus();
-        input.select();
-      }
-    }, 0);
-  }
-
-  fn_focusFechaIngreso() {
-    setTimeout(() => this.fechaIngresoInputRef?.nativeElement?.focus(), 0);
-  }
+  @ViewChild('telefonoInput') telefonoInputRef!: ElementRef<HTMLInputElement>;
 
   constructor(
-    private dialogRef: MatDialogRef<EmpleadoComponent>
-    , @Inject(MAT_DIALOG_DATA) public ODataP: any
-
-    , private fb: FormBuilder
+    private fb: FormBuilder
     , private authServ: AuthService
     , private servicesGServ: ServicesGService
     , private empleadosServ: EmpleadosService
     , private nominaConceptosServ: NominaConceptosService
     , private sucursalesServ: SucursalesService
-    , private usersServ: UsersService
     , private timecardServ: TimecardService
-    ) {
-      this.dialogRef.disableClose = true;
-    }
+    ) { }
 
   ngOnInit(): void {
-
-    this.id = this.ODataP.id || 0;
-
-    this.bSoloLectura = !this.authServ.hasPermissionAction('empleados_CrearModificar');
-
-    if (this.bSoloLectura) {
-      this.myForm.disable();
-      this.usuarioSearchControl.disable();
-    }
-
-    this.usuarioSearchSub = this.usuarioSearchControl.valueChanges
-      .pipe(debounceTime(600))
-      .subscribe((valor: any) => {
-        if (typeof valor === 'string') {
-          this.usuarioSeleccionado = null;
-          this.fn_buscarUsuarios(valor);
-        }
-      });
 
     this.sucursalesServ.CCbxGetSucursalesCombo('', this.authServ.getIdUserSession())
       .subscribe({
         next: (resp: ResponseGet) => {
           this.sucursales = resp.status === 0 ? (resp.data || []) : [];
+          this.fn_sucursalBaseDefault();
         },
         error: () => { this.sucursales = []; }
       });
 
-    if (this.id > 0) {
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+
+    if (changes['bSoloLectura']) {
+      if (this.bSoloLectura) {
+        this.myForm.disable();
+      } else {
+        this.myForm.enable();
+      }
+    }
+
+    if (changes['idUser'] && this.idUser > 0) {
       this.fn_cargar();
-      this.fn_cargarConceptosBase();
-      this.fn_cargarHorarioPropio();
+    }
+
+    if (changes['sucursalesAsignadas']) {
+      this.fn_sucursalBaseDefault();
     }
 
   }
 
-  ngOnDestroy(): void {
-    this.usuarioSearchSub?.unsubscribe();
+  private fn_hoy(): string {
+    const hoy = new Date();
+    return `${ hoy.getFullYear() }-${ String(hoy.getMonth() + 1).padStart(2, '0') }-${ String(hoy.getDate()).padStart(2, '0') }`;
   }
 
-  get titulo(): string {
-    if (this.bSoloLectura) {
-      return 'Ver empleado';
+  // Si el empleado no tiene sucursal base, se propone: la primera sucursal
+  // asignada al usuario; si no tiene ninguna asignada y el catálogo solo
+  // tiene una, esa. No pisa una sucursal ya capturada; se guarda hasta
+  // que se presione "Guardar datos de empleado".
+  fn_sucursalBaseDefault() {
+
+    if (this.bCargando || this.bSoloLectura) {
+      return;
     }
-    return this.id > 0 ? 'Modificar empleado' : 'Nuevo empleado';
+
+    const control = this.myForm.get('idSucursal');
+    if (!control || control.value) {
+      return;
+    }
+
+    const asignada = (this.sucursalesAsignadas || [])[0];
+    if (asignada && asignada.idSucursal) {
+      control.setValue(asignada.idSucursal);
+    } else if ((this.sucursales || []).length === 1) {
+      control.setValue(this.sucursales[0].idSucursal);
+    }
+
+  }
+
+  // Lo llama el modal del empleado al entrar a la pestaña.
+  fn_enfocar() {
+    setTimeout(() => this.telefonoInputRef?.nativeElement?.focus(), 150);
+  }
+
+  // Enter en un campo pasa al siguiente (orden de captura de la pestaña).
+  fn_siguiente(evento: Event, siguiente: HTMLElement) {
+    evento.preventDefault();
+    siguiente.focus();
   }
 
   private fn_cargar() {
 
-    this.bShowSpinner = true;
-    this.empleadosServ.CGetById(this.id)
+    this.bCargando = true;
+    this.empleadosServ.CGetByIdUser(this.idUser)
       .subscribe({
-        next: (resp: ResponseGet) => {
-          this.bShowSpinner = false;
+        next: (resp: any) => {
+          this.bCargando = false;
           if (resp.status === 0 && resp.data) {
+            this.id = resp.data.id;
             this.myForm.patchValue({
-              nombre: resp.data.nombre,
               fechaIngreso: resp.data.fechaIngreso,
-              puesto: resp.data.puesto || '',
               idSucursal: resp.data.idSucursal,
               telefono: resp.data.telefono || '',
               contactoEmergencia: resp.data.contactoEmergencia || '',
@@ -189,47 +191,21 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
               periodicidadComisiones: resp.data.periodicidadComisiones,
               horasSemana: resp.data.horasSemana
             });
-            this.bActivo = !!resp.data.active;
             this.fechaBajaDesc = resp.data.fechaBaja || '';
-            this.usuarioSeleccionado = {
-              id: resp.data.idUser,
-              nombre: resp.data.userNombre,
-              userName: resp.data.userName
-            };
-            this.usuarioSearchControl.setValue(this.usuarioSeleccionado, { emitEvent: false });
+            this.fn_sucursalBaseDefault();
+            this.fn_cargarConceptosBase();
+            this.fn_cargarHorarioPropio();
+          } else {
+            this.id = 0;
+            this.fn_sucursalBaseDefault();
           }
         },
         error: (ex: HttpErrorResponse) => {
           console.log(ex)
-          this.bShowSpinner = false;
-          this.banner = { tipo: 'error', mensaje: 'No se pudo cargar el registro.' };
+          this.bCargando = false;
+          this.banner = { tipo: 'error', mensaje: 'No se pudieron cargar los datos de empleado.' };
         }
       });
-  }
-
-  private fn_buscarUsuarios( search: string ) {
-
-    this.bBuscandoUsuarios = true;
-    this.usersServ.CCbxGetAllUsersCombo(search)
-      .subscribe({
-        next: (resp: ResponseGet) => {
-          this.usuariosEncontrados = resp.status === 0 ? (resp.data || []) : [];
-          this.bBuscandoUsuarios = false;
-        },
-        error: () => {
-          this.usuariosEncontrados = [];
-          this.bBuscandoUsuarios = false;
-        }
-      });
-  }
-
-  fn_displayUsuario( usuario: any ): string {
-    return usuario ? `${ usuario.userName } — ${ usuario.nombre }` : '';
-  }
-
-  fn_usuarioSeleccionado( usuario: any ) {
-    this.usuarioSeleccionado = usuario;
-    this.fn_focusFechaIngreso();
   }
 
   fn_guardar() {
@@ -241,33 +217,22 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.usuarioSeleccionado) {
-      this.banner = { tipo: 'error', mensaje: 'Selecciona el usuario del sistema ligado (obligatorio).' };
-      return;
-    }
-
     this.bGuardando = true;
 
-    const data: any = {
-      id: this.id,
-      idUser: this.usuarioSeleccionado.id,
-      ...this.myForm.value
-    };
-
-    this.empleadosServ.CInsertUpdate(data)
+    this.empleadosServ.CInsertUpdate({ idUser: this.idUser, ...this.myForm.value })
       .subscribe({
         next: (resp: any) => {
           this.bGuardando = false;
 
           if (resp.status === 0) {
-            this.huboCambios = true;
+            this.cambios.emit();
             this.banner = { tipo: 'ok', mensaje: resp.message };
 
             if (this.id === 0 && resp.data?.id) {
-              // Pasa a modo edición: habilita la pestaña de conceptos
-              // base para capturar de inmediato.
+              // Ya existe el registro: se habilitan conceptos y horario.
               this.id = resp.data.id;
               this.fn_cargarConceptosBase();
+              this.fn_cargarHorarioPropio();
             }
           } else {
             this.banner = { tipo: 'error', mensaje: resp.message };
@@ -328,8 +293,6 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  // Lapicito de un renglón: llena el combo y el monto con sus valores,
-  // pasa el formulario a modo edición y manda el foco al monto.
   fn_editarConcepto( item: any ) {
 
     this.banner = null;
@@ -350,7 +313,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     this.banner = null;
 
     const concepto = this.nuevoConceptoControl.value;
-    const monto = Number(this.nuevoMontoControl.value);
+    const monto = Math.round( ( Number(this.nuevoMontoControl.value) || 0 ) * 100 ) / 100;
 
     if (!concepto) {
       this.banner = { tipo: 'error', mensaje: 'Selecciona el concepto.' };
@@ -369,7 +332,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (resp: any) => {
         if (resp.status === 0) {
-          this.huboCambios = true;
+          this.cambios.emit();
           this.fn_cancelarEdicion();
           this.fn_cargarConceptosBase();
         } else {
@@ -395,7 +358,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
             .subscribe({
               next: (resp2: any) => {
                 if (resp2.status === 0) {
-                  this.huboCambios = true;
+                  this.cambios.emit();
                   if (this.conceptoEditando?.id === item.id) {
                     this.fn_cancelarEdicion();
                   }
@@ -412,17 +375,14 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- TimeCard: horario propio y enrolamiento (analisis/011, T16) ----
+  // ---- Horario propio ----
 
   fn_cargarHorarioPropio() {
-
-    this.bShowSpinnerHorario = true;
 
     this.timecardServ.CGetHorarioEmpleado(this.id)
       .subscribe({
         next: (resp: ResponseGet) => {
 
-          this.bShowSpinnerHorario = false;
           const filas = resp.status === 0 ? (resp.data || []) : [];
           const porDia: { [key: number]: any } = {};
           filas.forEach((f: any) => { porDia[f.diaSemana] = f; });
@@ -437,8 +397,7 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
             };
           });
 
-        },
-        error: () => { this.bShowSpinnerHorario = false; }
+        }
       });
 
   }
@@ -476,12 +435,8 @@ export class EmpleadoComponent implements OnInit, OnDestroy {
   fn_verHistorialNomina() {
     this.servicesGServ.showModalWithParams(NominaHistorialEmpleadoComponent, {
       idEmpleado: this.id,
-      nombreEmpleado: this.myForm.value.nombre
+      nombreEmpleado: this.nombre
     }, '700px');
-  }
-
-  fn_close() {
-    this.dialogRef.close(this.huboCambios);
   }
 
 }

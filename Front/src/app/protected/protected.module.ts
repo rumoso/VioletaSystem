@@ -33,10 +33,7 @@ import { RoleListComponent } from './pages/security/roles/role-list/role-list.co
 import { ActionAuthorizationComponent } from './pages/security/users/mdl/action-authorization/action-authorization.component';
 import { FaceVerificationComponent } from './pages/security/mdl/face-verification/face-verification.component';
 import { FaceLogComponent } from './pages/security/face-log/face-log.component';
-import { PersonalCatalogoListComponent } from './pages/personal/personal-catalogo-list/personal-catalogo-list.component';
-import { PersonalCatalogoComponent } from './pages/personal/mdl/personal-catalogo/personal-catalogo.component';
-import { EmpleadoListComponent } from './pages/personal/empleado-list/empleado-list.component';
-import { EmpleadoComponent } from './pages/personal/mdl/empleado/empleado.component';
+import { EmpleadoDatosComponent } from './pages/personal/mdl/empleado-datos/empleado-datos.component';
 import { EmpleadoBajaComponent } from './pages/personal/mdl/empleado-baja/empleado-baja.component';
 import { NominaConceptosListComponent } from './pages/personal/nomina-conceptos-list/nomina-conceptos-list.component';
 import { NominaConceptoComponent } from './pages/personal/mdl/nomina-concepto/nomina-concepto.component';
@@ -74,6 +71,7 @@ import { IngresosComponent } from './pages/sales/mdl/ingresos/ingresos.component
 import { IngresosListComponent } from './pages/sales/ingresos-list/ingresos-list.component';
 import { PagosCanceladosComponent } from './pages/reports/pagos-cancelados/pagos-cancelados.component';
 import { QuestionCancelSalePaymentsComponent } from './pages/sales/mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
+import { MotivoCancelacionComponent } from './pages/sales/mdl/motivo-cancelacion/motivo-cancelacion.component';
 import { ChangepwdsecretwordComponent } from './pages/security/mdl/changepwdsecretword/changepwdsecretword.component';
 import { RepPaymentsComponent } from './pages/reports/rep-payments/rep-payments.component';
 import { InfFinancieraComponent } from './pages/finanzas/inf-financiera/inf-financiera.component';
@@ -95,6 +93,8 @@ import { TimecardChecadorComponent } from './pages/personal/timecard-checador/ti
 import { TimecardListComponent } from './pages/personal/timecard-list/timecard-list.component';
 import { TimecardMarcajeManualComponent } from './pages/personal/mdl/timecard-marcaje-manual/timecard-marcaje-manual.component';
 import { HorarioSucursalComponent } from './pages/personal/mdl/horario-sucursal/horario-sucursal.component';
+import { SucursalListComponent } from './pages/configuracion/sucursal-list/sucursal-list.component';
+import { SucursalComponent } from './pages/configuracion/mdl/sucursal/sucursal.component';
 import { TimecardTimelineComponent } from './pages/personal/timecard-timeline/timecard-timeline.component';
 import { TimecardSemanaDetalleComponent } from './pages/personal/mdl/timecard-semana-detalle/timecard-semana-detalle.component';
 import { FaceIdManagerComponent } from './pages/security/mdl/face-id-manager/face-id-manager.component';
@@ -128,10 +128,7 @@ import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-
     ActionAuthorizationComponent,
     FaceVerificationComponent,
     FaceLogComponent,
-    PersonalCatalogoListComponent,
-    PersonalCatalogoComponent,
-    EmpleadoListComponent,
-    EmpleadoComponent,
+    EmpleadoDatosComponent,
     EmpleadoBajaComponent,
     NominaConceptosListComponent,
     NominaConceptoComponent,
@@ -169,6 +166,7 @@ import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-
     IngresosListComponent,
     PagosCanceladosComponent,
     QuestionCancelSalePaymentsComponent,
+    MotivoCancelacionComponent,
     ChangepwdsecretwordComponent,
     RepPaymentsComponent,
     InfFinancieraComponent,
@@ -190,6 +188,8 @@ import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-
     TimecardListComponent,
     TimecardMarcajeManualComponent,
     HorarioSucursalComponent,
+    SucursalListComponent,
+    SucursalComponent,
     TimecardTimelineComponent,
     TimecardSemanaDetalleComponent,
     FaceIdManagerComponent,

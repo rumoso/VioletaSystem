@@ -14,7 +14,7 @@ import { NominaConceptoComponent } from '../mdl/nomina-concepto/nomina-concepto.
 @Component({
   selector: 'app-nomina-conceptos-list',
   templateUrl: './nomina-conceptos-list.component.html',
-  styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css']
+  styleUrls: ['../estilos/personal-lista.css']
 })
 export class NominaConceptosListComponent implements OnInit, OnDestroy {
 

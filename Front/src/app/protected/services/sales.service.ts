@@ -1095,4 +1095,38 @@ export class SalesService {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/insertGarantiaByTaller`, data );
   }
 
+  // ── Eliminar o cancelar taller (analisis/022) ──
+
+  // Qué tiene capturado el taller además del encabezado: decide si el
+  // ícono de cancelar elimina (sin datos) o cancela (con datos).
+  CGetTallerDatosCancelacion( idSale: string ): Observable<ResponseGet> {
+    const data: any = {
+      idSale,
+      idUserLogON: this.authServ.getIdUserSession(),
+      idSucursalLogON: this.idSucursal
+    };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getTallerDatosCancelacion`, data );
+  }
+
+  CDeleteTallerVacio( idSale: string ): Observable<ResponseDB_CRUD> {
+    const data: any = {
+      idSale,
+      idUserLogON: this.authServ.getIdUserSession(),
+      idSucursalLogON: this.idSucursal
+    };
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteTallerVacio`, data );
+  }
+
+  CCancelarTaller( idSale: string, sOption: string, auth_idUser: number, motivo: string ): Observable<ResponseDB_CRUD> {
+    const data: any = {
+      idSale,
+      sOption,
+      auth_idUser,
+      motivo,
+      idUserLogON: this.authServ.getIdUserSession(),
+      idSucursalLogON: this.idSucursal
+    };
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/cancelarTaller`, data );
+  }
+
 }

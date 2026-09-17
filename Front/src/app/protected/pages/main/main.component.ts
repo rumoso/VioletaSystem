@@ -72,7 +72,7 @@ export class MainComponent implements OnInit {
 
   showChangePwdModal(){
 
-    this.servicesGServ.showModalWithParams( ChangepwdsecretwordComponent, null, '1500px')
+    this.servicesGServ.showModalWithParams( ChangepwdsecretwordComponent, null, '560px')
     .afterClosed().subscribe({
       next: ( resp: any ) =>{
 

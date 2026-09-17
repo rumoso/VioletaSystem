@@ -18,7 +18,7 @@ import { ComisionManualComponent } from '../comision-manual/comision-manual.comp
 @Component({
   selector: 'app-comisiones-track-detalle',
   templateUrl: './comisiones-track-detalle.component.html',
-  styleUrls: ['../../personal-catalogo-list/personal-catalogo-list.component.css', '../../comisiones-track-list/comisiones-track-list.component.css', './comisiones-track-detalle.component.css']
+  styleUrls: ['../../estilos/personal-lista.css', '../../comisiones-track-list/comisiones-track-list.component.css', './comisiones-track-detalle.component.css']
 })
 export class ComisionesTrackDetalleComponent implements OnInit {
 

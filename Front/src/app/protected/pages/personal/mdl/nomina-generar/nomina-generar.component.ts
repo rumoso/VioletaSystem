@@ -17,7 +17,7 @@ import { NominaService } from 'src/app/protected/services/nomina.service';
 @Component({
   selector: 'app-nomina-generar',
   templateUrl: './nomina-generar.component.html',
-  styleUrls: ['../personal-catalogo/personal-catalogo.component.css', './nomina-generar.component.css']
+  styleUrls: ['../../estilos/personal-modal.css', './nomina-generar.component.css']
 })
 export class NominaGenerarComponent {
 

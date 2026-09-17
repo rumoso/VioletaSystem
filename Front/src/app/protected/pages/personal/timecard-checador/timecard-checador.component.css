@@ -88,3 +88,13 @@
   justify-content: center;
   border-radius: 16px;
 }
+
+/* Aviso en la pantalla inicial: comprobante vencido o ya usado. */
+.tc-aviso {
+  margin: 4px 0 16px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #fff3e0;
+  color: #8d4b00;
+  font-weight: 500;
+}

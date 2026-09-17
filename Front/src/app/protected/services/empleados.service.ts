@@ -5,8 +5,9 @@ import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { environment } from 'src/environments/environment';
 
-// Catálogo de empleados y su listado base de conceptos de nómina
-// (analisis/006).
+// Datos de empleado como complemento del usuario y su listado base de
+// conceptos de nómina (analisis/006 y analisis/018). La persona es el
+// usuario: baja, reactivación y eliminación van por idUser.
 
 @Injectable({
   providedIn: 'root'
@@ -31,8 +32,8 @@ export class EmpleadosService {
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getEmpleadosList`, data );
   }
 
-  CGetById( id: number ): Observable<ResponseGet> {
-    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getEmpleadoById`, { id } );
+  CGetByIdUser( idUser: number ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/getEmpleadoByIdUser`, { idUser } );
   }
 
   CInsertUpdate( data: any ): Observable<any> {
@@ -40,20 +41,20 @@ export class EmpleadosService {
     return this.http.post<any>( `${ this.baseURL }/${ this._api }/insertUpdateEmpleado`, data );
   }
 
-  CGetBajaImpacto( id: number ): Observable<ResponseGet> {
-    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getBajaImpacto`, { id } );
+  CGetBajaImpacto( idUser: number ): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getBajaImpacto`, { idUser } );
   }
 
-  CBaja( id: number, fechaBaja: string ): Observable<any> {
-    return this.http.post<any>( `${ this.baseURL }/${ this._api }/bajaEmpleado`, { id, fechaBaja } );
+  CBaja( idUser: number, fechaBaja: string | null ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/bajaEmpleado`, { idUser, fechaBaja } );
   }
 
-  CReactivar( id: number, fechaIngreso: string ): Observable<any> {
-    return this.http.post<any>( `${ this.baseURL }/${ this._api }/reactivarEmpleado`, { id, fechaIngreso } );
+  CReactivar( idUser: number, fechaIngreso: string | null ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/reactivarEmpleado`, { idUser, fechaIngreso } );
   }
 
-  CDelete( id: number ): Observable<any> {
-    return this.http.post<any>( `${ this.baseURL }/${ this._api }/deleteEmpleado`, { id } );
+  CDelete( idUser: number ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/deleteEmpleado`, { idUser } );
   }
 
   CGetConceptosBase( idEmpleado: number ): Observable<ResponseGet> {

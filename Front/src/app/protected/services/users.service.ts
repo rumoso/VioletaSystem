@@ -20,7 +20,9 @@ export class UsersService {
     , private authServ: AuthService
   ) { }
 
-  CGetUsersListWithPage( pagination: Pagination, filterFaceID: string = '' ): Observable<ResponseGet> {
+  // filtros: filterFaceID ('' | 'CON' | 'SIN'), idRol, idTipoRol,
+  // filterAcceso ('' | 'CON' | 'SIN'), filterActive ('' | 'ACTIVOS' | 'INACTIVOS')
+  CGetUsersListWithPage( pagination: Pagination, filtros: any = {} ): Observable<ResponseGet> {
 
     let start = pagination.pageIndex * pagination.pageSize;
     let limiter = pagination.pageSize;
@@ -29,7 +31,11 @@ export class UsersService {
       search: pagination.search
       ,start: start
       ,limiter: limiter
-      ,filterFaceID
+      ,filterFaceID: filtros.filterFaceID || ''
+      ,idRol: filtros.idRol || 0
+      ,idTipoRol: filtros.idTipoRol || 0
+      ,filterAcceso: filtros.filterAcceso || ''
+      ,filterActive: filtros.filterActive || ''
     };
 
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getUsersListWithPage`, data);
@@ -64,6 +70,11 @@ export class UsersService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/disabledUser`, data );
   }
 
+  // ¿El nombre de usuario está libre? (único entre quienes tienen acceso)
+  CCheckUserNameDisponible( userName: string, idUser: number ): Observable<any> {
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/checkUserNameDisponible`, { userName, idUser } );
+  }
+
   CCbxGetSellersCombo( search: string, idUser: number ): Observable<ResponseGet> {
     var data = {
       idUser: idUser,
@@ -83,8 +94,9 @@ export class UsersService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateAuthorizationCode`, data );
   }
 
-  CCbxGetAllUsersCombo( search: string = '' ): Observable<ResponseGet> {
-    const data: any = { search };
+  // aTiposRol opcional: solo personas con un puesto activo de esos tipos.
+  CCbxGetAllUsersCombo( search: string = '', aTiposRol: number[] = [] ): Observable<ResponseGet> {
+    const data: any = { search, aTiposRol };
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetAllUsersCombo`, data );
   }
 

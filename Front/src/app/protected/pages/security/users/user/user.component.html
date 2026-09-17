@@ -9,7 +9,7 @@
 
     <mat-dialog-content class="ucm-content">
 
-        <mat-tab-group>
+        <mat-tab-group (selectedTabChange)="fn_tabCambio($event)">
 
             <mat-tab label="Datos">
 
@@ -17,31 +17,108 @@
 
                     <div class="ucm-grid">
 
+                        <div class="ucm-nombre-pendiente ucm-col-2" *ngIf="sNombreAnterior && !userForm.nombre">
+                            <mat-icon>info</mat-icon>
+                            <span>
+                                Nombre registrado antes: <strong>{{ sNombreAnterior }}</strong>.
+                                Sepáralo en apellidos y nombre para poder guardar.
+                            </span>
+                        </div>
+
+                        <div class="ucm-slim-field">
+                            <label class="ucm-slim-label">Apellido paterno</label>
+                            <input class="ucm-slim-input" type="text" [(ngModel)]="userForm.apellidoPaterno">
+                        </div>
+
+                        <div class="ucm-slim-field">
+                            <label class="ucm-slim-label">Apellido materno</label>
+                            <input class="ucm-slim-input" type="text" [(ngModel)]="userForm.apellidoMaterno">
+                        </div>
+
                         <div class="ucm-slim-field ucm-col-2">
-                            <label class="ucm-slim-label">Nombre</label>
-                            <input class="ucm-slim-input" type="text" [(ngModel)]="userForm.name">
+                            <label class="ucm-slim-label">Nombre(s) *</label>
+                            <input class="ucm-slim-input" type="text" [(ngModel)]="userForm.nombre">
+                            <span class="ucm-nombre-preview" *ngIf="sNombreCompleto">
+                                Se mostrará como: <strong>{{ sNombreCompleto }}</strong>
+                            </span>
                         </div>
 
-                        <div class="ucm-slim-field">
-                            <label class="ucm-slim-label">Usuario</label>
-                            <input class="ucm-slim-input" type="text" [(ngModel)]="userForm.userName">
+                        <!-- Acceso al sistema (opcional) -->
+                        <div class="ucm-slim-field ucm-col-2 ucm-acceso">
+                            <mat-slide-toggle color="primary" [(ngModel)]="userForm.bAcceso">
+                                Tiene acceso al sistema
+                            </mat-slide-toggle>
+                            <span class="ucm-slim-hint">
+                                {{ userForm.bAcceso
+                                    ? 'Puede iniciar sesión con su usuario y contraseña o con su rostro.'
+                                    : 'Existe para asistencia, nómina, comisiones y combos, pero no inicia sesión.' }}
+                            </span>
                         </div>
 
-                        <div class="ucm-slim-field" *ngIf="idUser == 0">
-                            <label class="ucm-slim-label">Contraseña</label>
-                            <input class="ucm-slim-input" type="password" [(ngModel)]="userForm.pwd">
+                        <div class="ucm-slim-field" *ngIf="userForm.bAcceso">
+                            <label class="ucm-slim-label">Usuario *</label>
+                            <input class="ucm-slim-input" type="text" autocomplete="off"
+                                [class.ucm-input-ok]="estadoUserName === 'DISPONIBLE'"
+                                [class.ucm-input-error]="estadoUserName === 'OCUPADO' || estadoUserName === 'ESPACIOS'"
+                                [(ngModel)]="userForm.userName"
+                                (ngModelChange)="fn_userNameCambio($event)">
+                            <span class="ucm-disponibilidad" [ngSwitch]="estadoUserName">
+                                <span *ngSwitchCase="'VERIFICANDO'" class="ucm-disp-verificando">
+                                    <mat-icon>hourglass_empty</mat-icon> Verificando disponibilidad...
+                                </span>
+                                <span *ngSwitchCase="'DISPONIBLE'" class="ucm-disp-ok">
+                                    <mat-icon>check_circle</mat-icon> Usuario disponible
+                                </span>
+                                <span *ngSwitchCase="'OCUPADO'" class="ucm-disp-error">
+                                    <mat-icon>cancel</mat-icon> Ese usuario ya lo usa otra persona
+                                </span>
+                                <span *ngSwitchCase="'ESPACIOS'" class="ucm-disp-error">
+                                    <mat-icon>cancel</mat-icon> El usuario no puede llevar espacios
+                                </span>
+                                <span *ngSwitchCase="'ERROR'" class="ucm-disp-verificando">
+                                    <mat-icon>wifi_off</mat-icon> No se pudo verificar; se validará al guardar
+                                </span>
+                            </span>
                         </div>
 
-                        <div class="ucm-slim-field">
-                            <label class="ucm-slim-label">% de Comisión sobre utilidad</label>
-                            <input class="ucm-slim-input" type="number" [(ngModel)]="userForm.comision">
+                        <div class="ucm-slim-field" *ngIf="bPidePwd">
+                            <label class="ucm-slim-label">Contraseña *</label>
+                            <div class="ucm-inline-wrap">
+                                <input class="ucm-slim-input" [type]="hidePwd ? 'password' : 'text'" autocomplete="new-password"
+                                    [(ngModel)]="userForm.pwd">
+                                <mat-icon class="ucm-inline-icon" (click)="hidePwd = !hidePwd">
+                                    {{ hidePwd ? 'visibility_off' : 'visibility' }}
+                                </mat-icon>
+                            </div>
                         </div>
 
-                        <div class="ucm-slim-field">
-                            <label class="ucm-slim-label">Destajo (%)</label>
-                            <input class="ucm-slim-input" type="number" min="0" max="100" step="0.01"
-                                placeholder="0-100" [(ngModel)]="userForm.destajo">
-                        </div>
+                        <ul class="ucm-reglas-pwd ucm-col-2" *ngIf="bPidePwd">
+                            <li *ngFor="let regla of reglasPwdDatos" [class.ucm-regla-ok]="regla.ok">
+                                <mat-icon>{{ regla.ok ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                                {{ regla.texto }}
+                            </li>
+                        </ul>
+
+                        <!-- Alta: nace con el puesto "Empleado" -->
+                        <ng-container *ngIf="idUser === 0">
+
+                            <div class="ucm-slim-field ucm-col-2 ucm-acceso">
+                                <mat-slide-toggle color="primary" [(ngModel)]="userForm.bEsEmpleado">
+                                    Es empleado
+                                </mat-slide-toggle>
+                                <span class="ucm-slim-hint">
+                                    {{ userForm.bEsEmpleado
+                                        ? 'Nace con el puesto "Empleado": participa en asistencia y nómina. Sus demás datos se capturan en la pestaña Empleado después de guardar.'
+                                        : 'Cuenta que no es empleado (p. ej. un usuario de mostrador): no participa en asistencia ni nómina.' }}
+                                </span>
+                            </div>
+
+                            <div class="ucm-slim-field" *ngIf="userForm.bEsEmpleado">
+                                <label class="ucm-slim-label">Fecha de ingreso *</label>
+                                <input class="ucm-slim-input" type="date" [(ngModel)]="userForm.fechaIngreso">
+                            </div>
+
+                        </ng-container>
 
                         <div class="ucm-slim-field ucm-col-2">
                             <mat-checkbox class="example-margin" [(ngModel)]="userForm.active" disabled>Activo</mat-checkbox>
@@ -58,7 +135,7 @@
                 <div class="ucm-subseccion">
 
                     <p class="ucm-slim-hint" *ngIf="idUser === 0">
-                        Guarda primero los datos del usuario para asignar sucursales.
+                        Guarda primero los datos del empleado para asignar sucursales.
                     </p>
 
                     <ng-container *ngIf="idUser > 0">
@@ -77,12 +154,12 @@
                                         type="button" (click)="cbxSucursales_Clear()">
                                         <mat-icon>close</mat-icon>
                                     </button>
-                                    <mat-autocomplete autoActiveFirstOption #cbxSucursal="matAutocomplete"
+                                    <mat-autocomplete autoActiveFirstOption #cbxSucursal="matAutocomplete" class="slim-autocomplete-panel"
                                         (optionSelected)="cbxSucursales_SelectedOption( $event )">
                                         <mat-option *ngFor="let item of cbxSucursales" [value]="item">
                                             {{ item.name }}
                                         </mat-option>
-                                        <mat-option value="" *ngIf="cbxSucursales.length == 0 && addSucursalForm.value.sucursalDesc">
+                                        <mat-option value="" *ngIf="!cbxSucursales?.length && addSucursalForm.value.sucursalDesc">
                                             No se encontró nada...
                                         </mat-option>
                                     </mat-autocomplete>
@@ -102,13 +179,11 @@
                                 <span class="ucm-principal">{{ item.name }}</span>
                                 <span class="ucm-secundario">{{ item.createDate | date:'dd-MM-yyyy h:mm:ss a' }}</span>
                             </div>
-                            <button mat-icon-button matTooltip="Quitar sucursal"
-                                (click)="fn_deleteSucursalByIdUser( item.idSucursal )">
-                                <mat-icon class="colorRed">delete_outline</mat-icon>
-                            </button>
+                            <mat-icon class="grid-action-icon colorRed" matTooltip="Quitar sucursal"
+                                (click)="fn_deleteSucursalByIdUser( item.idSucursal )">delete_outline</mat-icon>
                         </div>
 
-                        <p class="ucm-slim-hint" *ngIf="sucursalesByUserList.length === 0">
+                        <p class="ucm-slim-hint" *ngIf="!sucursalesByUserList?.length">
                             Sin sucursales asignadas.
                         </p>
 
@@ -118,12 +193,12 @@
 
             </mat-tab>
 
-            <mat-tab label="Roles" [disabled]="idUser === 0">
+            <mat-tab label="Puestos" [disabled]="idUser === 0">
 
                 <div class="ucm-subseccion">
 
                     <p class="ucm-slim-hint" *ngIf="idUser === 0">
-                        Guarda primero los datos del usuario para asignar roles.
+                        Guarda primero los datos del empleado para asignar puestos.
                     </p>
 
                     <ng-container *ngIf="idUser > 0">
@@ -131,7 +206,7 @@
                         <form autocomplete="off" [formGroup]="addRoleForm" class="ucm-agregar">
 
                             <div class="ucm-slim-field ucm-agregar-combo">
-                                <label class="ucm-slim-label">Rol</label>
+                                <label class="ucm-slim-label">Puesto</label>
                                 <div class="ucm-inline-wrap" (click)="cbxSearchRol()">
                                     <input type="text" class="ucm-slim-input"
                                         placeholder="Selecciona..."
@@ -142,12 +217,12 @@
                                         type="button" (click)="cbxRolClear()">
                                         <mat-icon>close</mat-icon>
                                     </button>
-                                    <mat-autocomplete autoActiveFirstOption #cbxRol="matAutocomplete"
+                                    <mat-autocomplete autoActiveFirstOption #cbxRol="matAutocomplete" class="slim-autocomplete-panel"
                                         (optionSelected)="cbxSelectedOptionRol( $event )">
                                         <mat-option *ngFor="let item of cbxRoles" [value]="item">
                                             {{ item.name }}
                                         </mat-option>
-                                        <mat-option value="" *ngIf="cbxRoles.length == 0 && addRoleForm.value.roleDesc">
+                                        <mat-option value="" *ngIf="!cbxRoles?.length && addRoleForm.value.roleDesc">
                                             No se encontró nada...
                                         </mat-option>
                                     </mat-autocomplete>
@@ -164,17 +239,23 @@
 
                         <div class="ucm-row" *ngFor="let item of rolesByUserList">
                             <div class="ucm-persona-datos">
-                                <span class="ucm-principal">{{ item.name }}</span>
+                                <span class="ucm-principal">
+                                    <mat-icon *ngIf="item.bSistema" class="ucm-candado" matTooltip="Puesto del sistema">lock</mat-icon>
+                                    {{ item.name }}
+                                </span>
                                 <span class="ucm-secundario">{{ item.createDate | date:'dd-MM-yyyy' }}</span>
                             </div>
-                            <button mat-icon-button matTooltip="Quitar rol"
-                                (click)="fn_deleteRolByIdUser( item.idRol )">
-                                <mat-icon class="colorRed">delete_outline</mat-icon>
-                            </button>
+                            <mat-icon class="grid-action-icon colorRed" matTooltip="Quitar puesto"
+                                (click)="fn_deleteRolByIdUser( item.idRol )">delete_outline</mat-icon>
                         </div>
 
-                        <p class="ucm-slim-hint" *ngIf="rolesByUserList.length === 0">
-                            Sin roles asignados.
+                        <p class="ucm-slim-hint" *ngIf="!rolesByUserList?.length">
+                            Sin puestos asignados.
+                        </p>
+
+                        <p class="ucm-slim-hint">
+                            El tipo de cada puesto decide las pestañas: Vendedor (% comisión), Técnico (% destajo)
+                            y Empleado (datos laborales, nómina y horario).
                         </p>
 
                     </ng-container>
@@ -183,12 +264,54 @@
 
             </mat-tab>
 
-            <mat-tab label="Contraseña" [disabled]="idUser === 0" *ngIf="hasPermissionAction('users_changePwd')">
+            <!-- Pestañas por tipo de puesto (analisis/018) -->
+
+            <mat-tab label="Vendedor" *ngIf="idUser > 0 && bTipoVendedor">
+                <div class="ucm-subseccion">
+                    <div class="ucm-grid">
+                        <div class="ucm-slim-field">
+                            <label class="ucm-slim-label">% de comisión sobre utilidad</label>
+                            <input class="ucm-slim-input" type="number" min="0" max="100" step="0.01"
+                                placeholder="0-100" [(ngModel)]="userForm.comision" [disabled]="bSoloLectura">
+                        </div>
+                    </div>
+                    <p class="ucm-slim-hint">
+                        Se usa en el punto de venta y en la bitácora de comisiones. Se guarda con el botón Guardar.
+                    </p>
+                </div>
+            </mat-tab>
+
+            <mat-tab label="Técnico" *ngIf="idUser > 0 && bTipoTecnico">
+                <div class="ucm-subseccion">
+                    <div class="ucm-grid">
+                        <div class="ucm-slim-field">
+                            <label class="ucm-slim-label">% de destajo sobre mano de obra</label>
+                            <input class="ucm-slim-input" type="number" min="0" max="100" step="0.01"
+                                placeholder="0-100" [(ngModel)]="userForm.destajo" [disabled]="bSoloLectura">
+                        </div>
+                    </div>
+                    <p class="ucm-slim-hint">
+                        Se aplica al destajo automático cuando el taller llega a mostrador. Se guarda con el botón Guardar.
+                    </p>
+                </div>
+            </mat-tab>
+
+            <mat-tab label="Empleado" *ngIf="idUser > 0 && bEsEmpleado">
+                <app-empleado-datos
+                    [idUser]="idUser"
+                    [nombre]="sNombreCompleto"
+                    [sucursalesAsignadas]="sucursalesByUserList"
+                    [bSoloLectura]="bSoloLectura"
+                    (cambios)="huboCambios = true">
+                </app-empleado-datos>
+            </mat-tab>
+
+            <mat-tab label="Contraseña" [disabled]="idUser === 0" *ngIf="hasPermissionAction('users_changePwd') && userForm.bAcceso && bTienePwd">
 
                 <div class="ucm-subseccion">
 
                     <p class="ucm-slim-hint" *ngIf="idUser === 0">
-                        Guarda primero los datos del usuario para cambiar su contraseña.
+                        Guarda primero los datos del empleado para cambiar su contraseña.
                     </p>
 
                     <form autocomplete="off" [formGroup]="changePwdForm" *ngIf="idUser > 0">
@@ -198,8 +321,9 @@
                             <div class="ucm-slim-field ucm-col-2">
                                 <label class="ucm-slim-label">Contraseña</label>
                                 <div class="ucm-inline-wrap">
-                                    <input class="ucm-slim-input" [type]="hidePwd ? 'password' : 'text'"
-                                        formControlName="pwd">
+                                    <input #pwdCambioInput class="ucm-slim-input" [type]="hidePwd ? 'password' : 'text'"
+                                        formControlName="pwd" autocomplete="new-password"
+                                        (keydown.enter)="fn_pwdCambioEnter($event)">
                                     <mat-icon class="ucm-inline-icon" (click)="hidePwd = !hidePwd">
                                         {{ hidePwd ? 'visibility_off' : 'visibility' }}
                                     </mat-icon>
@@ -209,8 +333,9 @@
                             <div class="ucm-slim-field ucm-col-2">
                                 <label class="ucm-slim-label">Verificar contraseña</label>
                                 <div class="ucm-inline-wrap">
-                                    <input class="ucm-slim-input" [type]="hidePwd2 ? 'password' : 'text'"
-                                        formControlName="pwd2">
+                                    <input #pwd2CambioInput class="ucm-slim-input" [type]="hidePwd2 ? 'password' : 'text'"
+                                        formControlName="pwd2" autocomplete="new-password"
+                                        (keydown.enter)="fn_pwd2CambioEnter($event)">
                                     <mat-icon class="ucm-inline-icon" (click)="hidePwd2 = !hidePwd2">
                                         {{ hidePwd2 ? 'visibility_off' : 'visibility' }}
                                     </mat-icon>
@@ -219,19 +344,15 @@
 
                         </div>
 
-                        <div class="ucm-pwd-hint">
-                            La contraseña debe cumplir con los siguientes requisitos:
-                            <ul>
-                                <li>Tener al menos 6 caracteres</li>
-                                <li>Incluir al menos un número</li>
-                                <li>Incluir al menos una letra mayúscula</li>
-                                <li>Incluir al menos una letra minúscula</li>
-                                <li>Incluir al menos un carácter especial (por ejemplo: -_.,$^!%*?&)</li>
-                            </ul>
-                        </div>
+                        <ul class="ucm-reglas-pwd">
+                            <li *ngFor="let regla of reglasPwdCambio" [class.ucm-regla-ok]="regla.ok">
+                                <mat-icon>{{ regla.ok ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                                {{ regla.texto }}
+                            </li>
+                        </ul>
 
                         <button mat-raised-button color="accent" type="button"
-                            [disabled]="changePwdForm.invalid"
+                            [disabled]="!bPwdCambioValida"
                             (click)="fn_changePassword()">
                             <mat-icon matPrefix class="my-icon">save</mat-icon>
                             Guardar contraseña</button>

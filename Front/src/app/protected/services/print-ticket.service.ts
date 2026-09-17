@@ -1735,38 +1735,26 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 25 }
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 40 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 25 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 30 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 20 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "VALOR", iWith: 30 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 30 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
-        let totalMetalCliente = 0;
+        // Sin valor ni total: el metal es del cliente, no se cobra.
         for( var mc = 0; mc < metalesCliente.length; mc++ ){
           const mci = metalesCliente[mc];
-          totalMetalCliente += Number(mci.valorMetal) || 0;
           oLines = [];
-          var oLine: any = { aling: "Left", size: 7, text: (mci.tipo || '').toUpperCase(), iWith: 25 }
+          var oLine: any = { aling: "Left", size: 7, text: (mci.tipo || '').toUpperCase(), iWith: 40 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: (Number(mci.gramos) || 0).toFixed(1) + ' gr', iWith: 25 }
+          var oLine: any = { aling: "Right", size: 7, text: (Number(mci.gramos) || 0).toFixed(1) + ' gr', iWith: 30 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: ( mci.tipo === 'plata' ? 'Ley ' + (Number(mci.kilates) || 0) : (Number(mci.kilates) || 0) + 'K' ), iWith: 20 }
-          oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( mci.valorMetal ), iWith: 30 }
+          var oLine: any = { aling: "Right", size: 7, text: ( mci.tipo === 'plata' ? 'Ley ' + (Number(mci.kilates) || 0) : (Number(mci.kilates) || 0) + 'K' ), iWith: 30 }
           oLines.push( oLine );
           oLinesP.push( { oLines: oLines } );
         }
-
-        oLines = [];
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalMetalCliente ), iWith: 30 }
-        oLines.push( oLine );
-        oLinesP.push( { oLines: oLines } );
 
       }
 

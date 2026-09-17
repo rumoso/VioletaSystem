@@ -19,7 +19,7 @@ const AVATAR_COLORS = ['#5C6BC0', '#26A69A', '#7E57C2', '#EF5350', '#42A5F5', '#
 @Component({
   selector: 'app-comisiones-track-list',
   templateUrl: './comisiones-track-list.component.html',
-  styleUrls: ['../personal-catalogo-list/personal-catalogo-list.component.css', './comisiones-track-list.component.css']
+  styleUrls: ['../estilos/personal-lista.css', './comisiones-track-list.component.css']
 })
 export class ComisionesTrackListComponent implements OnInit, OnDestroy {
 

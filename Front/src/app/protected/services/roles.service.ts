@@ -74,6 +74,12 @@ export class RolesService {
     return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/updateRol`, data );
   }
 
+  // Tipos de puesto asignables (sin el tipo 3, exclusivo del puesto de
+  // sistema "Empleado").
+  CCbxGetTiposRol(): Observable<ResponseGet> {
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/cbxGetTiposRol`, {} );
+  }
+
   CGetRolByID( id: number ): Observable<ResponseGet> {
     var data = {
       idRol: id

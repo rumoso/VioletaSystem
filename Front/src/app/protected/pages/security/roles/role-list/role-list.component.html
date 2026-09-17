@@ -23,7 +23,7 @@
       <button mat-flat-button class="rcl-btn-add"
         (click)="edit(0)">
         <mat-icon>add</mat-icon>
-        Nuevo rol
+        Nuevo puesto
       </button>
     </div>
 
@@ -38,6 +38,7 @@
           <tr>
             <th class="rcl-th rcl-th--center">Acciones</th>
             <th class="rcl-th rcl-th--left">Nombre</th>
+            <th class="rcl-th rcl-th--center">Tipo</th>
             <th class="rcl-th rcl-th--left">Descripción</th>
             <th class="rcl-th rcl-th--center">Creado</th>
             <th class="rcl-th rcl-th--center">Activo</th>
@@ -50,14 +51,14 @@
               <div class="rcl-actions">
 
                 <mat-icon class="rcl-action-icon rcl-action-icon--edit"
-                  matTooltip="Editar Rol"
+                  matTooltip="Editar puesto"
                   (click)="edit(item.idRol)">
                   edit
                 </mat-icon>
 
-                <mat-icon *ngIf="item.active"
+                <mat-icon *ngIf="item.active && !item.bSistema"
                   class="rcl-action-icon rcl-action-icon--delete"
-                  matTooltip="Eliminar Rol">
+                  matTooltip="Eliminar puesto">
                   delete_outline
                 </mat-icon>
 
@@ -78,7 +79,16 @@
               </div>
             </td>
 
-            <td class="rcl-td rcl-td--left">{{ item.name }}</td>
+            <td class="rcl-td rcl-td--left">
+              <span class="rcl-nombre-puesto">
+                <mat-icon *ngIf="item.bSistema" class="rcl-candado" matTooltip="Puesto del sistema">lock</mat-icon>
+                {{ item.name }}
+              </span>
+            </td>
+            <td class="rcl-td rcl-td--center">
+              <span *ngIf="item.tipoRolDesc" class="rcl-tipo-chip" [ngClass]="'rcl-tipo-chip--' + item.idTipoRol">{{ item.tipoRolDesc }}</span>
+              <span *ngIf="!item.tipoRolDesc" class="rcl-tipo-vacio">—</span>
+            </td>
             <td class="rcl-td rcl-td--left">{{ item.description }}</td>
 
             <td class="rcl-td rcl-td--center">{{ item.createDate | date:'dd-MM-yyyy' }}</td>
@@ -91,9 +101,9 @@
 
           </tr>
           <tr *ngIf="!catlist || catlist.length === 0">
-            <td colspan="5" class="rcl-empty">
+            <td colspan="6" class="rcl-empty">
               <mat-icon>admin_panel_settings</mat-icon>
-              <span>No hay roles que mostrar.</span>
+              <span>No hay puestos que mostrar.</span>
             </td>
           </tr>
         </tbody>

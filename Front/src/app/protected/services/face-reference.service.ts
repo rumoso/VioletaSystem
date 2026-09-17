@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { Pagination, ResponseDB_CRUD, ResponseGet } from '../interfaces/global.interfaces';
@@ -19,19 +19,26 @@ export class FaceReferenceService {
     , private authServ: AuthService
   ) { }
 
+  // Token de sesión para las rutas que lo exigen (analisis/020):
+  // registrar, consultar y borrar un rostro de referencia. El servidor
+  // toma de aquí quién hizo el cambio.
+  private fn_headersSesion(): HttpHeaders {
+    return new HttpHeaders({ 'x-token': localStorage.getItem('token') || '' });
+  }
+
   CSaveFaceReference( data: any ): Observable<ResponseDB_CRUD> {
 
-    data.idUserLogON = this.authServ.getIdUserSession();
-
-    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/saveFaceReference`, data );
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/saveFaceReference`, data, { headers: this.fn_headersSesion() } );
 
   }
 
+  // Solo dice si la persona tiene rostro registrado (y su miniatura): el
+  // descriptor ya no sale del servidor.
   CGetFaceReference( tipoPersona: string, idPersona: number ): Observable<ResponseGet> {
 
     const data = { tipoPersona, idPersona };
 
-    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getFaceReference`, data );
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getFaceReference`, data, { headers: this.fn_headersSesion() } );
 
   }
 
@@ -39,15 +46,28 @@ export class FaceReferenceService {
 
     const data = { tipoPersona, idPersona };
 
-    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteFaceReference`, data );
+    return this.http.post<ResponseDB_CRUD>( `${ this.baseURL }/${ this._api }/deleteFaceReference`, data, { headers: this.fn_headersSesion() } );
 
   }
 
-  CGetFaceReferences( tipoPersona: string = '' ): Observable<ResponseGet> {
+  // ── Comparación en el servidor (analisis/020) ──
+  // El navegador manda el descriptor de la captura; el servidor decide si
+  // coincide y, si sí, entrega un comprobante de un solo uso para
+  // `proposito` (LOGIN | TIMECARD | AUTORIZACION).
 
-    const data = { tipoPersona };
+  CIdentificarRostro( tipoPersona: string, descriptor: number[], proposito: string, referencia: string ): Observable<ResponseGet> {
 
-    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getFaceReferences`, data );
+    const data = { tipoPersona, descriptor, proposito, referencia, idUserLogON: this.authServ.getIdUserSession() };
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/identificarRostro`, data );
+
+  }
+
+  CVerificarRostro( tipoPersona: string, idPersona: number, descriptor: number[], proposito: string, referencia: string ): Observable<ResponseGet> {
+
+    const data = { tipoPersona, idPersona, descriptor, proposito, referencia, idUserLogON: this.authServ.getIdUserSession() };
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/verificarRostro`, data );
 
   }
 

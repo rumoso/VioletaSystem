@@ -37,9 +37,7 @@
                         </td>
                         <td class="textAlingRight" [class.nl-neto-negativo]="item.neto < 0">{{ item.neto | currency }}</td>
                         <td class="textAlingCenter">
-                            <button mat-icon-button matTooltip="Ver recibo" (click)="fn_abrirRecibo(item)">
-                                <mat-icon class="colorGreen">receipt_long</mat-icon>
-                            </button>
+                            <mat-icon class="grid-action-icon colorGreen" matTooltip="Ver recibo" (click)="fn_abrirRecibo(item)">receipt_long</mat-icon>
                         </td>
                     </tr>
                 </tbody>

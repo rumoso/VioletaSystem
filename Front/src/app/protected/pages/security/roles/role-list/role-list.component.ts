@@ -21,7 +21,7 @@ export class RoleListComponent implements OnInit, OnDestroy {
   
   private _appMain: string = environment.appMain;
 
-  title = 'Lista de roles';
+  title = 'Lista de puestos';
   bShowSpinner: boolean = false;
   catlist: any[] = [];
   
@@ -46,7 +46,7 @@ export class RoleListComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
       this.authService.checkSession();
-      this.pageTitleServ.set('admin_panel_settings', 'Roles', 'Catálogo de roles y sus permisos');
+      this.pageTitleServ.set('admin_panel_settings', 'Puestos', 'Catálogo de puestos, su tipo y sus permisos');
 
       this.fn_getRolesListWithPage();
     }
@@ -90,9 +90,9 @@ export class RoleListComponent implements OnInit, OnDestroy {
       var oData: any = {
         relationType: 'R',
         idRelation: id,
-        description: 'Permisos del Rol: ' + name
+        description: 'Permisos del puesto: ' + name
       }
-  
+
       this.servicesGServ.showModalWithParams( MenupermisosComponent, oData, '1500px')
       .afterClosed().subscribe({
         next: ( resp: any ) =>{
@@ -157,7 +157,7 @@ export class RoleListComponent implements OnInit, OnDestroy {
     var oData: any = {
       relationType: 'R',
       idRelation: id,
-      description: 'Permisos del Rol: ' + name
+      description: 'Permisos del puesto: ' + name
     }
 
     this.servicesGServ.showModalWithParams( ActionsconfComponent, oData, '1500px')

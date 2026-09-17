@@ -98,3 +98,26 @@
   border-radius: 8px !important;
 }
 .rcm-btn-secondary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }
+
+/* ══ Puesto del sistema / ayuda del tipo (analisis/018) ══ */
+.rcm-sistema-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #e8eaf6;
+  color: #283593;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.rcm-sistema-nota mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+
+.rcm-hint {
+  font-size: 11px;
+  color: #757575;
+  padding-left: 2px;
+}
+
+.rcm-field .inline-wrap select.rcm-slim-input { cursor: pointer; }
+.rcm-slim-input:disabled { color: #9e9e9e; cursor: not-allowed; }

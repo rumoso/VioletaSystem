@@ -16,8 +16,6 @@ import { RoleListComponent } from "./pages/security/roles/role-list/role-list.co
 import { PhysicalInventoryListComponent } from "./pages/reports/physical-inventory-list/physical-inventory-list.component";
 import { MetalInventarioComponent } from "./pages/reports/metal-inventario/metal-inventario.component";
 import { FaceLogComponent } from "./pages/security/face-log/face-log.component";
-import { PersonalCatalogoListComponent } from "./pages/personal/personal-catalogo-list/personal-catalogo-list.component";
-import { EmpleadoListComponent } from "./pages/personal/empleado-list/empleado-list.component";
 import { NominaConceptosListComponent } from "./pages/personal/nomina-conceptos-list/nomina-conceptos-list.component";
 import { ComisionesTrackListComponent } from "./pages/personal/comisiones-track-list/comisiones-track-list.component";
 import { NominaListComponent } from "./pages/personal/nomina-list/nomina-list.component";
@@ -32,6 +30,7 @@ import { DevoluInventarioComponent } from "./pages/operation/devolu-inventario/d
 import { IngresosListComponent } from "./pages/sales/ingresos-list/ingresos-list.component";
 import { PagosCanceladosComponent } from "./pages/reports/pagos-cancelados/pagos-cancelados.component";
 import { RepPaymentsComponent } from "./pages/reports/rep-payments/rep-payments.component";
+import { SucursalListComponent } from "./pages/configuracion/sucursal-list/sucursal-list.component";
 import { InfFinancieraComponent } from "./pages/finanzas/inf-financiera/inf-financiera.component";
 import { InventaryLogComponent } from "./pages/sales/mdl/inventary-log/inventary-log.component";
 import { TallerListComponent } from "./pages/sales/taller-list/taller-list.component";
@@ -76,6 +75,10 @@ const routes: Routes = [
         {
           path: 'saleList',
           component: SaleListComponent
+        },
+        {
+          path: 'sucursalList',
+          component: SucursalListComponent
         },
         {
           path: 'tiposDeCambio',
@@ -157,21 +160,7 @@ const routes: Routes = [
           path: 'tallerList',
           component: TallerListComponent
         },
-        {
-          path: 'tecnicosList',
-          component: PersonalCatalogoListComponent,
-          data: { catalogo: 'tecnicos' }
-        },
-        {
-          path: 'vendedoresList',
-          component: PersonalCatalogoListComponent,
-          data: { catalogo: 'vendedores' }
-        },
-        {
-          path: 'empleadosList',
-          component: EmpleadoListComponent
-        },
-        {
+{
           path: 'nominaConceptosList',
           component: NominaConceptosListComponent
         },

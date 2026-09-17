@@ -18,6 +18,52 @@
 
     </div>
 
+    <div class="ucl-filters-row">
+
+      <div class="ucl-field">
+        <label class="ucl-label">Puesto</label>
+        <div class="inline-wrap">
+          <select class="ucl-slim-input" [(ngModel)]="filterIdRol" (change)="fn_filtrar()">
+            <option [ngValue]="0">Todos</option>
+            <option *ngFor="let p of cbxPuestos" [ngValue]="p.idRol">{{ p.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ucl-field">
+        <label class="ucl-label">Tipo de puesto</label>
+        <div class="inline-wrap">
+          <select class="ucl-slim-input" [(ngModel)]="filterIdTipoRol" (change)="fn_filtrar()">
+            <option [ngValue]="0">Todos</option>
+            <option *ngFor="let t of cbxTiposRol" [ngValue]="t.idTipoRol">{{ t.nombre }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ucl-field">
+        <label class="ucl-label">Acceso al sistema</label>
+        <div class="inline-wrap">
+          <select class="ucl-slim-input" [(ngModel)]="filterAcceso" (change)="fn_filtrar()">
+            <option value="">Todos</option>
+            <option value="CON">Con acceso</option>
+            <option value="SIN">Sin acceso</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ucl-field">
+        <label class="ucl-label">Estatus</label>
+        <div class="inline-wrap">
+          <select class="ucl-slim-input" [(ngModel)]="filterActive" (change)="fn_filtrar()">
+            <option value="">Todos</option>
+            <option value="ACTIVOS">Activos</option>
+            <option value="INACTIVOS">Dados de baja</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
     <div class="ucl-filters-row ucl-filters-row--secondary">
       <div class="ucl-faceid-filter">
         <span class="ucl-faceid-filter-label">Face ID:</span>
@@ -34,7 +80,7 @@
       <button mat-flat-button class="ucl-btn-add"
         (click)="edit(0)">
         <mat-icon>add</mat-icon>
-        Nuevo usuario
+        Nuevo empleado
       </button>
     </div>
 
@@ -48,8 +94,10 @@
         <thead>
           <tr>
             <th class="ucl-th ucl-th--center">Acciones</th>
-            <th class="ucl-th ucl-th--left">Usuario</th>
-            <th class="ucl-th ucl-th--left">Roles</th>
+            <th class="ucl-th ucl-th--left">Empleado</th>
+            <th class="ucl-th ucl-th--left">Puestos</th>
+            <th class="ucl-th ucl-th--left">Sucursal base</th>
+            <th class="ucl-th ucl-th--center">Acceso</th>
             <th class="ucl-th ucl-th--center">Face ID</th>
             <th class="ucl-th ucl-th--center">Creado</th>
             <th class="ucl-th ucl-th--center">Estatus</th>
@@ -62,17 +110,31 @@
               <div class="ucl-actions">
 
                 <mat-icon class="ucl-action-icon ucl-action-icon--edit"
-                  matTooltip="Editar Usuario"
+                  matTooltip="Editar empleado"
                   (click)="edit(item.idUser)"
                   *ngIf="hasPermissionAction('users_CrearModificar')">
                   edit
                 </mat-icon>
 
                 <mat-icon class="ucl-action-icon ucl-action-icon--delete"
-                  matTooltip="Eliminar Usuario"
-                  (click)="fn_deleteUser(item.idUser)"
+                  matTooltip="Dar de baja"
+                  (click)="fn_baja(item, 'BAJA')"
                   *ngIf="hasPermissionAction('users_Disable') && item.active">
-                  delete_outline
+                  person_off
+                </mat-icon>
+
+                <mat-icon class="ucl-action-icon ucl-action-icon--edit"
+                  matTooltip="Reactivar"
+                  (click)="fn_baja(item, 'REACTIVAR')"
+                  *ngIf="hasPermissionAction('users_Disable') && !item.active">
+                  how_to_reg
+                </mat-icon>
+
+                <mat-icon class="ucl-action-icon ucl-action-icon--delete"
+                  matTooltip="Eliminar definitivamente (solo sin historial)"
+                  (click)="fn_eliminar(item)"
+                  *ngIf="hasPermissionAction('empleados_Eliminar')">
+                  delete_forever
                 </mat-icon>
 
                 <mat-icon class="ucl-action-icon ucl-action-icon--view"
@@ -96,12 +158,30 @@
                 <span class="ucl-user-avatar">{{ item.name?.charAt(0)?.toUpperCase() }}</span>
                 <div class="ucl-user-chip-datos">
                   <span class="ucl-user-name">{{ item.name }}</span>
-                  <span class="ucl-user-sub">{{ item.userName }}</span>
+                  <span class="ucl-nombre-pendiente" *ngIf="item.bNombrePendiente == 1"
+                    matTooltip="Este registro tiene el nombre completo en un solo texto. Edítalo para separar apellidos y nombre.">
+                    Pendiente separar nombre
+                  </span>
+                  <span class="ucl-user-sub">{{ item.bAcceso ? item.userName : 'Sin acceso al sistema' }}</span>
                 </div>
               </div>
             </td>
 
-            <td class="ucl-td ucl-td--left">{{ item.roles }}</td>
+            <td class="ucl-td ucl-td--left">
+              <div class="ucl-puestos">
+                <span class="ucl-puesto-chip" *ngFor="let puesto of fn_puestos(item)">{{ puesto }}</span>
+                <span class="ucl-user-sub" *ngIf="fn_puestos(item).length === 0">Sin puestos</span>
+              </div>
+            </td>
+
+            <td class="ucl-td ucl-td--left">{{ item.sucursalBaseDesc || '—' }}</td>
+
+            <td class="ucl-td ucl-td--center">
+              <mat-icon class="ucl-face-icon" [class.ucl-face-ok]="item.bAcceso" [class.ucl-face-warn]="!item.bAcceso"
+                [matTooltip]="item.bAcceso ? 'Puede iniciar sesión' : 'Sin acceso al sistema'">
+                {{ item.bAcceso ? 'login' : 'block' }}
+              </mat-icon>
+            </td>
 
             <td class="ucl-td ucl-td--center">
               <mat-icon class="ucl-face-icon" [class.ucl-face-ok]="item.bTieneFaceID" [class.ucl-face-warn]="!item.bTieneFaceID"
@@ -115,15 +195,15 @@
 
             <td class="ucl-td ucl-td--center">
               <span class="ucl-status-chip" [class.ucl-status-chip--activo]="item.active" [class.ucl-status-chip--inactivo]="!item.active">
-                {{ item.active ? 'Activo' : 'Inactivo' }}
+                {{ item.active ? 'Activo' : 'De baja' }}
               </span>
             </td>
 
           </tr>
           <tr *ngIf="!catlist || catlist.length === 0">
-            <td colspan="6" class="ucl-empty">
+            <td colspan="9" class="ucl-empty">
               <mat-icon>manage_accounts</mat-icon>
-              <span>No hay usuarios que mostrar.</span>
+              <span>No hay empleados que mostrar.</span>
             </td>
           </tr>
         </tbody>

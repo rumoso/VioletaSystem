@@ -1,0 +1,113 @@
+<div class="suc-page">
+
+  <!-- ═══════════════ BARRA ═══════════════ -->
+  <div class="suc-card suc-barra">
+
+    <div class="suc-field suc-field--buscar">
+      <label class="suc-label">Buscar</label>
+      <div class="suc-wrap">
+        <mat-icon class="suc-prefix-icon">search</mat-icon>
+        <input type="text"
+          class="suc-input"
+          placeholder="Nombre, descripción o dirección"
+          [(ngModel)]="sBusqueda"
+          (keyup)="ev_fn_busqueda()">
+      </div>
+    </div>
+
+    <mat-checkbox class="suc-check" [(ngModel)]="bIncluirInactivas" (change)="fn_cargar()">
+      Incluir inactivas
+    </mat-checkbox>
+
+    <span class="suc-spacer"></span>
+
+    <span class="suc-count-badge">{{ sucursales.length }} {{ sucursales.length === 1 ? 'sucursal' : 'sucursales' }}</span>
+
+    <button mat-flat-button class="suc-btn-primary" (click)="fn_abrir(0)" *ngIf="bPuedeEditar">
+      <mat-icon>add</mat-icon>
+      Nueva sucursal
+    </button>
+
+  </div>
+
+  <!-- ═══════════════ TABLA ═══════════════ -->
+  <div class="suc-card">
+
+    <div class="suc-table-wrapper">
+      <table class="suc-table">
+        <thead>
+          <tr>
+            <th class="suc-th suc-th--center">Acciones</th>
+            <th class="suc-th">Sucursal</th>
+            <th class="suc-th">Dirección</th>
+            <th class="suc-th">Horario</th>
+            <th class="suc-th suc-th--center">Empleados</th>
+            <th class="suc-th suc-th--center">Estatus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of sucursales" class="suc-tr" [class.suc-tr--inactiva]="s.active !== 1">
+
+            <td class="suc-td suc-td--center suc-td--acciones">
+              <mat-icon class="suc-accion suc-accion--ver"
+                [matTooltip]="bPuedeEditar ? 'Editar' : 'Consultar'"
+                (click)="fn_abrir(s.idSucursal)">{{ bPuedeEditar ? 'edit' : 'visibility' }}</mat-icon>
+
+              <mat-icon *ngIf="bPuedeEditar && s.active === 1"
+                class="suc-accion suc-accion--baja"
+                [class.suc-accion--bloqueada]="s.idSucursal === idSucursalTerminal"
+                [matTooltip]="s.idSucursal === idSucursalTerminal ? 'Es la sucursal de esta terminal: no se puede desactivar' : 'Desactivar'"
+                (click)="s.idSucursal !== idSucursalTerminal && fn_cambiarEstatus(s)">toggle_on</mat-icon>
+
+              <mat-icon *ngIf="bPuedeEditar && s.active !== 1"
+                class="suc-accion suc-accion--alta"
+                matTooltip="Activar"
+                (click)="fn_cambiarEstatus(s)">toggle_off</mat-icon>
+            </td>
+
+            <td class="suc-td">
+              <div class="suc-nombre">
+                {{ s.name }}
+                <span class="suc-chip-terminal" *ngIf="s.idSucursal === idSucursalTerminal">Esta terminal</span>
+              </div>
+              <div class="suc-descripcion" *ngIf="s.description">{{ s.description }}</div>
+            </td>
+
+            <td class="suc-td suc-td--direccion">
+              {{ s.address || '—' }}
+            </td>
+
+            <td class="suc-td">
+              <span class="suc-horario" *ngIf="s.horario?.length > 0">{{ fn_resumenHorario(s.horario) }}</span>
+              <span class="suc-sin-horario" *ngIf="!s.horario || s.horario.length === 0">
+                <mat-icon>schedule</mat-icon> Sin horario
+              </span>
+            </td>
+
+            <td class="suc-td suc-td--center">
+              <span class="suc-empleados">{{ s.empleados }}</span>
+            </td>
+
+            <td class="suc-td suc-td--center">
+              <span class="suc-estatus" [class.suc-estatus--activa]="s.active === 1">
+                {{ s.active === 1 ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+
+          </tr>
+
+          <tr *ngIf="!bShowSpinner && sucursales.length === 0">
+            <td colspan="6" class="suc-empty">
+              <mat-icon>store</mat-icon>
+              <span>No hay sucursales que mostrar</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

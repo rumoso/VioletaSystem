@@ -20,8 +20,14 @@ export class RoleComponent implements OnInit {
     idRol: 0,
     name: '',
     description: '',
-    active: true
+    active: true,
+    idTipoRol: null
   };
+
+  // Puesto del sistema ("Empleado"): nombre, tipo y estatus bloqueados;
+  // acciones y menús sí se configuran.
+  bSistema: boolean = false;
+  tiposRol: any[] = [];
 
   constructor(
     private dialogRef: MatDialogRef<RoleComponent>
@@ -34,13 +40,20 @@ export class RoleComponent implements OnInit {
   ) { }
 
   get titulo(): string {
-    return this.idRol ? 'Editar Rol' : 'Nuevo Rol';
+    return this.idRol ? 'Editar puesto' : 'Nuevo puesto';
   }
 
   ngOnInit(): void {
     this.authService.checkSession();
 
     this.idRol = this.ODataP?.idRol || 0;
+
+    this.rolesServ.CCbxGetTiposRol()
+      .subscribe({
+        next: ( resp: any ) => {
+          this.tiposRol = resp.status === 0 ? ( resp.data || [] ) : [];
+        }
+      });
 
     if( this.idRol > 0 ){
 
@@ -55,8 +68,10 @@ export class RoleComponent implements OnInit {
                 idRol: resp.data.idRol,
                 name: resp.data.name,
                 description: resp.data.description,
-                active: resp.data.active
+                active: resp.data.active,
+                idTipoRol: resp.data.idTipoRol
               };
+              this.bSistema = Number(resp.data.bSistema) === 1;
 
            }else{
             this.servicesGServ.showSnakbar(resp.message);

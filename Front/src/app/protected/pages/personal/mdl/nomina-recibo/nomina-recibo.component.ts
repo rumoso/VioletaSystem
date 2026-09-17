@@ -28,7 +28,7 @@ import { fn_restar, fn_diferenciaDesc } from 'src/app/protected/utils/numero.uti
 @Component({
   selector: 'app-nomina-recibo',
   templateUrl: './nomina-recibo.component.html',
-  styleUrls: ['../empleado/empleado.component.css', '../../personal-catalogo-list/personal-catalogo-list.component.css', './nomina-recibo.component.css']
+  styleUrls: ['../empleado-datos/empleado-datos.component.css', '../../estilos/personal-lista.css', './nomina-recibo.component.css']
 })
 export class NominaReciboComponent implements OnInit {
 

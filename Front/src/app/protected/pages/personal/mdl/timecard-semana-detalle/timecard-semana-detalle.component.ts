@@ -41,7 +41,7 @@ const GRUPO_LABEL: { [key: string]: string } = {
 @Component({
   selector: 'app-timecard-semana-detalle',
   templateUrl: './timecard-semana-detalle.component.html',
-  styleUrls: ['../personal-catalogo/personal-catalogo.component.css', './timecard-semana-detalle.component.css']
+  styleUrls: ['../../estilos/personal-modal.css', './timecard-semana-detalle.component.css']
 })
 export class TimecardSemanaDetalleComponent implements OnInit {
 

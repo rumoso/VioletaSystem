@@ -105,15 +105,8 @@
 
             <td class="textAlingCenter">
               <div class="pcl-acciones">
-                <button mat-icon-button matTooltip="Ver detalle de la semana" (click)="fn_verDetalle(item)">
-                  <mat-icon class="colorGreen">visibility</mat-icon>
-                </button>
-                <button mat-icon-button
-                  *ngIf="bPuedeCapturar && !item.bPagada"
-                  matTooltip="Editar / corregir marcajes de la semana"
-                  (click)="fn_editarDetalle(item)">
-                  <mat-icon>edit</mat-icon>
-                </button>
+                <mat-icon class="grid-action-icon colorGreen" matTooltip="Ver detalle de la semana" (click)="fn_verDetalle(item)">visibility</mat-icon>
+                <mat-icon class="grid-action-icon" *ngIf="bPuedeCapturar && !item.bPagada" matTooltip="Editar / corregir marcajes de la semana" (click)="fn_editarDetalle(item)">edit</mat-icon>
               </div>
             </td>
 

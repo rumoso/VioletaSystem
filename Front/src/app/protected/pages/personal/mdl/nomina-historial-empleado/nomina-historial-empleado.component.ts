@@ -11,7 +11,7 @@ import { NominaReciboComponent } from '../nomina-recibo/nomina-recibo.component'
 @Component({
   selector: 'app-nomina-historial-empleado',
   templateUrl: './nomina-historial-empleado.component.html',
-  styleUrls: ['../../personal-catalogo-list/personal-catalogo-list.component.css', './nomina-historial-empleado.component.css']
+  styleUrls: ['../../estilos/personal-lista.css', './nomina-historial-empleado.component.css']
 })
 export class NominaHistorialEmpleadoComponent implements OnInit {
 

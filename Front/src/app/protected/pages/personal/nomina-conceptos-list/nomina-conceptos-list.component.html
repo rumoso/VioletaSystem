@@ -94,26 +94,11 @@
 
                     <td class="textAlingCenter" *ngIf="bPuedeAdministrar">
                         <div class="pcl-acciones">
-                            <button mat-icon-button
-                            *ngIf="!item.bSistema"
-                            matTooltip="Editar"
-                            (click)="fn_showModal(item)">
-                                <mat-icon class="colorGreen">edit</mat-icon>
-                            </button>
+                            <mat-icon class="grid-action-icon colorGreen" *ngIf="!item.bSistema" matTooltip="Editar" (click)="fn_showModal(item)">edit</mat-icon>
 
-                            <button mat-icon-button
-                            [matTooltip]="item.active ? 'Inactivar' : 'Activar'"
-                            (click)="fn_setActive(item)">
-                                <mat-icon [class.colorOrange]="item.active" [class.colorGreen]="!item.active">
-                                    {{ item.active ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-                            </button>
+                            <mat-icon class="grid-action-icon" [matTooltip]="item.active ? 'Inactivar' : 'Activar'" (click)="fn_setActive(item)" [class.colorOrange]="item.active" [class.colorGreen]="!item.active">{{ item.active ? 'toggle_off' : 'toggle_on' }}</mat-icon>
 
-                            <button mat-icon-button
-                            *ngIf="!item.bSistema"
-                            matTooltip="Eliminar"
-                            (click)="fn_delete(item)">
-                                <mat-icon class="colorRed">delete_forever</mat-icon>
-                            </button>
+                            <mat-icon class="grid-action-icon colorRed" *ngIf="!item.bSistema" matTooltip="Eliminar" (click)="fn_delete(item)">delete_forever</mat-icon>
                         </div>
                     </td>
                 </tr>

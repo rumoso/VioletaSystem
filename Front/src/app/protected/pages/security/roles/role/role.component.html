@@ -9,11 +9,30 @@
 
     <div class="rcm-form">
 
+        <div class="rcm-sistema-nota" *ngIf="bSistema">
+            <mat-icon>lock</mat-icon>
+            <span>Puesto del sistema: el nombre, el tipo y el estatus no se pueden cambiar. Sus acciones y menús sí se configuran.</span>
+        </div>
+
         <div class="rcm-field">
             <label class="rcm-label">Nombre</label>
             <div class="inline-wrap">
-                <input type="text" class="rcm-slim-input" [(ngModel)]="rolForm.name">
+                <input type="text" class="rcm-slim-input" [(ngModel)]="rolForm.name" [disabled]="bSistema">
             </div>
+        </div>
+
+        <div class="rcm-field">
+            <label class="rcm-label">Tipo de puesto</label>
+            <div class="inline-wrap">
+                <select class="rcm-slim-input" [(ngModel)]="rolForm.idTipoRol" [disabled]="bSistema">
+                    <option [ngValue]="null">Sin tipo</option>
+                    <option *ngIf="bSistema" [ngValue]="rolForm.idTipoRol">Empleados</option>
+                    <ng-container *ngIf="!bSistema">
+                        <option *ngFor="let t of tiposRol" [ngValue]="t.idTipoRol">{{ t.nombre }}</option>
+                    </ng-container>
+                </select>
+            </div>
+            <small class="rcm-hint">Define en qué combos aparece quien tenga este puesto. No da permisos.</small>
         </div>
 
         <div class="rcm-field">

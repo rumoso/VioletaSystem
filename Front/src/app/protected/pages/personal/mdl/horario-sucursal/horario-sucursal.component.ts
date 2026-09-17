@@ -23,7 +23,7 @@ const DIAS = [
 @Component({
   selector: 'app-horario-sucursal',
   templateUrl: './horario-sucursal.component.html',
-  styleUrls: ['../personal-catalogo/personal-catalogo.component.css', './horario-sucursal.component.css']
+  styleUrls: ['../../estilos/personal-modal.css', './horario-sucursal.component.css']
 })
 export class HorarioSucursalComponent implements OnInit {
 

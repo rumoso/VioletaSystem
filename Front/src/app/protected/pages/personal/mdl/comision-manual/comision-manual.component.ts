@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { TIPO_ROL } from 'src/app/protected/utils/puestos.const';
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -17,7 +18,7 @@ import { UsersService } from 'src/app/protected/services/users.service';
 @Component({
   selector: 'app-comision-manual',
   templateUrl: './comision-manual.component.html',
-  styleUrls: ['../personal-catalogo/personal-catalogo.component.css']
+  styleUrls: ['../../estilos/personal-modal.css']
 })
 export class ComisionManualComponent implements OnInit, OnDestroy {
 
@@ -92,7 +93,8 @@ export class ComisionManualComponent implements OnInit, OnDestroy {
   private fn_buscarEmpleados( search: string ) {
 
     this.bBuscandoEmpleados = true;
-    this.usersServ.CCbxGetAllUsersCombo(search)
+    // Solo quien cobra comisión o destajo: puestos de tipo vendedor y técnico.
+    this.usersServ.CCbxGetAllUsersCombo(search, [TIPO_ROL.VENDEDOR, TIPO_ROL.TECNICO])
       .subscribe({
         next: (resp: ResponseGet) => {
           this.empleadosEncontrados = resp.status === 0 ? (resp.data || []) : [];

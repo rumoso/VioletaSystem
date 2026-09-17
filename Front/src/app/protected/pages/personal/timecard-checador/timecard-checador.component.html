@@ -11,6 +11,8 @@
       <mat-icon class="tc-icono-grande">face</mat-icon>
       <h2>TimeCard</h2>
       <p>Escanea tu Face ID para registrar tu entrada o salida.</p>
+      <!-- Comprobante vencido o ya usado (analisis/020) -->
+      <p class="tc-aviso" *ngIf="mensaje">{{ mensaje }}</p>
       <button mat-raised-button color="primary" (click)="fn_escanear()">
         <mat-icon>photo_camera</mat-icon> Escanear Face ID
       </button>

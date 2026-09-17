@@ -14,6 +14,14 @@ import { MenupermisosComponent } from '../../mdl/menupermisos/menupermisos.compo
 import { FaceVerificationComponent } from '../../mdl/face-verification/face-verification.component';
 import { FaceIdManagerComponent } from '../../mdl/face-id-manager/face-id-manager.component';
 import { UserComponent } from '../user/user.component';
+import { EmpleadoBajaComponent } from '../../../personal/mdl/empleado-baja/empleado-baja.component';
+import { RolesService } from 'src/app/protected/services/roles.service';
+import { EmpleadosService } from 'src/app/protected/services/empleados.service';
+import { TIPO_ROL } from 'src/app/protected/utils/puestos.const';
+
+// Pantalla Empleados (antes Usuarios) — analisis/018. Una sola pantalla
+// para la persona: sus puestos, acceso, Face ID, baja, reactivación y
+// eliminación física.
 
 @Component({
   selector: 'app-user-list',
@@ -27,14 +35,17 @@ export class UserListComponent implements OnInit, OnDestroy {
   constructor(
     private servicesGServ: ServicesGService
     , private usersServ: UsersService
+    , private rolesServ: RolesService
+    , private empleadosServ: EmpleadosService
     , private authServ: AuthService
     , private pageTitleServ: PageTitleService
     ) { }
 
     ngOnInit(): void {
       this.authServ.checkSession();
-      this.pageTitleServ.set('manage_accounts', this.title, 'Usuarios del sistema, roles y Face ID');
+      this.pageTitleServ.set('manage_accounts', this.title, 'Personas del sistema: puestos, acceso y Face ID');
 
+      this.fn_cargarCombosFiltros();
       this.fn_getUsersListWithPage();
     }
 
@@ -44,7 +55,7 @@ export class UserListComponent implements OnInit, OnDestroy {
 
     edit( id: number ){
 
-      this.servicesGServ.showModalWithParams( UserComponent, { idUser: id }, '650px')
+      this.servicesGServ.showModalWithParams( UserComponent, { idUser: id }, '760px')
       .afterClosed().subscribe({
         next: ( huboCambios: any ) =>{
           if( huboCambios ){
@@ -76,7 +87,7 @@ export class UserListComponent implements OnInit, OnDestroy {
       return this.authServ.hasPermissionAction(action);
     }
 
-  title = 'Lista de usuarios';
+  title = 'Empleados';
   bShowSpinner: boolean = false;
   catlist: any[] = [];
   
@@ -92,18 +103,60 @@ export class UserListComponent implements OnInit, OnDestroy {
   }
   //-------------------------------
 
-  // Filtro de Face ID: '' (todos) | 'CON' | 'SIN'
-  filterFaceID: string = '';
+  // Filtros
+  filterFaceID: string = '';     // '' | 'CON' | 'SIN'
+  filterIdRol: number = 0;       // 0 = todos los puestos
+  filterIdTipoRol: number = 0;   // 0 = todos los tipos
+  filterAcceso: string = '';     // '' | 'CON' | 'SIN'
+  filterActive: string = 'ACTIVOS'; // '' | 'ACTIVOS' | 'INACTIVOS'
+
+  cbxPuestos: any[] = [];
+  cbxTiposRol: any[] = [];
+
+  private fn_cargarCombosFiltros() {
+
+    this.rolesServ.CGetRolesListWithPage({ search: '', length: 0, pageSize: 200, pageIndex: 0, pageSizeOptions: [] })
+      .subscribe({
+        next: ( resp: ResponseGet ) => {
+          this.cbxPuestos = resp.status === 0 ? ( resp.data.rows || [] ) : [];
+        }
+      });
+
+    // El tipo Empleados no es asignable a un puesto, pero sí sirve como filtro.
+    this.rolesServ.CCbxGetTiposRol()
+      .subscribe({
+        next: ( resp: any ) => {
+          const tipos = resp.status === 0 ? ( resp.data || [] ) : [];
+          this.cbxTiposRol = [ ...tipos, { idTipoRol: TIPO_ROL.EMPLEADO, nombre: 'Empleados' } ];
+        }
+      });
+
+  }
 
   fn_filtrarFaceID() {
     this.pagination.pageIndex = 0;
     this.fn_getUsersListWithPage();
   }
 
+  fn_filtrar() {
+    this.pagination.pageIndex = 0;
+    this.fn_getUsersListWithPage();
+  }
+
+  fn_puestos( item: any ): string[] {
+    return item.puestosDesc ? String(item.puestosDesc).split('|') : [];
+  }
+
   fn_getUsersListWithPage() {
 
     this.bShowSpinner = true;
-    this.usersServ.CGetUsersListWithPage( this.pagination, this.filterFaceID )
+    this.usersServ.CGetUsersListWithPage( this.pagination, {
+      filterFaceID: this.filterFaceID,
+      idRol: this.filterIdRol,
+      idTipoRol: this.filterIdTipoRol,
+      filterAcceso: this.filterAcceso,
+      filterActive: this.filterActive
+    } )
     .subscribe({
       next: (resp: ResponseGet) => {
         this.catlist = resp.data.rows;
@@ -154,29 +207,51 @@ export class UserListComponent implements OnInit, OnDestroy {
 
   }
 
-  fn_deleteUser( idUser: number ){
+  // Baja laboral / reactivación: un solo modal que avisa qué pasa (y el
+  // metal a cargo) y pide fecha si es empleado.
+  fn_baja( item: any, modo: 'BAJA' | 'REACTIVAR' ){
 
-    this.servicesGServ.showDialog('¿Estás seguro?'
-                                      , 'Está a punto de deshabilitar al usuario'
-                                      , '¿Desea continuar?'
-                                      , 'Si', 'No')
+    this.servicesGServ.showModalWithParams( EmpleadoBajaComponent, {
+      idUser: item.idUser,
+      nombre: item.name,
+      modo,
+      bEsEmpleado: !!item.idEmpleado
+    }, '480px')
+    .afterClosed().subscribe({
+      next: ( huboCambios: any ) => {
+        if( huboCambios ){
+          this.fn_getUsersListWithPage();
+        }
+      }
+    });
+
+  }
+
+  // Eliminación física: solo sin ningún historial (el Back lo valida).
+  fn_eliminar( item: any ){
+
+    this.servicesGServ.showDialog('¿Eliminar definitivamente?'
+                                      , `Se borrará a "${ item.name }" con sus puestos, permisos, Face ID y datos de empleado. Si tiene historial no se podrá; en ese caso dalo de baja`
+                                      , 'Esta acción no se puede deshacer'
+                                      , 'Eliminar', 'Cancelar')
     .afterClosed().subscribe({
       next: ( resp ) =>{
         if(resp){
           this.bShowSpinner = true;
-          this.usersServ.CDisabledUser( idUser )
+          this.empleadosServ.CDelete( item.idUser )
           .subscribe({
-            next: (resp: ResponseDB_CRUD) => {
-              this.fn_getUsersListWithPage();
-              this.servicesGServ.showAlertIA( resp );
+            next: (resp2: any) => {
+              this.servicesGServ.showSnakbar( resp2.message );
               this.bShowSpinner = false;
+              if( resp2.status === 0 ){
+                this.fn_getUsersListWithPage();
+              }
             },
             error: (ex: HttpErrorResponse) => {
               console.log( ex )
-              this.servicesGServ.showSnakbar( ex.error.data );
+              this.servicesGServ.showSnakbar( 'Problemas con el servicio' );
               this.bShowSpinner = false;
             }
-      
           })
         }
       }
@@ -188,7 +263,7 @@ export class UserListComponent implements OnInit, OnDestroy {
     var oData: any = {
       relationType: 'U',
       idRelation: id,
-      description: 'Permisos del Usuario: ' + name
+      description: 'Permisos directos de: ' + name
     }
 
     this.servicesGServ.showModalWithParams( ActionsconfComponent, oData, '1500px')
@@ -206,7 +281,7 @@ export class UserListComponent implements OnInit, OnDestroy {
     var oData: any = {
       relationType: 'U',
       idRelation: id,
-      description: 'Permisos del Usuario: ' + name
+      description: 'Menús directos de: ' + name
     }
 
     this.servicesGServ.showModalWithParams( MenupermisosComponent, oData, '1500px')

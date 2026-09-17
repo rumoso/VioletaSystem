@@ -61,19 +61,8 @@
 
                             <td class="textAlingCenter">
                                 <div class="action-buttons">
-                                    <button mat-icon-button
-                                            color="primary"
-                                            (click)="fn_editReference(item)"
-                                            matTooltip="Editar referencia">
-                                        <mat-icon>edit</mat-icon>
-                                    </button>
-                                    <button mat-icon-button
-                                            color="warn"
-                                            *ngIf="fn_canEditOrDelete(item)"
-                                            (click)="fn_deleteReference(item.idFxRateType, item.referencia)"
-                                            matTooltip="Eliminar referencia">
-                                        <mat-icon>delete</mat-icon>
-                                    </button>
+                                    <mat-icon class="grid-action-icon grid-action-icon--primary" (click)="fn_editReference(item)" matTooltip="Editar referencia">edit</mat-icon>
+                                    <mat-icon class="grid-action-icon grid-action-icon--warn" *ngIf="fn_canEditOrDelete(item)" (click)="fn_deleteReference(item.idFxRateType, item.referencia)" matTooltip="Eliminar referencia">delete</mat-icon>
                                 </div>
                             </td>
 

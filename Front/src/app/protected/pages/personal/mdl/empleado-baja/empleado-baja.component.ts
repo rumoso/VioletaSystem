@@ -1,16 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject, OnInit } from '@angular/core';
-import { FormControl, Validators } from '@angular/forms';
+import { FormControl } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { EmpleadosService } from 'src/app/protected/services/empleados.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 
-// Baja laboral / reactivación de empleado (analisis/006).
-// BAJA: muestra ANTES de confirmar todo lo que se desactivará en
-// cascada (usuario del sistema, vendedor, técnico) y captura la fecha
-// de baja. REACTIVAR: captura la nueva fecha de ingreso y aclara que
-// el usuario/catálogos NO se reactivan solos.
+// Baja laboral / reactivación de una persona (analisis/018).
+// BAJA: una sola acción — muestra ANTES de confirmar qué deja de tener
+// (sesión, combos, asistencia/nómina) y el metal que tenga a su cargo;
+// si es empleado captura la fecha de baja.
+// REACTIVAR: vuelve con sus puestos, permisos y datos; si es empleado
+// captura la nueva fecha de ingreso.
 
 @Component({
   selector: 'app-empleado-baja',
@@ -19,16 +19,20 @@ import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 })
 export class EmpleadoBajaComponent implements OnInit {
 
-  id: number = 0;
+  idUser: number = 0;
   nombre: string = '';
   modo: 'BAJA' | 'REACTIVAR' = 'BAJA';
 
+  // ¿Tiene datos de empleado? Solo entonces se pide fecha.
+  bEsEmpleado: boolean = false;
+
   impacto: string[] = [];
+  metalACargo: any[] = [];
   bCargandoImpacto: boolean = false;
   bEjecutando: boolean = false;
   mensajeError: string = '';
 
-  fechaControl: FormControl = new FormControl('', [Validators.required]);
+  fechaControl: FormControl = new FormControl('');
 
   constructor(
     private dialogRef: MatDialogRef<EmpleadoBajaComponent>
@@ -40,9 +44,10 @@ export class EmpleadoBajaComponent implements OnInit {
 
   ngOnInit(): void {
 
-    this.id = this.ODataP.id;
+    this.idUser = this.ODataP.idUser;
     this.nombre = this.ODataP.nombre;
     this.modo = this.ODataP.modo || 'BAJA';
+    this.bEsEmpleado = !!this.ODataP.bEsEmpleado;
 
     // Fecha por default: hoy
     const hoy = new Date();
@@ -51,10 +56,14 @@ export class EmpleadoBajaComponent implements OnInit {
 
     if (this.modo === 'BAJA') {
       this.bCargandoImpacto = true;
-      this.empleadosServ.CGetBajaImpacto(this.id)
+      this.empleadosServ.CGetBajaImpacto(this.idUser)
         .subscribe({
-          next: (resp: ResponseGet) => {
-            this.impacto = resp.status === 0 ? (resp.data || []) : [];
+          next: (resp: any) => {
+            if (resp.status === 0 && resp.data) {
+              this.impacto = resp.data.impacto || [];
+              this.metalACargo = resp.data.metalACargo || [];
+              this.bEsEmpleado = !!resp.data.bEsEmpleado;
+            }
             this.bCargandoImpacto = false;
           },
           error: () => {
@@ -70,16 +79,20 @@ export class EmpleadoBajaComponent implements OnInit {
 
     this.mensajeError = '';
 
-    if (this.fechaControl.invalid) {
-      this.fechaControl.markAsTouched();
+    if (this.bEsEmpleado && !this.fechaControl.value) {
+      this.mensajeError = this.modo === 'BAJA'
+        ? 'La fecha de baja es obligatoria.'
+        : 'La nueva fecha de ingreso es obligatoria.';
       return;
     }
 
     this.bEjecutando = true;
 
+    const fecha = this.bEsEmpleado ? this.fechaControl.value : null;
+
     const peticion = this.modo === 'BAJA'
-      ? this.empleadosServ.CBaja(this.id, this.fechaControl.value)
-      : this.empleadosServ.CReactivar(this.id, this.fechaControl.value);
+      ? this.empleadosServ.CBaja(this.idUser, fecha)
+      : this.empleadosServ.CReactivar(this.idUser, fecha);
 
     peticion.subscribe({
       next: (resp: any) => {

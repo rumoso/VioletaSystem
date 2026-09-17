@@ -1,0 +1,119 @@
+<div class="sm-modal">
+
+  <!-- HEADER -->
+  <div class="sm-header">
+    <div class="sm-header-tit">
+      <mat-icon class="sm-ico">store</mat-icon>
+      <div>
+        <h2>{{ bEsNueva ? 'Nueva sucursal' : form.name || 'Sucursal' }}</h2>
+        <div class="sm-sub" *ngIf="info">
+          <span class="sm-estatus" [class.sm-estatus--activa]="info.active === 1">{{ info.active === 1 ? 'Activa' : 'Inactiva' }}</span>
+          {{ info.empleados }} {{ info.empleados === 1 ? 'empleado' : 'empleados' }} ·
+          {{ info.usuariosConAcceso }} {{ info.usuariosConAcceso === 1 ? 'usuario con acceso' : 'usuarios con acceso' }}
+        </div>
+        <div class="sm-sub" *ngIf="bEsNueva">Quien la da de alta recibe acceso a ella.</div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="fn_cerrar()"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <mat-progress-bar *ngIf="bShowSpinner" mode="indeterminate"></mat-progress-bar>
+
+  <ng-container *ngIf="!bShowSpinner">
+
+    <!-- ═══════════════ DATOS GENERALES ═══════════════ -->
+    <div class="sm-seccion">
+      <div class="sm-seccion-titulo">Datos generales</div>
+
+      <div class="sm-field">
+        <label class="sm-label">Nombre <span class="sm-req">*</span></label>
+        <div class="sm-wrap" [class.sm-wrap--disabled]="!bPuedeEditarDatos">
+          <input type="text" class="sm-input" maxlength="500"
+            placeholder="Ej. Joyería Violeta Centro"
+            [(ngModel)]="form.name"
+            [disabled]="!bPuedeEditarDatos">
+        </div>
+      </div>
+
+      <div class="sm-field">
+        <label class="sm-label">Descripción</label>
+        <div class="sm-wrap" [class.sm-wrap--disabled]="!bPuedeEditarDatos">
+          <input type="text" class="sm-input" maxlength="500"
+            placeholder="Opcional"
+            [(ngModel)]="form.description"
+            [disabled]="!bPuedeEditarDatos">
+        </div>
+      </div>
+
+      <div class="sm-field">
+        <label class="sm-label">Dirección</label>
+        <div class="sm-wrap" [class.sm-wrap--disabled]="!bPuedeEditarDatos">
+          <input type="text" class="sm-input" maxlength="500"
+            placeholder="Calle, número, colonia, ciudad"
+            [(ngModel)]="form.address"
+            [disabled]="!bPuedeEditarDatos">
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ HORARIO ═══════════════ -->
+    <div class="sm-seccion">
+      <div class="sm-seccion-head">
+        <div>
+          <div class="sm-seccion-titulo">Horario semanal</div>
+          <div class="sm-nota">
+            Lo heredan los empleados de esta sucursal que no tienen horario propio.
+            Un día sin marcar es descanso.
+          </div>
+        </div>
+        <button mat-stroked-button class="sm-btn-secondary" type="button"
+          *ngIf="bPuedeEditarHorario && dias[0].bTrabaja"
+          (click)="fn_copiarLunes()"
+          matTooltip="Pone las horas del lunes en los demás días marcados">
+          <mat-icon>content_copy</mat-icon> Copiar lunes
+        </button>
+      </div>
+
+      <div class="sm-aviso" *ngIf="!bPuedeEditarHorario">
+        <mat-icon>lock</mat-icon>
+        Solo lectura: editar el horario requiere el permiso de administrar horarios.
+      </div>
+
+      <div class="sm-dias">
+        <div class="sm-dia" *ngFor="let d of dias" [class.sm-dia--descanso]="!d.bTrabaja">
+          <mat-checkbox class="sm-dia-check" [(ngModel)]="d.bTrabaja" [disabled]="!bPuedeEditarHorario">
+            {{ d.nombre }}
+          </mat-checkbox>
+
+          <ng-container *ngIf="d.bTrabaja">
+            <input type="time" class="sm-hora" [(ngModel)]="d.horaEntrada" [disabled]="!bPuedeEditarHorario">
+            <span class="sm-a">a</span>
+            <input type="time" class="sm-hora" [(ngModel)]="d.horaSalida" [disabled]="!bPuedeEditarHorario">
+          </ng-container>
+
+          <span class="sm-descanso" *ngIf="!d.bTrabaja">Descanso</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="sm-error" *ngIf="sError">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ sError }}</span>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="sm-acciones">
+      <button mat-button type="button" (click)="fn_cerrar()">{{ bPuedeGuardar ? 'Cancelar' : 'Cerrar' }}</button>
+      <button mat-flat-button class="sm-btn-primary" type="button"
+        *ngIf="bPuedeGuardar"
+        [disabled]="bGuardando"
+        (click)="fn_guardar()">
+        <mat-icon>save</mat-icon>
+        {{ bGuardando ? 'Guardando...' : ( bEsNueva ? 'Crear sucursal' : 'Guardar' ) }}
+      </button>
+    </div>
+
+  </ng-container>
+
+</div>

@@ -1,17 +1,18 @@
 import { Injectable } from '@angular/core';
 import * as faceapi from '@vladmandic/face-api';
 
-// Reconocimiento facial local (analisis/004-reconocimiento-facial.md):
-// todo el procesamiento (deteccion, extraccion del descriptor,
-// comparacion) ocurre aqui, en el navegador, con los modelos servidos
-// desde assets/ — nunca se manda el rostro a un servicio externo.
+// Reconocimiento facial (analisis/004 y analisis/020): aquí, en el
+// navegador, se detecta el rostro y se extrae su descriptor con los
+// modelos servidos desde assets/ — la imagen nunca sale a un servicio
+// externo.
+//
+// La COMPARACIÓN ya no ocurre aquí: se hace en el servidor
+// (FaceReferenceService.CIdentificarRostro / CVerificarRostro), que es el
+// único que conoce los descriptores guardados y el que decide si
+// coincide. Antes se comparaba en el navegador y el servidor creía el
+// resultado.
 
 const MODEL_URL = 'assets/models/face';
-
-// Distancia euclidiana maxima entre dos descriptores para considerarlos
-// la misma persona. Centralizado aqui — ninguna pantalla debe inventar
-// su propio umbral. Ajustar si hay falsos positivos/negativos.
-const MATCH_THRESHOLD = 0.5;
 
 @Injectable({
   providedIn: 'root'
@@ -127,44 +128,6 @@ export class FaceRecognitionService {
       descriptor: Array.from(detection.descriptor),
       imgThumb
     };
-  }
-
-  // Compara un descriptor recien capturado contra una referencia (modo
-  // verificacion 1:1). Regresa si coincide y que tan similar es (0-1).
-  compare(descriptorA: number[], descriptorB: number[]): { match: boolean; similitud: number } {
-
-    const distancia = faceapi.euclideanDistance(descriptorA, descriptorB);
-    const similitud = Math.max(0, 1 - distancia);
-
-    return {
-      match: distancia <= MATCH_THRESHOLD,
-      similitud: Math.round(similitud * 10000) / 10000
-    };
-  }
-
-  // Busca TODAS las referencias que coinciden dentro del umbral (modo
-  // identificacion 1:N), no solo la más parecida — si hay más de una
-  // persona plausible, quien invoque esto debe mostrar la lista y dejar
-  // que el operador elija, en vez de confiar a ciegas en "la más cercana".
-  // `referencias` trae idPersona/tipoPersona/descriptor. Ordenado de
-  // mayor a menor similitud.
-  identify(descriptor: number[], referencias: any[]): { candidatos: Array<{ referencia: any; similitud: number }> } {
-
-    const candidatos: Array<{ referencia: any; similitud: number }> = [];
-
-    for (const ref of referencias) {
-      const oDescriptorRef: number[] = typeof ref.descriptor === 'string' ? JSON.parse(ref.descriptor) : ref.descriptor;
-      const distancia = faceapi.euclideanDistance(descriptor, oDescriptorRef);
-
-      if (distancia <= MATCH_THRESHOLD) {
-        const similitud = Math.max(0, 1 - distancia);
-        candidatos.push({ referencia: ref, similitud: Math.round(similitud * 10000) / 10000 });
-      }
-    }
-
-    candidatos.sort((a, b) => b.similitud - a.similitud);
-
-    return { candidatos };
   }
 
   private fn_captureThumb(videoEl: HTMLVideoElement): string {

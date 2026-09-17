@@ -11,7 +11,7 @@ import { NominaConceptosService } from 'src/app/protected/services/nomina-concep
 @Component({
   selector: 'app-nomina-concepto',
   templateUrl: './nomina-concepto.component.html',
-  styleUrls: ['../personal-catalogo/personal-catalogo.component.css']
+  styleUrls: ['../../estilos/personal-modal.css']
 })
 export class NominaConceptoComponent implements OnInit {
 

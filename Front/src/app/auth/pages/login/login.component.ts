@@ -68,6 +68,7 @@ export class LoginComponent {
         modo: 'IDENTIFICAR',
         tipoPersona: 'USUARIO', // el login solo busca entre usuarios del sistema, nunca clientes
         referencia: 'Login',
+        proposito: 'LOGIN', // el servidor entrega un comprobante que solo sirve para iniciar sesión
         ocultarAutorizacionManual: true // sin sesión todavía no aplica el respaldo de código de autorización
       }, '480px')
       .afterClosed().subscribe({
@@ -79,7 +80,7 @@ export class LoginComponent {
 
           this.bShowSpinner = true;
 
-          this.authServ.CLoginByFace( resp.idPersona, resp.descriptor )
+          this.authServ.CLoginByFace( resp.ticket )
             .subscribe({
               next: (resp2) => {
                 if( resp2.status === 0 ){

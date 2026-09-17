@@ -78,9 +78,7 @@
                         {{ item.totalPendiente | currency }}
                     </td>
                     <td class="textAlingCenter">
-                        <button mat-icon-button matTooltip="Ver tracking" (click)="$event.stopPropagation(); fn_abrirTracking(item)">
-                            <mat-icon class="colorGreen">manage_search</mat-icon>
-                        </button>
+                        <mat-icon class="grid-action-icon colorGreen" matTooltip="Ver tracking" (click)="$event.stopPropagation(); fn_abrirTracking(item)">manage_search</mat-icon>
                     </td>
                 </tr>
             </tbody>
