@@ -6,31 +6,10 @@
 -- nuevos para los demás flujos (ventas, taller, metal). Idempotente.
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS `tecnicos` (
-  `idTecnico`    BIGINT NOT NULL AUTO_INCREMENT,
-  `idUser`       BIGINT NOT NULL COMMENT 'usuario del sistema ligado (referencia universal)',
-  `nombre`       VARCHAR(150) NOT NULL,
-  `active`       TINYINT NOT NULL DEFAULT 1,
-  `createDate`   DATETIME NOT NULL,
-  `updateDate`   DATETIME NULL,
-  `idCreateUser` BIGINT NOT NULL,
-  PRIMARY KEY (`idTecnico`),
-  UNIQUE KEY `ux_tecnicos_idUser` (`idUser`),
-  CONSTRAINT `fk_tecnicos_users` FOREIGN KEY (`idUser`) REFERENCES `users` (`idUser`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `vendedores` (
-  `idVendedor`   BIGINT NOT NULL AUTO_INCREMENT,
-  `idUser`       BIGINT NOT NULL COMMENT 'usuario del sistema ligado (referencia universal)',
-  `nombre`       VARCHAR(150) NOT NULL,
-  `active`       TINYINT NOT NULL DEFAULT 1,
-  `createDate`   DATETIME NOT NULL,
-  `updateDate`   DATETIME NULL,
-  `idCreateUser` BIGINT NOT NULL,
-  PRIMARY KEY (`idVendedor`),
-  UNIQUE KEY `ux_vendedores_idUser` (`idUser`),
-  CONSTRAINT `fk_vendedores_users` FOREIGN KEY (`idUser`) REFERENCES `users` (`idUser`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- RETIRADO (analisis/018-empleados-y-puestos.md, 2026-09-12): aquí se
+-- creaban `tecnicos` y `vendedores`. Técnicos y vendedores ahora son
+-- puestos (roles con idTipoRol 2 / 1) y sus % viven en users.destajo /
+-- users.comision. Este script solo conserva `user_preferences`.
 
 -- Preferencias genéricas por usuario (patrón select_printers /
 -- face_camera_preference, pero genérico por scope+key). Primer uso:

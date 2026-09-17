@@ -197,3 +197,10 @@ FROM actionsection AS S
 WHERE S.sectionName = 'Taller'
 AND NOT EXISTS ( SELECT 1 FROM actions WHERE name = 'tall_DevolutionClient' )
 LIMIT 1;
+
+INSERT INTO actions (createDate, idActionSection, name, nameHtml, description, active, nSpecial)
+SELECT NOW(), S.idActionSection, 'tall_DeleteVacio', 'Eliminar taller sin datos', 'Permite eliminar definitivamente un taller que solo tiene encabezado (sin fotos, firmas, secciones, metal, abonos ni comisiones)', 1, 0
+FROM actionsection AS S
+WHERE S.sectionName = 'Taller'
+AND NOT EXISTS ( SELECT 1 FROM actions WHERE name = 'tall_DeleteVacio' )
+LIMIT 1;

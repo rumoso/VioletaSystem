@@ -7,21 +7,9 @@
 -- Idempotente.
 -- ============================================================
 
--- % de destajo del técnico (0-100). Los ALTER no soportan
--- IF NOT EXISTS en MySQL — se verifica contra INFORMATION_SCHEMA.
-SET @col_exists = (
-  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tecnicos' AND COLUMN_NAME = 'destajoPorcentaje'
-);
-
-SET @sql_alter = IF(@col_exists = 0,
-  'ALTER TABLE `tecnicos` ADD COLUMN `destajoPorcentaje` DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT ''0-100, 0 = no gana destajo'' AFTER `nombre`',
-  'SELECT 1'
-);
-
-PREPARE stmt FROM @sql_alter;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- RETIRADO (analisis/018-empleados-y-puestos.md, 2026-09-12): aquí se
+-- agregaba `tecnicos.destajoPorcentaje`. La tabla `tecnicos` ya no existe;
+-- el % de destajo vive en `users.destajo`.
 
 CREATE TABLE IF NOT EXISTS `comisiones_track` (
   `idComisionTrack`       BIGINT NOT NULL AUTO_INCREMENT,
