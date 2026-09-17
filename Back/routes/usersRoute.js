@@ -10,6 +10,7 @@ const {
   , updateUser
   , changePassword
   , disabledUser
+  , checkUserNameDisponible
   , cbxGetSellersCombo
   , cbxGetTecnicosCombo
   , updateAuthorizationCode
@@ -29,18 +30,18 @@ router.post('/getUserByID', [
   validarCampos
 ], getUserByID);
 
+// userName ya no es obligatorio aquí: solo lo es con acceso al sistema,
+// y eso lo valida el SP (analisis/018).
 router.post('/insertUser', [
-  check('name','Nombre obligatorio').not().isEmpty(),
-  check('userName','Usuario obligatorio').not().isEmpty(),
+  check('nombre','Nombre obligatorio').not().isEmpty(),
 
   validarCampos
 ], insertUser);
 
-router.post('/updateUser', [
-  check('name','Nombre obligatorio').not().isEmpty(),
-  check('userName','Usuario obligatorio').not().isEmpty(),
+router.post('/checkUserNameDisponible', checkUserNameDisponible);
 
-  check('name','Nombre obligatorio').not().isEmpty(),
+router.post('/updateUser', [
+  check('nombre','Nombre obligatorio').not().isEmpty(),
 
   validarCampos
 ], updateUser);
@@ -49,9 +50,9 @@ router.post('/changePassword', [
   check('idUser','Id obligatorio').not().isEmpty(),
   check('idUser','Id debe ser numérico').isNumeric(),
 
-  check('pwd','Usuario obligatorio').not().isEmpty(),
+  check('pwd','Contraseña obligatoria').not().isEmpty(),
 
-  check('pwd2','Nombre obligatorio').not().isEmpty(),
+  check('pwd2','Confirmación de contraseña obligatoria').not().isEmpty(),
 
   validarCampos
 ], changePassword);

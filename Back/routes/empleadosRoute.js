@@ -5,7 +5,7 @@ const { validarCampos } = require('../middlewares/validar-campos');
 
 const {
     getEmpleadosList
-    , getEmpleadoById
+    , getEmpleadoByIdUser
     , insertUpdateEmpleado
     , getBajaImpacto
     , bajaEmpleado
@@ -20,15 +20,14 @@ const router = Router();
 
 router.post('/getEmpleadosList', getEmpleadosList );
 
-router.post('/getEmpleadoById',[
-    check('id','El id es obligatorio').not().isEmpty(),
+router.post('/getEmpleadoByIdUser',[
+    check('idUser','El usuario es obligatorio').not().isEmpty(),
     validarCampos
 
-], getEmpleadoById );
+], getEmpleadoByIdUser );
 
 router.post('/insertUpdateEmpleado',[
-    check('idUser','El usuario ligado es obligatorio').not().isEmpty(),
-    check('nombre','El nombre es obligatorio').not().isEmpty(),
+    check('idUser','El usuario es obligatorio').not().isEmpty(),
     check('fechaIngreso','La fecha de ingreso es obligatoria').not().isEmpty(),
     check('periodicidadComisiones','La periodicidad de comisiones es obligatoria').isIn(['SEMANA','QUINCENA','MES']),
     check('horasSemana','Las horas por semana son obligatorias').isFloat({ gt: 0 }),
@@ -37,27 +36,25 @@ router.post('/insertUpdateEmpleado',[
 ], insertUpdateEmpleado );
 
 router.post('/getBajaImpacto',[
-    check('id','El id es obligatorio').not().isEmpty(),
+    check('idUser','El usuario es obligatorio').not().isEmpty(),
     validarCampos
 
 ], getBajaImpacto );
 
 router.post('/bajaEmpleado',[
-    check('id','El id es obligatorio').not().isEmpty(),
-    check('fechaBaja','La fecha de baja es obligatoria').not().isEmpty(),
+    check('idUser','El usuario es obligatorio').not().isEmpty(),
     validarCampos
 
 ], bajaEmpleado );
 
 router.post('/reactivarEmpleado',[
-    check('id','El id es obligatorio').not().isEmpty(),
-    check('fechaIngreso','La nueva fecha de ingreso es obligatoria').not().isEmpty(),
+    check('idUser','El usuario es obligatorio').not().isEmpty(),
     validarCampos
 
 ], reactivarEmpleado );
 
 router.post('/deleteEmpleado',[
-    check('id','El id es obligatorio').not().isEmpty(),
+    check('idUser','El usuario es obligatorio').not().isEmpty(),
     validarCampos
 
 ], deleteEmpleado );

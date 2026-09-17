@@ -3,8 +3,9 @@ const { check } = require('express-validator')
 
 const { validarCampos } = require('../middlewares/validar-campos')
 
-const { 
-  getRolesForAddUser
+const {
+  cbxGetTiposRol
+  , getRolesForAddUser
   , getRolesByIdUser
   , insertRolByIdUser
   , deleteRolByIdUser
@@ -54,6 +55,8 @@ router.post('/deleteRolByIdUser', [
 ], deleteRolByIdUser);
 
 router.post('/getRolesListWithPage', getRolesListWithPage);
+
+router.post('/cbxGetTiposRol', cbxGetTiposRol);
 
 router.post('/insertRol', [
   check('name','Nombre obligatorio').not().isEmpty(),

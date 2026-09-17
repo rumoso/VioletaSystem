@@ -20,16 +20,10 @@ const getCustomersListWithPage = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getCustomersListWithPage(
-            '${ createDateStart }'
-            ,'${ createDateEnd }'
-            ,'${ name }'
-            ,'${ lastName }'
-            
-            ,'${ search }'
-            ,${ start }
-            ,${ limiter }
-            )`)
+        var OSQL = await dbConnection.query(
+            `call getCustomersListWithPage(:createDateStart, :createDateEnd, :name, :lastName, :search, :start, :limiter)`,
+            { replacements: { createDateStart: createDateStart, createDateEnd: createDateEnd, name: name, lastName: lastName, search: search, start: start, limiter: limiter }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 
@@ -47,12 +41,10 @@ const getCustomersListWithPage = async(req, res = response) => {
 
             const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
 
-            var OSQL_getSUMDineroElectHeader = await dbConnection.query(`call getSUMDineroElectHeader(
-                '${ createDateStart }'
-                ,'${ createDateEnd }'
-                ,'${ name }'
-                ,'${ lastName }'
-                )`)
+            var OSQL_getSUMDineroElectHeader = await dbConnection.query(
+            `call getSUMDineroElectHeader(:createDateStart, :createDateEnd, :name, :lastName)`,
+            { replacements: { createDateStart: createDateStart, createDateEnd: createDateEnd, name: name, lastName: lastName }, type: dbConnection.QueryTypes.RAW }
+        )
             
             res.json({
                 status: 0,
@@ -83,7 +75,10 @@ const getCustomerByID = async(req, res = response) => {
     } = req.body;
   
     //////console.log(req.body)
-    var OSQL = await dbConnection.query(`call getCustomerByID(${ idCustomer })`)
+    var OSQL = await dbConnection.query(
+            `call getCustomerByID(:idCustomer)`,
+            { replacements: { idCustomer: idCustomer }, type: dbConnection.QueryTypes.RAW }
+        )
   
     if(OSQL.length == 0){
   
@@ -126,16 +121,10 @@ const insertCustomer = async(req, res) => {
 
   try{
 
-      var OSQL = await dbConnection.query(`call insertCustomer(
-          '${ name.trim() }'
-          ,'${ lastName.trim() }'
-          ,'${ address.trim() }'
-          ,'${ tel.trim() }'
-          ,'${ eMail.trim() }'
-          , ${ active }
-
-          , ${ idUserLogON }
-          )`)
+      var OSQL = await dbConnection.query(
+            `call insertCustomer(:name, :lastName, :address, :tel, :eMail, :active, :idUserLogON)`,
+            { replacements: { name: name.trim(), lastName: lastName.trim(), address: address.trim(), tel: tel.trim(), eMail: eMail.trim(), active: active, idUserLogON: idUserLogON }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
   
@@ -184,17 +173,15 @@ const updateCustomer = async(req, res) => {
 
   try{
 
-        var OSQL = await dbConnection.query(`call updateCustomer(
-            ${ idCustomer }  
-            ,'${ name.trim() }'
-            ,'${ lastName.trim() }'
-            ,'${ address.trim() }'
-            ,'${ tel.trim() }'
-            ,'${ eMail.trim() }'
-            , ${ active }
-            )`);
+        var OSQL = await dbConnection.query(
+            `call updateCustomer(:idCustomer, :name, :lastName, :address, :tel, :eMail, :active)`,
+            { replacements: { idCustomer: idCustomer, name: name.trim(), lastName: lastName.trim(), address: address.trim(), tel: tel.trim(), eMail: eMail.trim(), active: active }, type: dbConnection.QueryTypes.RAW }
+        );
 
-        var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Customers', ${ idCustomer } )`);
+        var ODeleteSync_up = await dbConnection.query(
+            `call deleteSync_up('Customers', :idCustomer)`,
+            { replacements: { idCustomer: idCustomer }, type: dbConnection.QueryTypes.RAW }
+        );
 
       res.json({
           status: 0,
@@ -222,11 +209,15 @@ const deleteCustomer = async(req, res) => {
 
   try{
 
-      var OSQL = await dbConnection.query(`call deleteCustomer(
-          ${ idCustomer }
-          )`)
+      var OSQL = await dbConnection.query(
+            `call deleteCustomer(:idCustomer)`,
+            { replacements: { idCustomer: idCustomer }, type: dbConnection.QueryTypes.RAW }
+        )
 
-        var ODeleteSync_up = await dbConnection.query(`call deleteSync_up( 'Customers', ${ idCustomer } )`);
+        var ODeleteSync_up = await dbConnection.query(
+            `call deleteSync_up('Customers', :idCustomer)`,
+            { replacements: { idCustomer: idCustomer }, type: dbConnection.QueryTypes.RAW }
+        );
 
       res.json({
           status:0,
@@ -255,7 +246,10 @@ const cbxGetCustomersCombo = async(req, res = response) => {
     
     try{
 
-        var OSQL = await dbConnection.query(`call cbxGetCustomersCombo( '${search}' )`)
+        var OSQL = await dbConnection.query(
+            `call cbxGetCustomersCombo(:search)`,
+            { replacements: { search: search }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
         

@@ -2,6 +2,7 @@ const { response } = require('express');
 const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
+const { TIPO_ROL } = require('../helpers/constantes');
 
 // Bitácora de comisiones por empleado (analisis/008). Append-only,
 // mismo patrón que metal_inventario_track: cada renglón es una
@@ -353,8 +354,9 @@ const fn_registrarDestajoByTaller = async(idTaller, oGetDateNow, idUserLogON, tr
             continue;
         }
 
+        // % destajo del técnico: users.destajo (analisis/018).
         const [tecnico] = await dbConnection.query(
-            `SELECT destajoPorcentaje FROM tecnicos WHERE idUser = :idUser LIMIT 1`,
+            `SELECT destajo AS destajoPorcentaje FROM users WHERE idUser = :idUser LIMIT 1`,
             { replacements: { idUser: fila.idUserTecnico }, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
@@ -526,15 +528,42 @@ const generarComisionesVenta = async(req, res = response) => {
 // PENDIENTE, se cancela directo (el dinero nunca salió). Si ya está
 // INCLUIDA_EN_NOMINA (ya se pagó), se genera un renglón NUEVO en
 // negativo referido al original — nunca se toca la nómina ya pagada.
-const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancelacion) => {
-
-    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancelacion, transaction = null) => {
 
     const renglones = await dbConnection.query(
-        `SELECT idComisionTrack, idUser, monto, estatus, montoBase, porcentajeAplicado FROM comisiones_track
+        `SELECT idComisionTrack, idUser, tipo, monto, estatus, montoBase, porcentajeAplicado, idSale, idTaller FROM comisiones_track
          WHERE idSale = :idSale AND tipo = 'VENTA' AND estatus IN ('PENDIENTE', 'INCLUIDA_EN_NOMINA')`,
-        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT, transaction }
     );
+
+    await _fn_reversarRenglonesComision(renglones, `Devolución venta #${ idSale } (comisión ya pagada)`, referenciaCancelacion, idUserLogON, transaction);
+
+};
+
+// Reversa del destajo de un taller cancelado (analisis/022). Mismo
+// criterio que la de venta, pero corre DENTRO de la transacción de la
+// cancelación del taller: o se cancela todo, o nada.
+const fn_reversarDestajoByTaller = async(idTaller, idUserLogON, referenciaCancelacion, transaction) => {
+
+    const renglones = await dbConnection.query(
+        `SELECT CT.idComisionTrack, CT.idUser, CT.tipo, CT.monto, CT.estatus, CT.montoBase, CT.porcentajeAplicado, CT.idSale, CT.idTaller
+         FROM comisiones_track AS CT
+         WHERE CT.idTaller = :idTaller AND CT.tipo = 'DESTAJO' AND CT.estatus IN ('PENDIENTE', 'INCLUIDA_EN_NOMINA')
+           AND CT.monto > 0
+           AND NOT EXISTS ( SELECT 1 FROM comisiones_track AS R WHERE R.idComisionTrackOrigen = CT.idComisionTrack )`,
+        { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    await _fn_reversarRenglonesComision(renglones, `Devolución destajo taller #${ idTaller } (ya pagado)`, referenciaCancelacion, idUserLogON, transaction);
+
+};
+
+// Si el renglón sigue PENDIENTE, se cancela directo (el dinero nunca
+// salió). Si ya está INCLUIDA_EN_NOMINA, se genera un renglón NUEVO en
+// negativo referido al original — nunca se toca la nómina ya pagada.
+const _fn_reversarRenglonesComision = async(renglones, conceptoReversa, referenciaCancelacion, idUserLogON, transaction) => {
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     for (const r of renglones) {
 
@@ -544,7 +573,7 @@ const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancela
                 `UPDATE comisiones_track
                  SET estatus = 'CANCELADA', motivoCancelacion = :motivo, cancelDate = :cancelDate, idCancelUser = :idCancelUser
                  WHERE idComisionTrack = :id`,
-                { replacements: { motivo: referenciaCancelacion, cancelDate: oGetDateNow, idCancelUser: idUserLogON, id: r.idComisionTrack }, type: dbConnection.QueryTypes.UPDATE }
+                { replacements: { motivo: referenciaCancelacion, cancelDate: oGetDateNow, idCancelUser: idUserLogON, id: r.idComisionTrack }, type: dbConnection.QueryTypes.UPDATE, transaction }
             );
 
         } else {
@@ -554,23 +583,26 @@ const fn_reversarComisionByOrigen = async(idSale, idUserLogON, referenciaCancela
             // su reversa las bases también se cancelen.
             await dbConnection.query(
                 `INSERT INTO comisiones_track
-                    (idUser, tipo, concepto, monto, fecha, idSale, referencia, montoBase, porcentajeAplicado, estatus, idComisionTrackOrigen, createDate, idCreateUser)
+                    (idUser, tipo, concepto, monto, fecha, idSale, idTaller, referencia, montoBase, porcentajeAplicado, estatus, idComisionTrackOrigen, createDate, idCreateUser)
                  VALUES
-                    (:idUser, 'VENTA', :concepto, :monto, :fecha, :idSale, :referencia, :montoBase, :porcentajeAplicado, 'PENDIENTE', :idOrigen, :createDate, :idCreateUser)`,
+                    (:idUser, :tipo, :concepto, :monto, :fecha, :idSale, :idTaller, :referencia, :montoBase, :porcentajeAplicado, 'PENDIENTE', :idOrigen, :createDate, :idCreateUser)`,
                 {
                     replacements: {
                         idUser: r.idUser,
-                        concepto: `Devolución venta #${ idSale } (comisión ya pagada)`,
+                        tipo: r.tipo,
+                        concepto: conceptoReversa,
                         monto: -Math.abs(r.monto),
                         fecha: oGetDateNow.substring(0, 10),
-                        idSale,
+                        idSale: r.idSale ?? null,
+                        idTaller: r.idTaller ?? null,
                         referencia: referenciaCancelacion,
                         montoBase: r.montoBase === null || r.montoBase === undefined ? null : -Math.abs(Number(r.montoBase)),
                         porcentajeAplicado: r.porcentajeAplicado ?? null,
                         idOrigen: r.idComisionTrack,
                         createDate: oGetDateNow,
                         idCreateUser: idUserLogON
-                    }
+                    },
+                    transaction
                 }
             );
 
@@ -653,9 +685,18 @@ const fn_registrarComisionVentaSiPagada = async(idSale, idUserLogON) => {
         return;
     }
 
+    // % comisión del vendedor: users.comision, solo si sigue activo y con
+    // un puesto activo de tipo VENDEDOR (analisis/018).
     const [vendedor] = await dbConnection.query(
-        `SELECT comisionPorcentaje FROM vendedores WHERE idUser = :idUser AND active = 1 LIMIT 1`,
-        { replacements: { idUser: sale.idSeller_idUser }, type: dbConnection.QueryTypes.SELECT }
+        `SELECT U.comision AS comisionPorcentaje
+         FROM users AS U
+         WHERE U.idUser = :idUser AND U.active = 1
+           AND EXISTS (
+               SELECT 1 FROM rolesconfig AS RC INNER JOIN roles AS R ON R.idRol = RC.idRol
+               WHERE RC.idUser = U.idUser AND R.active = 1 AND R.idTipoRol = :idTipoVendedor
+           )
+         LIMIT 1`,
+        { replacements: { idUser: sale.idSeller_idUser, idTipoVendedor: TIPO_ROL.VENDEDOR }, type: dbConnection.QueryTypes.SELECT }
     );
 
     const comisionPorcentaje = parseFloat(vendedor?.comisionPorcentaje) || 0;
@@ -708,5 +749,6 @@ module.exports = {
     , generarComisionesVenta
     , fn_registrarDestajoByTaller
     , fn_reversarComisionByOrigen
+    , fn_reversarDestajoByTaller
     , fn_registrarComisionVentaSiPagada
 }

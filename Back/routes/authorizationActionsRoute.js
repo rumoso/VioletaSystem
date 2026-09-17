@@ -21,7 +21,7 @@ router.post('/authorizationActionAPI', [
 ], authorizationActionAPI);
 
 router.post('/authorizationActionByFace', [
-  check('idUser','idUser obligatorio').not().isEmpty(),
+  check('ticket','Falta la identificación facial').not().isEmpty(),
   check('actionName','Id acción obligatorio').not().isEmpty(),
 
   validarCampos

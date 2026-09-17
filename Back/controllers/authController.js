@@ -7,18 +7,8 @@ const { googleVerify } = require('../helpers/google-verify');
 
 const { createConexion, dbConnection } = require('../database/config');
 
-// Debe ser el MISMO valor que MATCH_THRESHOLD en
-// Front/src/app/protected/services/face-recognition.service.ts
-const FACE_MATCH_THRESHOLD = 0.5;
-
-const _fn_euclideanDistance = (a, b) => {
-    let suma = 0;
-    for (let i = 0; i < a.length; i++) {
-        const d = a[i] - b[i];
-        suma += d * d;
-    }
-    return Math.sqrt(suma);
-};
+const { fn_validarComprobante } = require('../helpers/faceTicket');
+const { fn_logVerificacion, fn_logExitoComprobante } = require('../helpers/faceBitacora');
 
 const login = async(req, res = response)=>{
 
@@ -31,7 +21,10 @@ const login = async(req, res = response)=>{
 
     try{
 
-        OSQL = await dbConnection.query(`call getUserByUserName('${ username }' )`);
+        // El SP solo encuentra usuarios activos y con acceso (bAcceso = 1):
+        // quien no tiene acceso recibe el mismo mensaje que un usuario o
+        // contraseña incorrectos.
+        OSQL = await dbConnection.query(`call getUserByUserName(:username)`, { replacements: { username }, type: dbConnection.QueryTypes.RAW });
 
         console.log(OSQL);
 
@@ -71,7 +64,7 @@ const login = async(req, res = response)=>{
         }
 
         //Generar el JWT
-        const token = await generarJWT( user.iduser );
+        const token = await generarJWT( user.idUser );
 
         //const salt = bcryptjs.genSaltSync();
         //const token = bcryptjs.hashSync( '112501184', salt);
@@ -96,55 +89,38 @@ const login = async(req, res = response)=>{
     }
 }
 
-// Login por reconocimiento facial. El navegador ya identificó "creo que
-// es idUser X" y capturó un descriptor fresco — aquí se vuelve a
-// comparar ESE descriptor contra el guardado para ese usuario de forma
-// independiente (nunca se confía ciegamente en lo que dice el cliente:
-// sin este recálculo, cualquiera podría llamar este endpoint pasando
-// cualquier idUser sin haber mostrado ningún rostro).
+// Login por reconocimiento facial (analisis/020).
+//
+// El rostro ya se comparó en el servidor (identificarRostro /
+// verificarRostro), que entregó un comprobante de un solo uso. Aquí se
+// exige ese comprobante y QUIÉN entra se toma de él, no del navegador.
+//
+// Antes este endpoint recibía idUser + descriptor y recomparaba, pero los
+// descriptores guardados eran públicos (getFaceReferences): mandar el de
+// otro usuario daba distancia 0 y abría su sesión.
 const loginByFace = async(req, res = response) => {
 
     const {
-        idUser
-        , descriptor
+        ticket
     } = req.body;
 
     try{
 
-        const refRows = await dbConnection.query(
-            `SELECT descriptor FROM face_reference WHERE tipoPersona = 'USUARIO' AND idPersona = :idUser LIMIT 1`,
-            { replacements: { idUser }, type: dbConnection.QueryTypes.SELECT }
-        );
+        const oComprobante = fn_validarComprobante(ticket, { proposito: 'LOGIN', tipoPersona: 'USUARIO', bGastar: true });
 
-        if (refRows.length === 0) {
+        if (!oComprobante.ok) {
             return res.json({
                 status: 1,
-                message: "Este usuario no tiene un rostro registrado.",
+                message: oComprobante.message,
                 data: null
             });
         }
 
-        const storedDescriptor = JSON.parse(refRows[0].descriptor);
-        const distancia = _fn_euclideanDistance(descriptor, storedDescriptor);
-        const similitud = Math.max(0, 1 - distancia);
+        const idUser = oComprobante.datos.idPersona;
+        const similitud = oComprobante.datos.similitud;
         const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
-        if (distancia > FACE_MATCH_THRESHOLD) {
-
-            await dbConnection.query(
-                `INSERT INTO face_verification_log (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, resultado, similitud, referencia, idCreateUser)
-                 VALUES (:createDate, 'VERIFICAR', 'USUARIO', :idUser, 'FALLO', :similitud, 'Login', :idUser)`,
-                { replacements: { createDate: oGetDateNow, idUser, similitud }, type: dbConnection.QueryTypes.INSERT }
-            );
-
-            return res.json({
-                status: 1,
-                message: "No se pudo verificar la identidad.",
-                data: null
-            });
-        }
-
-        var OSQL = await dbConnection.query(`call getUserByID(${ idUser })`);
+        var OSQL = await dbConnection.query(`call getUserByID(:idUser)`, { replacements: { idUser }, type: dbConnection.QueryTypes.RAW });
 
         if (OSQL.length == 0) {
             return res.json({
@@ -164,13 +140,27 @@ const loginByFace = async(req, res = response) => {
             });
         }
 
+        // Existe pero sin acceso al sistema: el rostro coincide, pero no
+        // inicia sesión. Se deja en la bitácora como fallo para que se vea
+        // el intento.
+        if (!Number(user.bAcceso)) {
+
+            await dbConnection.query(
+                `INSERT INTO face_verification_log (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, resultado, similitud, referencia, idCreateUser)
+                 VALUES (:createDate, 'VERIFICAR', 'USUARIO', :idUser, 'FALLO', :similitud, 'Login - sin acceso al sistema', :idUser)`,
+                { replacements: { createDate: oGetDateNow, idUser, similitud }, type: dbConnection.QueryTypes.INSERT }
+            );
+
+            return res.json({
+                status: 1,
+                message: "Este usuario no tiene acceso al sistema.",
+                data: null
+            });
+        }
+
         const token = await generarJWT(user.idUser);
 
-        await dbConnection.query(
-            `INSERT INTO face_verification_log (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, resultado, similitud, referencia, idCreateUser)
-             VALUES (:createDate, 'VERIFICAR', 'USUARIO', :idUser, 'EXITO', :similitud, 'Login', :idUser)`,
-            { replacements: { createDate: oGetDateNow, idUser, similitud }, type: dbConnection.QueryTypes.INSERT }
-        );
+        await fn_logExitoComprobante(oComprobante.datos, 'Login');
 
         res.json({
             status: 0,

@@ -2,6 +2,7 @@ const { response } = require('express');
 const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
+const { SQL_EMPLEADO_VIGENTE } = require('../helpers/empleadoVigente');
 const { fn_getResumenPeriodo, fn_getResumenPendiente } = require('./timecardController');
 
 // Pago de nómina (analisis/007-pago-nomina.md). Registro histórico en
@@ -140,10 +141,14 @@ const generarNomina = async(req, res = response) => {
         // empleados elegidos, la corrida se limita a esos.
         const bFiltrarEmpleados = Array.isArray(idsEmpleados) && idsEmpleados.length > 0;
 
+        // Solo empleados vigentes (activo + datos de empleado + puesto de
+        // sistema "Empleado"), definición única en helpers/empleadoVigente.
         const empleados = await dbConnection.query(
-            bFiltrarEmpleados
-                ? `SELECT idEmpleado, idUser, nombre FROM empleados WHERE active = 1 AND idEmpleado IN (:idsEmpleados)`
-                : `SELECT idEmpleado, idUser, nombre FROM empleados WHERE active = 1`,
+            `SELECT E.idEmpleado, E.idUser, U.name AS nombre
+             FROM empleados AS E
+             INNER JOIN users AS U ON U.idUser = E.idUser
+             WHERE ${ SQL_EMPLEADO_VIGENTE }
+             ${ bFiltrarEmpleados ? 'AND E.idEmpleado IN (:idsEmpleados)' : '' }`,
             { replacements: bFiltrarEmpleados ? { idsEmpleados } : {}, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
@@ -403,7 +408,8 @@ const getRecibo = async(req, res = response) => {
     try{
 
         // El periodo y el puesto son para el encabezado del recibo (y su
-        // PDF). Ojo: `puesto` sale del catálogo vivo, no de la copia
+        // PDF). `puesto` = puestos activos de la persona (sin el de
+        // sistema "Empleado"). Ojo: sale del catálogo vivo, no de la copia
         // congelada — si el empleado cambia de puesto, un recibo viejo
         // mostrará el nuevo. Se acepta porque es un dato de
         // identificación, no un monto (los montos sí están congelados
@@ -414,12 +420,16 @@ const getRecibo = async(req, res = response) => {
                     DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
                     DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
                     DATE_FORMAT(R.pagadaDate, '%d-%m-%Y') AS pagadaDateDesc,
-                    E.puesto, E.rfc, E.curp, E.nss,
+                    IFNULL( ( SELECT GROUP_CONCAT( R.name ORDER BY R.name SEPARATOR ', ' )
+                   FROM rolesconfig AS RC INNER JOIN roles AS R ON R.idRol = RC.idRol
+                   WHERE RC.idUser = R_U.idUser AND R.active = 1 AND R.bSistema = 0 ), '' ) AS puesto,
+                    E.rfc, E.curp, E.nss,
                     DATE_FORMAT(E.fechaIngreso, '%d-%m-%Y') AS fechaIngresoDesc,
                     S.name AS sucursalNombre, S.description AS sucursalDescripcion, S.address AS sucursalDireccion
              FROM nomina_recibos AS R
              INNER JOIN nomina AS N ON N.idNomina = R.idNomina
              LEFT JOIN empleados AS E ON E.idEmpleado = R.idEmpleado
+             LEFT JOIN users AS R_U ON R_U.idUser = R.idUser
              LEFT JOIN sucursales AS S ON S.idSucursal = E.idSucursal
              WHERE R.idNominaRecibo = :idNominaRecibo LIMIT 1`,
             { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT }

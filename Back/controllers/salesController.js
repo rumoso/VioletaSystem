@@ -7,7 +7,7 @@ const path = require('path');
 
 const { dbConnection } = require('../database/config');
 const { Console } = require('console');
-const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_registrarComisionVentaSiPagada } = require('./comisionesTrackController');
+const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_reversarDestajoByTaller, fn_registrarComisionVentaSiPagada } = require('./comisionesTrackController');
 
 const insertSale = async(req, res) => {
 
@@ -1580,15 +1580,22 @@ const getEgresosListWithPage = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getEgresosListWithPage(
-            '${ date.substring(0, 10) }'
-            , '${ description }'
-            , '${ amount }'
-
-            , '${ search }'
-            , ${ start }
-            , ${ limiter }
-            )`)
+        // Parámetros enlazados: una descripción con apóstrofe ya no rompe la
+        // consulta (antes se pegaba el texto directo en el SQL).
+        var OSQL = await dbConnection.query(
+            `call getEgresosListWithPage(:date, :description, :amount, :search, :start, :limiter)`,
+            {
+                replacements: {
+                    date: String(date || '').substring(0, 10)
+                    , description: String(description || '')
+                    , amount: Number(amount) || 0
+                    , search: String(search || '')
+                    , start: Number(start) || 0
+                    , limiter: Number(limiter) || 10
+                },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
 
         if(OSQL.length == 0){
 
@@ -2217,15 +2224,22 @@ const getIngresosListWithPage = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getIngresosListWithPage(
-            '${ date.substring(0, 10) }'
-            , '${ description }'
-            , '${ amount }'
-
-            , '${ search }'
-            , ${ start }
-            , ${ limiter }
-            )`)
+        // Parámetros enlazados: una descripción con apóstrofe ya no rompe la
+        // consulta (antes se pegaba el texto directo en el SQL).
+        var OSQL = await dbConnection.query(
+            `call getIngresosListWithPage(:date, :description, :amount, :search, :start, :limiter)`,
+            {
+                replacements: {
+                    date: String(date || '').substring(0, 10)
+                    , description: String(description || '')
+                    , amount: Number(amount) || 0
+                    , search: String(search || '')
+                    , start: Number(start) || 0
+                    , limiter: Number(limiter) || 10
+                },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
 
         if(OSQL.length == 0){
 
@@ -3255,10 +3269,14 @@ const getTallerByID = async(req, res = response) => {
                 , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
                 , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
                 , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
+                , IFNULL( DATE_FORMAT( T.cancelDate, '%d-%m-%Y %h:%i %p'), '') AS cancelDateDesc
+                , IFNULL( T.motivoCancelacion, '') AS motivoCancelacion
+                , IFNULL( UC.name, '') AS cancelUserDesc
             FROM taller AS T
             INNER JOIN sucursales AS SS ON T.idSucursal = SS.idSucursal
             INNER JOIN users AS U ON T.idSeller_idUser = U.idUser
             INNER JOIN customers AS C ON T.idCustomer = C.idCustomer
+            LEFT JOIN users AS UC ON UC.idUser = T.idCancelUser
             -- Taller de origen, solo cuando este folio es una garantia.
             -- LEFT JOIN porque la enorme mayoria de los folios NO son
             -- garantia y no deben desaparecer del resultado.
@@ -3501,7 +3519,7 @@ const getTallerPaginado = async(req, res = response) => {
             INNER JOIN sucursalesconfig AS SC ON T.idSucursal = SC.idSucursal
             ${abonadoJoin}
             WHERE SC.idUser    = :idUserLogON
-              AND T.active     = :activeFilter
+              AND ( :idTallerStatus = 7 OR T.active = :activeFilter )
               AND ( :idSaleSearch IS NULL OR T.idSale LIKE :idSaleSearch )
               AND ( :dateStart = '' OR CAST(T.createDate AS DATE) BETWEEN CAST(:dateStart AS DATE) AND CAST(:dateEnd AS DATE) )
               AND ( :idCustomer = 0  OR T.idCustomer = :idCustomer )
@@ -3568,6 +3586,10 @@ const getTallerPaginado = async(req, res = response) => {
                 , T.active
                 , T.idTallerStatus
                 , TSC.nombre                                 AS statusName
+                , 5                                          AS idSaleType
+                , IFNULL(DATE_FORMAT(T.cancelDate, '%d-%m-%Y %h:%i %p'), '') AS cancelDateDesc
+                , IFNULL(T.motivoCancelacion, '')            AS motivoCancelacion
+                , IFNULL(UC.name, '')                        AS cancelUserDesc
                 , ROUND(IFNULL(T.precioTotal, 0), 2)         AS total
                 , ROUND(IFNULL(AAA.abonado, 0), 2)           AS abonado
                 , ROUND(IFNULL(T.precioTotal, 0) - IFNULL(AAA.abonado, 0), 2) AS pendingAmount
@@ -3610,6 +3632,7 @@ const getTallerPaginado = async(req, res = response) => {
             INNER JOIN sucursales        AS SS  ON T.idSucursal      = SS.idSucursal
             INNER JOIN users             AS U   ON T.idSeller_idUser = U.idUser
             INNER JOIN customers         AS C   ON T.idCustomer      = C.idCustomer
+            LEFT JOIN  users             AS UC  ON T.idCancelUser    = UC.idUser
             ${whereBase}
             ORDER BY T.idTaller DESC
             LIMIT :start, :limiter
@@ -5679,6 +5702,366 @@ const insertGarantiaByTaller = async(req, res = response) => {
     }
 };
 
+// ══════════════════════════════════════════════════════════════════════════
+// ELIMINAR O CANCELAR TALLER (analisis/022-eliminar-o-cancelar-taller.md)
+//
+// Un taller que solo tiene encabezado (con o sin descripción) se elimina
+// físicamente; con cualquier otro dato se cancela: estatus 7, dinero con
+// cancelarVentaCompleta, reversa de metal y de comisiones, y solo lectura
+// (middlewares/validar-taller-editable.js).
+// ══════════════════════════════════════════════════════════════════════════
+
+const ID_TALLER_STATUS_CANCELADO = 7;
+
+// ¿El usuario tiene la acción? Por puesto ('R') o directa ('U'), con las
+// DOS banderas active (mismo criterio que sucursalesController).
+const _fn_tieneAccion = async(idUser, actionName, transaction) => {
+
+    const filas = await dbConnection.query(
+        `SELECT 1 AS ok
+         FROM actions AS A
+         INNER JOIN actionsconf AS AC ON AC.idAction = A.idAction AND AC.relationType = 'R' AND AC.active = 1
+         INNER JOIN rolesconfig AS RC ON RC.idRol = AC.idRelation
+         WHERE A.name = :actionName AND A.active = 1 AND RC.idUser = :idUser
+         UNION
+         SELECT 1 AS ok
+         FROM actions AS A
+         INNER JOIN actionsconf AS AC ON AC.idAction = A.idAction AND AC.relationType = 'U' AND AC.active = 1
+         WHERE A.name = :actionName AND A.active = 1 AND AC.idRelation = :idUser
+         LIMIT 1`,
+        { replacements: { idUser, actionName }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    return filas.length > 0;
+
+};
+
+// Qué tiene capturado un taller además del encabezado. Una sola consulta
+// con un conteo por sección. Los *_log cuentan (algo se capturó y se
+// quitó: hay historial, y además sus FK impedirían el borrado físico).
+// El `FOR UPDATE` sobre el taller serializa contra quien esté agregando
+// algo en ese momento: se vuelve a llamar dentro de la transacción que
+// elimina o cancela, no solo al armar el aviso.
+const _fn_getDatosTaller = async(idSale, transaction, bBloquear = false) => {
+
+    const [oTaller] = await dbConnection.query(
+        `SELECT T.idTaller, T.idSale, T.idTallerStatus, T.active, S.idSaleType, S.active AS saleActive
+         FROM taller AS T
+         INNER JOIN sales AS S ON S.idSale = T.idSale
+         WHERE T.idSale = :idSale
+         LIMIT 1
+         ${ bBloquear ? 'FOR UPDATE' : '' }`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!oTaller) {
+        return null;
+    }
+
+    const [c] = await dbConnection.query(
+        `SELECT
+            ( SELECT COUNT(*) FROM taller WHERE idTaller = :idTaller AND ( idTallerStatus > 1 OR fechaEntrega IS NOT NULL ) ) AS iAvanceEstatus
+            , ( SELECT COUNT(*) FROM taller_metal_cliente_img WHERE idTaller = :idTaller ) AS iFotos
+            , ( SELECT COUNT(*) FROM taller_firmas_status WHERE idTaller = :idTaller ) AS iFirmas
+            , ( SELECT COUNT(*) FROM taller_refacciones WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_refacciones_log WHERE idTaller = :idTaller ) AS iRefacciones
+            , ( SELECT COUNT(*) FROM taller_servicios_externos WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_servicios_externos_log WHERE idTaller = :idTaller ) AS iServiciosExternos
+            , ( SELECT COUNT(*) FROM taller_mano_obra WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_mano_obra_log WHERE idTaller = :idTaller ) AS iManoObra
+            , ( SELECT COUNT(*) FROM taller_metal_agranel WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_metal_agranel_log WHERE idTaller = :idTaller ) AS iMetalAgranel
+            , ( SELECT COUNT(*) FROM taller_metal_cliente WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_metal_cliente_log WHERE idTaller = :idTaller ) AS iMetalCliente
+            , ( SELECT COUNT(*) FROM taller_metal_final WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_metal_final_log WHERE idTaller = :idTaller ) AS iMetalFinal
+            , ( SELECT COUNT(*) FROM metal_inventario_track WHERE idTaller = :idTaller ) AS iMovimientosMetal
+            , ( SELECT COUNT(*) FROM payments WHERE idRelation = :idSale ) AS iAbonos
+            , ( SELECT COUNT(*) FROM electronic_money WHERE idRelation = :idSale ) AS iDineroElectronico
+            , ( SELECT COUNT(*) FROM comisiones_track WHERE idTaller = :idTaller OR idSale = :idSale ) AS iComisiones
+            , ( SELECT COUNT(*) FROM taller_responsables_devolucion WHERE idTaller = :idTaller ) AS iResponsables
+            , ( SELECT COUNT(*) FROM taller WHERE idTallerOrigen = :idSale ) AS iGarantias
+            , ( SELECT COUNT(*) FROM sobre_taller_status WHERE idSale = :idSale )
+              + ( SELECT COUNT(*) FROM sobre_taller_status_log WHERE idSale = :idSale ) AS iSobre
+            , ( SELECT COUNT(*) FROM salesdetail WHERE idSale = :idSale )
+              + ( SELECT COUNT(*) FROM cons_history WHERE idSale = :idSale ) AS iDetalleVenta
+            , ( SELECT COUNT(*) FROM autorizaciones2 WHERE idRelation = :idSale ) AS iAutorizaciones`,
+        { replacements: { idTaller: oTaller.idTaller, idSale }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    const aSecciones = [
+        { key: 'iAvanceEstatus',     desc: 'avance de estatus o entrega' },
+        { key: 'iFotos',             desc: 'fotos' },
+        { key: 'iFirmas',            desc: 'firmas de estatus' },
+        { key: 'iRefacciones',       desc: 'refacciones' },
+        { key: 'iServiciosExternos', desc: 'servicios externos' },
+        { key: 'iManoObra',          desc: 'mano de obra' },
+        { key: 'iMetalAgranel',      desc: 'metal de la empresa' },
+        { key: 'iMetalCliente',      desc: 'metal del cliente' },
+        { key: 'iMetalFinal',        desc: 'metal final' },
+        { key: 'iMovimientosMetal',  desc: 'movimientos de inventario de metal' },
+        { key: 'iAbonos',            desc: 'abonos' },
+        { key: 'iDineroElectronico', desc: 'dinero electrónico' },
+        { key: 'iComisiones',        desc: 'comisiones' },
+        { key: 'iResponsables',      desc: 'responsables de devolución' },
+        { key: 'iGarantias',         desc: 'garantías' },
+        { key: 'iSobre',             desc: 'estatus de sobre' },
+        { key: 'iDetalleVenta',      desc: 'detalle de venta' },
+        { key: 'iAutorizaciones',    desc: 'autorizaciones' }
+    ];
+
+    const aDatos = aSecciones
+        .map(s => ({ desc: s.desc, n: Number(c[s.key]) || 0 }))
+        .filter(s => s.n > 0);
+
+    return {
+        idTaller: oTaller.idTaller,
+        idSale: oTaller.idSale,
+        idTallerStatus: Number(oTaller.idTallerStatus),
+        bCancelado: Number(oTaller.idTallerStatus) === ID_TALLER_STATUS_CANCELADO || Number(oTaller.saleActive) !== 1,
+        bEsTaller: Number(oTaller.idSaleType) === 5,
+        bTieneDatos: aDatos.length > 0,
+        aDatos
+    };
+};
+
+// Regresa todo el metal que movió el taller. Se calcula el NETO por par
+// origen/destino/producto en el kardex (un movimiento en sentido inverso
+// resta) y se aplica una REVERSA por cada neto distinto de cero. Cubre
+// asignación, metal final, modificaciones y reversas previas sin saber en
+// qué estatus estaba el taller; tras aplicarse, el neto queda en cero.
+// No bloquea si el inventario queda negativo (analisis/022).
+const _fn_reversarMetalTaller = async(idTaller, idSale, oGetDateNow, idUserLogON, transaction) => {
+
+    const movimientos = await dbConnection.query(
+        `SELECT tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos
+         FROM metal_inventario_track WHERE idTaller = :idTaller`,
+        { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    // Centésimas enteras para no arrastrar error de punto flotante.
+    const netos = new Map();
+
+    for (const m of movimientos) {
+        const sDe = `${ m.tipoOrigen }:${ m.idOrigen }`;
+        const sA = `${ m.tipoDestino }:${ m.idDestino }`;
+        const [sMenor, sMayor] = sDe < sA ? [sDe, sA] : [sA, sDe];
+        const key = `${ m.idProduct }|${ sMenor }|${ sMayor }`;
+        const iCentesimas = Math.round(parseFloat(m.gramos) * 100);
+        netos.set(key, (netos.get(key) || 0) + (sDe === sMenor ? iCentesimas : -iCentesimas));
+    }
+
+    for (const [key, iNeto] of netos) {
+
+        if (iNeto === 0) {
+            continue;
+        }
+
+        const [sProduct, sMenor, sMayor] = key.split('|');
+        // Neto > 0 = salió de "menor" hacia "mayor": la reversa va al revés.
+        const [sDe, sA] = iNeto > 0 ? [sMayor, sMenor] : [sMenor, sMayor];
+        const [tipoOrigen, idOrigen] = sDe.split(':');
+        const [tipoDestino, idDestino] = sA.split(':');
+
+        await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+            tipoOrigen, Number(idOrigen), tipoDestino, Number(idDestino),
+            Number(sProduct), Math.abs(iNeto) / 100, idTaller, idSale,
+            `Reversa por cancelación de taller #${ idTaller }`, idUserLogON, transaction);
+    }
+};
+
+const getTallerDatosCancelacion = async(req, res = response) => {
+
+    const { idSale } = req.body;
+
+    try {
+
+        const oDatos = await _fn_getDatosTaller(idSale);
+
+        if (!oDatos) {
+            return res.json({ status: 1, message: 'El taller no existe.' });
+        }
+
+        res.json({
+            status: 0,
+            message: 'Ejecutado correctamente.',
+            data: oDatos
+        });
+
+    } catch (error) {
+
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
+const deleteTallerVacio = async(req, res = response) => {
+
+    const {
+        idSale,
+        idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        if (!(await _fn_tieneAccion(idUserLogON, 'tall_DeleteVacio', transaction))) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Este taller no tiene datos y se elimina; requiere el permiso de eliminar talleres sin datos.' });
+        }
+
+        const oDatos = await _fn_getDatosTaller(idSale, transaction, true);
+
+        if (!oDatos || !oDatos.bEsTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller no existe.' });
+        }
+
+        if (oDatos.bCancelado) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller ya está cancelado.' });
+        }
+
+        if (oDatos.bTieneDatos) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: `El taller ya tiene información capturada (${ oDatos.aDatos.map(d => d.desc).join(', ') }): debe cancelarse.`
+            });
+        }
+
+        await dbConnection.query(
+            `DELETE FROM taller WHERE idTaller = :idTaller`,
+            { replacements: { idTaller: oDatos.idTaller }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await dbConnection.query(
+            `DELETE FROM sales WHERE idSale = :idSale AND idSaleType = 5`,
+            { replacements: { idSale }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: `Taller #${ idSale } eliminado definitivamente.` });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
+// Reemplaza a disabledSale SOLO para talleres (las ventas normales siguen
+// con disabledSale). Todo en UNA transacción: dinero (la SP de siempre,
+// que no hace COMMIT propio), metal, destajo, comisión de venta y el
+// estatus del taller. Si algo falla, no queda nada a medias.
+const cancelarTaller = async(req, res = response) => {
+
+    const {
+        idSale,
+        sOption = '',
+        auth_idUser = 0,
+        motivo = '',
+
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const sMotivo = String(motivo || '').trim();
+
+    if (!auth_idUser || Number(auth_idUser) === 0) {
+        return res.json({ status: 1, message: 'No se pudo cancelar el taller porque no fue autorizada la acción.' });
+    }
+
+    if (!sMotivo) {
+        return res.json({ status: 1, message: 'El motivo de cancelación es obligatorio.' });
+    }
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const oDatos = await _fn_getDatosTaller(idSale, transaction, true);
+
+        if (!oDatos || !oDatos.bEsTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller no existe.' });
+        }
+
+        if (oDatos.bCancelado) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller ya está cancelado.' });
+        }
+
+        // Un taller vacío no se cancela: se elimina (no dejar basura).
+        if (!oDatos.bTieneDatos) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Este taller no tiene datos: debe eliminarse, no cancelarse.' });
+        }
+
+        const OSQL = await dbConnection.query(
+            `call cancelarVentaCompleta( :oGetDateNow, :sOption, :idSale, :auth_idUser, :idUserLogON, :idSucursalLogON )`,
+            { replacements: { oGetDateNow, sOption, idSale, auth_idUser, idUserLogON, idSucursalLogON }, transaction }
+        );
+
+        if (!OSQL || OSQL.length === 0 || !(OSQL[0].bOK > 0)) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: (OSQL && OSQL[0] && OSQL[0].message) || 'No se pudo cancelar el taller.' });
+        }
+
+        const sReferencia = `Taller #${ idSale } cancelado: ${ sMotivo }`;
+
+        await _fn_reversarMetalTaller(oDatos.idTaller, idSale, oGetDateNow, idUserLogON, transaction);
+        await fn_reversarDestajoByTaller(oDatos.idTaller, idUserLogON, sReferencia, transaction);
+        await fn_reversarComisionByOrigen(idSale, idUserLogON, sReferencia, transaction);
+
+        await dbConnection.query(
+            `UPDATE taller
+             SET idTallerStatus = :idTallerStatus, active = 0,
+                 cancelDate = :cancelDate, idCancelUser = :idCancelUser, motivoCancelacion = :motivo
+             WHERE idTaller = :idTaller`,
+            {
+                replacements: {
+                    idTallerStatus: ID_TALLER_STATUS_CANCELADO,
+                    cancelDate: oGetDateNow,
+                    idCancelUser: auth_idUser,
+                    motivo: sMotivo.substring(0, 500),
+                    idTaller: oDatos.idTaller
+                },
+                type: dbConnection.QueryTypes.UPDATE,
+                transaction
+            }
+        );
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: `Taller #${ idSale } cancelado con éxito.` });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
 
 module.exports = {
     insertSale
@@ -5773,5 +6156,9 @@ module.exports = {
 
     , getTalleresParaGarantia
     , insertGarantiaByTaller
+
+    , getTallerDatosCancelacion
+    , deleteTallerVacio
+    , cancelarTaller
 }
 

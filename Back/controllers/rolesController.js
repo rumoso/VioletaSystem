@@ -3,6 +3,7 @@ const bcryptjs = require('bcryptjs');
 const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
+const { TIPO_ROL } = require('../helpers/constantes');
 
 
 const getRolesForAddUser = async(req, res = response) => {
@@ -151,7 +152,10 @@ const getRolesListWithPage = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getRolesListWithPage('${ search }',${ start },${ limiter })`)
+        var OSQL = await dbConnection.query(
+            `call getRolesListWithPage(:search, :start, :limiter)`,
+            { replacements: { search, start: Number(start) || 0, limiter: Number(limiter) || 10 }, type: dbConnection.QueryTypes.RAW }
+        )
 
         if(OSQL.length == 0){
 
@@ -195,25 +199,25 @@ const insertRol = async(req, res) => {
     const {
         name = '',
         description = '',
+        idTipoRol = null,
 
         idUserLogON,
         idSucursalLogON
-        
-    } = req.body;
 
-    //console.log(req.body)
+    } = req.body;
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
     try{
 
-        var OSQL = await dbConnection.query(`call insertRol(
-            '${ oGetDateNow }'
-            , '${ name }'
-            , '${ description }'
-
-            , ${ idUserLogON }
-        )`)
+        // El SP rechaza el tipo 3: es exclusivo del puesto de sistema.
+        var OSQL = await dbConnection.query(
+            `call insertRol(:oGetDateNow, :name, :description, :idTipoRol, :idUserLogON)`,
+            {
+                replacements: { oGetDateNow, name, description, idTipoRol: Number(idTipoRol) > 0 ? Number(idTipoRol) : null, idUserLogON },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -238,19 +242,21 @@ const updateRol = async(req, res) => {
         idRol,
         name = '',
         description = '',
-        active
+        active,
+        idTipoRol = null
     } = req.body;
-
-    //console.log(req.body)
 
     try{
 
-        var OSQL = await dbConnection.query(`call updateRol(
-        ${ idRol }
-        ,'${ name }'
-        ,'${ description }'
-        , ${ active }
-        )`)
+        // El SP protege los puestos de sistema (bSistema = 1): no cambian
+        // nombre, tipo ni estatus.
+        var OSQL = await dbConnection.query(
+            `call updateRol(:idRol, :name, :description, :active, :idTipoRol)`,
+            {
+                replacements: { idRol, name, description, active: active ? 1 : 0, idTipoRol: Number(idTipoRol) > 0 ? Number(idTipoRol) : null },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,
@@ -278,7 +284,7 @@ const getRolByID = async(req, res = response) => {
 
     try{
         
-        var OSQL = await dbConnection.query(`call getRolByID(${ idRol })`)
+        var OSQL = await dbConnection.query(`call getRolByID(:idRol)`, { replacements: { idRol }, type: dbConnection.QueryTypes.RAW })
 
         if(OSQL.length == 0){
 
@@ -311,8 +317,30 @@ const getRolByID = async(req, res = response) => {
 };
 
 
+// Tipos de puesto asignables desde la pantalla de Puestos. El tipo 3
+// (EMPLEADO) no se lista: es exclusivo del puesto de sistema "Empleado".
+const cbxGetTiposRol = async(req, res = response) => {
+
+    try {
+
+        const rows = await dbConnection.query(
+            `SELECT idTipoRol, clave, nombre
+             FROM roles_tipo
+             WHERE active = 1 AND idTipoRol <> :idTipoEmpleado
+             ORDER BY idTipoRol`,
+            { replacements: { idTipoEmpleado: TIPO_ROL.EMPLEADO }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({ status: 0, message: 'Ejecutado correctamente.', data: rows });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
 module.exports = {
-    getRolesForAddUser
+    cbxGetTiposRol
+    , getRolesForAddUser
     , getRolesByIdUser
     , insertRolByIdUser
     , deleteRolByIdUser

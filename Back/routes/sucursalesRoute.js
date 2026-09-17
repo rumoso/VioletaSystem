@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { check } = require('express-validator')
 
 const { validarCampos } = require('../middlewares/validar-campos')
+const { validarSesion } = require('../middlewares/validar-sesion')
 
 const { 
   getSucursalesForAddUser
@@ -10,6 +11,10 @@ const {
   , insertSucursalByIdUser
   , deleteSucursalByIdUser
   , getPrintTicketSuc
+  , getSucursalesList
+  , getSucursalByID
+  , saveSucursal
+  , setSucursalActiva
    } = require('../controllers/sucursalesController');
 
    
@@ -65,6 +70,35 @@ router.post('/getPrintTicketSuc', [
 
   validarCampos
 ], getPrintTicketSuc);
+
+// ── Catálogo de sucursales (analisis/021) ──
+// Todas exigen sesión. Las que escriben revisan además, en el controller,
+// la acción `sucursales_CrearModificar`.
+
+router.post('/getSucursalesList', [
+  validarSesion,
+  validarCampos
+], getSucursalesList);
+
+router.post('/getSucursalByID', [
+  validarSesion,
+  check('idSucursal','La sucursal es obligatoria').isInt({ gt: 0 }),
+  validarCampos
+], getSucursalByID);
+
+router.post('/saveSucursal', [
+  validarSesion,
+  check('idSucursal','La sucursal debe ser numérica').isInt({ min: 0 }),
+  check('name','El nombre de la sucursal es obligatorio').isString().trim().notEmpty(),
+  validarCampos
+], saveSucursal);
+
+router.post('/setSucursalActiva', [
+  validarSesion,
+  check('idSucursal','La sucursal es obligatoria').isInt({ gt: 0 }),
+  check('active','El estatus es obligatorio').not().isEmpty(),
+  validarCampos
+], setSucursalActiva);
 
 
 

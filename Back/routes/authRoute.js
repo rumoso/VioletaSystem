@@ -23,8 +23,7 @@ router.post('/login',[
 ], login );
 
 router.post('/loginByFace',[
-    check('idUser','El usuario es obligatorio').not().isEmpty(),
-    check('descriptor','El descriptor facial es obligatorio').isArray({ min: 1 }),
+    check('ticket','Falta la identificación facial').not().isEmpty(),
     validarCampos
 
 ], loginByFace );

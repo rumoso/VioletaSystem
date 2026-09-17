@@ -3,6 +3,7 @@ const { check } = require('express-validator')
 
 const { validarCampos } = require('../middlewares/validar-campos')
 const { uploadMetalCliente, uploadTallerHeader } = require('../middlewares/multer-config')
+const { validarTallerNoCancelado } = require('../middlewares/validar-taller-editable')
 
 const {
   insertSale
@@ -129,7 +130,8 @@ router.post('/insertPayments', [
 
   check('paymentList','Los pagos son obligatorios').not().isEmpty(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], insertPayments);
 
 router.post('/getPaymentsByIdSaleListWithPage', [
@@ -350,7 +352,8 @@ router.post('/addRefaccionTaller', [
 
   check('refaccion','Refacción obligatoria').not().isEmpty(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], addRefaccionTaller);
 
 router.post('/deleteRefaccionTaller', [
@@ -358,14 +361,16 @@ router.post('/deleteRefaccionTaller', [
   check('idRefaccion','id de Refacción obligatorio').not().isEmpty(),
   check('idRefaccion','id de Refacción debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteRefaccionTaller);
 
 router.post('/addServicioExternoTaller', [
 
   check('servicioExterno','Servicio Externo obligatorio').not().isEmpty(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], addServicioExternoTaller);
 
 router.post('/deleteServicioExternoTaller', [
@@ -373,14 +378,16 @@ router.post('/deleteServicioExternoTaller', [
   check('idServicioExternoDetalle','id de Servicio Externo obligatorio').not().isEmpty(),
   check('idServicioExternoDetalle','id de Servicio Externo debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteServicioExternoTaller);
 
 router.post('/addManoObraTaller', [
 
   check('manoObra','Mano de Obra obligatoria').not().isEmpty(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], addManoObraTaller);
 
 router.post('/deleteManoObraTaller', [
@@ -388,7 +395,8 @@ router.post('/deleteManoObraTaller', [
   check('idManoObra','id de Mano de Obra obligatorio').not().isEmpty(),
   check('idManoObra','id de Mano de Obra debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteManoObraTaller);
 
 router.post('/getTallerManoObra', [
@@ -404,7 +412,8 @@ router.post('/updateManoObraPrecio', [
   check('idTaller','idTaller es obligatorio').not().isEmpty(),
   check('idTaller','idTaller debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], updateManoObraPrecio);
 
 router.post('/saveTallerHeader', [
@@ -417,7 +426,8 @@ router.post('/saveTallerHeader', [
 
   check('descripcion','Descripción obligatoria').not().isEmpty(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], saveTallerHeader);
 
 router.post('/updateTallerStatus', [
@@ -430,7 +440,8 @@ router.post('/updateTallerStatus', [
 
   check('auth_idUser','El autorizante debe ser un usuario válido').optional().isInt({ gt: 0 }),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], updateTallerStatus);
 
 router.post('/getTallerServiciosExternos', [
@@ -459,7 +470,8 @@ router.post('/insertUpdateTallerFirma', [
   check('idTaller','idTaller es obligatorio').not().isEmpty(),
   check('idTaller','idTaller debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], insertUpdateTallerFirma);
 
 router.post('/insertUpdateTallerFirmasMasivo', [
@@ -467,7 +479,8 @@ router.post('/insertUpdateTallerFirmasMasivo', [
   check('firmas','firmas debe ser un array').isArray({ min: 1 }),
   check('idUserFirma','idUserFirma es obligatorio').not().isEmpty(),
   check('idUserFirma','idUserFirma debe ser numérico').isNumeric(),
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], insertUpdateTallerFirmasMasivo);
 
 router.post('/getTallerFirmasHistorial', [
@@ -479,7 +492,8 @@ router.post('/getTallerFirmasHistorial', [
 router.post('/addMetalAgranel', [
   check('metalAgranel','Metal Agranel obligatorio').not().isEmpty(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], addMetalAgranel);
 
 router.post('/deleteMetalAgranel', [
@@ -487,7 +501,8 @@ router.post('/deleteMetalAgranel', [
   check('idMetalAgranel','id de Metal Agranel obligatorio').not().isEmpty(),
   check('idMetalAgranel','id de Metal Agranel debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteMetalAgranel);
 
 router.post('/getTallerMetalesAgranel', [
@@ -499,7 +514,8 @@ router.post('/getTallerMetalesAgranel', [
 
 router.post('/addMetalCliente', [
   check('metalCliente','Metal del Cliente obligatorio').not().isEmpty(),
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], addMetalCliente);
 
 router.post('/deleteMetalCliente', [
@@ -507,7 +523,8 @@ router.post('/deleteMetalCliente', [
   check('idMetalCliente','id de Metal Cliente obligatorio').not().isEmpty(),
   check('idMetalCliente','id de Metal Cliente debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteMetalCliente);
 
 router.post('/getTallerMetalesCliente', [
@@ -519,7 +536,8 @@ router.post('/getTallerMetalesCliente', [
 
 router.post('/addMetalFinal', [
   check('metalFinal','Metal Final obligatorio').not().isEmpty(),
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], addMetalFinal);
 
 router.post('/deleteMetalFinal', [
@@ -527,7 +545,8 @@ router.post('/deleteMetalFinal', [
   check('idMetalFinal','id de Metal Final obligatorio').not().isEmpty(),
   check('idMetalFinal','id de Metal Final debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteMetalFinal);
 
 router.post('/getTallerMetalesFinal', [
@@ -537,9 +556,9 @@ router.post('/getTallerMetalesFinal', [
   validarCampos
 ], getTallerMetalesFinal);
 
-router.post('/uploadMetalClienteImage', uploadMetalCliente.single('file'), uploadMetalClienteImage);
+router.post('/uploadMetalClienteImage', uploadMetalCliente.single('file'), validarTallerNoCancelado, uploadMetalClienteImage);
 
-router.post('/uploadTallerHeaderImage', uploadTallerHeader.single('file'), uploadMetalClienteImage);
+router.post('/uploadTallerHeaderImage', uploadTallerHeader.single('file'), validarTallerNoCancelado, uploadMetalClienteImage);
 
 router.post('/getMetalClienteImages', []
 , getMetalClienteImages);
@@ -549,7 +568,8 @@ router.post('/deleteMetalClienteImage', [
   check('keyX','id de imagen obligatorio').not().isEmpty(),
   check('keyX','id de imagen debe ser numérico').isNumeric(),
 
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteMetalClienteImage);
 
 router.post('/getTallerPaginado', getTallerPaginado);
@@ -583,7 +603,8 @@ router.post('/insertResponsableDevolucion', [
   check('idUser','idUser debe ser numérico').isNumeric(),
   check('monto','monto es obligatorio').not().isEmpty(),
   check('monto','monto debe ser numérico').isNumeric(),
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], insertResponsableDevolucion);
 
 router.post('/updateResponsableDevolucion', [
@@ -593,13 +614,15 @@ router.post('/updateResponsableDevolucion', [
   check('idUser','idUser debe ser numérico').isNumeric(),
   check('monto','monto es obligatorio').not().isEmpty(),
   check('monto','monto debe ser numérico').isNumeric(),
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], updateResponsableDevolucion);
 
 router.post('/deleteResponsableDevolucion', [
   check('idResponsablesDevolucion','id es obligatorio').not().isEmpty(),
   check('idResponsablesDevolucion','id debe ser numérico').isNumeric(),
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], deleteResponsableDevolucion);
 
 // ── Garantías de taller (analisis/016) ──
@@ -615,7 +638,33 @@ router.post('/getTalleresParaGarantia', [
 router.post('/insertGarantiaByTaller', [
   check('idTallerOrigen','El taller de origen es obligatorio').isInt({ gt: 0 }),
   check('descripcion','Describe el problema que motiva la garantía').not().isEmpty(),
-  validarCampos
+  validarCampos,
+  validarTallerNoCancelado
 ], insertGarantiaByTaller);
+
+// ── Eliminar o cancelar taller (analisis/022) ──
+const {
+  getTallerDatosCancelacion,
+  deleteTallerVacio,
+  cancelarTaller
+} = require('../controllers/salesController');
+
+router.post('/getTallerDatosCancelacion', [
+  check('idSale','El folio del taller es obligatorio').not().isEmpty(),
+  validarCampos
+], getTallerDatosCancelacion);
+
+router.post('/deleteTallerVacio', [
+  check('idSale','El folio del taller es obligatorio').not().isEmpty(),
+  check('idUserLogON','Usuario obligatorio').isInt({ gt: 0 }),
+  validarCampos
+], deleteTallerVacio);
+
+router.post('/cancelarTaller', [
+  check('idSale','El folio del taller es obligatorio').not().isEmpty(),
+  check('auth_idUser','La autorización especial es obligatoria').isInt({ gt: 0 }),
+  check('motivo','El motivo de cancelación es obligatorio').trim().not().isEmpty(),
+  validarCampos
+], cancelarTaller);
 
 module.exports = router;

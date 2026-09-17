@@ -1195,13 +1195,13 @@ const getCatListWithPage = async(req, res = response) => {
 
     try{
 
-        var OSQL = await dbConnection.query(`call getCatListWithPage(
-            '${ sOption }'
-
-            , '${ search }'
-            , ${ start }
-            , ${ limiter }
-            )`)
+        var OSQL = await dbConnection.query(
+            `call getCatListWithPage(:sOption, :search, :start, :limiter)`,
+            {
+                replacements: { sOption, search, start: Number(start) || 0, limiter: Number(limiter) || 10 },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
 
         if(OSQL.length == 0){
 
@@ -1263,15 +1263,19 @@ const insertUpdateCat = async(req, res) => {
 
         var iActive = active ? 1 : 0;
 
-        var OSQL = await dbConnection.query(`call insertUpdateCat(
-        '${ sOption }'
-        , '${ oGetDateNow }'
-        , ${ idRelation }
-        , '${ name }'
-        , '${ description }'
-        , '${ valor }'
-        , ${ iActive }
-        )`)
+        // Parámetros enlazados: un nombre con apóstrofe (p. ej. "D'Angelo") ya
+        // no rompe el guardado.
+        var OSQL = await dbConnection.query(
+            `call insertUpdateCat(:sOption, :oGetDateNow, :idRelation, :name, :description, :valor, :iActive)`,
+            {
+                replacements: {
+                    sOption, oGetDateNow, idRelation: Number(idRelation) || 0
+                    , name: String(name || '').trim(), description: String(description || '').trim()
+                    , valor: Number(valor) || 0, iActive
+                },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
 
         if(OSQL.length == 0){
 

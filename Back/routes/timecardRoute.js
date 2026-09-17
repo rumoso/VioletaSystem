@@ -20,12 +20,12 @@ const router = Router();
 // --- Checador (público — se usa desde el login, sin sesión) ---
 
 router.post('/getEstadoTimecard', [
-    check('idUser', 'El usuario es obligatorio').not().isEmpty(),
+    check('ticket', 'Falta la identificación facial').not().isEmpty(),
     validarCampos
 ], getEstadoTimecard);
 
 router.post('/insertMarcaje', [
-    check('idUser', 'El usuario es obligatorio').not().isEmpty(),
+    check('ticket', 'Falta la identificación facial').not().isEmpty(),
     check('tipo', 'El tipo de marcaje es obligatorio').not().isEmpty(),
     validarCampos
 ], insertMarcaje);

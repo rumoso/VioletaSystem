@@ -2,6 +2,10 @@ const { response } = require('express');
 const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
+const { fn_validarComprobante, fn_gastarComprobante } = require('../helpers/faceTicket');
+const { fn_logExitoComprobante } = require('../helpers/faceBitacora');
+const { ID_ROL_EMPLEADO } = require('../helpers/constantes');
+const { SQL_EMPLEADO_VIGENTE } = require('../helpers/empleadoVigente');
 
 // TimeCard: control de horas trabajadas (analisis/011-timecard.md).
 // Cinco capas, cada una se corrige distinto:
@@ -468,14 +472,23 @@ const fn_getEstadoPagoSemana = async(idEmpleado, fechaInicio, fechaFin, transact
 // --------------------------------------------------------------
 const fn_getResumenSemanal = async(fechaInicio, fechaFin, idEmpleado, transaction) => {
 
-    const filtroEmpleado = idEmpleado ? 'AND idEmpleado = :idEmpleado' : '';
+    const filtroEmpleado = idEmpleado ? 'AND E.idEmpleado = :idEmpleado' : '';
 
+    // Nombre y puestos salen de users/roles (analisis/018). Solo quien
+    // tiene el puesto de sistema "Empleado"; la baja la acotan las fechas
+    // para que las semanas pasadas sigan mostrando a quien ya se fue.
     const empleados = await dbConnection.query(
-        `SELECT idEmpleado, nombre, puesto FROM empleados
-         WHERE fechaIngreso <= :fechaFin
-           AND (fechaBaja IS NULL OR fechaBaja >= :fechaInicio)
+        `SELECT E.idEmpleado, U.name AS nombre,
+                IFNULL( ( SELECT GROUP_CONCAT( R.name ORDER BY R.name SEPARATOR ', ' )
+                   FROM rolesconfig AS RC INNER JOIN roles AS R ON R.idRol = RC.idRol
+                   WHERE RC.idUser = U.idUser AND R.active = 1 AND R.bSistema = 0 ), '' ) AS puesto
+         FROM empleados AS E
+         INNER JOIN users AS U ON U.idUser = E.idUser
+         WHERE E.fechaIngreso <= :fechaFin
+           AND (E.fechaBaja IS NULL OR E.fechaBaja >= :fechaInicio)
+           AND EXISTS ( SELECT 1 FROM rolesconfig AS RC7 WHERE RC7.idUser = U.idUser AND RC7.idRol = ${ ID_ROL_EMPLEADO } )
            ${filtroEmpleado}
-         ORDER BY nombre ASC`,
+         ORDER BY U.name ASC`,
         { replacements: { idEmpleado, fechaInicio, fechaFin }, type: dbConnection.QueryTypes.SELECT, transaction }
     );
 
@@ -516,14 +529,30 @@ const fn_getResumenSemanal = async(fechaInicio, fechaFin, idEmpleado, transactio
 
 // Dado el idUser que el facial identificó (IDENTIFICAR, tipoPersona
 // USUARIO), regresa si es empleado y qué puede marcar ahora.
+// Estado del empleado en el checador (analisis/020). Exige el
+// comprobante facial del checador y lo valida SIN gastarlo: el mismo
+// comprobante se gasta al registrar el marcaje. Quién es sale del
+// comprobante, no del navegador.
 const getEstadoTimecard = async(req, res = response) => {
 
-    const { idUser } = req.body;
+    const { ticket } = req.body;
+
+    const oComprobante = fn_validarComprobante(ticket, { proposito: 'TIMECARD', tipoPersona: 'USUARIO', bGastar: false });
+
+    if (!oComprobante.ok) {
+        return res.json({ status: 1, message: oComprobante.message, data: { bComprobanteInvalido: true } });
+    }
+
+    const idUser = oComprobante.datos.idPersona;
 
     try {
 
         const [empleado] = await dbConnection.query(
-            `SELECT idEmpleado, nombre FROM empleados WHERE idUser = :idUser AND active = 1 LIMIT 1`,
+            `SELECT E.idEmpleado, U.name AS nombre
+             FROM empleados AS E
+             INNER JOIN users AS U ON U.idUser = E.idUser
+             WHERE E.idUser = :idUser AND ${ SQL_EMPLEADO_VIGENTE }
+             LIMIT 1`,
             { replacements: { idUser }, type: dbConnection.QueryTypes.SELECT }
         );
 
@@ -581,14 +610,26 @@ const getEstadoTimecard = async(req, res = response) => {
 // que el tipo sea válido para el estado actual (aunque la pantalla
 // solo ofrezca los válidos) e ignora un duplicado del mismo tipo
 // dentro de la ventana de minutos definida arriba.
+//
+// analisis/020: exige el comprobante facial del checador. Quién marca y
+// con qué similitud salen del comprobante; antes venían del navegador y
+// cualquiera podía checar por cualquier empleado sin mostrar un rostro.
 const insertMarcaje = async(req, res = response) => {
 
     const {
-        idUser
+        ticket
         , tipo
         , idSucursal = null
-        , similitud = null
     } = req.body;
+
+    const oComprobante = fn_validarComprobante(ticket, { proposito: 'TIMECARD', tipoPersona: 'USUARIO', bGastar: false });
+
+    if (!oComprobante.ok) {
+        return res.json({ status: 1, message: oComprobante.message, data: { bComprobanteInvalido: true } });
+    }
+
+    const idUser = oComprobante.datos.idPersona;
+    const similitud = oComprobante.datos.similitud;
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
     const hoy = moment().format('YYYY-MM-DD');
@@ -600,7 +641,11 @@ const insertMarcaje = async(req, res = response) => {
         }
 
         const [empleado] = await dbConnection.query(
-            `SELECT idEmpleado, nombre FROM empleados WHERE idUser = :idUser AND active = 1 LIMIT 1`,
+            `SELECT E.idEmpleado, U.name AS nombre
+             FROM empleados AS E
+             INNER JOIN users AS U ON U.idUser = E.idUser
+             WHERE E.idUser = :idUser AND ${ SQL_EMPLEADO_VIGENTE }
+             LIMIT 1`,
             { replacements: { idUser }, type: dbConnection.QueryTypes.SELECT }
         );
 
@@ -624,6 +669,16 @@ const insertMarcaje = async(req, res = response) => {
                 message: tiposValidos.length === 0
                     ? "Ya cerraste tu jornada de hoy."
                     : "Ese marcaje no es válido en este momento."
+            });
+        }
+
+        // El comprobante se gasta aquí: el marcaje ya es válido. Si otra
+        // petición lo gastó primero (doble clic, reenvío), esta no marca.
+        if (!fn_gastarComprobante(oComprobante.datos)) {
+            return res.json({
+                status: 1,
+                message: 'Esta identificación facial ya se usó. Vuelve a escanear tu rostro.',
+                data: { bComprobanteInvalido: true }
             });
         }
 
@@ -669,6 +724,8 @@ const insertMarcaje = async(req, res = response) => {
             await transaction.rollback();
             throw errorTx;
         }
+
+        await fn_logExitoComprobante(oComprobante.datos, `TimeCard: ${ tipo }`);
 
         res.json({
             status: 0,
@@ -722,7 +779,10 @@ const insertMarcajeManual = async(req, res = response) => {
     try {
 
         const [empleado] = await dbConnection.query(
-            `SELECT idEmpleado, idUser, nombre FROM empleados WHERE idEmpleado = :idEmpleado LIMIT 1`,
+            `SELECT E.idEmpleado, E.idUser, U.name AS nombre
+             FROM empleados AS E
+             INNER JOIN users AS U ON U.idUser = E.idUser
+             WHERE E.idEmpleado = :idEmpleado LIMIT 1`,
             { replacements: { idEmpleado }, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
@@ -878,7 +938,10 @@ const getAsistenciaList = async(req, res = response) => {
     try {
 
         const [empleado] = await dbConnection.query(
-            `SELECT idEmpleado, nombre FROM empleados WHERE idEmpleado = :idEmpleado LIMIT 1`,
+            `SELECT E.idEmpleado, U.name AS nombre
+             FROM empleados AS E
+             INNER JOIN users AS U ON U.idUser = E.idUser
+             WHERE E.idEmpleado = :idEmpleado LIMIT 1`,
             { replacements: { idEmpleado }, type: dbConnection.QueryTypes.SELECT }
         );
 
@@ -992,6 +1055,44 @@ const getHorarioSucursal = async(req, res = response) => {
     }
 };
 
+// Valida la semana que se va a guardar (analisis/021): cada día de 1
+// (lunes) a 7 (domingo) una sola vez, horas HH:MM y salida posterior a la
+// entrada. Regresa el mensaje de error o null.
+const _fn_validarDiasHorario = (dias) => {
+
+    if (!Array.isArray(dias)) {
+        return 'Los días del horario no son válidos.';
+    }
+
+    const reHora = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+    const aVistos = new Set();
+
+    for (const dia of dias) {
+
+        const nDia = Number(dia && dia.diaSemana);
+
+        if (!Number.isInteger(nDia) || nDia < 1 || nDia > 7 || aVistos.has(nDia)) {
+            return 'Los días del horario no son válidos.';
+        }
+        aVistos.add(nDia);
+
+        const sEntrada = String(dia.horaEntrada || '');
+        const sSalida = String(dia.horaSalida || '');
+
+        if (!reHora.test(sEntrada) || !reHora.test(sSalida)) {
+            return 'Las horas del horario deben tener el formato HH:MM.';
+        }
+
+        // Comparación como texto: HH:MM(:SS) con ceros a la izquierda ordena bien.
+        if (sSalida.substring(0, 5) <= sEntrada.substring(0, 5)) {
+            return 'En cada día, la hora de salida debe ser posterior a la de entrada.';
+        }
+    }
+
+    return null;
+
+};
+
 const guardarHorarioSucursal = async(req, res = response) => {
 
     const {
@@ -1000,6 +1101,14 @@ const guardarHorarioSucursal = async(req, res = response) => {
 
         , idUserLogON
     } = req.body;
+
+    // analisis/021: el catálogo de sucursales también guarda por aquí.
+    // Antes no se validaba nada: días fuera de 1..7, repetidos, o salida
+    // antes de la entrada rompían el cálculo de horas esperadas.
+    const sErrorHorario = _fn_validarDiasHorario(dias);
+    if (sErrorHorario) {
+        return res.json({ status: 1, message: sErrorHorario });
+    }
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
     const transaction = await dbConnection.transaction();
