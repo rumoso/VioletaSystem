@@ -5,6 +5,7 @@ const moment = require('moment');
 const { dbConnection } = require('../database/config');
 const { TIPO_ROL } = require('../helpers/constantes');
 const { fn_reglasIncumplidas } = require('../helpers/pwdSegura');
+const { fn_recalcularUtilidadTalleresAbiertosByTecnico } = require('../helpers/tallerUtilidad');
 
 const _fn_respuestaPwdInsegura = (pwd) => {
     const faltan = fn_reglasIncumplidas(pwd);
@@ -229,6 +230,17 @@ const updateUser = async(req, res) => {
                 type: dbConnection.QueryTypes.RAW
             }
         )
+
+        // Cambiarle el % de destajo mueve la utilidad de sus folios
+        // abiertos (analisis/023): los que ya le pagaron destajo traen el
+        // % congelado y no se tocan. No debe tumbar el guardado.
+        if (OSQL[0].out_id > 0) {
+            try {
+                await fn_recalcularUtilidadTalleresAbiertosByTecnico( idUser );
+            } catch (utilidadError) {
+                console.log('No se pudo recalcular la utilidad de los talleres del técnico:', utilidadError.message);
+            }
+        }
 
         res.json({
             status: OSQL[0].out_id > 0 ? 0 : 1,

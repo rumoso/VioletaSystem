@@ -144,7 +144,38 @@ const fn_recalcularUtilidadTallerByIdSale = async (idSale, transaction = null) =
 
 };
 
+// Al cambiarle el % de destajo a un técnico, los folios que TODAVIA no
+// le pagan destajo (porcentajeDestajo en NULL) cambian de utilidad: se
+// recalculan aquí. Los que ya se le pagaron traen el % congelado y no
+// se tocan. Devuelve cuántos folios se recalcularon.
+const fn_recalcularUtilidadTalleresAbiertosByTecnico = async (idUserTecnico, transaction = null) => {
+
+    const oOpts = { type: dbConnection.QueryTypes.SELECT, replacements: { idUserTecnico, cancelado: ESTATUS_CANCELADO } };
+    if (transaction) {
+        oOpts.transaction = transaction;
+    }
+
+    const aFolios = await dbConnection.query(
+        `SELECT DISTINCT T.idTaller
+         FROM taller_mano_obra AS TMO
+         INNER JOIN taller AS T ON T.idTaller = TMO.idTaller
+         WHERE TMO.idUserTecnico = :idUserTecnico
+           AND TMO.porcentajeDestajo IS NULL
+           AND T.idTallerOrigen IS NULL
+           AND T.idTallerStatus <> :cancelado`,
+        oOpts
+    );
+
+    for (const oFolio of aFolios) {
+        await fn_recalcularUtilidadTaller(oFolio.idTaller, transaction);
+    }
+
+    return aFolios.length;
+
+};
+
 module.exports = {
     fn_recalcularUtilidadTaller
     , fn_recalcularUtilidadTallerByIdSale
+    , fn_recalcularUtilidadTalleresAbiertosByTecnico
 };
