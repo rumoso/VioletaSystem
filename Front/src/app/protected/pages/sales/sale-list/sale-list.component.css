@@ -668,3 +668,17 @@
   font-weight: 500;
   color: #c62828;
 }
+
+/* Botón de filtros colapsables (analisis/024). Resaltado cuando hay
+   filtros escondidos puestos, para que nadie consulte creyendo que no
+   hay nada filtrando. */
+.sll-btn-filtros mat-icon {
+    margin-right: 2px;
+}
+
+.sll-btn-filtros--activos {
+    border-color: #283593 !important;
+    color: #283593 !important;
+    font-weight: 600 !important;
+    background: #eef1fb !important;
+}

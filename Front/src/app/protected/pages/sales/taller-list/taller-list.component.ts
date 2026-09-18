@@ -18,7 +18,6 @@ import { PrintTicketService } from 'src/app/protected/services/print-ticket.serv
 import { ActionAuthorizationComponent } from '../../security/users/mdl/action-authorization/action-authorization.component';
 import { SalestypeService } from 'src/app/protected/services/salestype.service';
 import { UsersService } from 'src/app/protected/services/users.service';
-import { EditTallerComponent } from '../mdl/edit-taller/edit-taller.component';
 import { QuestionCancelSalePaymentsComponent } from '../mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { TallerComponent } from '../mdl/taller/taller.component';
 import { CajasService } from 'src/app/protected/services/cajas.service';
@@ -98,6 +97,46 @@ export class TallerListComponent implements OnInit, OnDestroy {
 
   };
 
+  // ── Filtros colapsables (analisis/024) ──
+  // Solo el folio, la casilla Vencidas y los botones se quedan a la
+  // vista; el resto vive detrás del botón "Filtros". Lo que el usuario
+  // deja abierto o cerrado se recuerda en este navegador.
+  private readonly _sClaveFiltros: string = 'taller-list.filtros-abiertos';
+  bFiltrosAbiertos: boolean = false;
+
+  // Cuántos de los filtros ESCONDIDOS están puestos. El folio y Vencidas
+  // no cuentan: se ven siempre.
+  get iFiltrosActivos(): number {
+    const p = this.parametersForm;
+    return [
+      !!p.createDateStart,
+      !!p.createDateEnd,
+      Number( p.idCustomer ) > 0,
+      Number( p.idTallerStatus ) > 0,
+      Number( p.idTecnico ) > 0,
+      !!p.bCancel,
+      !!p.bPending,
+      !!p.bPagada
+    ].filter( ( b ) => b ).length;
+  }
+
+  fn_toggleFiltros(): void {
+    this.bFiltrosAbiertos = !this.bFiltrosAbiertos;
+    try {
+      localStorage.setItem( this._sClaveFiltros, this.bFiltrosAbiertos ? '1' : '0' );
+    } catch ( e ) { }
+  }
+
+  // Al entrar: como se dejaron la última vez, pero abiertos si ya hay
+  // algo filtrando de lo que está escondido.
+  private fn_iniciarFiltros(): void {
+    let bGuardado = false;
+    try {
+      bGuardado = localStorage.getItem( this._sClaveFiltros ) === '1';
+    } catch ( e ) { }
+    this.bFiltrosAbiertos = bGuardado || this.iFiltrosActivos > 0;
+  }
+
   selectPrinter: any = {
     idSucursal: 0,
     idPrinter: 0,
@@ -174,6 +213,8 @@ constructor(
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
 
+    this.fn_iniciarFiltros();
+
     this.timeCBXskeyup
     .pipe(
       debounceTime(500)
@@ -198,25 +239,7 @@ constructor(
 
   }
 
-  fn_ShowEditTaller( idSale: any ){
-
-      let OParams: any = {
-        idSale: idSale,
-        selectPrinter: this.selectPrinter,
-        selectCajas: this.selectCajas
-      }
-      console.log('Edit Taller Params:', OParams);
-
-        this.servicesGServ.showModalWithParams( EditTallerComponent, OParams, '1500px')
-        .afterClosed().subscribe({
-          next: ( resp ) =>{
-            this.fn_getVentasListWithPage();
-          }
-      });
-
-  }
-
-  ////************************************************ */
+////************************************************ */
     // MÉTODOS DE PAGINACIÓN
     changePagination(pag: Pagination) {
       this.pagination = pag;

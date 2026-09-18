@@ -105,6 +105,46 @@ export class SaleListComponent implements OnInit, OnDestroy {
   // alguien le agregue un campo anidado después.
   private readonly _parametersFormDefault: any = JSON.parse( JSON.stringify( this.parametersForm ) );
 
+  // ── Filtros colapsables (analisis/024) ──
+  // Solo el folio y los botones se quedan a la vista; el resto vive
+  // detrás del botón "Filtros". Lo que el usuario deja abierto o cerrado
+  // se recuerda en este navegador.
+  private readonly _sClaveFiltros: string = 'sale-list.filtros-abiertos';
+  bFiltrosAbiertos: boolean = false;
+
+  // Cuántos de los filtros ESCONDIDOS están puestos. El folio no
+  // cuenta: se ven siempre.
+  get iFiltrosActivos(): number {
+    const p = this.parametersForm;
+    return [
+      !!p.createDateStart,
+      !!p.createDateEnd,
+      Number( p.idCustomer ) > 0,
+      Number( p.idSaleType ) > 0,
+      !!p.bCancel,
+      !!p.bPending,
+      !!p.bPagada
+    ].filter( ( b ) => b ).length;
+  }
+
+  fn_toggleFiltros(): void {
+    this.bFiltrosAbiertos = !this.bFiltrosAbiertos;
+    try {
+      localStorage.setItem( this._sClaveFiltros, this.bFiltrosAbiertos ? '1' : '0' );
+    } catch ( e ) { }
+  }
+
+  // Al entrar: como se dejaron la última vez, pero abiertos si ya hay
+  // algo filtrando de lo que está escondido.
+  private fn_iniciarFiltros(): void {
+    let bGuardado = false;
+    try {
+      bGuardado = localStorage.getItem( this._sClaveFiltros ) === '1';
+    } catch ( e ) { }
+    this.bFiltrosAbiertos = bGuardado || this.iFiltrosActivos > 0;
+  }
+
+
   // ── Modo panel (analisis/015) ──
   // Se llega desde un clic en una cifra del panel del director: la
   // pantalla muestra EXACTAMENTE las notas que el panel contó, con los
@@ -239,6 +279,8 @@ constructor(
 
     this._locale = 'mx';
     this._adapter.setLocale(this._locale);
+
+    this.fn_iniciarFiltros();
 
     this.timeCBXskeyup
     .pipe(
