@@ -316,14 +316,19 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     background-color: #b2b2b8 !important;
 }
 
-/* Panel de autocompletado para los inputs "slim" (13px, 36px de alto):
-   las opciones van al mismo tamaño que el combo. Se aplica con
-   class="slim-autocomplete-panel" en <mat-autocomplete>. */
+/* Opciones de TODOS los combos al tamaño del campo (13px, 36px de alto),
+   no solo de los que traían class="slim-autocomplete-panel": los campos
+   del sistema son slim y el dropdown se veía mucho más grande que el
+   combo. Aplica a autocompletados y a los <mat-select>. */
+.mat-mdc-autocomplete-panel .mat-mdc-option,
+.mat-mdc-select-panel .mat-mdc-option,
 .slim-autocomplete-panel .mat-mdc-option {
     min-height: 34px;
     font-size: 13px;
     padding: 0 12px;
 }
+.mat-mdc-autocomplete-panel .mat-mdc-option .mdc-list-item__primary-text,
+.mat-mdc-select-panel .mat-mdc-option .mdc-list-item__primary-text,
 .slim-autocomplete-panel .mat-mdc-option .mdc-list-item__primary-text {
     font-size: 13px;
     line-height: 1.3;
