@@ -98,21 +98,19 @@ export class TallerListComponent implements OnInit, OnDestroy {
   };
 
   // ── Filtros colapsables (analisis/024) ──
-  // Solo el folio, la casilla Vencidas y los botones se quedan a la
-  // vista; el resto vive detrás del botón "Filtros". Lo que el usuario
+  // Folio, cliente, estatus, la casilla Vencidas y los botones se quedan
+  // a la vista; el resto vive detrás del botón "Filtros". Lo que el usuario
   // deja abierto o cerrado se recuerda en este navegador.
   private readonly _sClaveFiltros: string = 'taller-list.filtros-abiertos';
   bFiltrosAbiertos: boolean = false;
 
-  // Cuántos de los filtros ESCONDIDOS están puestos. El folio y Vencidas
-  // no cuentan: se ven siempre.
+  // Cuántos de los filtros ESCONDIDOS están puestos. Folio, cliente,
+  // estatus y Vencidas no cuentan: se ven siempre.
   get iFiltrosActivos(): number {
     const p = this.parametersForm;
     return [
       !!p.createDateStart,
       !!p.createDateEnd,
-      Number( p.idCustomer ) > 0,
-      Number( p.idTallerStatus ) > 0,
       Number( p.idTecnico ) > 0,
       !!p.bCancel,
       !!p.bPending,

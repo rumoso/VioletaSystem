@@ -33,32 +33,6 @@
         </div>
       </div>
 
-      <!-- Filtros colapsables (analisis/024): el folio y los botones se
-           quedan siempre; lo demás vive detrás del botón "Filtros". -->
-      <ng-container *ngIf="bFiltrosAbiertos">
-
-      <div class="sll-field">
-        <label class="sll-label">Creado desde</label>
-        <div class="inline-wrap">
-          <input type="date"
-            class="sll-slim-input"
-            [class.sll-date-vacia]="!parametersForm.createDateStart"
-            [(ngModel)]="parametersForm.createDateStart"
-            [disabled]="bModoPanel">
-        </div>
-      </div>
-
-      <div class="sll-field">
-        <label class="sll-label">Creado hasta</label>
-        <div class="inline-wrap">
-          <input type="date"
-            class="sll-slim-input"
-            [class.sll-date-vacia]="!parametersForm.createDateEnd"
-            [(ngModel)]="parametersForm.createDateEnd"
-            [disabled]="bModoPanel">
-        </div>
-      </div>
-
       <div class="sll-field sll-field--customer">
         <label class="sll-label">Cliente</label>
         <div class="inline-wrap">
@@ -84,6 +58,33 @@
           <mat-option value="" *ngIf="parametersForm.customerResp.length > 0">{{ parametersForm.customerResp }}</mat-option>
         </mat-autocomplete>
       </div>
+
+      <!-- Filtros colapsables (analisis/024): folio, cliente y estatus de
+           pago se quedan siempre; lo demás vive detrás del botón "Filtros". -->
+      <ng-container *ngIf="bFiltrosAbiertos">
+
+      <div class="sll-field">
+        <label class="sll-label">Creado desde</label>
+        <div class="inline-wrap">
+          <input type="date"
+            class="sll-slim-input"
+            [class.sll-date-vacia]="!parametersForm.createDateStart"
+            [(ngModel)]="parametersForm.createDateStart"
+            [disabled]="bModoPanel">
+        </div>
+      </div>
+
+      <div class="sll-field">
+        <label class="sll-label">Creado hasta</label>
+        <div class="inline-wrap">
+          <input type="date"
+            class="sll-slim-input"
+            [class.sll-date-vacia]="!parametersForm.createDateEnd"
+            [(ngModel)]="parametersForm.createDateEnd"
+            [disabled]="bModoPanel">
+        </div>
+      </div>
+
 
       <div class="sll-field sll-field--salestype">
         <label class="sll-label">Tipo de venta</label>
@@ -115,7 +116,7 @@
 
     </div>
 
-    <div class="sll-filters-row sll-filters-row--secondary" *ngIf="bFiltrosAbiertos">
+    <div class="sll-filters-row sll-filters-row--secondary">
 
       <div class="sll-payment-chips">
         <span class="sll-payment-label">Estatus de pago:</span>

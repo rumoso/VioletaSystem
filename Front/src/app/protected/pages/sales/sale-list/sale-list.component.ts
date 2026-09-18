@@ -106,24 +106,20 @@ export class SaleListComponent implements OnInit, OnDestroy {
   private readonly _parametersFormDefault: any = JSON.parse( JSON.stringify( this.parametersForm ) );
 
   // ── Filtros colapsables (analisis/024) ──
-  // Solo el folio y los botones se quedan a la vista; el resto vive
+  // Folio, cliente, estatus de pago y los botones se quedan a la vista; el resto vive
   // detrás del botón "Filtros". Lo que el usuario deja abierto o cerrado
   // se recuerda en este navegador.
   private readonly _sClaveFiltros: string = 'sale-list.filtros-abiertos';
   bFiltrosAbiertos: boolean = false;
 
-  // Cuántos de los filtros ESCONDIDOS están puestos. El folio no
-  // cuenta: se ven siempre.
+  // Cuántos de los filtros ESCONDIDOS están puestos. Folio, cliente y
+  // estatus de pago no cuentan: se ven siempre.
   get iFiltrosActivos(): number {
     const p = this.parametersForm;
     return [
       !!p.createDateStart,
       !!p.createDateEnd,
-      Number( p.idCustomer ) > 0,
-      Number( p.idSaleType ) > 0,
-      !!p.bCancel,
-      !!p.bPending,
-      !!p.bPagada
+      Number( p.idSaleType ) > 0
     ].filter( ( b ) => b ).length;
   }
 

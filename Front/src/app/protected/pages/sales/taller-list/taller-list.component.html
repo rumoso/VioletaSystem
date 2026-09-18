@@ -17,38 +17,6 @@
         </div>
       </div>
 
-      <!-- Vencidas se queda siempre a la vista (analisis/024): es la
-           alerta de entregas fuera de fecha. -->
-      <div class="tll-payment-chips tll-chips-vencidas">
-        <span class="tll-payment-label">Entrega:</span>
-        <mat-checkbox class="tll-chip-check" [(ngModel)]="parametersForm.bVencidos"
-          matTooltip="Cotización, pedido o asignado con la fecha prometida ya vencida">
-          <span class="tll-chip-check-text">Vencidas</span>
-        </mat-checkbox>
-      </div>
-
-      <!-- Filtros colapsables (analisis/024). -->
-      <ng-container *ngIf="bFiltrosAbiertos">
-
-      <div class="tll-field">
-        <label class="tll-label">Creado desde</label>
-        <div class="inline-wrap">
-          <input type="date"
-            class="tll-slim-input"
-            [class.tll-date-vacia]="!parametersForm.createDateStart"
-            [(ngModel)]="parametersForm.createDateStart">
-        </div>
-      </div>
-
-      <div class="tll-field">
-        <label class="tll-label">Creado hasta</label>
-        <div class="inline-wrap">
-          <input type="date"
-            class="tll-slim-input"
-            [class.tll-date-vacia]="!parametersForm.createDateEnd"
-            [(ngModel)]="parametersForm.createDateEnd">
-        </div>
-      </div>
 
       <div class="tll-field tll-field--customer">
         <label class="tll-label">Cliente</label>
@@ -86,6 +54,42 @@
           </select>
         </div>
       </div>
+
+      <!-- Vencidas se queda siempre a la vista (analisis/024): es la
+           alerta de entregas fuera de fecha. -->
+      <div class="tll-payment-chips tll-chips-vencidas">
+        <span class="tll-payment-label">Entrega:</span>
+        <mat-checkbox class="tll-chip-check" [(ngModel)]="parametersForm.bVencidos"
+          matTooltip="Cotización, pedido o asignado con la fecha prometida ya vencida">
+          <span class="tll-chip-check-text">Vencidas</span>
+        </mat-checkbox>
+      </div>
+
+      <!-- Filtros colapsables (analisis/024): folio, cliente, estatus y
+           Vencidas se quedan siempre; lo demás detrás del botón "Filtros". -->
+      <ng-container *ngIf="bFiltrosAbiertos">
+
+      <div class="tll-field">
+        <label class="tll-label">Creado desde</label>
+        <div class="inline-wrap">
+          <input type="date"
+            class="tll-slim-input"
+            [class.tll-date-vacia]="!parametersForm.createDateStart"
+            [(ngModel)]="parametersForm.createDateStart">
+        </div>
+      </div>
+
+      <div class="tll-field">
+        <label class="tll-label">Creado hasta</label>
+        <div class="inline-wrap">
+          <input type="date"
+            class="tll-slim-input"
+            [class.tll-date-vacia]="!parametersForm.createDateEnd"
+            [(ngModel)]="parametersForm.createDateEnd">
+        </div>
+      </div>
+
+
 
       </ng-container>
 
