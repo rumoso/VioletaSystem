@@ -59,6 +59,23 @@
         </mat-autocomplete>
       </div>
 
+      <!-- Estatus de pago en el mismo renglón, con la etiqueta arriba
+           como los demás campos (analisis/024). -->
+      <div class="sll-field sll-field--pagos">
+        <label class="sll-label">Estatus de pago</label>
+        <div class="sll-payment-chips">
+          <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bCancel" [disabled]="bModoPanel">
+            <span class="sll-chip-check-text">Canceladas</span>
+          </mat-checkbox>
+          <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPending" [disabled]="bModoPanel">
+            <span class="sll-chip-check-text">Pendientes</span>
+          </mat-checkbox>
+          <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPagada" [disabled]="bModoPanel">
+            <span class="sll-chip-check-text">Pagadas</span>
+          </mat-checkbox>
+        </div>
+      </div>
+
       <!-- Filtros colapsables (analisis/024): folio, cliente y estatus de
            pago se quedan siempre; lo demás vive detrás del botón "Filtros". -->
       <ng-container *ngIf="bFiltrosAbiertos">
@@ -113,23 +130,6 @@
       </div>
 
       </ng-container>
-
-    </div>
-
-    <div class="sll-filters-row sll-filters-row--secondary">
-
-      <div class="sll-payment-chips">
-        <span class="sll-payment-label">Estatus de pago:</span>
-        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bCancel" [disabled]="bModoPanel">
-          <span class="sll-chip-check-text">Canceladas</span>
-        </mat-checkbox>
-        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPending" [disabled]="bModoPanel">
-          <span class="sll-chip-check-text">Pendientes</span>
-        </mat-checkbox>
-        <mat-checkbox class="sll-chip-check" [(ngModel)]="parametersForm.bPagada" [disabled]="bModoPanel">
-          <span class="sll-chip-check-text">Pagadas</span>
-        </mat-checkbox>
-      </div>
 
     </div>
 

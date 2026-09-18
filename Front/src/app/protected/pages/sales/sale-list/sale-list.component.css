@@ -39,18 +39,21 @@
   display: block;
 }
 .sll-field            { flex: 1; min-width: 160px; }
-.sll-field--folio     { min-width: 180px; flex: 1.2; }
+/* El folio son 5 o 6 dígitos: no necesita tanto ancho (analisis/024). */
+.sll-field--folio     { min-width: 150px; flex: 0.8; }
 .sll-field--date      { min-width: 240px; flex: 1.6; }
-.sll-field--customer  { min-width: 220px; flex: 2; }
+.sll-field--customer  { min-width: 220px; flex: 1.4; }
 .sll-field--salestype { min-width: 220px; flex: 1.5; }
+/* Estatus de pago: ocupa lo suyo, sin estirarse. */
+.sll-field--pagos     { flex: 0 0 auto; min-width: 0; }
 
 /* Chips de estatus de pago */
 .sll-payment-chips {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding: 8px 0 0;
+  height: 36px;
 }
 .sll-payment-label {
   font-size: 12px;

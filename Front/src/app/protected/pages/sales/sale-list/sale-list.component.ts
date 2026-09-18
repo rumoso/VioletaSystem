@@ -36,6 +36,10 @@ import {
 } from 'src/app/protected/utils/query-filtros.util';
 import { DashboardService } from 'src/app/protected/services/dashboard.service';
 
+// Tipos de venta que nacen en taller (rápidas y garantía): no se filtran
+// desde la consulta de ventas (analisis/024).
+const SALESTYPE_TALLER = [7, 8];
+
 @Component({
   selector: 'app-sale-list',
   templateUrl: './sale-list.component.html',
@@ -1126,7 +1130,12 @@ fn_ClearFilters(){
        .subscribe( {
          next: (resp: ResponseGet) =>{
            if(resp.status === 0){
-             this.cbxSalesType = resp.data
+             // Los folios de taller no se consultan desde aquí: rápidas y
+             // garantías se quedan fuera del combo. "Taller" sí aparece,
+             // pero solo trae los viejos, porque la consulta de ventas ya
+             // excluye los que tienen registro en taller.
+             this.cbxSalesType = ( resp.data || [] ).filter(
+               ( t: any ) => !SALESTYPE_TALLER.includes( Number( t.id ?? t.idSaleType ) ) );
            }
            else{
             this.cbxSalesType = [];

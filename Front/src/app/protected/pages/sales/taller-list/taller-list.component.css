@@ -35,7 +35,8 @@
   padding-top: 6px;
 }
 .tll-field          { flex: 1; min-width: 160px; }
-.tll-field--folio   { min-width: 180px; flex: 1.2; }
+/* El folio son 5 o 6 dígitos (analisis/024). */
+.tll-field--folio     { min-width: 150px; flex: 0.8; }
 .tll-field--date    { min-width: 240px; flex: 1.6; }
 .tll-field--customer{ min-width: 220px; flex: 2; }
 .tll-field--status  { min-width: 180px; }
