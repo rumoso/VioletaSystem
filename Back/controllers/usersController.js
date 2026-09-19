@@ -6,6 +6,7 @@ const { dbConnection } = require('../database/config');
 const { TIPO_ROL } = require('../helpers/constantes');
 const { fn_reglasIncumplidas } = require('../helpers/pwdSegura');
 const { fn_recalcularUtilidadTalleresAbiertosByTecnico } = require('../helpers/tallerUtilidad');
+const { fn_recalcularUtilidadVentasAbiertasByVendedor } = require('../helpers/ventaUtilidad');
 
 const _fn_respuestaPwdInsegura = (pwd) => {
     const faltan = fn_reglasIncumplidas(pwd);
@@ -239,6 +240,13 @@ const updateUser = async(req, res) => {
                 await fn_recalcularUtilidadTalleresAbiertosByTecnico( idUser );
             } catch (utilidadError) {
                 console.log('No se pudo recalcular la utilidad de los talleres del técnico:', utilidadError.message);
+            }
+            // Y el % de comisión mueve la utilidad de sus ventas que aún
+            // no la generan (analisis/026).
+            try {
+                await fn_recalcularUtilidadVentasAbiertasByVendedor( idUser );
+            } catch (utilidadError) {
+                console.log('No se pudo recalcular la utilidad de las ventas del vendedor:', utilidadError.message);
             }
         }
 

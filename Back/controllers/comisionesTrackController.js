@@ -4,6 +4,7 @@ const moment = require('moment');
 const { dbConnection } = require('../database/config');
 const { TIPO_ROL } = require('../helpers/constantes');
 const { fn_recalcularUtilidadTaller } = require('../helpers/tallerUtilidad');
+const { fn_recalcularUtilidadVenta } = require('../helpers/ventaUtilidad');
 
 // Bitácora de comisiones por empleado (analisis/008). Append-only,
 // mismo patrón que metal_inventario_track: cada renglón es una
@@ -628,6 +629,10 @@ const _fn_reversarRenglonesComision = async(renglones, conceptoReversa, referenc
         }
     }
 
+    // La comisión cambió: la utilidad guardada de la venta también
+    // (analisis/026).
+    await fn_recalcularUtilidadVenta(idSale);
+
 };
 
 // Comisión de venta AUTOMÁTICA sobre la utilidad (analisis/010): se
@@ -757,6 +762,11 @@ const fn_registrarComisionVentaSiPagada = async(idSale, idUserLogON) => {
             }
         }
     );
+
+
+    // Ya con la comisión registrada, la utilidad de la venta deja de ser
+    // estimada (analisis/026).
+    await fn_recalcularUtilidadVenta(idSale);
 
 };
 

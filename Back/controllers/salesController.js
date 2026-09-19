@@ -9,6 +9,7 @@ const { dbConnection } = require('../database/config');
 const { Console } = require('console');
 const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_reversarDestajoByTaller, fn_registrarComisionVentaSiPagada } = require('./comisionesTrackController');
 const { fn_recalcularUtilidadTaller, fn_recalcularUtilidadTallerByIdSale } = require('../helpers/tallerUtilidad');
+const { fn_recalcularUtilidadVenta } = require('../helpers/ventaUtilidad');
 
 const insertSale = async(req, res) => {
 
@@ -97,7 +98,15 @@ const insertSale = async(req, res) => {
                 }
                 
                 if(bOK){
-                    
+
+                    // La utilidad de la venta se guarda en `sales`
+                    // (analisis/026). No debe tumbar la respuesta si falla.
+                    try {
+                        await fn_recalcularUtilidadVenta( idSale );
+                    } catch (utilidadError) {
+                        console.log('No se pudo calcular la utilidad de la venta:', utilidadError.message);
+                    }
+
                     res.json({
                         status: 0,
                         message: "Venta guardada con éxito.",
@@ -426,6 +435,13 @@ const insertPayments = async(req, res) => {
                     await fn_recalcularUtilidadTallerByIdSale( idSaleTocada );
                 } catch (utilidadError) {
                     console.log('No se pudo recalcular la utilidad del taller:', utilidadError.message);
+                }
+
+                // Y si es una venta de mostrador, la suya (analisis/026).
+                try {
+                    await fn_recalcularUtilidadVenta( idSaleTocada );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
                 }
             }
 
@@ -1318,6 +1334,13 @@ const disabledSale = async(req, res) => {
                 } catch (comisionError) {
                     console.log('No se pudo reversar la comisión de la venta cancelada:', comisionError.message);
                 }
+
+                // Una venta cancelada no deja utilidad (analisis/026).
+                try {
+                    await fn_recalcularUtilidadVenta( idSale );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad de la venta cancelada:', utilidadError.message);
+                }
             }
 
             res.json({
@@ -1397,6 +1420,14 @@ const entregarApartado = async(req, res = response) => {
             await fn_registrarComisionVentaSiPagada( idSale, auth_idUser );
         } catch (comisionError) {
             console.log('No se pudo generar la comisión de venta:', comisionError.message);
+        }
+
+        // Con la comisión ya definida, la utilidad de la venta se cierra
+        // (analisis/026).
+        try {
+            await fn_recalcularUtilidadVenta( idSale );
+        } catch (utilidadError) {
+            console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
         }
 
         res.json({
@@ -1557,6 +1588,11 @@ const disabledPayment = async(req, res) => {
                     await fn_recalcularUtilidadTallerByIdSale( idSale );
                 } catch (utilidadError) {
                     console.log('No se pudo recalcular la utilidad del taller:', utilidadError.message);
+                }
+                try {
+                    await fn_recalcularUtilidadVenta( idSale );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
                 }
             }
 
@@ -1740,6 +1776,13 @@ const disableSaleDetail = async(req, res) => {
 
             oResponse.status = 0;
             oResponse.message = "Producto eliminado de la venta";
+
+            // Cambió el detalle: cambia la utilidad guardada (analisis/026).
+            try {
+                await fn_recalcularUtilidadVenta( oSaleDetail[0].idSale );
+            } catch (utilidadError) {
+                console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
+            }
 
         }else{
             
