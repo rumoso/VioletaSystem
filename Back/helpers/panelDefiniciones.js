@@ -46,6 +46,62 @@ const _SQL_PIEZAS = `SUM(CASE WHEN PP.idProduct IS NOT NULL THEN D.cantidad ELSE
 // ── VENDIDO ──
 // Notas levantadas en el rango [:desde, :hasta]. Una nota cuenta si
 // tiene al menos una línea activa (INNER JOIN a salesdetail).
+// ── UTILIDAD GUARDADA (analisis/027) ──
+// El panel ya no calcula la utilidad: la lee de donde vive.
+//
+//   Mostrador → sales.utilidad (neta) y sales.comisionMonto
+//   Taller    → taller.utilidad (neta) y taller.destajoMonto, con
+//               taller.precioTotal como vendido (los renglones de mano
+//               de obra y metal van sin producto de catálogo, así que
+//               sumarlos desde salesdetail se quedaba corto).
+//
+// Las dos consultas filtran por la fecha de la venta y por que la venta
+// siga activa, el mismo criterio del resto del panel.
+const _SQL_UTILIDAD_MOSTRADOR = `
+    SELECT
+        ROUND( IFNULL( SUM( S.utilidad ), 0), 2) AS utilidadNeta,
+        ROUND( IFNULL( SUM( S.comisionMonto ), 0), 2) AS comisiones
+    FROM sales AS S
+    WHERE ${ _SQL_VENTA_VALIDA }
+      AND S.idSaleType NOT IN (${ _TIPOS_TALLER.join(', ') })
+      AND DATE(S.createDate) BETWEEN :desde AND :hasta`;
+
+const _SQL_UTILIDAD_TALLER = `
+    SELECT
+        ROUND( IFNULL( SUM( T.precioTotal ), 0), 2) AS vendidoTaller,
+        ROUND( IFNULL( SUM( T.utilidad ), 0), 2) AS utilidadNeta,
+        ROUND( IFNULL( SUM( T.destajoMonto ), 0), 2) AS comisiones
+    FROM taller AS T
+    INNER JOIN sales AS S ON S.idSale = T.idSale
+    WHERE ${ _SQL_VENTA_VALIDA }
+      AND DATE(S.createDate) BETWEEN :desde AND :hasta`;
+
+// Los talleres VIEJOS (los de antes del módulo, sin renglón en `taller`,
+// analisis/025) no tienen folio del que sacar el precio ni utilidad
+// guardada: su venta sí cuenta como vendido, con los renglones de
+// siempre, y aporta 0 de utilidad. Sin esto el bloque de taller se
+// quedaba en blanco para las fechas viejas.
+const _SQL_VENDIDO_TALLER_VIEJO = `
+    SELECT ROUND( IFNULL( ${ _SQL_IMPORTE }, 0), 2) AS vendidoViejo
+    FROM sales AS S
+    INNER JOIN salesdetail AS D ON D.idSale = S.idSale AND D.active = 1
+    LEFT JOIN products AS PP ON PP.idProduct = D.idProduct
+    WHERE ${ _SQL_VENTA_VALIDA }
+      AND S.idSaleType IN (${ _TIPOS_TALLER.join(', ') })
+      AND DATE(S.createDate) BETWEEN :desde AND :hasta
+      AND NOT EXISTS ( SELECT 1 FROM taller AS TT WHERE TT.idSale = S.idSale )`;
+
+// Por vendedor, para la tabla del día.
+const _SQL_UTILIDAD_MOSTRADOR_POR_VENDEDOR = `
+    SELECT
+        S.idSeller_idUser AS idUser,
+        ROUND( IFNULL( SUM( S.utilidad ), 0), 2) AS utilidadNeta,
+        ROUND( IFNULL( SUM( S.comisionMonto ), 0), 2) AS comisiones
+    FROM sales AS S
+    WHERE ${ _SQL_VENTA_VALIDA }
+      AND DATE(S.createDate) BETWEEN :desde AND :hasta
+    GROUP BY S.idSeller_idUser`;
+
 const fn_sqlVentaFrom = (sFiltro = '') => `
     FROM sales AS S
     INNER JOIN salesdetail AS D ON D.idSale = S.idSale AND D.active = 1
@@ -283,6 +339,10 @@ module.exports = {
     _SQL_IMPORTE,
     _SQL_COSTO,
     _SQL_PIEZAS,
+    _SQL_UTILIDAD_MOSTRADOR,
+    _SQL_UTILIDAD_TALLER,
+    _SQL_VENDIDO_TALLER_VIEJO,
+    _SQL_UTILIDAD_MOSTRADOR_POR_VENDEDOR,
     fn_sqlVentaFrom,
     fn_sqlCobradoFrom,
     _SQL_COBRADO_DE_VENTAS_DEL_DIA,

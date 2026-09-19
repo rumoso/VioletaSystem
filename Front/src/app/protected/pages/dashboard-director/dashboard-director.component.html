@@ -78,10 +78,23 @@
               <mat-icon class="dbp-kpi-icon dbp-kpi-icon--verde">trending_up</mat-icon>
               <span class="dbp-kpi-titulo">Utilidad generada</span>
             </div>
+            <!-- Utilidad NETA: la guardada, ya sin comisión ni destajo
+                 (analisis/027). El desglose deja ver cuánto se va en
+                 pagarle a quien vendió o trabajó. -->
             <div class="dbp-cifra dbp-cifra--verde">{{ dia.data.venta.utilidad | currency }}</div>
             <div class="dbp-kpi-linea">
               <span class="dbp-chip dbp-chip--morado">Margen {{ dia.data.venta.margen }}%</span>
-              <span class="dbp-sub">sobre lo vendido hoy</span>
+              <span class="dbp-sub">neto sobre lo vendido hoy</span>
+            </div>
+            <div class="dbp-desglose">
+              <div class="dbp-desglose-row">
+                <span>Utilidad bruta</span>
+                <span>{{ dia.data.venta.utilidadBruta | currency }}</span>
+              </div>
+              <div class="dbp-desglose-row dbp-desglose-row--resta">
+                <span>Comisiones y destajo</span>
+                <span>− {{ dia.data.venta.comisiones | currency }}</span>
+              </div>
             </div>
             <div class="dbp-sub">Costo de lo vendido {{ dia.data.venta.costo | currency }}</div>
           </div>
@@ -158,12 +171,18 @@
                      (click)="fn_irVentas('dia-mostrador', dia.data.fecha, dia.data.mostrador.notas)">
                   <div class="dbp-mini-label">Mostrador</div>
                   <div class="dbp-mini-valor">{{ dia.data.mostrador.vendido | currency }}</div>
+                  <div class="dbp-mini-sub" *ngIf="dia.data.bVerCostos">
+                    Utilidad {{ dia.data.mostrador.utilidad | currency }} · comisiones {{ dia.data.mostrador.comisiones | currency }}
+                  </div>
                 </div>
                 <div class="dbp-mini"
                      [class.dbp-clic]="dia.data.taller.notas > 0"
                      (click)="fn_irVentas('dia-taller', dia.data.fecha, dia.data.taller.notas)">
                   <div class="dbp-mini-label">Taller</div>
                   <div class="dbp-mini-valor">{{ dia.data.taller.vendido | currency }}</div>
+                  <div class="dbp-mini-sub" *ngIf="dia.data.bVerCostos">
+                    Utilidad {{ dia.data.taller.utilidad | currency }} · destajo {{ dia.data.taller.comisiones | currency }}
+                  </div>
                 </div>
                 <div class="dbp-mini" [class.dbp-mini--alerta]="dia.data.cajasSinCorte.length > 0">
                   <div class="dbp-mini-label">Cajas sin corte</div>
@@ -282,8 +301,12 @@
                   </td>
                   <td class="dbp-td dbp-td--right dbp-td--verde"
                       *ngIf="vendedores.data.bVerCostos"
-                      [class.dbp-td--nulo]="x.bSoloCobranza">
+                      [class.dbp-td--nulo]="x.bSoloCobranza"
+                      [matTooltip]="x.bSoloCobranza ? '' : 'Bruta ' + (x.utilidadBruta | currency) + ' menos ' + (x.comisiones | currency) + ' de comisión'">
                     {{ x.bSoloCobranza ? '—' : (x.utilidad | currency) }}
+                    <div class="dbp-td-sub" *ngIf="!x.bSoloCobranza && x.comisiones > 0">
+                      − {{ x.comisiones | currency }} comisión
+                    </div>
                   </td>
                   <td class="dbp-td dbp-td--center" *ngIf="vendedores.data.bVerCostos">
                     <span class="dbp-chip"
@@ -304,7 +327,12 @@
                   <td class="dbp-td">Total del día</td>
                   <td class="dbp-td dbp-td--center">{{ vendedores.data.totales.notas }}</td>
                   <td class="dbp-td dbp-td--right">{{ vendedores.data.totales.vendido | currency }}</td>
-                  <td class="dbp-td dbp-td--right dbp-td--verde" *ngIf="vendedores.data.bVerCostos">{{ vendedores.data.totales.utilidad | currency }}</td>
+                  <td class="dbp-td dbp-td--right dbp-td--verde" *ngIf="vendedores.data.bVerCostos">
+                    {{ vendedores.data.totales.utilidad | currency }}
+                    <div class="dbp-td-sub" *ngIf="vendedores.data.totales.comisiones > 0">
+                      − {{ vendedores.data.totales.comisiones | currency }} comisión
+                    </div>
+                  </td>
                   <td class="dbp-td dbp-td--center" *ngIf="vendedores.data.bVerCostos">
                     <span class="dbp-chip dbp-chip--morado">{{ vendedores.data.totales.margen }}%</span>
                   </td>
@@ -601,7 +629,19 @@
                     </td>
                   </tr>
                   <tr *ngIf="mes.data.bVerCostos">
-                    <td class="dbp-td">Utilidad</td>
+                    <td class="dbp-td">Utilidad bruta</td>
+                    <td class="dbp-td dbp-td--right">{{ mes.data.venta.utilidadBruta | currency }}</td>
+                    <td class="dbp-td dbp-td--right dbp-td--tenue">{{ mes.data.ventaComparativo.utilidadBruta | currency }}</td>
+                    <td class="dbp-td dbp-td--right"></td>
+                  </tr>
+                  <tr *ngIf="mes.data.bVerCostos">
+                    <td class="dbp-td">Comisiones y destajo</td>
+                    <td class="dbp-td dbp-td--right">− {{ mes.data.venta.comisiones | currency }}</td>
+                    <td class="dbp-td dbp-td--right dbp-td--tenue">− {{ mes.data.ventaComparativo.comisiones | currency }}</td>
+                    <td class="dbp-td dbp-td--right"></td>
+                  </tr>
+                  <tr *ngIf="mes.data.bVerCostos">
+                    <td class="dbp-td">Utilidad neta</td>
                     <td class="dbp-td dbp-td--right dbp-td--fuerte dbp-td--verde">{{ mes.data.venta.utilidad | currency }}</td>
                     <td class="dbp-td dbp-td--right dbp-td--tenue">{{ mes.data.ventaComparativo.utilidad | currency }}</td>
                     <td class="dbp-td dbp-td--right">

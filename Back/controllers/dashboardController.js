@@ -13,6 +13,10 @@ const {
     _SQL_IMPORTE,
     _SQL_COSTO,
     _SQL_PIEZAS,
+    _SQL_UTILIDAD_MOSTRADOR,
+    _SQL_UTILIDAD_TALLER,
+    _SQL_VENDIDO_TALLER_VIEJO,
+    _SQL_UTILIDAD_MOSTRADOR_POR_VENDEDOR,
     fn_sqlVentaFrom,
     fn_sqlCobradoFrom,
     _SQL_COBRADO_DE_VENTAS_DEL_DIA,
@@ -170,9 +174,19 @@ const _fn_armarVenta = (fila, bVerCostos) => {
     };
 
     if (bVerCostos) {
+
+        // La utilidad ya no se calcula aquí: viene guardada en la venta
+        // y en el folio, ya neta de comisión y destajo (analisis/027).
+        // El desglose deja ver cuánto se le va a quien vendió o trabajó.
+        const comisiones = _fn_r(fila && fila.comisiones);
+        const utilidad = _fn_r(fila && fila.utilidadNeta);
+
         oVenta.costo = costo;
-        oVenta.utilidad = _fn_r(vendido - costo);
-        oVenta.margen = vendido > 0 ? _fn_r((vendido - costo) / vendido * 100) : 0;
+        oVenta.utilidadBruta = _fn_r(utilidad + comisiones);
+        oVenta.comisiones = comisiones;
+        oVenta.utilidad = utilidad;
+        oVenta.margen = vendido > 0 ? _fn_r(utilidad / vendido * 100) : 0;
+
     }
 
     return oVenta;
@@ -445,19 +459,59 @@ const getInventario = async(req, res = response) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Venta (y su costo) de un rango de fechas.
-const _fn_getVenta = async(desde, hasta, sFiltroTipo = '') => {
+// sTipo: 'MOSTRADOR', 'TALLER' o '' (las dos cosas). Las notas, las
+// piezas y lo vendido se siguen contando sobre los renglones; la
+// utilidad y las comisiones vienen guardadas (analisis/027).
+const _fn_getVenta = async(desde, hasta, sTipo = '') => {
 
-    const filas = await dbConnection.query(
-        `SELECT
-            COUNT(DISTINCT S.idSale) AS notas,
-            ${ _SQL_IMPORTE } AS vendido,
-            ${ _SQL_COSTO } AS costo,
-            ${ _SQL_PIEZAS } AS piezas
-         ${ fn_sqlVentaFrom(sFiltroTipo) }`,
-        { replacements: { desde, hasta }, type: dbConnection.QueryTypes.SELECT }
-    );
+    const sFiltroTipo = sTipo === 'MOSTRADOR' ? _SQL_FILTRO_MOSTRADOR
+                      : sTipo === 'TALLER'    ? _SQL_FILTRO_TALLER
+                      : '';
 
-    return filas[0] || {};
+    const oRepl = { replacements: { desde, hasta }, type: dbConnection.QueryTypes.SELECT };
+
+    const bTaller = sTipo !== 'MOSTRADOR';
+    const bMostrador = sTipo !== 'TALLER';
+
+    const [filas, aMostrador, aTaller, aTallerViejo, aVendidoMostrador] = await Promise.all([
+        dbConnection.query(
+            `SELECT
+                COUNT(DISTINCT S.idSale) AS notas,
+                ${ _SQL_IMPORTE } AS vendido,
+                ${ _SQL_COSTO } AS costo,
+                ${ _SQL_PIEZAS } AS piezas
+             ${ fn_sqlVentaFrom(sFiltroTipo) }`, oRepl),
+        bMostrador ? dbConnection.query(_SQL_UTILIDAD_MOSTRADOR, oRepl) : Promise.resolve([{}]),
+        bTaller ? dbConnection.query(_SQL_UTILIDAD_TALLER, oRepl) : Promise.resolve([{}]),
+        bTaller ? dbConnection.query(_SQL_VENDIDO_TALLER_VIEJO, oRepl) : Promise.resolve([{}]),
+        // Para el bloque del día (sin filtro) hace falta lo vendido SOLO
+        // de mostrador, porque lo de taller se arma aparte.
+        sTipo === '' ? dbConnection.query(
+            `SELECT ${ _SQL_IMPORTE } AS vendido ${ fn_sqlVentaFrom(_SQL_FILTRO_MOSTRADOR) }`, oRepl)
+            : Promise.resolve([{}])
+    ]);
+
+    const oFila = filas[0] || {};
+    const oMostrador = aMostrador[0] || {};
+    const oTaller = aTaller[0] || {};
+    const oTallerViejo = aTallerViejo[0] || {};
+
+    // Lo vendido de taller sale del folio (`precioTotal`): la mano de
+    // obra y el metal no tienen producto de catálogo, así que sumarlos
+    // desde los renglones se quedaba corto. Los talleres viejos, que no
+    // tienen folio, siguen contando por sus renglones.
+    const nVendidoTaller = _fn_r(_fn_r(oTaller.vendidoTaller) + _fn_r(oTallerViejo.vendidoViejo));
+
+    if (sTipo === 'TALLER') {
+        oFila.vendido = nVendidoTaller;
+    } else if (sTipo === '') {
+        oFila.vendido = _fn_r(_fn_r((aVendidoMostrador[0] || {}).vendido) + nVendidoTaller);
+    }
+
+    oFila.utilidadNeta = _fn_r(_fn_r(oMostrador.utilidadNeta) + _fn_r(oTaller.utilidadNeta));
+    oFila.comisiones = _fn_r(_fn_r(oMostrador.comisiones) + _fn_r(oTaller.comisiones));
+
+    return oFila;
 
 };
 
@@ -498,8 +552,8 @@ const getResumenDia = async(req, res = response) => {
         const [oHoy, oAntes, oMostrador, oTaller, oCobrado, aFormasPago, aCajas] = await Promise.all([
             _fn_getVenta(oFechas.dia, oFechas.dia),
             _fn_getVenta(oFechas.diaComparativo, oFechas.diaComparativo),
-            _fn_getVenta(oFechas.dia, oFechas.dia, _SQL_FILTRO_MOSTRADOR),
-            _fn_getVenta(oFechas.dia, oFechas.dia, _SQL_FILTRO_TALLER),
+            _fn_getVenta(oFechas.dia, oFechas.dia, 'MOSTRADOR'),
+            _fn_getVenta(oFechas.dia, oFechas.dia, 'TALLER'),
             _fn_getCobrado(oFechas.dia, oFechas.dia),
 
             dbConnection.query(
@@ -654,6 +708,18 @@ const getResumenPorVendedor = async(req, res = response) => {
             { replacements: { desde: oFechas.dia, hasta: oFechas.dia }, type: dbConnection.QueryTypes.SELECT }
         );
 
+        // La utilidad por vendedor viene guardada en sus ventas
+        // (analisis/027); el taller no se reparte por vendedor.
+        const aUtilidades = bVerCostos
+            ? await dbConnection.query(_SQL_UTILIDAD_MOSTRADOR_POR_VENDEDOR,
+                { replacements: { desde: oFechas.dia, hasta: oFechas.dia }, type: dbConnection.QueryTypes.SELECT })
+            : [];
+
+        const oUtilidadPorVendedor = {};
+        for (const u of aUtilidades) {
+            oUtilidadPorVendedor[u.idUser] = u;
+        }
+
         const rows = filas.map((f) => {
 
             const vendido = _fn_r(f.vendido);
@@ -676,9 +742,17 @@ const getResumenPorVendedor = async(req, res = response) => {
             };
 
             if (bVerCostos) {
+
+                const oU = oUtilidadPorVendedor[f.idUser] || {};
+                const comisiones = _fn_r(oU.comisiones);
+                const utilidad = _fn_r(oU.utilidadNeta);
+
                 oFila.costo = costo;
-                oFila.utilidad = _fn_r(vendido - costo);
-                oFila.margen = vendido > 0 ? _fn_r((vendido - costo) / vendido * 100) : 0;
+                oFila.utilidadBruta = _fn_r(utilidad + comisiones);
+                oFila.comisiones = comisiones;
+                oFila.utilidad = utilidad;
+                oFila.margen = vendido > 0 ? _fn_r(utilidad / vendido * 100) : 0;
+
             }
 
             return oFila;
@@ -698,6 +772,8 @@ const getResumenPorVendedor = async(req, res = response) => {
 
         if (bVerCostos) {
             oTotales.utilidad = _fn_r(rows.reduce((s, x) => s + x.utilidad, 0));
+            oTotales.comisiones = _fn_r(rows.reduce((s, x) => s + x.comisiones, 0));
+            oTotales.utilidadBruta = _fn_r(oTotales.utilidad + oTotales.comisiones);
             oTotales.margen = oTotales.vendido > 0 ? _fn_r(oTotales.utilidad / oTotales.vendido * 100) : 0;
         }
 

@@ -50,6 +50,9 @@ const fn_recalcularUtilidadTaller = async (idTaller, transaction = null) => {
 
     let utilidad = 0;
     let utilidadCobrada = 0;
+    // Lo que se le restó por destajo, guardado también en el folio para
+    // que el panel desglose bruta / comisiones / neta (analisis/027).
+    let destajoMonto = 0;
 
     const bSinUtilidad = !!oFolio.idTallerOrigen || Number(oFolio.idTallerStatus) === ESTATUS_CANCELADO;
 
@@ -60,12 +63,15 @@ const fn_recalcularUtilidadTaller = async (idTaller, transaction = null) => {
         const [oManoObra] = await dbConnection.query(
             `SELECT
                 COUNT(*) AS iRenglones,
-                ROUND( IFNULL( SUM( TMO.precio - ROUND( TMO.precio * IFNULL( TMO.porcentajeDestajo, IFNULL( U.destajo, 0) ) / 100, 2) ), 0), 2) AS utilidad
+                ROUND( IFNULL( SUM( TMO.precio - ROUND( TMO.precio * IFNULL( TMO.porcentajeDestajo, IFNULL( U.destajo, 0) ) / 100, 2) ), 0), 2) AS utilidad,
+                ROUND( IFNULL( SUM( ROUND( TMO.precio * IFNULL( TMO.porcentajeDestajo, IFNULL( U.destajo, 0) ) / 100, 2) ), 0), 2) AS destajo
              FROM taller_mano_obra AS TMO
              LEFT JOIN users AS U ON U.idUser = TMO.idUserTecnico
              WHERE TMO.idTaller = :idTaller`,
             { ...oOpts, replacements: { idTaller } }
         );
+
+        destajoMonto = _fn_num(oManoObra?.destajo);
 
         const utilidadManoObra = Number(oManoObra?.iRenglones) > 0
             ? _fn_num(oManoObra.utilidad)
@@ -107,17 +113,22 @@ const fn_recalcularUtilidadTaller = async (idTaller, transaction = null) => {
 
     }
 
-    const oUpd = { type: dbConnection.QueryTypes.UPDATE, replacements: { utilidad, utilidadCobrada, idTaller } };
+    const oUpd = {
+        type: dbConnection.QueryTypes.UPDATE,
+        replacements: { utilidad, utilidadCobrada, destajoMonto, idTaller }
+    };
     if (transaction) {
         oUpd.transaction = transaction;
     }
 
     await dbConnection.query(
-        `UPDATE taller SET utilidad = :utilidad, utilidadCobrada = :utilidadCobrada WHERE idTaller = :idTaller`,
+        `UPDATE taller
+         SET utilidad = :utilidad, utilidadCobrada = :utilidadCobrada, destajoMonto = :destajoMonto
+         WHERE idTaller = :idTaller`,
         oUpd
     );
 
-    return { utilidad, utilidadCobrada };
+    return { utilidad, utilidadCobrada, destajoMonto };
 
 };
 

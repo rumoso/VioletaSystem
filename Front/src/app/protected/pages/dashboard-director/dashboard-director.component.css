@@ -543,3 +543,30 @@
 .dbp-barra-row.dbp-clic:hover .dbp-barra-etq { color: #283593; text-decoration: underline; }
 .dbp-card-head .dbp-clic:hover .dbp-card-titulo,
 .dbp-kpi.dbp-clic:hover .dbp-kpi-label { color: #283593; text-decoration: underline; }
+
+/* Desglose de la utilidad (analisis/027): bruta y lo que se va en
+   comisiones, debajo de la cifra neta. */
+.dbp-desglose {
+    margin: 6px 0 4px;
+    padding-top: 6px;
+    border-top: 1px dashed #e3e6ef;
+}
+
+.dbp-desglose-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.dbp-desglose-row--resta {
+    color: #a1546a;
+}
+
+.dbp-td-sub {
+    font-size: 11px;
+    color: #a1546a;
+    font-weight: 500;
+}
