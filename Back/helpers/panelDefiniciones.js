@@ -50,7 +50,7 @@ const _SQL_PIEZAS = `SUM(CASE WHEN PP.idProduct IS NOT NULL THEN D.cantidad ELSE
 // El panel ya no calcula la utilidad: la lee de donde vive.
 //
 //   Mostrador → sales.utilidad (neta) y sales.comisionMonto
-//   Taller    → taller.utilidad (neta) y taller.destajoMonto, con
+//   Taller    → taller.utilidad (neta) y taller.comisiones, con
 //               taller.precioTotal como vendido (los renglones de mano
 //               de obra y metal van sin producto de catálogo, así que
 //               sumarlos desde salesdetail se quedaba corto).
@@ -70,7 +70,7 @@ const _SQL_UTILIDAD_TALLER = `
     SELECT
         ROUND( IFNULL( SUM( T.precioTotal ), 0), 2) AS vendidoTaller,
         ROUND( IFNULL( SUM( T.utilidad ), 0), 2) AS utilidadNeta,
-        ROUND( IFNULL( SUM( T.destajoMonto ), 0), 2) AS comisiones
+        ROUND( IFNULL( SUM( T.comisiones ), 0), 2) AS comisiones
     FROM taller AS T
     INNER JOIN sales AS S ON S.idSale = T.idSale
     WHERE ${ _SQL_VENTA_VALIDA }

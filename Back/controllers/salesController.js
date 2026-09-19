@@ -7,7 +7,7 @@ const path = require('path');
 
 const { dbConnection } = require('../database/config');
 const { Console } = require('console');
-const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_reversarDestajoByTaller, fn_registrarComisionVentaSiPagada } = require('./comisionesTrackController');
+const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_reversarDestajoByTaller, fn_registrarComisionVentaSiPagada, fn_registrarComisionTallerSiPagado } = require('./comisionesTrackController');
 const { fn_recalcularUtilidadTaller, fn_recalcularUtilidadTallerByIdSale } = require('../helpers/tallerUtilidad');
 const { fn_recalcularUtilidadVenta } = require('../helpers/ventaUtilidad');
 
@@ -430,7 +430,15 @@ const insertPayments = async(req, res) => {
                 }
 
                 // Si la venta es un folio de taller, su utilidad cobrada
-                // sube con este pago (analisis/023).
+                // sube con este pago (analisis/023). Y si con este pago
+                // quedó saldado, al vendedor se le carga su comisión
+                // (analisis/028).
+                try {
+                    await fn_registrarComisionTallerSiPagado( idSaleTocada, idUserLogON );
+                } catch (comisionError) {
+                    console.log('No se pudo generar la comisión de taller:', comisionError.message);
+                }
+
                 try {
                     await fn_recalcularUtilidadTallerByIdSale( idSaleTocada );
                 } catch (utilidadError) {

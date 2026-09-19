@@ -406,6 +406,19 @@ const fn_registrarDestajoByTaller = async(idTaller, oGetDateNow, idUserLogON, tr
             }
         );
 
+        // Y el renglón del folio queda marcado como ya cargado
+        // (analisis/028): desde aquí no se vuelve a estimar.
+        await dbConnection.query(
+            `UPDATE taller_comisiones
+             SET idComisionTrack = LAST_INSERT_ID(), porcentaje = :porcentaje, monto = :monto, montoBase = :montoBase
+             WHERE idTaller = :idTaller AND idUser = :idUser AND tipo = 'DESTAJO' AND idComisionTrack IS NULL`,
+            {
+                replacements: { porcentaje: destajoPorcentaje, monto, montoBase: totalManoObra, idTaller, idUser: fila.idUserTecnico },
+                type: dbConnection.QueryTypes.UPDATE,
+                transaction
+            }
+        );
+
     }
 
     // Con los % ya congelados, la utilidad del folio se vuelve a cerrar.
@@ -770,6 +783,103 @@ const fn_registrarComisionVentaSiPagada = async(idSale, idUserLogON) => {
 
 };
 
+// ── Comisión del VENDEDOR por un folio de taller (analisis/028) ──
+// Al técnico se le carga su destajo cuando el folio llega a mostrador;
+// al vendedor, cuando el folio queda PAGADO por completo. El monto es
+// el del renglón que el folio ya tiene calculado en `taller_comisiones`
+// (utilidad bruta menos destajo, por su %), así que aquí no se vuelve a
+// calcular nada: se carga y se marca.
+//
+// Anti-duplicado: un renglón ya cargado (idComisionTrack con valor) no
+// se vuelve a tomar, sin importar cuántas veces se dispare.
+const fn_registrarComisionTallerSiPagado = async(idSale, idUserLogON) => {
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const [oFolio] = await dbConnection.query(
+        `SELECT T.idTaller, T.idSale, T.precioTotal, T.idTallerOrigen, T.idTallerStatus
+         FROM taller AS T
+         INNER JOIN sales AS S ON S.idSale = T.idSale AND S.active = 1
+         WHERE T.idSale = :idSale LIMIT 1`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    if (!oFolio || oFolio.idTallerOrigen || Number(oFolio.idTallerStatus) === 7) {
+        return;
+    }
+
+    const nPrecioTotal = Math.round((parseFloat(oFolio.precioTotal) || 0) * 100) / 100;
+
+    if (nPrecioTotal <= 0) {
+        return;
+    }
+
+    const [oPagos] = await dbConnection.query(
+        `SELECT ROUND( IFNULL( SUM( P.pago ), 0), 2) AS cobrado FROM payments AS P
+         WHERE P.idRelation = :idSale AND P.relationType = 'V' AND P.active = 1`,
+        { replacements: { idSale: oFolio.idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    // Tolerancia de un centavo por redondeos, igual que en la venta.
+    if ((parseFloat(oPagos.cobrado) || 0) + 0.01 < nPrecioTotal) {
+        return;
+    }
+
+    const aRenglones = await dbConnection.query(
+        `SELECT idTallerComision, idUser, porcentaje, montoBase, monto
+         FROM taller_comisiones
+         WHERE idTaller = :idTaller AND tipo = 'COMISION' AND active = 1 AND idComisionTrack IS NULL`,
+        { replacements: { idTaller: oFolio.idTaller }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    for (const r of aRenglones) {
+
+        const monto = Math.round((parseFloat(r.monto) || 0) * 100) / 100;
+
+        if (monto <= 0) {
+            continue;
+        }
+
+        const [resultado] = await dbConnection.query(
+            `INSERT INTO comisiones_track
+                (idUser, tipo, concepto, monto, fecha, idTaller, idSale, referencia, montoBase, porcentajeAplicado, estatus, createDate, idCreateUser)
+             VALUES
+                (:idUser, 'VENTA', :concepto, :monto, :fecha, :idTaller, :idSale, :referencia, :montoBase, :porcentaje, 'PENDIENTE', :createDate, :idCreateUser)`,
+            {
+                replacements: {
+                    idUser: r.idUser,
+                    concepto: `Comision taller #${ oFolio.idSale }`,
+                    monto,
+                    fecha: oGetDateNow.substring(0, 10),
+                    idTaller: oFolio.idTaller,
+                    idSale: oFolio.idSale,
+                    referencia: `Utilidad menos destajo $${ r.montoBase } x ${ r.porcentaje }%`,
+                    montoBase: r.montoBase,
+                    porcentaje: r.porcentaje,
+                    createDate: oGetDateNow,
+                    idCreateUser: idUserLogON
+                },
+                type: dbConnection.QueryTypes.INSERT
+            }
+        );
+
+        await dbConnection.query(
+            `UPDATE taller_comisiones SET idComisionTrack = :idComisionTrack
+             WHERE idTallerComision = :idTallerComision`,
+            {
+                replacements: { idComisionTrack: resultado, idTallerComision: r.idTallerComision },
+                type: dbConnection.QueryTypes.UPDATE
+            }
+        );
+
+    }
+
+    if (aRenglones.length > 0) {
+        await fn_recalcularUtilidadTaller(oFolio.idTaller);
+    }
+
+};
+
 module.exports = {
     getComisionesResumen
     , getComisionesTrackList
@@ -777,6 +887,7 @@ module.exports = {
     , cancelarComisionTrack
     , generarComisionesVenta
     , fn_registrarDestajoByTaller
+    , fn_registrarComisionTallerSiPagado
     , fn_reversarComisionByOrigen
     , fn_reversarDestajoByTaller
     , fn_registrarComisionVentaSiPagada
