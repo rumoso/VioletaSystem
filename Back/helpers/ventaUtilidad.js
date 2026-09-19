@@ -13,8 +13,11 @@
 //
 // La comisión es la REAL cuando la venta ya la generó (incluidas sus
 // reversas, que van en negativo); mientras no, la que le tocaría con el
-// % vigente del vendedor. Igual que el destajo en taller: estimada
-// mientras no se paga, congelada en cuanto se paga.
+// % vigente del vendedor. El monto y el % usados se guardan también en
+// la venta (`sales.comisionMonto` y `sales.comisionPorcentaje`), para
+// tenerlos a la mano sin cruzar con `comisiones_track`. Igual que el
+// destajo en taller: estimada mientras no se paga, congelada en cuanto
+// se paga.
 //
 // Solo contado, crédito y apartado. Cotización, consignación y los
 // folios de taller quedan en 0 — el taller lleva la suya aparte.
@@ -48,6 +51,10 @@ const fn_recalcularUtilidadVenta = async (idSale, transaction = null) => {
 
     let utilidad = 0;
     let utilidadCobrada = 0;
+    // Se guardan también en la venta, para tenerlos a la mano sin cruzar
+    // con comisiones_track.
+    let nComision = 0;
+    let nComisionPorcentaje = 0;
 
     const bConUtilidad = Number(oVenta.active) === 1 && TIPOS_CON_UTILIDAD.includes(Number(oVenta.idSaleType));
 
@@ -73,11 +80,23 @@ const fn_recalcularUtilidadVenta = async (idSale, transaction = null) => {
             { ...oOpts, replacements: { idSale } }
         );
 
-        let nComision = 0;
-
         if (oComision && oComision.comision !== null && oComision.comision !== undefined) {
 
             nComision = _fn_num(oComision.comision);
+
+            // El % con el que se calculó, para tenerlo a la mano en la
+            // venta: el del renglón que la generó (las reversas heredan
+            // el mismo).
+            const [oPorcentaje] = await dbConnection.query(
+                `SELECT CT.porcentajeAplicado AS porcentaje
+                 FROM comisiones_track AS CT
+                 WHERE CT.idSale = :idSale AND CT.tipo = 'VENTA' AND CT.estatus <> 'CANCELADA'
+                   AND CT.porcentajeAplicado IS NOT NULL
+                 ORDER BY CT.idComisionTrack LIMIT 1`,
+                { ...oOpts, replacements: { idSale } }
+            );
+
+            nComisionPorcentaje = parseFloat(oPorcentaje?.porcentaje) || 0;
 
         } else if (nUtilidadBruta > 0) {
 
@@ -100,6 +119,7 @@ const fn_recalcularUtilidadVenta = async (idSale, transaction = null) => {
 
             if (nPorcentaje > 0) {
                 nComision = _fn_num(nUtilidadBruta * nPorcentaje / 100);
+                nComisionPorcentaje = nPorcentaje;
             }
 
         }
@@ -122,17 +142,23 @@ const fn_recalcularUtilidadVenta = async (idSale, transaction = null) => {
 
     }
 
-    const oUpd = { type: dbConnection.QueryTypes.UPDATE, replacements: { utilidad, utilidadCobrada, idSale } };
+    const oUpd = {
+        type: dbConnection.QueryTypes.UPDATE,
+        replacements: { utilidad, utilidadCobrada, comisionMonto: nComision, comisionPorcentaje: nComisionPorcentaje, idSale }
+    };
     if (transaction) {
         oUpd.transaction = transaction;
     }
 
     await dbConnection.query(
-        `UPDATE sales SET utilidad = :utilidad, utilidadCobrada = :utilidadCobrada WHERE idSale = :idSale`,
+        `UPDATE sales
+         SET utilidad = :utilidad, utilidadCobrada = :utilidadCobrada,
+             comisionMonto = :comisionMonto, comisionPorcentaje = :comisionPorcentaje
+         WHERE idSale = :idSale`,
         oUpd
     );
 
-    return { utilidad, utilidadCobrada };
+    return { utilidad, utilidadCobrada, comisionMonto: nComision, comisionPorcentaje: nComisionPorcentaje };
 
 };
 
