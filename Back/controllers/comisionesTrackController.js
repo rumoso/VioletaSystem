@@ -643,8 +643,15 @@ const _fn_reversarRenglonesComision = async(renglones, conceptoReversa, referenc
     }
 
     // La comisión cambió: la utilidad guardada de la venta también
-    // (analisis/026).
-    await fn_recalcularUtilidadVenta(idSale);
+    // (analisis/026). El folio sale de los propios renglones: esta
+    // función no recibe idSale, y usarlo así reventaba la reversa
+    // completa ("idSale is not defined") en cuanto había algo que
+    // reversar.
+    const aVentas = [ ...new Set( renglones.map(r => r.idSale).filter(Boolean) ) ];
+
+    for (const sIdSale of aVentas) {
+        await fn_recalcularUtilidadVenta(sIdSale, transaction);
+    }
 
 };
 

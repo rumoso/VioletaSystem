@@ -11,7 +11,11 @@ const ID_ROL_EMPLEADO = 7;
 const TIPO_ROL = {
     VENDEDOR: 1,
     TECNICO: 2,
-    EMPLEADO: 3
+    EMPLEADO: 3,
+    // Encargado de taller (analisis/029): revisa el trabajo del técnico y
+    // acepta el folio antes de que pase a mostrador. El encargado de un
+    // folio es quien tiene este tipo de puesto Y la sucursal del folio.
+    ENCARGADO_TALLER: 4
 };
 
 module.exports = {

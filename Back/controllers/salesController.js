@@ -9,6 +9,15 @@ const { dbConnection } = require('../database/config');
 const { Console } = require('console');
 const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_reversarDestajoByTaller, fn_registrarComisionVentaSiPagada, fn_registrarComisionTallerSiPagado } = require('./comisionesTrackController');
 const { fn_recalcularUtilidadTaller, fn_recalcularUtilidadTallerByIdSale } = require('../helpers/tallerUtilidad');
+const { TIPO_ROL } = require('../helpers/constantes');
+const {
+    ESTATUS: EST_TALLER
+    , PERMISO_POR_ESTATUS
+    , fn_transicionValida
+    , fn_estaBloqueado
+    , fn_puedeRegresarEstatus
+    , fn_destinoRegresoValido
+} = require('../helpers/tallerEstatus');
 const { fn_recalcularUtilidadVenta } = require('../helpers/ventaUtilidad');
 
 const insertSale = async(req, res) => {
@@ -2873,10 +2882,12 @@ const saveTallerHeader = async(req, res) => {
         // "Actualizar" del encabezado. Llega null/undefined en cualquier
         // otro caso y entonces NO se toca la columna.
         precioTotal = null,
+        // Autorización especial para corregir cliente, vendedor o fecha de
+        // ingreso de un folio que ya no es cotización (analisis/029 p.7).
+        auth_idUser = 0,
         idUserLogON,
         idSucursalLogON
     } = req.body;
-    console.log(req.body)
 
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
     const fIngreso   = fechaIngreso          ? fechaIngreso.substring(0, 10)          : null;
@@ -2959,6 +2970,50 @@ const saveTallerHeader = async(req, res) => {
 
             // ── UPDATE: modificar encabezado existente ──────────────────────────
 
+            // Cliente, vendedor y fecha de ingreso se congelan al dejar de
+            // ser cotización: identifican el folio y el compromiso con el
+            // cliente (analisis/029 punto 7). La descripción y la fecha
+            // prometida siguen libres hasta el bloqueo general.
+            const [oActual] = await dbConnection.query(
+                `SELECT T.idTallerStatus, T.idCustomer, DATE_FORMAT(T.fechaIngreso, '%Y-%m-%d') AS fechaIngreso,
+                        S.idSeller_idUser
+                 FROM taller AS T
+                 INNER JOIN sales AS S ON S.idSale = T.idSale
+                 WHERE T.idTaller = :idTaller LIMIT 1`,
+                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            if (oActual && Number(oActual.idTallerStatus) !== EST_TALLER.COTIZACION) {
+
+                const aCambios = [];
+
+                if (Number(oActual.idCustomer) !== Number(idCustomer)) {
+                    aCambios.push('el cliente');
+                }
+                if (Number(oActual.idSeller_idUser) !== Number(idSeller_idUser)) {
+                    aCambios.push('el vendedor');
+                }
+                if (fIngreso && oActual.fechaIngreso && fIngreso !== oActual.fechaIngreso) {
+                    aCambios.push('la fecha de ingreso');
+                }
+
+                if (aCambios.length > 0) {
+
+                    const bAutorizado = auth_idUser > 0
+                        && await _fn_tieneAccion(auth_idUser, 'tall_EditEncabezadoBloqueado', transaction);
+
+                    if (!bAutorizado) {
+                        await transaction.rollback();
+                        return res.json({
+                            status: 1,
+                            message: `El folio ya es pedido de taller: cambiar ${ aCambios.join(', ') } necesita autorización especial.`
+                        });
+                    }
+
+                }
+
+            }
+
             await dbConnection.query(
                 `UPDATE sales SET idSeller_idUser = :idSeller_idUser, idCustomer = :idCustomer WHERE idSale = :idSale`,
                 { replacements: { idSeller_idUser, idCustomer, idSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
@@ -2995,11 +3050,12 @@ const saveTallerHeader = async(req, res) => {
 
             await dbConnection.query(
                 `UPDATE taller
-                 SET descripcion    = :descripcion,
-                     fechaIngreso   = :fechaIngreso,
-                     fechaPrometida = :fechaPrometida,
-                     idCustomer     = :idCustomer,
-                     idSucursal     = :idSucursal
+                 SET descripcion     = :descripcion,
+                     fechaIngreso    = :fechaIngreso,
+                     fechaPrometida  = :fechaPrometida,
+                     idCustomer      = :idCustomer,
+                     idSeller_idUser = :idSeller_idUser,
+                     idSucursal      = :idSucursal
                      ${ sPrecio }
                  WHERE idSale = :idSale AND idTaller = :idTaller`,
                 {
@@ -3008,6 +3064,7 @@ const saveTallerHeader = async(req, res) => {
                         fechaIngreso:   fIngreso,
                         fechaPrometida: fPrometida,
                         idCustomer,
+                        idSeller_idUser,
                         idSucursal:     idSucursalLogON,
                         idSale,
                         idTaller
@@ -3060,6 +3117,43 @@ const updateTallerStatus = async(req, res) => {
             `SELECT idSale, idSucursal, idTallerStatus, idTallerOrigen FROM taller WHERE idTaller = :idTaller LIMIT 1`,
             { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
         );
+
+        if (!tallerInfo) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        // Flujo del taller (analisis/029): el folio avanza de uno en uno.
+        // Antes este endpoint escribía cualquier estatus que le mandaran,
+        // sin mirar en cuál estaba ni quién lo pedía.
+        idTallerStatus = Number(idTallerStatus);
+
+        if (idTallerStatus === EST_TALLER.MOSTRADOR) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'El folio pasa a mostrador cuando el encargado de taller lo acepta.'
+            });
+        }
+
+        if (!fn_transicionValida(tallerInfo.idTallerStatus, idTallerStatus)) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Ese cambio de estatus no sigue el flujo del taller.'
+            });
+        }
+
+        // El permiso también se valida aquí: hasta ahora solo lo revisaba
+        // la pantalla, así que una llamada directa se lo saltaba.
+        const sPermisoEstatus = PERMISO_POR_ESTATUS[ idTallerStatus ];
+        if (sPermisoEstatus) {
+            const idUserPermiso = auth_idUser > 0 ? auth_idUser : idUserLogON;
+            if (!(await _fn_tieneAccion(idUserPermiso, sPermisoEstatus, transaction))) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: 'No tienes permiso para este cambio de estatus.' });
+            }
+        }
 
         // Status 2 (Pedido): generar folio de taller (idSaleType=5) y actualizar idSale
         if (idTallerStatus === 2 || idTallerStatus === 5) {
@@ -3225,10 +3319,11 @@ const updateTallerStatus = async(req, res) => {
             await fn_registrarDestajoByTaller(idTaller, oGetDateNow, idUserLogON, transaction);
         }
 
-        // Construir la consulta dinámicamente
+        // Construir la consulta dinámicamente (con parámetros enlazados)
+        const oUpdateRepl = { idTaller, idTallerStatus };
         let updateQuery = `
             UPDATE taller 
-            SET idTallerStatus = ${idTallerStatus}`;
+            SET idTallerStatus = :idTallerStatus`;
         
         // Solo actualizar precioTotal cuando se pasa a status 2
         //
@@ -3244,7 +3339,8 @@ const updateTallerStatus = async(req, res) => {
         const bEsGarantiaFolio = !!( tallerInfo && tallerInfo.idTallerOrigen );
 
         if (idTallerStatus === 2 || ( bEsGarantiaFolio && idTallerStatus === 4 )) {
-            updateQuery += `, precioTotal = ${precioTotal}`;
+            updateQuery += `, precioTotal = :precioTotal`;
+            oUpdateRepl.precioTotal = precioTotal;
         }
         
         // Actualizar fechaEntrega cuando se pasa a status 5 — y, ya que
@@ -3253,7 +3349,8 @@ const updateTallerStatus = async(req, res) => {
         // haber cambiado arriba (taller rápida, status 1 -> 5): usar
         // siempre el folio vigente (newIdSale si se generó uno nuevo).
         if (idTallerStatus === 5) {
-            updateQuery += `, fechaEntrega = '${ oGetDateNow }'`;
+            updateQuery += `, fechaEntrega = :fechaEntrega`;
+            oUpdateRepl.fechaEntrega = oGetDateNow;
 
             const idSaleParaEntrega = newIdSale || tallerInfo.idSale;
             const idUserEntrega = auth_idUser > 0 ? auth_idUser : idUserLogON;
@@ -3264,9 +3361,9 @@ const updateTallerStatus = async(req, res) => {
             );
         }
 
-        updateQuery += ` WHERE idTaller = ${idTaller}`;
+        updateQuery += ` WHERE idTaller = :idTaller`;
 
-        const oSQLUpdate = await dbConnection.query(updateQuery, { transaction });
+        const oSQLUpdate = await dbConnection.query(updateQuery, { replacements: oUpdateRepl, transaction });
 
         await transaction.commit();
 
@@ -3535,7 +3632,11 @@ const getTallerByID = async(req, res = response) => {
 const getTallerStatusCat = async(req, res = response) => {
     try {
         const rows = await dbConnection.query(
-            `SELECT idTallerStatus, nombre FROM taller_status_cat WHERE active = 1 ORDER BY idTallerStatus ASC`,
+            // El id NO dice el orden del flujo (el estatus 8 va entre el 3
+            // y el 4, analisis/029): el catálogo se entrega ordenado por
+            // la columna `orden` para que el filtro de la lista lo muestre
+            // en la secuencia real.
+            `SELECT idTallerStatus, nombre, orden FROM taller_status_cat WHERE active = 1 ORDER BY IFNULL( orden, idTallerStatus ) ASC, idTallerStatus ASC`,
             { type: dbConnection.QueryTypes.SELECT }
         );
         res.json({ status: 0, message: 'Ejecutado correctamente.', data: rows });
@@ -5962,12 +6063,22 @@ const _fn_getDatosTaller = async(idSale, transaction, bBloquear = false) => {
 // asignación, metal final, modificaciones y reversas previas sin saber en
 // qué estatus estaba el taller; tras aplicarse, el neto queda en cero.
 // No bloquea si el inventario queda negativo (analisis/022).
-const _fn_reversarMetalTaller = async(idTaller, idSale, oGetDateNow, idUserLogON, transaction) => {
+// aTipos: qué movimientos reversar. Vacío = todos (cancelación). Al
+// desbloquear un folio (analisis/029) se reversa solo lo que aplicó el
+// estatus del que se regresa, y la reversa se marca con su propio tipo
+// (`REVERSA_METAL_FINAL` / `REVERSA_ASIGNACION`) para que los SPs de metal
+// sepan que ese movimiento ya no está vigente y dejen volver a aplicarlo.
+const _fn_reversarMetalTaller = async(idTaller, idSale, oGetDateNow, idUserLogON, transaction, aTipos = [], sTipoReversa = 'REVERSA', sReferencia = null) => {
 
     const movimientos = await dbConnection.query(
         `SELECT tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos
-         FROM metal_inventario_track WHERE idTaller = :idTaller`,
-        { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+         FROM metal_inventario_track
+         WHERE idTaller = :idTaller
+           AND ( :bTodos = 1 OR tipoMovimiento IN (:aTipos) )`,
+        {
+            replacements: { idTaller, bTodos: aTipos.length === 0 ? 1 : 0, aTipos: aTipos.length ? aTipos : [''] },
+            type: dbConnection.QueryTypes.SELECT, transaction
+        }
     );
 
     // Centésimas enteras para no arrastrar error de punto flotante.
@@ -5994,10 +6105,10 @@ const _fn_reversarMetalTaller = async(idTaller, idSale, oGetDateNow, idUserLogON
         const [tipoOrigen, idOrigen] = sDe.split(':');
         const [tipoDestino, idDestino] = sA.split(':');
 
-        await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+        await _fn_metalInventarioApply(oGetDateNow, sTipoReversa,
             tipoOrigen, Number(idOrigen), tipoDestino, Number(idDestino),
             Number(sProduct), Math.abs(iNeto) / 100, idTaller, idSale,
-            `Reversa por cancelación de taller #${ idTaller }`, idUserLogON, transaction);
+            sReferencia || `Reversa por cancelación de taller #${ idTaller }`, idUserLogON, transaction);
     }
 };
 
@@ -6180,7 +6291,7 @@ const cancelarTaller = async(req, res = response) => {
 
         // Un taller cancelado no deja utilidad (analisis/023).
         try {
-            await fn_recalcularUtilidadTaller( idTaller );
+            await fn_recalcularUtilidadTaller( oDatos.idTaller );
         } catch (utilidadError) {
             console.log('No se pudo recalcular la utilidad del taller cancelado:', utilidadError.message);
         }
@@ -6200,6 +6311,382 @@ const cancelarTaller = async(req, res = response) => {
     }
 };
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// ENCARGADO DE TALLER (analisis/029-encargado-de-taller-y-bloqueo.md)
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Encargados de una sucursal: puesto ACTIVO de tipo "Encargado de taller"
+// más esa sucursal asignada. Es la única definición; si algún día cambia,
+// cambia aquí.
+const _fn_getEncargadosSucursal = async(idSucursal, transaction) => {
+
+    return await dbConnection.query(
+        `SELECT U.idUser, U.name
+         FROM users AS U
+         WHERE U.active = 1
+           AND EXISTS ( SELECT 1 FROM rolesconfig AS RC
+                        INNER JOIN roles AS R ON R.idRol = RC.idRol
+                        WHERE RC.idUser = U.idUser AND R.active = 1 AND R.idTipoRol = :idTipoRol )
+           AND EXISTS ( SELECT 1 FROM sucursalesconfig AS SC
+                        WHERE SC.idUser = U.idUser AND SC.idSucursal = :idSucursal )
+         ORDER BY U.name`,
+        {
+            replacements: { idTipoRol: TIPO_ROL.ENCARGADO_TALLER, idSucursal },
+            type: dbConnection.QueryTypes.SELECT, transaction
+        }
+    );
+
+};
+
+// ¿Este usuario puede actuar como encargado de este folio? Lo es si está
+// en la lista de la sucursal, o si viene con la autorización especial
+// `tall_AceptarComoEncargado` (para no quedarse atorados si el encargado
+// no está). Regresa quién quedó como responsable del movimiento.
+const _fn_resolverEncargado = async(oTaller, idUserLogON, auth_idUser, transaction) => {
+
+    const encargados = await _fn_getEncargadosSucursal(oTaller.idSucursal, transaction);
+    const aIds = encargados.map(e => Number(e.idUser));
+
+    if (aIds.includes(Number(idUserLogON))) {
+        return { bOK: true, idUserResponsable: Number(idUserLogON) };
+    }
+
+    if (auth_idUser > 0
+        && await _fn_tieneAccion(auth_idUser, 'tall_AceptarComoEncargado', transaction)) {
+        return { bOK: true, idUserResponsable: Number(auth_idUser) };
+    }
+
+    return {
+        bOK: false,
+        idUserResponsable: 0,
+        message: encargados.length === 0
+            ? 'Esta sucursal no tiene encargado de taller capturado: se necesita autorización especial.'
+            : 'Solo el encargado de taller de esta sucursal puede hacerlo, o alguien con autorización especial.'
+    };
+
+};
+
+const getEncargadosByTaller = async(req, res = response) => {
+
+    const { idTaller = 0, idUserLogON } = req.body;
+
+    try {
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSucursal, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        if (!oTaller) {
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        const rows = await _fn_getEncargadosSucursal(oTaller.idSucursal);
+
+        res.json({
+            status: 0,
+            message: 'Ejecutado correctamente.',
+            data: {
+                rows,
+                bSinEncargado: rows.length === 0,
+                bSoyEncargado: rows.some(e => Number(e.idUser) === Number(idUserLogON))
+            }
+        });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
+
+// El encargado acepta: el folio pasa a Finalizado/Mostrador con los
+// efectos de ese estatus (metal final + destajo) y queda BLOQUEADO.
+const aceptarTallerComoEncargado = async(req, res = response) => {
+
+    const {
+        idTaller = 0,
+        precioTotal = 0,
+        auth_idUser = 0,
+        idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSale, idSucursal, idTallerStatus, idTallerOrigen
+             FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        if (Number(oTaller.idTallerStatus) !== EST_TALLER.ENCARGADO) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El folio no está esperando la revisión del encargado.' });
+        }
+
+        const oQuien = await _fn_resolverEncargado(oTaller, idUserLogON, auth_idUser, transaction);
+        if (!oQuien.bOK) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: oQuien.message });
+        }
+
+        // Mismos efectos que tenía el paso a mostrador: o pasan juntos, o
+        // no pasa ninguno.
+        const OSQL_Entregar = await dbConnection.query(
+            `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+            { replacements: { oGetDateNow, idTaller, idUserLogON: oQuien.idUserResponsable }, type: dbConnection.QueryTypes.RAW, transaction }
+        );
+
+        if (OSQL_Entregar[0].out_id == 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: OSQL_Entregar[0].message });
+        }
+
+        await fn_registrarDestajoByTaller(idTaller, oGetDateNow, oQuien.idUserResponsable, transaction);
+
+        // Una garantía guarda aquí su precio (analisis/016).
+        let sPrecio = '';
+        const oRepl = { idTaller, idTallerStatus: EST_TALLER.MOSTRADOR };
+        if (oTaller.idTallerOrigen) {
+            sPrecio = ', precioTotal = :precioTotal';
+            oRepl.precioTotal = precioTotal;
+        }
+
+        await dbConnection.query(
+            `UPDATE taller SET idTallerStatus = :idTallerStatus${ sPrecio } WHERE idTaller = :idTaller`,
+            { replacements: oRepl, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        // La firma del estatus del encargado queda aprobada por quien
+        // aceptó; si no existía (folio anterior al cambio), se crea.
+        const oFirmaRepl = {
+            idTaller, idTallerStatus: EST_TALLER.ENCARGADO,
+            idUserFirma: oQuien.idUserResponsable, firmaDate: oGetDateNow
+        };
+
+        const [oUpd] = await dbConnection.query(
+            `UPDATE taller_firmas_status
+             SET firma = 1, idUserFirma = :idUserFirma, firmaDate = :firmaDate
+             WHERE idTaller = :idTaller AND idTallerStatus = :idTallerStatus AND firma = 0`,
+            { replacements: oFirmaRepl, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        if (!oUpd || oUpd.affectedRows === 0) {
+            await dbConnection.query(
+                `INSERT INTO taller_firmas_status (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+                 VALUES (:firmaDate, :firmaDate, :idTaller, :idTallerStatus, :idUserFirma, 1, :idUserFirma, 'Aceptado por el encargado de taller')`,
+                { replacements: oFirmaRepl, type: dbConnection.QueryTypes.INSERT, transaction }
+            );
+        }
+
+        await fn_recalcularUtilidadTaller(idTaller, transaction);
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: 'Folio aceptado: pasa a mostrador y queda bloqueado.',
+            data: { idTaller, idTallerStatus: EST_TALLER.MOSTRADOR }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
+
+// El encargado rechaza: el folio regresa con el técnico (Asignado) con el
+// motivo. No se reversa nada porque a esa altura no se ha aplicado.
+const rechazarTallerComoEncargado = async(req, res = response) => {
+
+    const {
+        idTaller = 0,
+        motivo = '',
+        auth_idUser = 0,
+        idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        if (String(motivo).trim().length === 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El motivo del rechazo es obligatorio.' });
+        }
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSucursal, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTaller || Number(oTaller.idTallerStatus) !== EST_TALLER.ENCARGADO) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El folio no está esperando la revisión del encargado.' });
+        }
+
+        const oQuien = await _fn_resolverEncargado(oTaller, idUserLogON, auth_idUser, transaction);
+        if (!oQuien.bOK) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: oQuien.message });
+        }
+
+        await dbConnection.query(
+            `UPDATE taller SET idTallerStatus = :idTallerStatus WHERE idTaller = :idTaller`,
+            { replacements: { idTaller, idTallerStatus: EST_TALLER.ASIGNADO }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        const oFirmaRepl = {
+            idTaller, idTallerStatus: EST_TALLER.ENCARGADO,
+            idUserFirma: oQuien.idUserResponsable, firmaDate: oGetDateNow,
+            comentario: String(motivo).trim()
+        };
+
+        const [oUpd] = await dbConnection.query(
+            `UPDATE taller_firmas_status
+             SET firma = 2, idUserFirma = :idUserFirma, firmaDate = :firmaDate, comentario = :comentario
+             WHERE idTaller = :idTaller AND idTallerStatus = :idTallerStatus AND firma = 0`,
+            { replacements: oFirmaRepl, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        if (!oUpd || oUpd.affectedRows === 0) {
+            await dbConnection.query(
+                `INSERT INTO taller_firmas_status (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+                 VALUES (:firmaDate, :firmaDate, :idTaller, :idTallerStatus, :idUserFirma, 2, :idUserFirma, :comentario)`,
+                { replacements: oFirmaRepl, type: dbConnection.QueryTypes.INSERT, transaction }
+            );
+        }
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: 'Folio regresado al técnico.',
+            data: { idTaller, idTallerStatus: EST_TALLER.ASIGNADO }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
+
+// Desbloquear: regresa un folio de Finalizado/Mostrador hasta Pedido de
+// taller como máximo, reversando lo que ese estatus había aplicado.
+// Entregado no regresa: solo admite devolución o cancelación.
+const regresarEstatusTaller = async(req, res = response) => {
+
+    const {
+        idTaller = 0,
+        idTallerStatus = 0,
+        motivo = '',
+        auth_idUser = 0,
+        idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const idDestino = Number(idTallerStatus);
+
+        if (String(motivo).trim().length === 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El motivo es obligatorio para regresar el estatus.' });
+        }
+
+        if (!fn_destinoRegresoValido(idDestino)) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Solo se puede regresar hasta Pedido de taller.' });
+        }
+
+        if (!(auth_idUser > 0 && await _fn_tieneAccion(auth_idUser, 'tall_DesbloquearTaller', transaction))) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Se necesita autorización especial para desbloquear el folio.' });
+        }
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSale, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        if (!fn_puedeRegresarEstatus(oTaller.idTallerStatus)) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Solo se puede regresar un folio que está en Finalizado/Mostrador. Un folio entregado solo admite devolución o cancelación.'
+            });
+        }
+
+        const sReferencia = `Desbloqueo de taller #${ idTaller }: ${ String(motivo).trim() }`;
+
+        // Se deshace lo que aplicó Finalizado/Mostrador: el metal final
+        // que salió del inventario del técnico y su destajo.
+        await _fn_reversarMetalTaller(idTaller, oTaller.idSale, oGetDateNow, auth_idUser, transaction,
+            ['METAL_FINAL'], 'REVERSA_METAL_FINAL', sReferencia);
+
+        await fn_reversarDestajoByTaller(idTaller, auth_idUser, sReferencia, transaction);
+
+        // Si además se regresa antes de Asignado, el metal que se le había
+        // asignado al técnico también regresa a la sucursal.
+        if (idDestino === EST_TALLER.PEDIDO) {
+            await _fn_reversarMetalTaller(idTaller, oTaller.idSale, oGetDateNow, auth_idUser, transaction,
+                ['ASIGNACION'], 'REVERSA_ASIGNACION', sReferencia);
+        }
+
+        await dbConnection.query(
+            `UPDATE taller SET idTallerStatus = :idTallerStatus, fechaEntrega = NULL WHERE idTaller = :idTaller`,
+            { replacements: { idTaller, idTallerStatus: idDestino }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        // Queda en la bitácora de firmas quién autorizó y por qué. Va como
+        // aprobada: no dispara nada y deja el folio editable otra vez.
+        await dbConnection.query(
+            `INSERT INTO taller_firmas_status (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+             VALUES (:fecha, :fecha, :idTaller, :idTallerStatus, :idUserCreate, 1, :idUserFirma, :comentario)`,
+            {
+                replacements: {
+                    fecha: oGetDateNow, idTaller, idTallerStatus: idDestino,
+                    idUserCreate: idUserLogON, idUserFirma: auth_idUser,
+                    comentario: `Regresado de Finalizado/Mostrador: ${ String(motivo).trim() }`
+                },
+                type: dbConnection.QueryTypes.INSERT, transaction
+            }
+        );
+
+        await fn_recalcularUtilidadTaller(idTaller, transaction);
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: 'Folio desbloqueado.',
+            data: { idTaller, idTallerStatus: idDestino }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
 
 module.exports = {
     insertSale
@@ -6261,6 +6748,10 @@ module.exports = {
     , deleteServicioExternoTaller
     , saveTallerHeader
     , updateTallerStatus
+    , getEncargadosByTaller
+    , aceptarTallerComoEncargado
+    , rechazarTallerComoEncargado
+    , regresarEstatusTaller
     , getTallerByID
     , getTallerByIDSeq
     , insertUpdateTallerFirma
