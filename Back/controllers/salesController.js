@@ -448,16 +448,6 @@ const insertPayments = async(req, res) => {
                     console.log('No se pudo generar la comisión de taller:', comisionError.message);
                 }
 
-                // En una RÁPIDA el destajo no se genera al entregar, porque
-                // no pasa por Mostrador: se genera cuando el folio queda
-                // pagado (analisis/031). `fn_registrarDestajoByTaller` no
-                // duplica si ya existe.
-                try {
-                    await _fn_registrarDestajoRapidaSiPagada( idSaleTocada, idUserLogON );
-                } catch (destajoError) {
-                    console.log('No se pudo generar el destajo de la rápida:', destajoError.message);
-                }
-
                 try {
                     await fn_recalcularUtilidadTallerByIdSale( idSaleTocada );
                 } catch (utilidadError) {
@@ -3361,10 +3351,11 @@ const updateTallerStatus = async(req, res) => {
         // haber cambiado arriba (taller rápida, status 1 -> 5): usar
         // siempre el folio vigente (newIdSale si se generó uno nuevo).
         // Una rápida no pasa por Mostrador, que es donde un taller normal
-        // descuenta el metal final del técnico. Si lleva metal, se descuenta
-        // aquí, al entregarla. El destajo NO: en las rápidas se genera
-        // cuando se cobran (analisis/031), junto con la comisión del
-        // vendedor.
+        // descuenta el metal final del técnico y genera el destajo. En una
+        // rápida ese momento es la ENTREGA: el trabajo ya se hizo
+        // (analisis/031). Lo que no entra aquí es la comisión del
+        // vendedor, que va cuando el folio se paga, igual que en un taller
+        // normal.
         if (idTallerStatus === 5 && bEsRapida) {
             // Rastro de quién la entregó: la rápida se entrega sin
             // autorización, pero tiene que quedar registrado.
@@ -3381,6 +3372,11 @@ const updateTallerStatus = async(req, res) => {
                 await transaction.rollback();
                 return res.json({ status: 1, message: OSQL_MetalRapida[0].message });
             }
+
+            // Destajo de cada técnico con mano de obra en el folio, en la
+            // misma transacción que la entrega: o pasan juntos, o no pasa
+            // ninguno.
+            await fn_registrarDestajoByTaller(idTaller, oGetDateNow, idUserLogON, transaction);
         }
 
         if (idTallerStatus === 5) {
@@ -6132,47 +6128,6 @@ const _fn_firmarRapida = async(idTaller, idTallerStatus, idUserLogON, oGetDateNo
             type: dbConnection.QueryTypes.INSERT, transaction
         }
     );
-
-};
-
-// Destajo de una ORDEN RÁPIDA: se genera cuando el folio queda pagado, no
-// al entregarlo (analisis/031). Un taller normal lo genera al pasar a
-// Mostrador, así que este camino solo aplica a las rápidas.
-const _fn_registrarDestajoRapidaSiPagada = async(idSale, idUserLogON) => {
-
-    const [oFolio] = await dbConnection.query(
-        `SELECT T.idTaller, T.idSale, T.precioTotal, T.idTallerStatus, IFNULL(T.bRapida, 0) AS bRapida
-         FROM taller AS T
-         INNER JOIN sales AS S ON S.idSale = T.idSale AND S.active = 1
-         WHERE T.idSale = :idSale LIMIT 1`,
-        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
-    );
-
-    if (!oFolio || Number(oFolio.bRapida) !== 1 || Number(oFolio.idTallerStatus) === EST_TALLER.CANCELADO) {
-        return;
-    }
-
-    const nPrecioTotal = Math.round((parseFloat(oFolio.precioTotal) || 0) * 100) / 100;
-
-    if (nPrecioTotal <= 0) {
-        return;
-    }
-
-    const [oPagos] = await dbConnection.query(
-        `SELECT ROUND( IFNULL( SUM( P.pago ), 0), 2) AS cobrado FROM payments AS P
-         WHERE P.idRelation = :idSale AND P.relationType = 'V' AND P.active = 1`,
-        { replacements: { idSale: oFolio.idSale }, type: dbConnection.QueryTypes.SELECT }
-    );
-
-    const nCobrado = Math.round((parseFloat(oPagos?.cobrado) || 0) * 100) / 100;
-
-    if (nCobrado < nPrecioTotal) {
-        return;
-    }
-
-    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
-
-    await fn_registrarDestajoByTaller(oFolio.idTaller, oGetDateNow, idUserLogON, null);
 
 };
 
