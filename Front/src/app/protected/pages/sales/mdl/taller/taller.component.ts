@@ -746,18 +746,32 @@ export class TallerComponent implements OnInit {
   // elige cliente, taller y/o cada técnico. Antes imprimía directo un solo
   // papel sin decir para quién era. No cambia nada del folio, así que
   // funciona bloqueado, entregado o cancelado.
+  //
+  // En una RÁPIDA no hay nada que elegir: el único papel es el del
+  // cliente, el mismo que sale al entregarla (analisis/031). No hay sobre
+  // de taller ni ticket de técnico, así que se reimprime directo en vez
+  // de abrir un modal con una sola opción.
   fn_printTicketTaller() {
-    if (this.selectPrinter.idPrinter > 0) {
-      const oParams: any = {
-        idTaller: this.tallerForm.idTaller,
-        idSale: this.tallerForm.idSale,
-        selectPrinter: this.selectPrinter,
-        manoObraList: this.manoObraList
-      };
-      this.servicesGServ.showModalWithParams( TallerReimprimirComponent, oParams, '520px');
-    } else {
+
+    if (this.selectPrinter.idPrinter <= 0) {
       this.servicesGServ.showSnakbar('No hay impresora seleccionada');
+      return;
     }
+
+    if (this.bRapida) {
+      this.printTicketServ.printTicketTaller(
+        'TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true, 'CLIENTE');
+      return;
+    }
+
+    const oParams: any = {
+      idTaller: this.tallerForm.idTaller,
+      idSale: this.tallerForm.idSale,
+      selectPrinter: this.selectPrinter,
+      manoObraList: this.manoObraList
+    };
+    this.servicesGServ.showModalWithParams( TallerReimprimirComponent, oParams, '520px');
+
   }
 
   // Técnicos DISTINTOS del folio: un técnico con varios renglones de mano
