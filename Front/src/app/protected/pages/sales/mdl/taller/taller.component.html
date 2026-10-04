@@ -13,10 +13,11 @@
         <mat-icon>alarm</mat-icon>Vencido {{ iDiasVencido }} {{ iDiasVencido === 1 ? 'día' : 'días' }}
       </span>
 
-      <!-- Estado de Firma (inline, compacto). Una RÁPIDA no se firma: se
-           entrega en el momento, sin autorización de nadie (analisis/031),
-           así que entregada está entregada y no queda "Pendiente". -->
-      <div *ngIf="!bRapida && tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 3"
+      <!-- Estado de Firma (inline, compacto). En una rápida la firma no
+           se pide a nadie, pero sí se registra: queda aprobada con quien
+           generó el folio y quien lo entregó (analisis/031), así que aquí
+           se ve el rastro, no un "Pendiente" que nadie va a firmar. -->
+      <div *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 3"
            class="taller-header-firma"
            [ngStyle]="{
              'border-left': '3px solid ' + (oFirmaStatus?.firma === 1 ? '#4caf50' : oFirmaStatus?.firma === 2 ? '#f44336' : '#ff9800'),

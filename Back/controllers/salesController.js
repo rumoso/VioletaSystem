@@ -3181,13 +3181,13 @@ const updateTallerStatus = async(req, res) => {
             const oldIdSale = tallerInfo.idSale;
             const idSucursal = tallerInfo.idSucursal;
 
-            // Antes, al generar una rápida se insertaba aquí una firma
-            // pendiente: la rápida saltaba de cotización a entregada de
-            // un golpe y esa firma era el registro de la entrega. Ya no
-            // existe ese salto (analisis/031) y la rápida se entrega sin
-            // autorización de nadie, así que no se firma. Además, una
-            // firma pendiente en Pedido dejaba el folio en solo lectura
-            // y no se le podía capturar mano de obra ni refacciones.
+            // Rastro de quién generó la rápida. Va firmada de entrada:
+            // nadie tiene que autorizarla, y una firma pendiente dejaría
+            // el folio en solo lectura, sin poder capturarle mano de obra
+            // ni refacciones.
+            if (bEsRapida) {
+                await _fn_firmarRapida(idTaller, idTallerStatus, idUserLogON, oGetDateNow, 'Orden rápida: folio generado', transaction);
+            }
 
             await dbConnection.query(
                 `CALL getIDs_BySucursal(:idUserC, :idSucursal, :idSaleTypeID, @idSaleNew)`,
@@ -3366,6 +3366,10 @@ const updateTallerStatus = async(req, res) => {
         // cuando se cobran (analisis/031), junto con la comisión del
         // vendedor.
         if (idTallerStatus === 5 && bEsRapida) {
+            // Rastro de quién la entregó: la rápida se entrega sin
+            // autorización, pero tiene que quedar registrado.
+            await _fn_firmarRapida(idTaller, idTallerStatus, idUserLogON, oGetDateNow, 'Orden rápida: entregada en mostrador', transaction);
+
             const OSQL_MetalRapida = await dbConnection.query(
                 `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
                 { replacements: { oGetDateNow, idTaller, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
@@ -6106,6 +6110,26 @@ const _fn_getDatosTaller = async(idSale, transaction, bBloquear = false) => {
 // estatus del que se regresa, y la reversa se marca con su propio tipo
 // (`REVERSA_METAL_FINAL` / `REVERSA_ASIGNACION`) para que los SPs de metal
 // sepan que ese movimiento ya no está vigente y dejen volver a aplicarlo.
+// Firma de una ORDEN RÁPIDA: queda APROBADA de entrada, con quien hizo el
+// movimiento. Una rápida no pide autorización de nadie (analisis/031),
+// pero sí tiene que dejar rastro de quién generó el folio y quién lo
+// entregó. Pendiente (firma = 0) no sirve: además de que nadie la va a
+// firmar, un estatus sin firmar deja el folio en solo lectura.
+const _fn_firmarRapida = async(idTaller, idTallerStatus, idUserLogON, oGetDateNow, sComentario, transaction) => {
+
+    await dbConnection.query(
+        `INSERT INTO taller_firmas_status
+            (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+         VALUES
+            (:oGetDateNow, :oGetDateNow, :idTaller, :idTallerStatus, :idUserLogON, 1, :idUserLogON, :sComentario)`,
+        {
+            replacements: { oGetDateNow, idTaller, idTallerStatus, idUserLogON, sComentario },
+            type: dbConnection.QueryTypes.INSERT, transaction
+        }
+    );
+
+};
+
 // Destajo de una ORDEN RÁPIDA: se genera cuando el folio queda pagado, no
 // al entregarlo (analisis/031). Un taller normal lo genera al pasar a
 // Mostrador, así que este camino solo aplica a las rápidas.
