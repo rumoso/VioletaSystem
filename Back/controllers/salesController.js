@@ -5971,6 +5971,13 @@ const insertGarantiaByTaller = async(req, res = response) => {
 
 const ID_TALLER_STATUS_CANCELADO = 7;
 
+// Tipos de venta que SON un folio de taller: taller (5), rápida (7) y
+// garantía (8). La consulta de taller los muestra todos como "5", así
+// que el Front manda a cancelar/eliminar cualquiera de los tres por el
+// mismo camino; mirar solo el 5 hacía que una rápida respondiera "El
+// taller no existe".
+const TIPOS_TALLER = [5, 7, 8];
+
 // ¿El usuario tiene la acción? Por puesto ('R') o directa ('U'), con las
 // DOS banderas active (mismo criterio que sucursalesController).
 const _fn_tieneAccion = async(idUser, actionName, transaction) => {
@@ -6077,7 +6084,7 @@ const _fn_getDatosTaller = async(idSale, transaction, bBloquear = false) => {
         idSale: oTaller.idSale,
         idTallerStatus: Number(oTaller.idTallerStatus),
         bCancelado: Number(oTaller.idTallerStatus) === ID_TALLER_STATUS_CANCELADO || Number(oTaller.saleActive) !== 1,
-        bEsTaller: Number(oTaller.idSaleType) === 5,
+        bEsTaller: TIPOS_TALLER.includes(Number(oTaller.idSaleType)),
         bTieneDatos: aDatos.length > 0,
         aDatos
     };
@@ -6250,8 +6257,8 @@ const deleteTallerVacio = async(req, res = response) => {
         );
 
         await dbConnection.query(
-            `DELETE FROM sales WHERE idSale = :idSale AND idSaleType = 5`,
-            { replacements: { idSale }, type: dbConnection.QueryTypes.DELETE, transaction }
+            `DELETE FROM sales WHERE idSale = :idSale AND idSaleType IN (:tiposTaller)`,
+            { replacements: { idSale, tiposTaller: TIPOS_TALLER }, type: dbConnection.QueryTypes.DELETE, transaction }
         );
 
         await transaction.commit();

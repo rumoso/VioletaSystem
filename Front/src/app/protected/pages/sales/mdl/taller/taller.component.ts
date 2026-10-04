@@ -2649,9 +2649,13 @@ export class TallerComponent implements OnInit {
                       if (this.selectPrinter?.idPrinter > 0) {
                         this.printTicketServ.printTicketTaller(
                           'TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true, 'CLIENTE');
+                        this.servicesGServ.showSnakbar('Orden rápida entregada');
+                      } else {
+                        // La rápida se entrega con su papel: si no hay
+                        // impresora se dice, no se calla.
+                        this.servicesGServ.showSnakbar('Orden rápida entregada, pero no hay impresora seleccionada: el ticket del cliente no salió.');
                       }
 
-                      this.servicesGServ.showSnakbar('Orden rápida entregada');
                       this.fn_getTallerData(this.tallerForm.idTaller);
 
                     } else {
