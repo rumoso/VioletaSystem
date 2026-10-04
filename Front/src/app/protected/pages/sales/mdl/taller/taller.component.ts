@@ -774,6 +774,24 @@ export class TallerComponent implements OnInit {
 
   }
 
+  /**
+   * Qué secciones se ven en un folio que ya no se captura (entregado,
+   * en mostrador, en devolución o cancelado): SOLO las que llevaron
+   * algo. Si el folio no tuvo metal, la sección de metal estorba — no
+   * hay nada que leer ahí y tampoco se puede agregar.
+   *
+   * Mientras el folio sí se captura se muestran todas, aunque estén
+   * vacías: son justamente las que hay que poder llenar.
+   */
+  fn_mostrarSeccion( aLista: any[] ): boolean {
+
+    if( !this.bIsReadOnly ){
+      return true;
+    }
+
+    return ( aLista || [] ).length > 0;
+  }
+
   // Técnicos DISTINTOS del folio: un técnico con varios renglones de mano
   // de obra sigue siendo UN ticket, por eso se deduplica por idUserTecnico.
   fn_tecnicosDelFolio(): any[] {

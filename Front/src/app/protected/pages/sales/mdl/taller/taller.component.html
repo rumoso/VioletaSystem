@@ -613,7 +613,7 @@
              no la tarjeta: un folio entregado o bloqueado también tiene
              que dejar ver QUÉ mano de obra llevó y de qué técnico, igual
              que refacciones. -->
-                <div class="card-refacciones top30px" *ngIf="tall_AddManoObra">
+                <div class="card-refacciones top30px" *ngIf="tall_AddManoObra && fn_mostrarSeccion( manoObraList )">
                     <div class="header-refacciones">
                         <h3 class="header-refacciones-h3">
                             <button *ngIf="!bIsReadOnly"
@@ -721,7 +721,7 @@
              Header siempre visible (con botón + al lado del título);
              el body (form + tabla) solo se muestra si hay registros o el form está abierto.
              Header usa variante "compact" (más angosto). -->
-        <div class="card-refacciones top30px">
+        <div class="card-refacciones top30px" *ngIf="fn_mostrarSeccion( refaccionesList )">
             <div class="header-refacciones header-refacciones-compact">
                 <h3 class="header-refacciones-h3">
                     <button *ngIf="tall_AddRefaccion && !bIsReadOnly"
@@ -890,7 +890,7 @@
         <!-- SECCIÓN SERVICIOS EXTERNOS: mismo patrón que Refacciones / Mano de Obra.
              Header con + colapsable, body separado en form (visible solo con +) y grid
              (visible solo si hay registros). Oculta en rápidas. -->
-        <div *ngIf="!bRapida" class="card-refacciones top30px">
+        <div *ngIf="!bRapida && fn_mostrarSeccion( serviciosExternosList )" class="card-refacciones top30px">
             <div class="header-refacciones">
                 <h3 class="header-refacciones-h3">
                     <button *ngIf="tall_AddServicioExterno && !bIsReadOnly"
@@ -1007,7 +1007,7 @@
         </div>
 
         <!-- SECCIÓN METAL AGRANEL: mismo patrón que Refacciones / Mano de Obra. -->
-        <div class="card-refacciones top30px">
+        <div class="card-refacciones top30px" *ngIf="fn_mostrarSeccion( metalAgranelList )">
             <div class="header-refacciones">
                 <h3 class="header-refacciones-h3">
                     <button *ngIf="tall_AddMetalAgranel && !bIsReadOnly"
@@ -1139,7 +1139,7 @@
         </div>
 
         <!-- SECCIÓN ACTIVO DEL CLIENTE: mismo patrón que Metal Agranel / Refacciones. -->
-        <div class="card-refacciones top30px">
+        <div class="card-refacciones top30px" *ngIf="fn_mostrarSeccion( metalClienteList )">
             <div class="header-refacciones">
                 <h3 class="header-refacciones-h3">
                     <button *ngIf="tall_AddMetalCliente && !bIsReadOnly"
@@ -1245,7 +1245,7 @@
              OCULTA (analisis/023): el cliente no la va a usar por ahora y no
              entra en la utilidad del folio. Se prende con bMostrarMetalFinal. -->
         <ng-container *ngIf="bMostrarMetalFinal">
-        <div class="card-refacciones top30px">
+        <div class="card-refacciones top30px" *ngIf="fn_mostrarSeccion( metalFinalList )">
             <div class="header-refacciones">
                 <h3 class="header-refacciones-h3">
                     <button *ngIf="!bIsReadOnly"
