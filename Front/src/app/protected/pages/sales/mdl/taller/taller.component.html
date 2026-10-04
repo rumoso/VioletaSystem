@@ -608,11 +608,16 @@
         <!-- SECCIÓN MANO DE OBRA: la tarjeta SIEMPRE se muestra (si el usuario
              puede agregar), pero el body interno se oculta cuando no hay
              registros Y el form está colapsado. Así solo queda visible el
-             header compacto con el botón +, sin empty state grande. -->
-                <div class="card-refacciones top30px" *ngIf="tall_AddManoObra && !bIsReadOnly">
+             header compacto con el botón +, sin empty state grande.
+             Lo que se oculta con el folio en solo lectura es el botón +,
+             no la tarjeta: un folio entregado o bloqueado también tiene
+             que dejar ver QUÉ mano de obra llevó y de qué técnico, igual
+             que refacciones. -->
+                <div class="card-refacciones top30px" *ngIf="tall_AddManoObra">
                     <div class="header-refacciones">
                         <h3 class="header-refacciones-h3">
-                            <button mat-icon-button
+                            <button *ngIf="!bIsReadOnly"
+                                    mat-icon-button
                                     type="button"
                                     class="btn-toggle-manoobra-icon"
                                     [matTooltip]="bShowManoObraForm ? 'Cerrar' : 'Agregar mano de obra'"
