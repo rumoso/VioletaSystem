@@ -3167,11 +3167,12 @@ const updateTallerStatus = async(req, res) => {
             }
         }
 
-        // Status 2 (Pedido): generar el folio real y actualizar idSale. El
-        // tipo lo decide la bandera del folio: una RÁPIDA nace aquí con su
-        // propio folio (idSaleType = 7) y de aquí se va derecho a entregada
-        // (analisis/031); un taller normal genera el folio de taller (5).
+        // Status 2 (Pedido): generar el folio real y actualizar idSale.
+        // La SERIE la decide la bandera del folio: una rápida saca su
+        // folio TALLR del tipo 7 y un taller normal el TALL del 5
+        // (analisis/031).
         if (idTallerStatus === 2) {
+            // Tipo solo para la serie del folio.
             var idSaleTypeID = bEsRapida ? 7 : 5;
             if (!tallerInfo) {
                 await transaction.rollback();
@@ -3207,12 +3208,16 @@ const updateTallerStatus = async(req, res) => {
 
             await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 0`, { transaction, type: dbConnection.QueryTypes.RAW });
             await dbConnection.query(
-                // También se fija el TIPO: la nota venía como cotización y
-                // al generar el folio pasa a ser taller (5) o rápida (7).
-                // Sin esto, una rápida quedaba con el folio TALLR pero con
-                // tipo de taller normal (analisis/031).
-                `UPDATE sales SET idSale = :newIdSale, idSaleType = :idSaleTypeID WHERE idSale = :oldIdSale`,
-                { replacements: { newIdSale, oldIdSale, idSaleTypeID }, type: dbConnection.QueryTypes.UPDATE, transaction }
+                // La nota venía como cotización (6) y al generar el folio
+                // pasa a ser taller. Se guarda **5 siempre**, también en
+                // las rápidas: el 7 solo da la serie TALLR. Todo el
+                // sistema reconoce un folio de taller por `idSaleType = 5`
+                // — el cobro, la consulta de ventas, el panel del director
+                // y los reportes — y las garantías hacen exactamente lo
+                // mismo con su 8. Lo que distingue a una rápida es
+                // `taller.bRapida`, no el tipo de venta.
+                `UPDATE sales SET idSale = :newIdSale, idSaleType = 5 WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
             );
             await dbConnection.query(
                 `UPDATE taller SET idSale = :newIdSale WHERE idTaller = :idTaller`,
