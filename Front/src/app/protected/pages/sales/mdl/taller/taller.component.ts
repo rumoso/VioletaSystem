@@ -815,14 +815,14 @@ export class TallerComponent implements OnInit {
     }
   }
 
-  // Al nacer el pedido salen el del cliente, el del sobre del taller y,
-  // si ya hay técnicos asignados, el de cada uno. Si todavía no hay
-  // técnico, ese papel sale después, al asignar.
+  // Al nacer el pedido salen el del cliente y el del sobre del taller.
+  // El del técnico NO: ese sale al ASIGNAR, que es cuando el técnico
+  // recibe la pieza. Antes salía en los dos momentos y el técnico
+  // terminaba con el mismo papel duplicado.
   private fn_printTicketsPedido() {
     if (this.selectPrinter.idPrinter <= 0) { return; }
     this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false, 'CLIENTE');
     this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false, 'TALLER');
-    this.fn_printTicketsTecnicos();
   }
 
   fn_ShowPayments(){
