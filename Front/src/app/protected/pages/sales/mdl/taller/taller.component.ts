@@ -3132,9 +3132,10 @@ export class TallerComponent implements OnInit {
                       this.servicesGServ.showSnakbar('Pedido de taller entregado correctamente');
                       this.tallerForm.idTallerStatus = 5;
                       this.tallerForm.fechaEntrega = respUpdate.data.fechaEntrega;
-                      // La entrega se queda igual que siempre (con firmas) y
-                      // es el papel del cliente (analisis/030).
-                      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true, 'CLIENTE');
+                      // El ticket del cliente NO sale aquí: la entrega
+                      // queda con la firma pendiente, y el papel es el
+                      // comprobante de una entrega ya aprobada. Sale al
+                      // aprobarse la firma (_fn_openFirmaModal).
                       this.fn_insertFirmaStatus(5);
                     } else {
                       this.servicesGServ.showSnakbar('Error al entregar el pedido de taller');
@@ -3353,6 +3354,16 @@ export class TallerComponent implements OnInit {
           firmaDesc: result.firma === 1 ? 'Aprobado' : 'Rechazado',
           userFirmaDesc: ''
         };
+
+        // El ticket del cliente es el comprobante de la entrega, así que
+        // sale cuando la entrega queda APROBADA, no al mover el estatus:
+        // una firma rechazada no entrega nada.
+        if( result.firma === 1
+            && Number( this.tallerForm.idTallerStatus ) === 5
+            && this.selectPrinter?.idPrinter > 0 ){
+          this.printTicketServ.printTicketTaller(
+            'TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true, 'CLIENTE');
+        }
       }
     });
   }
