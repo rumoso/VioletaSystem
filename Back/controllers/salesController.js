@@ -3180,24 +3180,13 @@ const updateTallerStatus = async(req, res) => {
             const oldIdSale = tallerInfo.idSale;
             const idSucursal = tallerInfo.idSucursal;
 
-            if(idSaleTypeID == 7)
-            {
-                // INSERT — se llama al cambiar de status (>= 3)
-                // Los campos firma/idUserFirma/comentario permiten insertar ya aprobado
-                // (usado por el flujo de Devolución del cliente, status 6)
-                const result = await dbConnection.query(`
-                    INSERT INTO taller_firmas_status
-                        (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
-                    VALUES
-                        (:createDate, null, :idTaller, :idTallerStatus, :idUserCreate, 0, 0, '')
-                `, {
-                    replacements: {
-                        createDate: oGetDateNow,
-                        idTaller, idTallerStatus, idUserCreate: idUserLogON
-                    },
-                    type: dbConnection.QueryTypes.INSERT
-                });
-            }
+            // Antes, al generar una rápida se insertaba aquí una firma
+            // pendiente: la rápida saltaba de cotización a entregada de
+            // un golpe y esa firma era el registro de la entrega. Ya no
+            // existe ese salto (analisis/031) y la rápida se entrega sin
+            // autorización de nadie, así que no se firma. Además, una
+            // firma pendiente en Pedido dejaba el folio en solo lectura
+            // y no se le podía capturar mano de obra ni refacciones.
 
             await dbConnection.query(
                 `CALL getIDs_BySucursal(:idUserC, :idSucursal, :idSaleTypeID, @idSaleNew)`,
