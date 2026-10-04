@@ -3578,6 +3578,11 @@ const getTallerByID = async(req, res = response) => {
                 SELECT
                     P.idPayment
                     , P.createDate
+                    -- Fecha y hora juntas, con el mismo ajuste de zona
+                    -- horaria que el resto del folio: es lo que imprime
+                    -- el ticket del pago, que salía "undefined" porque
+                    -- este renglón no existía.
+                    , DATE_FORMAT( DATE_SUB( P.createDate, INTERVAL IFNULL(@iHours, 0) HOUR ), '%d-%m-%Y %h:%i:%s %p') AS createDateString
                     , DATE_FORMAT( P.createDate, '%d-%m-%Y') AS createDateDate
                     , DATE_FORMAT( P.createDate, '%h:%i:%s %p') AS createDateHours
                     , P.idRelation AS idSale
