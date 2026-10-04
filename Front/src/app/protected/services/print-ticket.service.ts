@@ -428,6 +428,20 @@ export class PrintTicketService {
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
+      // Renglón en blanco: el agente de impresión avanza con un alto
+      // FIJO y "PAGO", que va en 20, se monta sobre lo que siga.
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      // Folio al que se le está pagando: sin esto el papel del pago no
+      // dice de qué venta es.
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 15, text: "Folio: #" + sale.data.idSale }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
       oLines = [];
       var oLine: any = { aling: "Left", size: 7, text: " " }
       oLines.push( oLine );
@@ -2316,6 +2330,20 @@ export class PrintTicketService {
 
       oLines = [];
       var oLine: any = { aling: "Center", size: 20, text: "PAGO" }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      // Renglón en blanco: el agente de impresión avanza con un alto
+      // FIJO y "PAGO", que va en 20, se monta sobre lo que siga.
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      // Folio al que se le está pagando: sin esto el papel del pago no
+      // dice de qué folio de taller es.
+      oLines = [];
+      var oLine: any = { aling: "Center", size: 15, text: "Folio: #" + sale.idSale }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
