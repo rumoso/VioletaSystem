@@ -766,6 +766,47 @@ export class SalesService {
 
   }
 
+  // ── Encargado de taller y desbloqueo (analisis/029) ──
+  // El servidor resuelve quién es el encargado a partir de la sucursal
+  // DEL FOLIO, no de la sucursal del usuario conectado: un encargado
+  // puede cubrir varias sucursales.
+
+  CGetEncargadosByTaller( data: any ): Observable<ResponseGet> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getEncargadosByTaller`, data );
+
+  }
+
+  CAceptarTallerComoEncargado( data: any ): Observable<any> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/aceptarTallerComoEncargado`, data );
+
+  }
+
+  CRechazarTallerComoEncargado( data: any ): Observable<any> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/rechazarTallerComoEncargado`, data );
+
+  }
+
+  CRegresarEstatusTaller( data: any ): Observable<any> {
+
+    data.idUserLogON = this.authServ.getIdUserSession();
+    data.idSucursalLogON = this.idSucursal;
+
+    return this.http.post<any>( `${ this.baseURL }/${ this._api }/regresarEstatusTaller`, data );
+
+  }
+
   CInsertUpdateTallerFirma( data: any ): Observable<ResponseDB_CRUD> {
 
     data.idUserLogON = this.authServ.getIdUserSession();

@@ -23,7 +23,9 @@
   <form [formGroup]="motivoForm" (ngSubmit)="fn_confirmar()">
 
     <mat-form-field appearance="outline" class="mtc-full">
-      <mat-label>Motivo de cancelación</mat-label>
+      <!-- El mismo modal lo usan la cancelación y el rechazo del
+           encargado (analisis/029): la etiqueta la pone el llamador. -->
+      <mat-label>{{ ODataP?.sLabelMotivo || 'Motivo de cancelación' }}</mat-label>
       <textarea matInput
                 formControlName="motivo"
                 rows="3"

@@ -26,7 +26,10 @@
         </mat-icon>
         <div class="taller-header-firma-text">
           <div class="taller-header-firma-status">
-            {{ tallerForm.idTallerStatus === 2 ? 'Pedido' : tallerForm.idTallerStatus === 3 ? 'Asignado' : tallerForm.idTallerStatus === 4 ? 'Finalizado / Mostrador' : tallerForm.idTallerStatus === 5 ? 'Entregado' : tallerForm.idTallerStatus === 6 ? 'Devolución' : tallerForm.idTallerStatus === 7 ? 'Cancelado' : 'Status ' + tallerForm.idTallerStatus }}
+            <!-- El nombre sale del catálogo (analisis/029): la lista
+                 escrita a mano quedó desfasada al agregarse el estatus
+                 del encargado de taller. -->
+            {{ sStatusNombre }}
             <span class="taller-header-firma-sep">·</span>
             <span class="taller-header-firma-result">
               {{ oFirmaStatus?.firma === 1 ? 'Aprobado' : oFirmaStatus?.firma === 2 ? 'Rechazado' : 'Pendiente' }}
@@ -59,9 +62,13 @@
           <mat-icon>payment</mat-icon>Pagar: {{ tallerForm.pendingAmount | currency }}
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 1 && totalTaller > 0"
+        <!-- Reimprimir abre el modal de selección de tickets (analisis/030).
+             Sin la condición de totalTaller: un folio sin importe también se
+             reimprime, y se puede hacer bloqueado, entregado o cancelado
+             porque reimprimir no cambia nada del folio. -->
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus >= 1"
           mat-icon-button class="taller-btn-icon" type="button"
-          (click)="fn_printTicketTaller()" matTooltip="Imprimir ticket de taller">
+          (click)="fn_printTicketTaller()" matTooltip="Reimprimir tickets del folio">
           <mat-icon>print</mat-icon>
         </button>
 
@@ -71,7 +78,10 @@
           <mat-icon>image</mat-icon>({{ tallerForm.headerImagesCount }})
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder && ( manoObraList.length > 0 || refaccionesList.length > 0 )"
+        <!-- Solo en los folios que nacieron como rápida ("Nueva rápida" de
+             la lista): un taller normal arranca como cotización y su
+             camino es Crear pedido, no convertirse en rápida. -->
+        <button *ngIf="bRapida && tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder && ( manoObraList.length > 0 || refaccionesList.length > 0 )"
           mat-raised-button color="warn" type="button" class="taller-btn-compact"
           (click)="fn_createTallerRapidaOrder()">
           <mat-icon>playlist_add</mat-icon>Crear Rápida
@@ -89,10 +99,34 @@
           <mat-icon>assignment</mat-icon>Asignar
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3 && oFirmaStatus?.firma === 1"
+        <!-- El técnico ya no manda el folio a mostrador: lo manda al
+             encargado de taller, que es quien lo acepta (analisis/029). -->
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 3 && oFirmaStatus?.firma === 1 && tall_PasarAEncargado"
           mat-raised-button color="primary" type="button" class="taller-btn-compact"
-          (click)="fn_finalizeTallerOrder()">
-          <mat-icon>done_all</mat-icon>Finalizado/Mostrador
+          (click)="fn_pasarAEncargado()">
+          <mat-icon>engineering</mat-icon>Pasar a encargado de taller
+        </button>
+
+        <!-- Estatus 8: el encargado revisa. Acepta (pasa a mostrador y se
+             bloquea) o rechaza con motivo (regresa con el técnico). -->
+        <button *ngIf="tallerForm.idTaller > 0 && bEnEncargado && (bSoyEncargado || tall_AceptarComoEncargado)"
+          mat-raised-button color="success" type="button" class="taller-btn-compact"
+          (click)="fn_aceptarComoEncargado()" [disabled]="bShowActionAuthorization">
+          <mat-icon>task_alt</mat-icon>Aceptar
+        </button>
+
+        <button *ngIf="tallerForm.idTaller > 0 && bEnEncargado && (bSoyEncargado || tall_AceptarComoEncargado)"
+          mat-raised-button color="warn" type="button" class="taller-btn-compact"
+          (click)="fn_rechazarComoEncargado()" [disabled]="bShowActionAuthorization">
+          <mat-icon>thumb_down</mat-icon>Rechazar
+        </button>
+
+        <!-- Editar en lugar del encargado: la autorización se pide una
+             vez y queda vigente mientras el folio siga abierto. -->
+        <button *ngIf="tallerForm.idTaller > 0 && bEnEncargado && !bSoyEncargado && tall_AceptarComoEncargado && idUserAutorizaEncargado === 0"
+          mat-raised-button type="button" class="taller-btn-compact taller-btn-edit-estado"
+          (click)="fn_autorizarEdicionComoEncargado()" [disabled]="bShowActionAuthorization">
+          <mat-icon>lock_open</mat-icon>Editar como encargado
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4 && oFirmaStatus?.firma === 1"
@@ -107,10 +141,13 @@
           <mat-icon>assignment_return</mat-icon>Devolución
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 5 && tall_EditAfterEntregado"
+        <!-- Desbloqueo (analisis/029): solo desde Finalizado/Mostrador.
+             Un folio entregado ya no se regresa ni con autorización. -->
+        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 4 && tall_DesbloquearTaller"
           mat-raised-button type="button" class="taller-btn-compact taller-btn-edit-estado"
-          (click)="fn_editAfterEntregado()" [disabled]="bShowActionAuthorization">
-          <mat-icon>edit_note</mat-icon>Editar estado
+          (click)="fn_regresarEstatus()" [disabled]="bShowActionAuthorization"
+          matTooltip="Regresa el folio de estatus y lo desbloquea. Se reversan el metal final y el destajo.">
+          <mat-icon>lock_open</mat-icon>Regresar estatus
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 6"
@@ -195,6 +232,50 @@
     </div>
   </div>
 
+  <!-- Folio bloqueado (analisis/029): de Finalizado/Mostrador en
+       adelante no se toca nada. Mismo patrón que la banda de cancelado. -->
+  <div class="gar-band gar-band--bloqueado" *ngIf="bBloqueado && !bCancelado">
+    <div class="gar-band-tit">
+      <mat-icon>lock</mat-icon>
+      <span><b>Folio bloqueado</b> — solo consulta</span>
+    </div>
+    <div class="gar-band-body">
+      El folio está en <b>{{ sStatusNombre }}</b>: no se puede modificar el
+      encabezado, la mano de obra, las refacciones, los servicios externos,
+      el metal ni los precios. Los pagos sí se siguen recibiendo.
+      <span *ngIf="tallerForm.idTallerStatus === 4 && tall_DesbloquearTaller">
+        Para corregirlo hay que regresarlo de estatus con autorización especial.
+      </span>
+    </div>
+  </div>
+
+  <!-- Folio con el encargado de taller (analisis/029). Si la sucursal no
+       tiene encargado capturado se avisa aquí, en vez de dejar un botón
+       que no va a funcionar. -->
+  <div class="gar-band gar-band--encargado" *ngIf="bEnEncargado">
+    <div class="gar-band-tit">
+      <mat-icon>engineering</mat-icon>
+      <span>Folio <b>en revisión del encargado de taller</b></span>
+    </div>
+    <div class="gar-band-body">
+      <span *ngIf="bSinEncargado" class="gar-band-aviso">
+        Esta sucursal no tiene encargado de taller capturado: se necesita
+        autorización especial para aceptar o rechazar el folio.
+      </span>
+      <span *ngIf="!bSinEncargado && bSoyEncargado">
+        Usted es encargado de esta sucursal: puede corregir el folio y
+        aceptarlo o rechazarlo.
+      </span>
+      <span *ngIf="!bSinEncargado && !bSoyEncargado">
+        Encargados de la sucursal: {{ fn_encargadosDesc() }}. Para aceptar,
+        rechazar o editar en su lugar se pide autorización especial.
+      </span>
+      <span *ngIf="idUserAutorizaEncargado > 0" class="gar-band-aviso">
+        Autorización especial vigente: puede editar en lugar del encargado.
+      </span>
+    </div>
+  </div>
+
   <!-- ESTE folio ES una garantía -->
   <div class="gar-band gar-band--es" *ngIf="bEsGarantia">
 
@@ -272,6 +353,34 @@
     </div>
   </div>
 
+  <!-- Encabezado congelado (analisis/029 punto 7). En cuanto el folio deja
+       de ser Cotización, el cliente, el vendedor y la fecha de ingreso
+       identifican el folio y el compromiso con el cliente: se quedan
+       fijos. Se avisa aquí, con el mismo patrón de las demás bandas, para
+       que no parezca que la pantalla se trabó. Si ya manda el bloqueo
+       general (folio bloqueado o cancelado) esta banda sobra: aquello no
+       se abre ni con esta autorización. -->
+  <div class="gar-band gar-band--encabezado" *ngIf="bEncabezadoCongelado && !bIsReadOnly">
+    <div class="gar-band-tit">
+      <mat-icon>{{ idUserAutorizaEncabezado > 0 ? 'lock_open' : 'lock' }}</mat-icon>
+      <span *ngIf="idUserAutorizaEncabezado === 0">
+        <b>Ya es pedido de taller</b>: se necesita autorización para cambiar
+        el cliente, el vendedor o la fecha de ingreso. La descripción y la
+        fecha prometida se siguen editando.
+      </span>
+      <span *ngIf="idUserAutorizaEncabezado > 0" class="gar-band-aviso">
+        Autorización especial vigente: puede corregir el cliente, el
+        vendedor y la fecha de ingreso de este folio.
+      </span>
+      <button *ngIf="idUserAutorizaEncabezado === 0"
+              mat-stroked-button type="button" class="taller-btn-compact"
+              matTooltip="Pedir la autorización especial para corregir una captura mal hecha"
+              (click)="fn_autorizarEdicionEncabezado()">
+        <mat-icon>lock_open</mat-icon>Autorizar cambio
+      </button>
+    </div>
+  </div>
+
   <!-- ─────────────────────────────────────────── -->
   <!-- ENCABEZADO: campos normales, mismo formato   -->
   <!-- que la venta (nsale).                        -->
@@ -290,9 +399,18 @@
                [matAutocomplete]="cbxSeller"
                (keyup)="comboBoxKeyUp('cbxSellerCBX', cbxSellerCBX.value, $event)"
                (click)="cbxSellers_Clear()"
-               placeholder="Selecciona un vendedor...">
-        <button *ngIf="tallerForm.sellerDesc" class="th-clear" mat-icon-button type="button" aria-label="Limpiar" (click)="cbxSellers_Clear()">
+               placeholder="Selecciona un vendedor..."
+               [disabled]="!bEncabezadoEditable">
+        <button *ngIf="tallerForm.sellerDesc && bEncabezadoEditable" class="th-clear" mat-icon-button type="button" aria-label="Limpiar" (click)="cbxSellers_Clear()">
           <mat-icon>close</mat-icon>
+        </button>
+        <!-- Candado del punto 7: el campo se ve, pero para tocarlo hay que
+             presentar la autorización especial. -->
+        <button *ngIf="bMostrarCandadoEncabezado" class="th-clear th-candado" mat-icon-button type="button"
+                aria-label="Autorizar cambio de vendedor"
+                matTooltip="Ya es pedido de taller: se necesita autorización para cambiar el vendedor"
+                (click)="fn_autorizarEdicionEncabezado()">
+          <mat-icon>lock</mat-icon>
         </button>
       </div>
       <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
@@ -319,9 +437,17 @@
                [matAutocomplete]="cbxCustomer"
                (keyup)="comboBoxKeyUp('cbxCustomerCBX', cbxCustomerCBX.value, $event)"
                (click)="cbxCustomers_Clear()"
-               placeholder="Selecciona un cliente...">
-        <button *ngIf="tallerForm.customerDesc" class="th-clear" mat-icon-button type="button" aria-label="Limpiar" (click)="cbxCustomers_Clear()">
+               placeholder="Selecciona un cliente..."
+               [disabled]="!bEncabezadoEditable">
+        <button *ngIf="tallerForm.customerDesc && bEncabezadoEditable" class="th-clear" mat-icon-button type="button" aria-label="Limpiar" (click)="cbxCustomers_Clear()">
           <mat-icon>close</mat-icon>
+        </button>
+        <!-- Mismo candado que el vendedor (analisis/029 punto 7). -->
+        <button *ngIf="bMostrarCandadoEncabezado" class="th-clear th-candado" mat-icon-button type="button"
+                aria-label="Autorizar cambio de cliente"
+                matTooltip="Ya es pedido de taller: se necesita autorización para cambiar el cliente"
+                (click)="fn_autorizarEdicionEncabezado()">
+          <mat-icon>lock</mat-icon>
         </button>
       </div>
       <mat-autocomplete autoActiveFirstOption class="slim-autocomplete-panel"
@@ -336,14 +462,40 @@
       </mat-autocomplete>
     </div>
 
-    <!-- FECHA INGRESO: siempre el día actual, no editable -->
+    <!-- FECHA INGRESO: es la fecha en que llegó la pieza. Siempre el día
+         actual al capturarla y, de Pedido en adelante (punto 7), solo se
+         corrige con la autorización especial vigente. -->
     <div class="th-field" [ngClass]="bRapida ? 'th-col-6' : 'th-col-4'">
       <label class="th-label">Fecha de ingreso</label>
-      <div class="th-wrap" matTooltip="La fecha de ingreso siempre es el día actual y no se puede modificar">
+
+      <div class="th-wrap"
+           *ngIf="!( bEncabezadoCongelado && idUserAutorizaEncabezado > 0 && !bIsReadOnly )"
+           [matTooltip]="bEncabezadoCongelado
+              ? 'Ya es pedido de taller: se necesita autorización para cambiar la fecha en que llegó la pieza'
+              : 'La fecha de ingreso siempre es el día actual y no se puede modificar'">
         <input type="text" class="th-input th-input-con-boton"
                [value]="tallerForm.fechaIngreso | date:'dd/MM/yyyy'"
                readonly tabindex="-1">
-        <mat-icon class="th-icon">lock</mat-icon>
+        <mat-icon class="th-icon" *ngIf="!bMostrarCandadoEncabezado">lock</mat-icon>
+        <button *ngIf="bMostrarCandadoEncabezado" class="th-clear th-candado" mat-icon-button type="button"
+                aria-label="Autorizar cambio de fecha de ingreso"
+                (click)="fn_autorizarEdicionEncabezado()">
+          <mat-icon>lock</mat-icon>
+        </button>
+      </div>
+
+      <!-- Con la autorización vigente sí se captura, con el mismo
+           datepicker que la fecha prometida. -->
+      <div class="th-wrap" *ngIf="bEncabezadoCongelado && idUserAutorizaEncabezado > 0 && !bIsReadOnly">
+        <input type="text"
+               class="th-input th-input-con-boton th-input-fecha"
+               [matDatepicker]="pickerIngreso"
+               [(ngModel)]="tallerForm.fechaIngreso"
+               (click)="pickerIngreso.open()"
+               placeholder="Selecciona una fecha..."
+               readonly>
+        <mat-datepicker-toggle class="th-datepicker-toggle" [for]="pickerIngreso"></mat-datepicker-toggle>
+        <mat-datepicker #pickerIngreso [restoreFocus]="false"></mat-datepicker>
       </div>
     </div>
 

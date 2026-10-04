@@ -16,19 +16,20 @@ export class TallerFirmaModalComponent implements OnInit {
   comentario: string = '';
   bShowSpinner: boolean = false;
 
-  // Modo bEditAfterEntregado
+  // Modo "regresar estatus" (analisis/029): desbloquear un folio que ya
+  // está en Finalizado/Mostrador. Los destinos los manda el llamador
+  // —solo 2, 3 u 8— para no repetir aquí la regla del flujo.
   selectedStatus: number = 0;
-  readonly statusOptions = [
-    { value: 2, label: 'Pedido' },
-    { value: 3, label: 'Asignado' },
-    { value: 4, label: 'Finalizado / Mostrador' },
-    { value: 5, label: 'Entregado' },
-    { value: 6, label: 'Devolución' }
-  ];
+
+  get statusOptions(): any[] {
+    return this.data?.aEstatusDestino || [];
+  }
 
   // Labels por status
   readonly statusLabels: { [key: number]: string } = {
+    2: 'Pedido de taller',
     3: 'Asignado',
+    8: 'Encargado de taller',
     4: 'Finalizado / Mostrador',
     5: 'Entregado',
     6: 'Devolución del cliente'
@@ -63,7 +64,7 @@ export class TallerFirmaModalComponent implements OnInit {
     this.dialogRef.close(null);
   }
 
-  fn_confirmarEditAfterEntregado(): void {
+  fn_confirmarRegresarEstatus(): void {
     if (!this.selectedStatus) {
       this.servicesGServ.showSnakbar('Seleccione el estado destino');
       return;

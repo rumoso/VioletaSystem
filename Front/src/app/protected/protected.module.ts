@@ -72,6 +72,7 @@ import { IngresosListComponent } from './pages/sales/ingresos-list/ingresos-list
 import { PagosCanceladosComponent } from './pages/reports/pagos-cancelados/pagos-cancelados.component';
 import { QuestionCancelSalePaymentsComponent } from './pages/sales/mdl/question-cancel-sale-payments/question-cancel-sale-payments.component';
 import { MotivoCancelacionComponent } from './pages/sales/mdl/motivo-cancelacion/motivo-cancelacion.component';
+import { TallerReimprimirComponent } from './pages/sales/mdl/taller-reimprimir/taller-reimprimir.component';
 import { ChangepwdsecretwordComponent } from './pages/security/mdl/changepwdsecretword/changepwdsecretword.component';
 import { RepPaymentsComponent } from './pages/reports/rep-payments/rep-payments.component';
 import { InfFinancieraComponent } from './pages/finanzas/inf-financiera/inf-financiera.component';
@@ -167,6 +168,7 @@ import { FaceIdButtonComponent } from './pages/security/mdl/face-id-button/face-
     PagosCanceladosComponent,
     QuestionCancelSalePaymentsComponent,
     MotivoCancelacionComponent,
+    TallerReimprimirComponent,
     ChangepwdsecretwordComponent,
     RepPaymentsComponent,
     InfFinancieraComponent,

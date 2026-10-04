@@ -297,6 +297,13 @@
   height: 14px;
 }
 
+/* Encargado de taller (analisis/029): índigo suave, distinto del azul
+   que usan el resto de los estatus. */
+.tll-status-chip--encargado {
+  background: #ede7f6;
+  color: #4527a0;
+}
+
 .tll-status-chip--cancelado {
   background: #ffebee;
   color: #b71c1c;

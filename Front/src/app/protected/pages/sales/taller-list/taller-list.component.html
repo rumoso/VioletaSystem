@@ -344,7 +344,10 @@
                     cancel
                   </mat-icon>
                 </span>
-                <span *ngIf="item.idTallerStatus != 7" class="tll-status-chip">{{ item.statusName }}</span>
+                <!-- El estatus 8 (Encargado de taller) lleva color propio
+                     para distinguirlo de un vistazo de los demás pasos. -->
+                <span *ngIf="item.idTallerStatus != 7" class="tll-status-chip"
+                  [ngClass]="{ 'tll-status-chip--encargado': item.idTallerStatus == 8 }">{{ item.statusName }}</span>
                 <span *ngIf="item.idTallerStatus == 7" class="tll-status-chip tll-status-chip--cancelado"
                   [matTooltip]="fn_tooltipCancelacion( item )">{{ item.statusName }}</span>
                 <span *ngIf="item.diasVencido > 0" class="tll-status-chip tll-status-chip--vencido"

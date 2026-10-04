@@ -1,0 +1,83 @@
+<div class="trp-modal">
+
+    <div mat-dialog-title class="trp-header">
+        <span class="trp-titulo">Reimprimir tickets del folio #{{ idSale }}</span>
+        <button mat-icon-button (click)="fn_CerrarMDL()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <mat-dialog-content class="trp-content">
+
+        <div class="trp-atajos">
+            <span class="trp-atajos-info">{{ iSeleccionados }} seleccionado(s)</span>
+            <button mat-button type="button" (click)="fn_seleccionarTodos()">Todos</button>
+            <button mat-button type="button" (click)="fn_seleccionarNinguno()">Ninguno</button>
+        </div>
+
+        <!-- ═══ Cliente y taller ═══ -->
+        <div class="trp-seccion">
+
+            <div class="trp-seccion-titulo">
+                <mat-icon>receipt_long</mat-icon>
+                <span>Tickets del folio</span>
+            </div>
+
+            <div class="trp-renglon">
+                <mat-checkbox [(ngModel)]="bCliente">
+                    <span class="trp-renglon-nombre">Cliente</span>
+                    <span class="trp-renglon-hint">El comprobante que se lleva el cliente</span>
+                </mat-checkbox>
+            </div>
+
+            <div class="trp-renglon">
+                <mat-checkbox [(ngModel)]="bTaller">
+                    <span class="trp-renglon-nombre">Taller</span>
+                    <span class="trp-renglon-hint">El que va con el sobre físico</span>
+                </mat-checkbox>
+            </div>
+
+        </div>
+
+        <!-- ═══ Técnicos ═══ -->
+        <div class="trp-seccion">
+
+            <div class="trp-seccion-titulo">
+                <mat-icon>engineering</mat-icon>
+                <span>Técnicos</span>
+            </div>
+
+            <div class="trp-renglon" *ngFor="let tecnico of aTecnicos">
+                <mat-checkbox [(ngModel)]="tecnico.bSeleccionado">
+                    <span class="trp-renglon-nombre">{{ tecnico.tecnicoDesc }}</span>
+                    <span class="trp-renglon-hint">Un ticket por técnico</span>
+                </mat-checkbox>
+            </div>
+
+            <!-- Sin técnicos se dice la razón, no se deja una casilla muerta -->
+            <div class="trp-vacio" *ngIf="aTecnicos.length === 0">
+                <mat-icon>info</mat-icon>
+                <span>El folio todavía no tiene técnico asignado</span>
+            </div>
+
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="trp-footer">
+
+        <button mat-raised-button color="primary" type="button"
+            [disabled]="iSeleccionados === 0"
+            (click)="fn_imprimir()">
+            <mat-icon matPrefix class="my-icon">print</mat-icon>
+            Imprimir</button>
+
+        <button mat-raised-button type="button" (click)="fn_CerrarMDL()">
+            <mat-icon matPrefix class="my-icon">close</mat-icon>
+            Cerrar</button>
+
+    </mat-dialog-actions>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

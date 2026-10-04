@@ -1563,7 +1563,52 @@ export class PrintTicketService {
 
   }
 
-  async printTicketTaller( type: string, idRelation: any, idPrinter: number, iCopy: number, bShowTotales: boolean = false, bFirma: boolean = false ): Promise<any> {
+  // El folio de taller se imprime para tres destinatarios: el cliente, el
+  // sobre del taller y cada técnico. El contenido es EXACTAMENTE el mismo
+  // para los tres (se arma una sola vez, así no hay tres plantillas que se
+  // desincronicen); lo único que cambia es el encabezado que dice para
+  // quién es. Los parámetros nuevos van al final y con default para no
+  // romper las llamadas que ya existían (analisis/030).
+  // Parte un texto en renglones de a lo más `iMax` caracteres, cortando
+  // por palabras. Una palabra más larga que el renglón se corta a lo
+  // bruto: más vale partirla que encimarla sobre la línea siguiente.
+  private fn_partirEnRenglones( sTexto: string, iMax: number ): string[] {
+
+    const aPalabras = String( sTexto || '' ).trim().split( /\s+/ ).filter( s => s.length > 0 );
+    const aRenglones: string[] = [];
+    let sActual = '';
+
+    for( let sPalabra of aPalabras ){
+
+      while( sPalabra.length > iMax ){
+        if( sActual.length > 0 ){
+          aRenglones.push( sActual );
+          sActual = '';
+        }
+        aRenglones.push( sPalabra.substring( 0, iMax ) );
+        sPalabra = sPalabra.substring( iMax );
+      }
+
+      if( sActual.length === 0 ){
+        sActual = sPalabra;
+      }else if( ( sActual + ' ' + sPalabra ).length <= iMax ){
+        sActual += ' ' + sPalabra;
+      }else{
+        aRenglones.push( sActual );
+        sActual = sPalabra;
+      }
+
+    }
+
+    if( sActual.length > 0 ){
+      aRenglones.push( sActual );
+    }
+
+    return aRenglones.length > 0 ? aRenglones : [ '' ];
+
+  }
+
+  async printTicketTaller( type: string, idRelation: any, idPrinter: number, iCopy: number, bShowTotales: boolean = false, bFirma: boolean = false, sDestinatario: 'CLIENTE' | 'TALLER' | 'TECNICO' = 'CLIENTE', sTecnicoNombre: string = '' ): Promise<any> {
 
     var bOK = false;
     var sBarCode = '';
@@ -1581,6 +1626,9 @@ export class PrintTicketService {
       let sale = tallerResp.data.oTaller;
       const metalesCliente: any[] = tallerResp.data.metalesCliente || [];
       const metalesAgranel: any[] = tallerResp.data.metalesAgranel || [];
+      const refacciones: any[] = tallerResp.data.refaccionesDetail || [];
+      const serviciosExternos: any[] = tallerResp.data.serviciosExternos || [];
+      const manoObra: any[] = tallerResp.data.oManoObra || [];
 
       console.log(sale);
 
@@ -1598,6 +1646,72 @@ export class PrintTicketService {
       var oLine: any = { aling: "Left", size: 7, text: " " }
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
+
+      // ── DESTINATARIO ──────────────────────────────────────────
+      // Va arriba y en grande porque los tres papeles son idénticos:
+      // sin este renglón no hay forma de saber cuál es de quién.
+      let sTituloDestinatario = 'CLIENTE';
+      if( sDestinatario === 'TALLER' ){
+        sTituloDestinatario = 'TALLER';
+      }else if( sDestinatario === 'TECNICO' ){
+        sTituloDestinatario = 'TÉCNICO';
+      }
+
+      // El agente de impresión avanza los renglones con un alto FIJO: una
+      // letra grande se monta sobre la línea de abajo. Por eso el ticket
+      // del técnico usa tamaños chicos y mete aire entre renglones, en vez
+      // de confiar en que el alto crezca con la fuente.
+      const bEsTecnico = ( sDestinatario === 'TECNICO' );
+
+      oLines = [];
+      var oLine: any = { aling: "Center", size: bEsTecnico ? 12 : 20, style: "Bold", text: sTituloDestinatario }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      // El nombre va en SU PROPIO renglón y se parte por palabras: en el
+      // mismo renglón que "TÉCNICO" un nombre largo ("JOSE MARTIN CASTRO
+      // BUELNA") se encimaba con el folio.
+      if( bEsTecnico ){
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        const aNombre = this.fn_partirEnRenglones( ( sTecnicoNombre || 'SIN ASIGNAR' ).toUpperCase(), 24 );
+
+        for( const sRenglon of aNombre ){
+          oLines = [];
+          var oLine: any = { aling: "Center", size: 10, style: "Bold", text: sRenglon }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+        }
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      oLines = [];
+      var oLine: any = { aling: "Left", size: 7, text: " " }
+      oLines.push( oLine );
+      oLinesP.push( { oLines: oLines } );
+
+      // Un folio cancelado se reimprime solo para consulta: el papel lo
+      // dice igual que la pantalla, para que no se confunda con uno vivo.
+      if( Number( sale.idTallerStatus ) === 7 ){
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 15, style: "Bold", text: "*** FOLIO CANCELADO ***" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, text: " " }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+      }
 
       oLines = [];
       var oLine: any = { aling: "Center", size: 15, text: "Folio: #" + sale.idSale }
@@ -1721,8 +1835,38 @@ export class PrintTicketService {
       oLines.push( oLine );
       oLinesP.push( { oLines: oLines } );
 
-      // ── METAL DEL CLIENTE (activo) ────────────────────────────
-      if( metalesCliente.length > 0 ){
+      // ── MANO DE OBRA ──────────────────────────────────────────
+      // Solo el TOTAL: el desglose por técnico no le interesa al cliente
+      // y además delataría lo que se le paga a cada uno. El total sigue
+      // el mismo criterio que usa el Back para `precioTotal`: la suma de
+      // los renglones si los hay, y si no, el precio capturado en el
+      // encabezado.
+      {
+        const nManoObra = ( manoObra.length > 0 )
+          ? manoObra.reduce( ( nSuma: number, mo: any ) => nSuma + ( Number( mo.precio ) || 0 ), 0 )
+          : ( Number( sale.manoObraPrecio ) || 0 );
+
+        if( nManoObra > 0 ){
+
+          oLines = [];
+          var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "MANO DE OBRA:", iWith: 70 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( Math.round( nManoObra * 100 ) / 100 ), iWith: 30 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+        }
+      }
+
+      // ── REFACCIONES ───────────────────────────────────────────
+      // Lo que se le pone a la pieza y se le cobra al cliente. Se imprime
+      // el PRECIO, nunca el costo.
+      if( refacciones && refacciones.length > 0 ){
 
         oLines = [];
         var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
@@ -1730,31 +1874,55 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "METAL DEL CLIENTE:", iWith: 100 }
+        var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "REFACCIONES:", iWith: 100 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 40 }
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 55 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 30 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "CANT", iWith: 15 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 30 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PRECIO", iWith: 30 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
-        // Sin valor ni total: el metal es del cliente, no se cobra.
-        for( var mc = 0; mc < metalesCliente.length; mc++ ){
-          const mci = metalesCliente[mc];
+        let totalRefacciones = 0;
+
+        for( var re = 0; re < refacciones.length; re++ ){
+
+          const rei = refacciones[re];
+          totalRefacciones += Number( rei.total ) || 0;
+
+          // La descripción trae código y nombre del producto: se parte en
+          // renglones para que no se encime con las columnas de la
+          // derecha.
+          const aDesc = this.fn_partirEnRenglones( String( rei.productDesc || '' ).toUpperCase(), 32 );
+
           oLines = [];
-          var oLine: any = { aling: "Left", size: 7, text: (mci.tipo || '').toUpperCase(), iWith: 40 }
+          var oLine: any = { aling: "Left", size: 7, text: aDesc[0] || '', iWith: 55 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: (Number(mci.gramos) || 0).toFixed(1) + ' gr', iWith: 30 }
+          var oLine: any = { aling: "Right", size: 7, text: String( Number( rei.cantidad ) || 0 ), iWith: 15 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: ( mci.tipo === 'plata' ? 'Ley ' + (Number(mci.kilates) || 0) : (Number(mci.kilates) || 0) + 'K' ), iWith: 30 }
+          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( rei.total ), iWith: 30 }
           oLines.push( oLine );
           oLinesP.push( { oLines: oLines } );
+
+          for( var rd = 1; rd < aDesc.length; rd++ ){
+            oLines = [];
+            var oLine: any = { aling: "Left", size: 7, text: aDesc[rd], iWith: 100 }
+            oLines.push( oLine );
+            oLinesP.push( { oLines: oLines } );
+          }
+
         }
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalRefacciones ), iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
 
       }
 
@@ -1807,30 +1975,143 @@ export class PrintTicketService {
 
       }
 
-      if( bShowTotales ){
+      // ── METAL DEL CLIENTE (activo) ────────────────────────────
+      if( metalesCliente.length > 0 ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "METAL DEL CLIENTE:", iWith: 100 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 40 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 30 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        // Sin valor ni total: el metal es del cliente, no se cobra.
+        for( var mc = 0; mc < metalesCliente.length; mc++ ){
+          const mci = metalesCliente[mc];
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, text: (mci.tipo || '').toUpperCase(), iWith: 40 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: (Number(mci.gramos) || 0).toFixed(1) + ' gr', iWith: 30 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: ( mci.tipo === 'plata' ? 'Ley ' + (Number(mci.kilates) || 0) : (Number(mci.kilates) || 0) + 'K' ), iWith: 30 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+        }
+
+      }
+
+      // ── OTROS SERVICIOS (servicios externos) ──────────────────
+      // Se imprime lo que se le cobra al cliente; el costo del proveedor
+      // NUNCA sale en el ticket.
+      if( serviciosExternos && serviciosExternos.length > 0 ){
+
+        oLines = [];
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "OTROS SERVICIOS:", iWith: 100 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 55 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "CANT", iWith: 15 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PRECIO", iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        let totalServicios = 0;
+
+        for( var se = 0; se < serviciosExternos.length; se++ ){
+
+          const sei = serviciosExternos[se];
+          totalServicios += Number( sei.total ) || 0;
+
+          const aDescSE = this.fn_partirEnRenglones( String( sei.servicioExtName || '' ).toUpperCase(), 32 );
+
+          oLines = [];
+          var oLine: any = { aling: "Left", size: 7, text: aDescSE[0] || '', iWith: 55 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: String( Number( sei.cantidad ) || 0 ), iWith: 15 }
+          oLines.push( oLine );
+          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( sei.total ), iWith: 30 }
+          oLines.push( oLine );
+          oLinesP.push( { oLines: oLines } );
+
+          for( var sd = 1; sd < aDescSE.length; sd++ ){
+            oLines = [];
+            var oLine: any = { aling: "Left", size: 7, text: aDescSE[sd], iWith: 100 }
+            oLines.push( oLine );
+            oLinesP.push( { oLines: oLines } );
+          }
+
+        }
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalServicios ), iWith: 30 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+      }
+
+      // ── CIERRE: TOTAL, ABONADO Y PENDIENTE ────────────────────
+      // Nunca se imprimen costos (refacciones, servicios externos, metal
+      // ni destajo): el ticket cierra únicamente con lo que el cliente
+      // debe. Se imprime siempre, sin depender de bShowTotales, porque
+      // los tres destinatarios llevan el mismo contenido (analisis/030);
+      // bShowTotales se conserva solo por compatibilidad de la firma.
+      // Los importes ya vienen redondeados del Back (getTallerByID).
+      {
+        const nTotalFolio = Number( sale.saleTotal ) || 0;
+        const nAbonado = Number( sale.pagado ) || 0;
+        const nPendiente = Number( sale.pendingAmount ) || 0;
+
         oLines = [];
         var oLine: any = { aling: "Left", size: 7, text: " " }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "SUBTOTAL:", iWith: 75 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sale.saleTotal ), iWith: 25 }
+        var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "IVA:", iWith: 75 }
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL DEL FOLIO:", iWith: 75 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( 0 ), iWith: 25 }
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( nTotalFolio ), iWith: 25 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 75 }
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "ABONADO:", iWith: 75 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( sale.saleTotal ), iWith: 25 }
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( nAbonado ), iWith: 25 }
+        oLines.push( oLine );
+        oLinesP.push( { oLines: oLines } );
+
+        oLines = [];
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "PENDIENTE:", iWith: 75 }
+        oLines.push( oLine );
+        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( nPendiente ), iWith: 25 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
       }

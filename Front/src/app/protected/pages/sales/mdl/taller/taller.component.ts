@@ -28,6 +28,8 @@ import { ActionAuthorizationComponent } from '../../../security/users/mdl/action
 import { PrintTicketService } from 'src/app/protected/services/print-ticket.service';
 import { MetalInventarioService } from 'src/app/protected/services/metal-inventario.service';
 import { GarantiaComponent } from '../garantia/garantia.component';
+import { MotivoCancelacionComponent } from '../motivo-cancelacion/motivo-cancelacion.component';
+import { TallerReimprimirComponent } from '../taller-reimprimir/taller-reimprimir.component';
 
 @Component({
   selector: 'app-taller',
@@ -424,11 +426,126 @@ export class TallerComponent implements OnInit {
   tall_EditManoObraPrecio: boolean = false;
   tall_ViewHeaderImages: boolean = false;
   tall_MakePayment: boolean = false;
-  tall_EditAfterEntregado: boolean = false;
   tall_verCostos: boolean = false;
   tall_DevolutionClient: boolean = false;
 
+  // Encargado de taller y bloqueo (analisis/029)
+  tall_PasarAEncargado: boolean = false;
+  tall_AceptarComoEncargado: boolean = false;
+  tall_DesbloquearTaller: boolean = false;
+
+  // Corregir cliente, vendedor o fecha de ingreso de un folio que ya no
+  // es cotización (analisis/029 punto 7). Es acción especial: se pide al
+  // momento, no basta con tenerla asignada al puesto.
+  tall_EditEncabezadoBloqueado: boolean = false;
+
   bShowActionAuthorization: boolean = false;
+
+  //#region ENCARGADO DE TALLER (analisis/029)
+
+  // Catálogo de estatus: el nombre que se muestra sale de aquí y no de
+  // una lista escrita a mano, porque el catálogo ya creció una vez
+  // (estatus 8) y volvería a quedar desfasado.
+  aTallerStatusCat: any[] = [];
+
+  // Encargados de la sucursal DEL FOLIO (no la del usuario conectado).
+  aEncargados: any[] = [];
+  bSinEncargado: boolean = false;
+  bSoyEncargado: boolean = false;
+
+  // Autorización especial vigente en esta apertura del modal: quien la
+  // presentó puede editar y aceptar en lugar del encargado. Se manda al
+  // servidor en cada escritura porque el candado vive allá.
+  idUserAutorizaEncargado: number = 0;
+
+  // Estatus a los que se puede regresar un folio bloqueado. Nunca a
+  // Cotización: el folio real ya está generado.
+  readonly aEstatusRegreso: any[] = [
+    { idTallerStatus: 2, nombre: 'Pedido de taller' },
+    { idTallerStatus: 3, nombre: 'Asignado' },
+    { idTallerStatus: 8, nombre: 'Encargado de taller' }
+  ];
+
+  /**
+   * Autorización especial que acompaña a las escrituras del folio
+   * mientras está con el encargado. Vacío cuando no hace falta, para no
+   * mandar un campo de más en los folios normales.
+   */
+  get oAuthEncargado(): any {
+    return this.idUserAutorizaEncargado > 0 && this.bEnEncargado
+      ? { auth_idUser: this.idUserAutorizaEncargado }
+      : {};
+  }
+
+  // El folio está esperando la revisión del encargado de taller.
+  get bEnEncargado(): boolean {
+    return Number( this.tallerForm.idTallerStatus ) === 8;
+  }
+
+  // Bloqueado = de Finalizado/Mostrador en adelante. Se deduce del
+  // estatus para no tener dos fuentes de verdad que se contradigan.
+  get bBloqueado(): boolean {
+    const idStatus = Number( this.tallerForm.idTallerStatus );
+    return idStatus === 4 || idStatus === 5 || idStatus === 6 || idStatus === 7;
+  }
+
+  // Quien abre el folio puede aceptarlo o rechazarlo sin pedir nada más.
+  get bPuedeComoEncargado(): boolean {
+    return this.bSoyEncargado || this.idUserAutorizaEncargado > 0;
+  }
+
+  /** Nombre del estatus actual, tomado del catálogo. */
+  get sStatusNombre(): string {
+    const idStatus = Number( this.tallerForm.idTallerStatus );
+    const oStatus = this.aTallerStatusCat.find( s => Number( s.idTallerStatus ) === idStatus );
+    return oStatus ? oStatus.nombre : 'Status ' + idStatus;
+  }
+
+  //#endregion
+
+  //#region ENCABEZADO CONGELADO (analisis/029 punto 7)
+
+  // Autorización especial vigente para corregir cliente, vendedor o fecha
+  // de ingreso. Dura lo que dure esta apertura del modal, igual que la
+  // del encargado: el servidor la vuelve a validar en cada guardado.
+  idUserAutorizaEncabezado: number = 0;
+
+  /**
+   * En cuanto el folio deja de ser Cotización, cliente, vendedor y fecha
+   * de ingreso identifican el folio y el compromiso con el cliente: se
+   * congelan. La descripción y la fecha prometida siguen libres.
+   */
+  get bEncabezadoCongelado(): boolean {
+    return Number( this.tallerForm.idTaller ) > 0
+        && Number( this.tallerForm.idTallerStatus ) !== 1;
+  }
+
+  /**
+   * Los tres campos congelados solo se abren con la autorización
+   * especial, y nunca por encima del bloqueo general (folio bloqueado,
+   * cancelado o con firma pendiente): ahí no se edita nada.
+   */
+  get bEncabezadoEditable(): boolean {
+
+    if( this.bIsReadOnly ){
+      return false;
+    }
+
+    return !this.bEncabezadoCongelado || this.idUserAutorizaEncabezado > 0;
+  }
+
+  /**
+   * Hay que mostrar el candado y la razón: el folio está congelado, no
+   * hay autorización vigente y el bloqueo general no está mandando (si
+   * mandara, ya hay banda propia y el candado sobra).
+   */
+  get bMostrarCandadoEncabezado(): boolean {
+    return this.bEncabezadoCongelado
+        && this.idUserAutorizaEncabezado === 0
+        && !this.bIsReadOnly;
+  }
+
+  //#endregion
 
   // Colapsable: el form de "técnico + precio + AGREGAR" arranca oculto para
   // ahorrar espacio. Click en "+ Agregar mano de obra" lo expande; al guardar
@@ -454,12 +571,29 @@ export class TallerComponent implements OnInit {
   bRapida: boolean = false;
 
   get bIsReadOnly(): boolean {
+
     // Un taller cancelado (analisis/022) es solo consulta, sin excepción
-    // de permisos: ni tall_EditAfterEntregado lo abre.
+    // de permisos.
     if( this.bCancelado ){
       return true;
     }
-    return (this.oFirmaStatus?.firma === 0 || this.tallerForm.idTallerStatus === 5 || this.tallerForm.idTallerStatus === 6) && !this.tall_EditAfterEntregado;
+
+    // Bloqueo del analisis/029: de Finalizado/Mostrador en adelante el
+    // folio se congela SIEMPRE. Ya no existe el permiso que lo abría
+    // (tall_EditAfterEntregado se retiró); para tocarlo hay que
+    // regresarlo de estatus con autorización especial.
+    if( this.bBloqueado ){
+      return true;
+    }
+
+    // Mientras el folio está con el encargado solo él lo edita — o quien
+    // haya presentado la autorización especial en esta misma apertura.
+    if( this.bEnEncargado ){
+      return !this.bPuedeComoEncargado;
+    }
+
+    // Lo de siempre: con la firma del estatus pendiente no se captura.
+    return this.oFirmaStatus?.firma === 0;
   }
 
   get bCancelado(): boolean {
@@ -551,11 +685,15 @@ export class TallerComponent implements OnInit {
     this.tall_EditManoObraPrecio     = oActions.some((action: any) => action.name === 'tall_EditManoObraPrecio');
     this.tall_ViewHeaderImages       = oActions.some((action: any) => action.name === 'tall_ViewHeaderImages');
     this.tall_MakePayment            = oActions.some((action: any) => action.name === 'tall_MakePayment');
-    this.tall_EditAfterEntregado     = oActions.some((action: any) => action.name === 'tall_EditAfterEntregado');
     this.tall_verCostos              = oActions.some((action: any) => action.name === 'tall_verCostos');
     this.tall_DevolutionClient       = oActions.some((action: any) => action.name === 'tall_DevolutionClient');
+    this.tall_PasarAEncargado        = oActions.some((action: any) => action.name === 'tall_PasarAEncargado');
+    this.tall_AceptarComoEncargado   = oActions.some((action: any) => action.name === 'tall_AceptarComoEncargado');
+    this.tall_DesbloquearTaller      = oActions.some((action: any) => action.name === 'tall_DesbloquearTaller');
+    this.tall_EditEncabezadoBloqueado= oActions.some((action: any) => action.name === 'tall_EditEncabezadoBloqueado');
 
     this.fn_loadProductos();
+    this.fn_getTallerStatusCat();
 
     this.timeCBXskeyup
       .pipe( debounceTime(500) )
@@ -604,12 +742,55 @@ export class TallerComponent implements OnInit {
 
   }
 
+  // Reimprimir abre el modal de selección (analisis/030): desde ahí se
+  // elige cliente, taller y/o cada técnico. Antes imprimía directo un solo
+  // papel sin decir para quién era. No cambia nada del folio, así que
+  // funciona bloqueado, entregado o cancelado.
   fn_printTicketTaller() {
     if (this.selectPrinter.idPrinter > 0) {
-      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1);
+      const oParams: any = {
+        idTaller: this.tallerForm.idTaller,
+        idSale: this.tallerForm.idSale,
+        selectPrinter: this.selectPrinter,
+        manoObraList: this.manoObraList
+      };
+      this.servicesGServ.showModalWithParams( TallerReimprimirComponent, oParams, '520px');
     } else {
       this.servicesGServ.showSnakbar('No hay impresora seleccionada');
     }
+  }
+
+  // Técnicos DISTINTOS del folio: un técnico con varios renglones de mano
+  // de obra sigue siendo UN ticket, por eso se deduplica por idUserTecnico.
+  fn_tecnicosDelFolio(): any[] {
+    const aTecnicos: any[] = [];
+    for (const mo of (this.manoObraList || [])) {
+      const idTecnico = Number(mo.idUserTecnico) || 0;
+      if (idTecnico <= 0) { continue; }
+      if (!aTecnicos.some(t => t.idUserTecnico === idTecnico)) {
+        aTecnicos.push({ idUserTecnico: idTecnico, tecnicoDesc: mo.tecnicoDesc || '' });
+      }
+    }
+    return aTecnicos;
+  }
+
+  // Imprime el ticket de cada técnico del folio. Se usa al asignar y
+  // también al crear el pedido cuando el folio ya trae técnicos.
+  private fn_printTicketsTecnicos() {
+    if (this.selectPrinter.idPrinter <= 0) { return; }
+    for (const tecnico of this.fn_tecnicosDelFolio()) {
+      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false, 'TECNICO', tecnico.tecnicoDesc);
+    }
+  }
+
+  // Al nacer el pedido salen el del cliente, el del sobre del taller y,
+  // si ya hay técnicos asignados, el de cada uno. Si todavía no hay
+  // técnico, ese papel sale después, al asignar.
+  private fn_printTicketsPedido() {
+    if (this.selectPrinter.idPrinter <= 0) { return; }
+    this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false, 'CLIENTE');
+    this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false, 'TALLER');
+    this.fn_printTicketsTecnicos();
   }
 
   fn_ShowPayments(){
@@ -641,6 +822,18 @@ export class TallerComponent implements OnInit {
     }
 
   //#region CONEXIONES AL BACK
+
+  // El catálogo de estatus se lee una vez al abrir el modal: de ahí sale
+  // el nombre que se muestra en la banda de firma.
+  fn_getTallerStatusCat() {
+    this.salesServ.CTallerGetStatusCat()
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          this.aTallerStatusCat = resp.status === 0 ? resp.data : [];
+        },
+        error: () => {}
+      });
+  }
 
   fn_loadProductos() {
     // TODO: Cargar productos del back
@@ -819,6 +1012,13 @@ export class TallerComponent implements OnInit {
           this.fn_calcularTotalTaller();
           this.fn_loadTallerHeaderImagesCount(idTaller);
           this.fn_loadSaldoFinoSucursal();
+
+          // Con el folio en manos del encargado hay que saber, antes de
+          // pintar nada, si quien lo abrió es encargado de ESA sucursal:
+          // de eso dependen los botones y el candado de captura.
+          if( this.bEnEncargado ){
+            this.fn_getEncargadosByTaller();
+          }
         }
       },
       error: (ex: HttpErrorResponse) => {
@@ -837,12 +1037,15 @@ export class TallerComponent implements OnInit {
     }
 
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       idSale: this.tallerForm.idSale || '',
       idSeller_idUser: this.tallerForm.idSeller_idUser,
       idCustomer: this.tallerForm.idCustomer,
       descripcion: this.tallerForm.descripcion,
-      fechaIngreso: this.tallerForm.fechaIngreso,
+      fechaIngreso: this.fn_fechaAISO( this.tallerForm.fechaIngreso ),
       fechaPrometidaEntrega: this.tallerForm.fechaPrometidaEntrega,
       bRapida: this.bRapida ? 1 : 0,
       idUser: this.idUserLogON
@@ -859,12 +1062,30 @@ export class TallerComponent implements OnInit {
         : Number( this.precioGarantia );
     }
 
+    // Autorización del candado del encabezado (punto 7). Pisa a la del
+    // encargado porque es la que el servidor revisa para estos tres
+    // campos; si el folio está además con el encargado, quien autoriza
+    // el encabezado es el que queda registrado en la escritura.
+    if( this.idUserAutorizaEncabezado > 0 ){
+      oParams.auth_idUser = this.idUserAutorizaEncabezado;
+    }
+
     var bNew = oParams.idTaller === 0;
 
     this.bShowSpinner = true;
     this.salesServ.CSaveTallerHeader(oParams)
     .subscribe({
       next: (resp: ResponseGet) => {
+
+        // El rechazo del encabezado congelado (punto 7) ya trae el texto
+        // que hay que leer — qué campo se intentó cambiar y que hace
+        // falta autorización — así que se muestra tal cual.
+        if (resp.status !== 0) {
+          this.servicesGServ.showSnakbar(resp.message);
+          this.bShowSpinner = false;
+          return;
+        }
+
         this.servicesGServ.showAlertIA(resp);
         if (resp.status === 0) {
           this.tallerForm.idTaller = resp.data.idTaller;
@@ -1027,6 +1248,9 @@ export class TallerComponent implements OnInit {
 
     // Preparar objeto para enviar al backend
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       idSale: this.tallerForm.idSale,
       refaccion: {
@@ -1081,6 +1305,9 @@ export class TallerComponent implements OnInit {
               this.bShowSpinner = true;
 
               const oParams: any = {
+                // Autorización especial vigente: el servidor la exige para
+                // escribir mientras el folio está con el encargado (analisis/029).
+                ...this.oAuthEncargado,
                 idRefaccion: idRefaccion,
                 idUser: this.idUserLogON
               };
@@ -1123,6 +1350,9 @@ export class TallerComponent implements OnInit {
         this.bShowSpinner = true;
 
         const oParams: any = {
+          // Autorización especial vigente: el servidor la exige para
+          // escribir mientras el folio está con el encargado (analisis/029).
+          ...this.oAuthEncargado,
           idTaller: this.tallerForm.idTaller,
           idSale: this.tallerForm.idSale,
           refaccion: {
@@ -1180,6 +1410,9 @@ export class TallerComponent implements OnInit {
 
     // Preparar objeto para enviar al backend
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       idSale: this.tallerForm.idSale,
       manoObra: {
@@ -1223,6 +1456,9 @@ export class TallerComponent implements OnInit {
               this.bShowSpinner = true;
 
               const oParams: any = {
+                // Autorización especial vigente: el servidor la exige para
+                // escribir mientras el folio está con el encargado (analisis/029).
+                ...this.oAuthEncargado,
                 idManoObra: item.idManoObra,
                 idUser: this.idUserLogON
               };
@@ -1408,6 +1644,9 @@ export class TallerComponent implements OnInit {
     }
 
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       manoObraPrecio: this.tallerForm.manoObraPrecio,
 
@@ -1489,6 +1728,9 @@ export class TallerComponent implements OnInit {
 
     // Preparar objeto para enviar al backend
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       idSale: this.tallerForm.idSale,
       servicioExterno: {
@@ -1535,6 +1777,9 @@ export class TallerComponent implements OnInit {
               this.bShowSpinner = true;
 
               const oParams: any = {
+                // Autorización especial vigente: el servidor la exige para
+                // escribir mientras el folio está con el encargado (analisis/029).
+                ...this.oAuthEncargado,
                 idServicioExternoDetalle: item.idServicioExternoDetalle,
                 idUser: this.idUserLogON
               };
@@ -1694,6 +1939,9 @@ export class TallerComponent implements OnInit {
 
     // Preparar objeto para enviar al backend
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       idSale: this.tallerForm.idSale,
       metalAgranel: {
@@ -1791,6 +2039,9 @@ export class TallerComponent implements OnInit {
               this.bShowSpinner = true;
 
               const oParams: any = {
+                // Autorización especial vigente: el servidor la exige para
+                // escribir mientras el folio está con el encargado (analisis/029).
+                ...this.oAuthEncargado,
                 idMetalAgranel: idMetalAgranel,
                 idUser: this.idUserLogON
               };
@@ -1943,6 +2194,9 @@ export class TallerComponent implements OnInit {
 
     // Preparar objeto para enviar al backend
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       idSale: this.tallerForm.idSale,
       metalCliente: {
@@ -1987,6 +2241,9 @@ export class TallerComponent implements OnInit {
               this.bShowSpinner = true;
 
               const oParams: any = {
+                // Autorización especial vigente: el servidor la exige para
+                // escribir mientras el folio está con el encargado (analisis/029).
+                ...this.oAuthEncargado,
                 idMetalCliente: idMetalCliente,
                 idUser: this.idUserLogON
               };
@@ -2118,6 +2375,9 @@ export class TallerComponent implements OnInit {
     }
 
     const oParams: any = {
+      // Autorización especial vigente: el servidor la exige para
+      // escribir mientras el folio está con el encargado (analisis/029).
+      ...this.oAuthEncargado,
       idTaller: this.tallerForm.idTaller,
       idSale: this.tallerForm.idSale,
       metalFinal: {
@@ -2162,6 +2422,9 @@ export class TallerComponent implements OnInit {
               this.bShowSpinner = true;
 
               const oParams: any = {
+                // Autorización especial vigente: el servidor la exige para
+                // escribir mientras el folio está con el encargado (analisis/029).
+                ...this.oAuthEncargado,
                 idMetalFinal: idMetalFinal
               };
 
@@ -2311,7 +2574,8 @@ export class TallerComponent implements OnInit {
                   next: (respUpdate: ResponseDB_CRUD) => {
                     if (respUpdate.status === 0) {
                       this.servicesGServ.showSnakbar('Pedido de taller creado correctamente');
-                      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false);
+                      // Cliente + taller + un ticket por técnico (analisis/030)
+                      this.fn_printTicketsPedido();
                       // Refrescar la pantalla con lo realmente guardado (status, folio, etc.)
                       this.fn_getTallerData(this.tallerForm.idTaller);
                     } else {
@@ -2358,7 +2622,8 @@ export class TallerComponent implements OnInit {
                       if ((respUpdate as any).data?.idSale) {
                         this.tallerForm.idSale = (respUpdate as any).data.idSale;
                       }
-                      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, false, false);
+                      // Cliente + taller + un ticket por técnico (analisis/030)
+                      this.fn_printTicketsPedido();
                     } else {
                       this.servicesGServ.showSnakbar('Error al crear el pedido de taller');
                     }
@@ -2415,6 +2680,11 @@ export class TallerComponent implements OnInit {
                     if (respUpdate.status === 0) {
                       this.servicesGServ.showSnakbar('Pedido de taller asignado correctamente');
                       this.tallerForm.idTallerStatus = 3;
+                      // Al asignar sale el ticket de cada técnico del folio:
+                      // si al crear el pedido todavía no había técnico, este
+                      // es el momento en que ese papel se imprime
+                      // (analisis/030).
+                      this.fn_printTicketsTecnicos();
                       this.fn_insertFirmaStatus(3);
                       this.fn_loadSaldoFinoSucursal();
                     } else {
@@ -2433,27 +2703,14 @@ export class TallerComponent implements OnInit {
         });
   }
 
-  fn_finalizeTallerOrder() {
+  // El técnico termina y manda el folio a revisión del encargado
+  // (analisis/029). Antes este botón saltaba directo a
+  // Finalizado/Mostrador; ahora ese paso solo lo da el encargado al
+  // aceptar, y el servidor rechaza el salto.
+  fn_pasarAEncargado() {
 
-    if (!this.bShowActionAuthorization) {
-      this.bShowActionAuthorization = true;
-      var paramsMDL: any = { actionName: 'tall_FinalizeOrder', bShowAlert: false };
-      this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
-      .afterClosed().subscribe({
-        next: ( auth_idUser ) =>{
-          this.bShowActionAuthorization = false;
-          if( auth_idUser ){
-            this._fn_finalizeTallerOrder();
-          }
-        }
-      });
-    }
-
-  }
-
-  _fn_finalizeTallerOrder() {
     this.servicesGServ.showDialog('¿Estás seguro?'
-        , 'Está a punto de finalizar este pedido de taller'
+        , 'Está a punto de mandar este folio al encargado de taller para su revisión'
         , '¿Desea continuar?'
         , 'Si', 'No')
         .afterClosed().subscribe({
@@ -2463,7 +2720,7 @@ export class TallerComponent implements OnInit {
 
               const oParams: any = {
                 idTaller: this.tallerForm.idTaller,
-                idTallerStatus: 4,
+                idTallerStatus: 8,
                 precioTotal: this.totalTaller,
                 idUser: this.idUserLogON
               };
@@ -2472,17 +2729,19 @@ export class TallerComponent implements OnInit {
                 .subscribe({
                   next: (respUpdate: ResponseDB_CRUD) => {
                     if (respUpdate.status === 0) {
-                      this.servicesGServ.showSnakbar('Pedido de taller finalizado correctamente');
-                      this.tallerForm.idTallerStatus = 4;
-                      this.fn_insertFirmaStatus(4);
+                      this.servicesGServ.showSnakbar('Folio enviado al encargado de taller');
+                      this.tallerForm.idTallerStatus = 8;
+                      // La firma del estatus queda pendiente igual que en
+                      // los demás pasos; el encargado la aprueba al aceptar.
+                      this.fn_insertFirmaStatus(8);
+                      this.fn_getEncargadosByTaller();
                     } else {
-                      // Bloqueo (p. ej. el metal final excede el inventario del técnico)
                       this.servicesGServ.showAlertIA(respUpdate);
                     }
                     this.bShowSpinner = false;
                   },
                   error: (ex: HttpErrorResponse) => {
-                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al finalizar pedido de taller');
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al mandar el folio al encargado');
                     this.bShowSpinner = false;
                   }
                 });
@@ -2490,6 +2749,231 @@ export class TallerComponent implements OnInit {
           }
         });
   }
+
+  //#region ACEPTACIÓN Y RECHAZO DEL ENCARGADO (analisis/029)
+
+  /** Quiénes son los encargados de la sucursal DEL FOLIO. */
+  fn_getEncargadosByTaller(): void {
+
+    this.salesServ.CGetEncargadosByTaller({ idTaller: this.tallerForm.idTaller })
+      .subscribe({
+        next: (resp: ResponseGet) => {
+          if (resp.status === 0) {
+            this.aEncargados    = resp.data.rows || [];
+            this.bSinEncargado  = !!resp.data.bSinEncargado;
+            this.bSoyEncargado  = !!resp.data.bSoyEncargado;
+          }
+        },
+        error: () => {
+          // Sin el dato se asume lo más restrictivo: no soy encargado.
+          this.aEncargados   = [];
+          this.bSinEncargado = false;
+          this.bSoyEncargado = false;
+        }
+      });
+
+  }
+
+  /**
+   * Pide la autorización especial de tall_AceptarComoEncargado y ejecuta
+   * la acción con el id de quien autorizó. Si quien está en pantalla ya
+   * es encargado de la sucursal, no se pide nada.
+   */
+  private fn_conAutorizacionEncargado( fnAccion: ( auth_idUser: number ) => void ): void {
+
+    if (this.bSoyEncargado) {
+      fnAccion(0);
+      return;
+    }
+
+    if (this.bShowActionAuthorization) {
+      return;
+    }
+
+    this.bShowActionAuthorization = true;
+    const paramsMDL: any = { actionName: 'tall_AceptarComoEncargado', bShowAlert: false };
+
+    this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px')
+      .afterClosed().subscribe({
+        next: ( auth_idUser ) => {
+          this.bShowActionAuthorization = false;
+          if ( auth_idUser ) {
+            // Queda vigente mientras el modal siga abierto: con ella se
+            // puede además editar el folio en lugar del encargado.
+            this.idUserAutorizaEncargado = Number( auth_idUser );
+            fnAccion( Number( auth_idUser ) );
+          }
+        }
+      });
+
+  }
+
+  /** Nombres de los encargados de la sucursal, para la banda de aviso. */
+  fn_encargadosDesc(): string {
+    return this.aEncargados.map( e => e.name ).join(', ');
+  }
+
+  /**
+   * Candado del encabezado (analisis/029 punto 7): pide la autorización
+   * especial para corregir cliente, vendedor o fecha de ingreso de un
+   * folio que ya no es cotización. Queda vigente mientras el modal siga
+   * abierto, igual que la del encargado, y viaja al servidor en el
+   * guardado del encabezado — el candado de verdad vive allá.
+   */
+  fn_autorizarEdicionEncabezado(): void {
+
+    if( this.bShowActionAuthorization ){
+      return;
+    }
+
+    this.bShowActionAuthorization = true;
+    const paramsMDL: any = { actionName: 'tall_EditEncabezadoBloqueado', bShowAlert: false };
+
+    this.servicesGServ.showModalWithParams( ActionAuthorizationComponent, paramsMDL, '400px' )
+      .afterClosed().subscribe({
+        next: ( auth_idUser ) => {
+          this.bShowActionAuthorization = false;
+          if( auth_idUser ){
+            this.idUserAutorizaEncabezado = Number( auth_idUser );
+            this.servicesGServ.showSnakbar('Autorizado: puede corregir cliente, vendedor y fecha de ingreso');
+          }
+        }
+      });
+
+  }
+
+  /**
+   * Fecha que se manda al servidor. El datepicker deja un Date en hora
+   * local y al serializarlo a JSON se va a UTC, con lo que en México la
+   * fecha se recorre un día; el servidor compara la fecha de ingreso
+   * contra la guardada, así que ese corrimiento pediría autorización sin
+   * que nadie hubiera cambiado nada. Se manda armada a mano.
+   */
+  private fn_fechaAISO( valor: any ): string {
+
+    if( !valor ){
+      return '';
+    }
+
+    if( valor instanceof Date ){
+      const sMes = ( '0' + ( valor.getMonth() + 1 ) ).slice( -2 );
+      const sDia = ( '0' + valor.getDate() ).slice( -2 );
+      return `${ valor.getFullYear() }-${ sMes }-${ sDia }`;
+    }
+
+    return String( valor );
+  }
+
+  /** Solo pide la autorización, para poder capturar sin aceptar todavía. */
+  fn_autorizarEdicionComoEncargado(): void {
+    this.fn_conAutorizacionEncargado(() => {
+      this.servicesGServ.showSnakbar('Autorizado: puede editar el folio en lugar del encargado');
+    });
+  }
+
+  fn_aceptarComoEncargado(): void {
+
+    this.fn_conAutorizacionEncargado(( auth_idUser: number ) => {
+
+      this.servicesGServ.showDialog('¿Estás seguro?'
+          , 'Al aceptar, el folio pasa a Finalizado/Mostrador y queda bloqueado: ya no se podrá modificar'
+          , '¿Desea continuar?'
+          , 'Si', 'No')
+          .afterClosed().subscribe({
+            next: (resp) => {
+              if (!resp) return;
+
+              this.bShowSpinner = true;
+
+              const oParams: any = {
+                idTaller: this.tallerForm.idTaller,
+                precioTotal: this.totalTaller
+              };
+              if (auth_idUser > 0) {
+                oParams.auth_idUser = auth_idUser;
+              }
+
+              this.salesServ.CAceptarTallerComoEncargado(oParams)
+                .subscribe({
+                  next: (respUpdate: any) => {
+                    if (respUpdate.status === 0) {
+                      this.servicesGServ.showSnakbar(respUpdate.message || 'Folio aceptado');
+                      this.tallerForm.idTallerStatus = 4;
+                      // La firma de Finalizado/Mostrador queda pendiente
+                      // igual que antes: la aceptación del encargado no
+                      // sustituye a la conformidad de mostrador.
+                      this.fn_insertFirmaStatus(4);
+                      this.fn_getTallerData(this.tallerForm.idTaller);
+                    } else {
+                      this.servicesGServ.showAlertIA(respUpdate);
+                    }
+                    this.bShowSpinner = false;
+                  },
+                  error: (ex: HttpErrorResponse) => {
+                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al aceptar el folio');
+                    this.bShowSpinner = false;
+                  }
+                });
+            }
+          });
+
+    });
+
+  }
+
+  fn_rechazarComoEncargado(): void {
+
+    this.fn_conAutorizacionEncargado(( auth_idUser: number ) => {
+
+      // El motivo es obligatorio y se captura en el modal de motivo que
+      // ya usan la cancelación y la devolución: nada de window.prompt.
+      const paramsMDL: any = {
+        titulo: 'Rechazar el folio',
+        mensaje: 'El folio regresa con el técnico (Asignado) para que lo corrija. El motivo queda en el historial de firmas.',
+        sLabelMotivo: 'Motivo del rechazo',
+        sBotonConfirmar: 'Rechazar'
+      };
+
+      this.servicesGServ.showModalWithParams( MotivoCancelacionComponent, paramsMDL, '520px')
+        .afterClosed().subscribe({
+          next: ( motivo: any ) => {
+            if (!motivo) return;
+
+            this.bShowSpinner = true;
+
+            const oParams: any = {
+              idTaller: this.tallerForm.idTaller,
+              motivo: motivo
+            };
+            if (auth_idUser > 0) {
+              oParams.auth_idUser = auth_idUser;
+            }
+
+            this.salesServ.CRechazarTallerComoEncargado(oParams)
+              .subscribe({
+                next: (respUpdate: any) => {
+                  if (respUpdate.status === 0) {
+                    this.servicesGServ.showSnakbar(respUpdate.message || 'Folio rechazado: regresó con el técnico');
+                    this.idUserAutorizaEncargado = 0;
+                    this.fn_getTallerData(this.tallerForm.idTaller);
+                  } else {
+                    this.servicesGServ.showAlertIA(respUpdate);
+                  }
+                  this.bShowSpinner = false;
+                },
+                error: (ex: HttpErrorResponse) => {
+                  this.servicesGServ.showSnakbar(ex.error.message || 'Error al rechazar el folio');
+                  this.bShowSpinner = false;
+                }
+              });
+          }
+        });
+
+    });
+
+  }
+
+  //#endregion
 
   fn_deliverTallerOrder() {
 
@@ -2534,7 +3018,9 @@ export class TallerComponent implements OnInit {
                       this.servicesGServ.showSnakbar('Pedido de taller entregado correctamente');
                       this.tallerForm.idTallerStatus = 5;
                       this.tallerForm.fechaEntrega = respUpdate.data.fechaEntrega;
-                      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true);
+                      // La entrega se queda igual que siempre (con firmas) y
+                      // es el papel del cliente (analisis/030).
+                      this.printTicketServ.printTicketTaller('TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true, 'CLIENTE');
                       this.fn_insertFirmaStatus(5);
                     } else {
                       this.servicesGServ.showSnakbar('Error al entregar el pedido de taller');
@@ -2551,68 +3037,74 @@ export class TallerComponent implements OnInit {
         });
   }
 
-  fn_editAfterEntregado(): void {
-    if (!this.bShowActionAuthorization) {
-      this.bShowActionAuthorization = true;
-      var paramsMDL: any = { actionName: 'tall_EditAfterEntregado', bShowAlert: false };
-      this.servicesGServ.showModalWithParams(ActionAuthorizationComponent, paramsMDL, '400px')
-        .afterClosed().subscribe({
-          next: (auth_idUser) => {
-            this.bShowActionAuthorization = false;
-            if (auth_idUser) {
-              const dialogRef = this.dialog.open(TallerFirmaModalComponent, {
-                data: {
-                  idTaller: this.tallerForm.idTaller,
-                  currentStatus: this.tallerForm.idTallerStatus,
-                  bEditAfterEntregado: true
-                },
-                disableClose: true
-              });
-              dialogRef.afterClosed().subscribe((result: any) => {
-                if (result) {
-                  this._fn_procesarEditAfterEntregado(auth_idUser, result.targetStatus, result.comentario);
-                }
-              });
-            }
-          }
-        });
+  /**
+   * Desbloquear un folio (analisis/029): regresarlo a un estatus previo
+   * con autorización especial y motivo. Solo desde Finalizado/Mostrador;
+   * un folio entregado ya no se toca y el servidor lo rechaza.
+   */
+  fn_regresarEstatus(): void {
+
+    if (this.bShowActionAuthorization) {
+      return;
     }
+
+    this.bShowActionAuthorization = true;
+    const paramsMDL: any = { actionName: 'tall_DesbloquearTaller', bShowAlert: false };
+
+    this.servicesGServ.showModalWithParams(ActionAuthorizationComponent, paramsMDL, '400px')
+      .afterClosed().subscribe({
+        next: (auth_idUser) => {
+          this.bShowActionAuthorization = false;
+          if (!auth_idUser) return;
+
+          const dialogRef = this.dialog.open(TallerFirmaModalComponent, {
+            data: {
+              idTaller: this.tallerForm.idTaller,
+              currentStatus: this.tallerForm.idTallerStatus,
+              bRegresarEstatus: true,
+              bRegresoAPedido: true,
+              aEstatusDestino: this.aEstatusRegreso
+            },
+            disableClose: true
+          });
+
+          dialogRef.afterClosed().subscribe((result: any) => {
+            if (result) {
+              this._fn_procesarRegresarEstatus(Number(auth_idUser), result.targetStatus, result.comentario);
+            }
+          });
+        }
+      });
+
   }
 
-  _fn_procesarEditAfterEntregado(auth_idUser: number, targetStatus: number, motivo: string): void {
+  _fn_procesarRegresarEstatus(auth_idUser: number, targetStatus: number, motivo: string): void {
+
     this.bShowSpinner = true;
-    const oParamsStatus: any = {
+
+    const oParams: any = {
       idTaller: this.tallerForm.idTaller,
       idTallerStatus: targetStatus,
-      precioTotal: this.totalTaller,
-      idUser: this.idUserLogON
+      motivo: motivo,
+      auth_idUser: auth_idUser
     };
-    this.salesServ.CUpdateTallerStatus(oParamsStatus)
+
+    // El servidor hace todo en una transacción: reversa metal final y
+    // destajo, deja el estatus destino y registra quién autorizó.
+    this.salesServ.CRegresarEstatusTaller(oParams)
       .subscribe({
         next: (respUpdate: any) => {
           if (respUpdate.status === 0) {
-            this.salesServ.CInsertUpdateTallerFirma({
-              idFirma: 0,
-              idTaller: this.tallerForm.idTaller,
-              idTallerStatus: targetStatus,
-              idUserCreate: this.idUserLogON,
-              comentario: motivo
-            }).subscribe({
-              next: (r: any) => {
-                this.oFirmaStatus = { firma: 0, idFirma: r.insertID, idTallerStatus: targetStatus, comentario: motivo, userFirmaDesc: '' };
-              },
-              error: () => {}
-            });
-            const statusLabels: any = { 2: 'Pedido', 3: 'Asignado', 4: 'Finalizado', 5: 'Entregado', 6: 'Devolución' };
-            this.servicesGServ.showSnakbar('Estado cambiado a: ' + (statusLabels[targetStatus] || targetStatus));
-            this.tallerForm.idTallerStatus = targetStatus;
+            this.servicesGServ.showSnakbar(respUpdate.message || 'Folio desbloqueado');
+            this.idUserAutorizaEncargado = 0;
+            this.fn_getTallerData(this.tallerForm.idTaller);
           } else {
-            this.servicesGServ.showSnakbar(respUpdate.message || 'Error al cambiar el estado');
+            this.servicesGServ.showAlertIA(respUpdate);
           }
           this.bShowSpinner = false;
         },
         error: (ex: HttpErrorResponse) => {
-          this.servicesGServ.showSnakbar(ex.error.message || 'Error al cambiar el estado');
+          this.servicesGServ.showSnakbar(ex.error.message || 'Error al regresar el estatus');
           this.bShowSpinner = false;
         }
       });

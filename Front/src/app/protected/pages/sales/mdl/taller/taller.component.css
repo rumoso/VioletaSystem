@@ -1568,6 +1568,25 @@ button:hover {
 .gar-band--cancelado { background: #ffebee; border-left: 4px solid #c62828; font-size: 13px; color: #5d4037; }
 .gar-band--cancelado .gar-band-tit { color: #b71c1c; margin-bottom: 4px; }
 
+/* Folio bloqueado y folio con el encargado (analisis/029): mismo patrón
+   visual que la banda de cancelado, con su propio color. */
+.gar-band--bloqueado { background: #eceff1; border-left: 4px solid #455a64; font-size: 13px; color: #37474f; }
+.gar-band--bloqueado .gar-band-tit { color: #263238; margin-bottom: 4px; }
+
+.gar-band--encargado { background: #ede7f6; border-left: 4px solid #5e35b1; font-size: 13px; color: #4527a0; }
+.gar-band--encargado .gar-band-tit { color: #4527a0; margin-bottom: 4px; }
+.gar-band-aviso { font-weight: 600; color: #bf360c; }
+
+/* Encabezado congelado (analisis/029 punto 7): mismo patrón de banda, con
+   el color de "ojo aquí" sin llegar al rojo del cancelado. */
+.gar-band--encabezado { background: #fff8e1; border-left: 4px solid #ef6c00; font-size: 13px; color: #6d4c41; padding: 8px 16px; }
+.gar-band--encabezado .gar-band-tit { color: #6d4c41; margin-bottom: 0; }
+.gar-band--encabezado .gar-band-tit span { flex: 1 1 auto; }
+
+/* Candado en el campo congelado: ocupa el lugar del botón de limpiar. */
+.th-candado { color: #ef6c00; }
+.th-input:disabled { background: #f5f5f5; color: #757575; cursor: not-allowed; }
+
 .gar-band-tit {
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; color: #4a148c; margin-bottom: 10px;

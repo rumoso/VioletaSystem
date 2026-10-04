@@ -1,28 +1,39 @@
 <div style="padding: 24px; min-width: 450px; max-width: 550px;">
 
-  <!-- ===================== MODO EDITAR DESPUÉS DE ENTREGADO ===================== -->
-  <ng-container *ngIf="data?.bEditAfterEntregado">
+  <!-- ===================== MODO REGRESAR ESTATUS (analisis/029) ===================== -->
+  <ng-container *ngIf="data?.bRegresarEstatus">
 
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #FF6F00; padding-bottom: 12px;">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <mat-icon style="color: #FF6F00; font-size: 28px; width: 28px; height: 28px;">edit_note</mat-icon>
-        <h2 style="margin: 0; color: #333;">Editar estado del taller</h2>
+        <mat-icon style="color: #FF6F00; font-size: 28px; width: 28px; height: 28px;">lock_open</mat-icon>
+        <h2 style="margin: 0; color: #333;">Regresar estatus del taller</h2>
       </div>
       <button mat-icon-button (click)="fn_noFirmar()">
         <mat-icon>close</mat-icon>
       </button>
     </div>
 
+    <!-- El aviso va aquí y no en un snackbar: regresar el folio deshace
+         movimientos de inventario y de comisiones, y quien lo autoriza
+         tiene que verlo ANTES de confirmar. -->
     <div style="background: #FFF3E0; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; border-left: 4px solid #FF6F00;">
-      <p style="margin: 0; font-size: 13px; color: #666;">Seleccione el estado al que desea mover el taller y registre el motivo del cambio:</p>
+      <p style="margin: 0; font-size: 13px; color: #666;">
+        El folio quedará <b>desbloqueado</b> en el estatus que elija y se
+        <b>reversarán el metal final entregado al técnico y su destajo</b>.
+        Se vuelven a aplicar cuando el folio avance otra vez.
+      </p>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #666;" *ngIf="data?.bRegresoAPedido">
+        Si regresa hasta <b>Pedido de taller</b>, además se reversa el metal
+        que se le había asignado al técnico.
+      </p>
       <p style="margin: 4px 0 0; font-size: 12px; color: #888;">Taller: {{ data?.idTaller }}</p>
     </div>
 
     <mat-form-field style="width: 100%; margin-bottom: 8px;">
-      <mat-label>Estado destino <span style="color: #f44336; font-size: 11px;">(obligatorio)</span></mat-label>
+      <mat-label>Estatus destino <span style="color: #f44336; font-size: 11px;">(obligatorio)</span></mat-label>
       <mat-select [(ngModel)]="selectedStatus">
-        <mat-option *ngFor="let s of statusOptions" [value]="s.value" [disabled]="s.value === data?.currentStatus">
-          {{ s.label }}
+        <mat-option *ngFor="let s of statusOptions" [value]="s.idTallerStatus" [disabled]="s.idTallerStatus === data?.currentStatus">
+          {{ s.nombre }}
         </mat-option>
       </mat-select>
     </mat-form-field>
@@ -31,7 +42,7 @@
       <mat-label>Motivo del cambio <span style="color: #f44336; font-size: 11px;">(obligatorio)</span></mat-label>
       <textarea matInput
                 [(ngModel)]="comentario"
-                placeholder="Describa el motivo del cambio de estado..."
+                placeholder="Describa el motivo por el que se regresa el folio..."
                 rows="3"
                 style="resize: none;">
       </textarea>
@@ -41,15 +52,15 @@
       <button mat-raised-button (click)="fn_noFirmar()" style="background: #fff; color: #555; border: 1px solid #ccc;">
         <mat-icon>cancel</mat-icon> Cancelar
       </button>
-      <button mat-raised-button (click)="fn_confirmarEditAfterEntregado()" style="background: #FF6F00; color: #fff;">
-        <mat-icon>check_circle</mat-icon> Confirmar cambio
+      <button mat-raised-button (click)="fn_confirmarRegresarEstatus()" style="background: #FF6F00; color: #fff;">
+        <mat-icon>lock_open</mat-icon> Regresar estatus
       </button>
     </div>
 
   </ng-container>
 
   <!-- ===================== MODO DEVOLUCIÓN ===================== -->
-  <ng-container *ngIf="data?.bDevolucion && !data?.bEditAfterEntregado">
+  <ng-container *ngIf="data?.bDevolucion && !data?.bRegresarEstatus">
 
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #f44336; padding-bottom: 12px;">
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -88,7 +99,7 @@
   </ng-container>
 
   <!-- ===================== MODO FIRMA NORMAL ===================== -->
-  <ng-container *ngIf="!data?.bDevolucion && !data?.bEditAfterEntregado">
+  <ng-container *ngIf="!data?.bDevolucion && !data?.bRegresarEstatus">
 
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #6200EA; padding-bottom: 12px;">
       <div style="display: flex; align-items: center; gap: 10px;">

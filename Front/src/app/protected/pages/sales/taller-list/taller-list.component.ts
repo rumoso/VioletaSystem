@@ -266,9 +266,13 @@ constructor(
     );
   }
 
-  // Muestra el checkbox en items con firma pendiente (status 0) sin importar permisos
+  // Muestra el checkbox en items con firma pendiente (status 0) sin importar permisos.
+  // El estatus 8 (Encargado de taller) queda fuera a propósito: esa firma
+  // no se aprueba en masa, la resuelve el encargado aceptando o
+  // rechazando el folio desde el modal (analisis/029).
   fn_canFirmarItem( item: any ): boolean {
-    return item.firmaStatus === 0 && item.idTallerStatus >= 3;
+    return item.firmaStatus === 0
+        && ( item.idTallerStatus === 3 || item.idTallerStatus === 4 || item.idTallerStatus === 5 );
   }
 
   fn_toggleFirmaSeleccion( item: any ): void {
