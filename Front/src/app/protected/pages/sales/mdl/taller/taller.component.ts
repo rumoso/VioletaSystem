@@ -1093,6 +1093,16 @@ export class TallerComponent implements OnInit {
           if(bNew)
             this.tallerForm.idTallerStatus = 1;
 
+          // Una RÁPIDA no se queda en cotización: con el encabezado
+          // guardado se genera de una vez su folio (TALLR) y queda
+          // pendiente de entregar (analisis/031). El encabezado tiene
+          // que guardarse primero porque el folio se genera sobre la
+          // nota que el guardado creó.
+          if( bNew && this.bRapida ){
+            this._fn_generarFolioRapida();
+            return;
+          }
+
           this.fn_getTallerData(this.tallerForm.idTaller);
         }
         this.bShowSpinner = false;
@@ -2553,6 +2563,45 @@ export class TallerComponent implements OnInit {
   // La rápida no pasa por técnico, encargado ni mostrador: se genera el
   // folio (queda como Pedido, editable) y de ahí se entrega de un golpe.
 
+  // Genera el folio de la rápida (Cotización -> Pedido de taller). Sin
+  // confirmación: lo llama el guardado del encabezado, donde el usuario
+  // ya decidió al darle "Generar rápida", y el botón de respaldo, que
+  // pregunta antes.
+  private _fn_generarFolioRapida() {
+
+    this.bShowSpinner = true;
+    this.fn_calcularTotalTaller();
+
+    const oParams: any = {
+      idTaller: this.tallerForm.idTaller,
+      idTallerStatus: 2,
+      precioTotal: this.totalTaller,
+      idUser: this.idUserLogON
+    };
+
+    this.salesServ.CUpdateTallerStatus(oParams)
+      .subscribe({
+        next: (respUpdate: ResponseDB_CRUD) => {
+          if (respUpdate.status === 0) {
+            // No se imprime nada todavía: el ticket del cliente sale
+            // hasta que se entrega.
+            this.servicesGServ.showSnakbar('Orden rápida generada: captura lo que lleve y entrégala.');
+            this.fn_getTallerData(this.tallerForm.idTaller);
+          } else {
+            this.servicesGServ.showSnakbar(respUpdate.message || 'No se pudo generar la orden rápida');
+            this.bShowSpinner = false;
+          }
+        },
+        error: (ex: HttpErrorResponse) => {
+          this.servicesGServ.showSnakbar(ex.error?.message || 'No se pudo generar la orden rápida');
+          this.bShowSpinner = false;
+        }
+      });
+
+  }
+
+  // Botón de respaldo: una rápida que se quedó en cotización (creada
+  // antes de este cambio, o porque falló la generación al guardar).
   fn_generarRapida() {
 
     this.servicesGServ.showDialog('¿Estás seguro?'
@@ -2562,36 +2611,7 @@ export class TallerComponent implements OnInit {
         .afterClosed().subscribe({
           next: (resp) => {
             if (resp) {
-
-              this.bShowSpinner = true;
-              this.fn_calcularTotalTaller();
-
-              const oParams: any = {
-                idTaller: this.tallerForm.idTaller,
-                idTallerStatus: 2,
-                precioTotal: this.totalTaller,
-                idUser: this.idUserLogON
-              };
-
-              this.salesServ.CUpdateTallerStatus(oParams)
-                .subscribe({
-                  next: (respUpdate: ResponseDB_CRUD) => {
-                    if (respUpdate.status === 0) {
-                      // No se imprime nada todavía: el ticket del cliente
-                      // sale hasta que se entrega.
-                      this.servicesGServ.showSnakbar('Orden rápida generada: captura lo que lleve y entrégala.');
-                      this.fn_getTallerData(this.tallerForm.idTaller);
-                    } else {
-                      this.servicesGServ.showSnakbar(respUpdate.message || 'No se pudo generar la orden rápida');
-                      this.bShowSpinner = false;
-                    }
-                  },
-                  error: (ex: HttpErrorResponse) => {
-                    this.servicesGServ.showSnakbar(ex.error?.message || 'No se pudo generar la orden rápida');
-                    this.bShowSpinner = false;
-                  }
-                });
-
+              this._fn_generarFolioRapida();
             }
           }
         });

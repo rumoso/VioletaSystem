@@ -196,7 +196,7 @@
         <button *ngIf="tall_CreateEditHeader && !bIsReadOnly"
           mat-raised-button color="primary" type="button" class="taller-btn-compact"
           (click)="fn_saveTaller()">
-          <mat-icon>save</mat-icon>{{ tallerForm.idTaller == 0 ? 'Generar folio' : 'Actualizar' }}
+          <mat-icon>save</mat-icon>{{ tallerForm.idTaller == 0 ? ( bRapida ? 'Generar rápida' : 'Generar folio' ) : 'Actualizar' }}
         </button>
 
         <!-- Total: pill compacto, alineado con los botones -->
