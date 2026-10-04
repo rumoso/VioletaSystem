@@ -32,7 +32,7 @@ const ORDEN = {
 // reversas. El paso ENCARGADO -> MOSTRADOR tampoco: lo hace
 // `aceptarTallerComoEncargado`, que valida quién acepta.
 const _TRANSICIONES = {
-    [ESTATUS.COTIZACION]: [ ESTATUS.PEDIDO, ESTATUS.ENTREGADO ], // ENTREGADO = orden rápida
+    [ESTATUS.COTIZACION]: [ ESTATUS.PEDIDO ],
     [ESTATUS.PEDIDO]: [ ESTATUS.ASIGNADO ],
     [ESTATUS.ASIGNADO]: [ ESTATUS.ENCARGADO ],
     [ESTATUS.ENCARGADO]: [ ESTATUS.ASIGNADO ],                   // rechazo del encargado
@@ -52,8 +52,16 @@ const PERMISO_POR_ESTATUS = {
     [ESTATUS.DEVOLUCION]: 'tall_DevolutionClient'
 };
 
-const fn_transicionValida = (actual, destino) => {
+// Las ÓRDENES RÁPIDAS no pasan por técnico, encargado ni mostrador: nacen
+// como Pedido (con folio de rápida) y de ahí se entregan de un golpe. Por
+// eso el salto Pedido -> Entregado solo vale para ellas.
+const fn_transicionValida = (actual, destino, bRapida = false) => {
     const a = Number(actual), d = Number(destino);
+
+    if ( bRapida && a === ESTATUS.PEDIDO && d === ESTATUS.ENTREGADO ) {
+        return true;
+    }
+
     return ( _TRANSICIONES[a] || [] ).includes(d);
 };
 

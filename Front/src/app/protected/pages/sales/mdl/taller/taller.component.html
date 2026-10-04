@@ -80,11 +80,21 @@
 
         <!-- Solo en los folios que nacieron como rápida ("Nueva rápida" de
              la lista): un taller normal arranca como cotización y su
-             camino es Crear pedido, no convertirse en rápida. -->
-        <button *ngIf="bRapida && tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder && ( manoObraList.length > 0 || refaccionesList.length > 0 )"
+             camino es Crear pedido, no convertirse en rápida.
+             Genera el folio de rápida y lo deja PENDIENTE de entregar,
+             para capturarle mano de obra y refacciones (analisis/031). -->
+        <button *ngIf="bRapida && tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder"
           mat-raised-button color="warn" type="button" class="taller-btn-compact"
-          (click)="fn_createTallerRapidaOrder()">
-          <mat-icon>playlist_add</mat-icon>Crear Rápida
+          (click)="fn_generarRapida()">
+          <mat-icon>bolt</mat-icon>Generar rápida
+        </button>
+
+        <!-- La rápida se entrega de un golpe: sin firmas, sin encargado y
+             sin autorización. Solo sale el ticket del cliente. -->
+        <button *ngIf="bRapida && tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 2"
+          mat-raised-button color="success" type="button" class="taller-btn-compact"
+          (click)="fn_entregarRapida()">
+          <mat-icon>check_circle</mat-icon>Entregar
         </button>
 
         <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 1 && tall_CreateOrder && !bRapida"
@@ -93,7 +103,7 @@
           <mat-icon>playlist_add</mat-icon>Crear pedido
         </button>
 
-        <button *ngIf="tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 2"
+        <button *ngIf="!bRapida && tallerForm.idTaller > 0 && tallerForm.idTallerStatus === 2"
           mat-raised-button color="accent" type="button" class="taller-btn-compact"
           (click)="fn_assignTallerOrder()">
           <mat-icon>assignment</mat-icon>Asignar

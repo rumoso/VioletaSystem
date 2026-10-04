@@ -2549,17 +2549,66 @@ export class TallerComponent implements OnInit {
       });
   }
 
-  fn_createTallerRapidaOrder() {
+  // ── ÓRDENES RÁPIDAS (analisis/031) ────────────────────────────
+  // La rápida no pasa por técnico, encargado ni mostrador: se genera el
+  // folio (queda como Pedido, editable) y de ahí se entrega de un golpe.
+
+  fn_generarRapida() {
+
     this.servicesGServ.showDialog('¿Estás seguro?'
-        , 'Está a punto de convertir este taller en un pedido rápida'
+        , 'Se va a generar el folio de la orden rápida'
         , '¿Desea continuar?'
         , 'Si', 'No')
         .afterClosed().subscribe({
           next: (resp) => {
             if (resp) {
-              this.bShowSpinner = true;
 
-              // Calcular el total del taller
+              this.bShowSpinner = true;
+              this.fn_calcularTotalTaller();
+
+              const oParams: any = {
+                idTaller: this.tallerForm.idTaller,
+                idTallerStatus: 2,
+                precioTotal: this.totalTaller,
+                idUser: this.idUserLogON
+              };
+
+              this.salesServ.CUpdateTallerStatus(oParams)
+                .subscribe({
+                  next: (respUpdate: ResponseDB_CRUD) => {
+                    if (respUpdate.status === 0) {
+                      // No se imprime nada todavía: el ticket del cliente
+                      // sale hasta que se entrega.
+                      this.servicesGServ.showSnakbar('Orden rápida generada: captura lo que lleve y entrégala.');
+                      this.fn_getTallerData(this.tallerForm.idTaller);
+                    } else {
+                      this.servicesGServ.showSnakbar(respUpdate.message || 'No se pudo generar la orden rápida');
+                      this.bShowSpinner = false;
+                    }
+                  },
+                  error: (ex: HttpErrorResponse) => {
+                    this.servicesGServ.showSnakbar(ex.error?.message || 'No se pudo generar la orden rápida');
+                    this.bShowSpinner = false;
+                  }
+                });
+
+            }
+          }
+        });
+
+  }
+
+  fn_entregarRapida() {
+
+    this.servicesGServ.showDialog('¿Estás seguro?'
+        , 'Se va a entregar la orden rápida e imprimir el ticket del cliente'
+        , '¿Desea continuar?'
+        , 'Si', 'No')
+        .afterClosed().subscribe({
+          next: (resp) => {
+            if (resp) {
+
+              this.bShowSpinner = true;
               this.fn_calcularTotalTaller();
 
               const oParams: any = {
@@ -2573,24 +2622,33 @@ export class TallerComponent implements OnInit {
                 .subscribe({
                   next: (respUpdate: ResponseDB_CRUD) => {
                     if (respUpdate.status === 0) {
-                      this.servicesGServ.showSnakbar('Pedido de taller creado correctamente');
-                      // Cliente + taller + un ticket por técnico (analisis/030)
-                      this.fn_printTicketsPedido();
-                      // Refrescar la pantalla con lo realmente guardado (status, folio, etc.)
+
+                      // Solo el ticket del cliente: la rápida se entrega en
+                      // el momento, no hay sobre que guardar ni técnico que
+                      // espere el papel.
+                      if (this.selectPrinter?.idPrinter > 0) {
+                        this.printTicketServ.printTicketTaller(
+                          'TallerHeader', this.tallerForm.idTaller, this.selectPrinter.idPrinter, 1, true, true, 'CLIENTE');
+                      }
+
+                      this.servicesGServ.showSnakbar('Orden rápida entregada');
                       this.fn_getTallerData(this.tallerForm.idTaller);
+
                     } else {
-                      this.servicesGServ.showSnakbar('Error al crear el pedido de taller');
+                      this.servicesGServ.showSnakbar(respUpdate.message || 'No se pudo entregar la orden rápida');
                       this.bShowSpinner = false;
                     }
                   },
                   error: (ex: HttpErrorResponse) => {
-                    this.servicesGServ.showSnakbar(ex.error.message || 'Error al crear pedido de taller');
+                    this.servicesGServ.showSnakbar(ex.error?.message || 'No se pudo entregar la orden rápida');
                     this.bShowSpinner = false;
                   }
                 });
+
             }
           }
         });
+
   }
 
   fn_createTallerOrder() {

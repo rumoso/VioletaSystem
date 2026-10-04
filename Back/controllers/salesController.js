@@ -448,6 +448,16 @@ const insertPayments = async(req, res) => {
                     console.log('No se pudo generar la comisión de taller:', comisionError.message);
                 }
 
+                // En una RÁPIDA el destajo no se genera al entregar, porque
+                // no pasa por Mostrador: se genera cuando el folio queda
+                // pagado (analisis/031). `fn_registrarDestajoByTaller` no
+                // duplica si ya existe.
+                try {
+                    await _fn_registrarDestajoRapidaSiPagada( idSaleTocada, idUserLogON );
+                } catch (destajoError) {
+                    console.log('No se pudo generar el destajo de la rápida:', destajoError.message);
+                }
+
                 try {
                     await fn_recalcularUtilidadTallerByIdSale( idSaleTocada );
                 } catch (utilidadError) {
@@ -3114,7 +3124,7 @@ const updateTallerStatus = async(req, res) => {
         let newIdSale = null;
 
         const [tallerInfo] = await dbConnection.query(
-            `SELECT idSale, idSucursal, idTallerStatus, idTallerOrigen FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            `SELECT idSale, idSucursal, idTallerStatus, idTallerOrigen, IFNULL(bRapida, 0) AS bRapida FROM taller WHERE idTaller = :idTaller LIMIT 1`,
             { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
         );
 
@@ -3136,7 +3146,9 @@ const updateTallerStatus = async(req, res) => {
             });
         }
 
-        if (!fn_transicionValida(tallerInfo.idTallerStatus, idTallerStatus)) {
+        const bEsRapida = Number( tallerInfo.bRapida ) === 1;
+
+        if (!fn_transicionValida(tallerInfo.idTallerStatus, idTallerStatus, bEsRapida)) {
             await transaction.rollback();
             return res.json({
                 status: 1,
@@ -3155,10 +3167,12 @@ const updateTallerStatus = async(req, res) => {
             }
         }
 
-        // Status 2 (Pedido): generar folio de taller (idSaleType=5) y actualizar idSale
-        if (idTallerStatus === 2 || idTallerStatus === 5) {
-            // SI EL TALLER ESTÁ EN STATUS 1 Y SE VA A STATUS 5, SE DEBE GENERAR EL FOLIO DE TALLER RAPIDA (idSaleType=7) Y SI NO EL (idSaleType=5)
-            var idSaleTypeID = tallerInfo.idTallerStatus == 1 && idTallerStatus == 5 ? 7 : 5; // Taller
+        // Status 2 (Pedido): generar el folio real y actualizar idSale. El
+        // tipo lo decide la bandera del folio: una RÁPIDA nace aquí con su
+        // propio folio (idSaleType = 7) y de aquí se va derecho a entregada
+        // (analisis/031); un taller normal genera el folio de taller (5).
+        if (idTallerStatus === 2) {
+            var idSaleTypeID = bEsRapida ? 7 : 5;
             if (!tallerInfo) {
                 await transaction.rollback();
                 return res.json({ status: 1, message: 'No se encontró el taller.' });
@@ -3204,8 +3218,12 @@ const updateTallerStatus = async(req, res) => {
 
             await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 0`, { transaction, type: dbConnection.QueryTypes.RAW });
             await dbConnection.query(
-                `UPDATE sales SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
-                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+                // También se fija el TIPO: la nota venía como cotización y
+                // al generar el folio pasa a ser taller (5) o rápida (7).
+                // Sin esto, una rápida quedaba con el folio TALLR pero con
+                // tipo de taller normal (analisis/031).
+                `UPDATE sales SET idSale = :newIdSale, idSaleType = :idSaleTypeID WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale, idSaleTypeID }, type: dbConnection.QueryTypes.UPDATE, transaction }
             );
             await dbConnection.query(
                 `UPDATE taller SET idSale = :newIdSale WHERE idTaller = :idTaller`,
@@ -3338,7 +3356,7 @@ const updateTallerStatus = async(req, res) => {
         // no se cobran). Un taller normal se comporta igual que antes.
         const bEsGarantiaFolio = !!( tallerInfo && tallerInfo.idTallerOrigen );
 
-        if (idTallerStatus === 2 || ( bEsGarantiaFolio && idTallerStatus === 4 )) {
+        if (idTallerStatus === 2 || ( bEsGarantiaFolio && idTallerStatus === 4 ) || ( bEsRapida && idTallerStatus === 5 )) {
             updateQuery += `, precioTotal = :precioTotal`;
             oUpdateRepl.precioTotal = precioTotal;
         }
@@ -3348,6 +3366,25 @@ const updateTallerStatus = async(req, res) => {
         // reflejar ahí también quién y cuándo se entregó. idSale puede
         // haber cambiado arriba (taller rápida, status 1 -> 5): usar
         // siempre el folio vigente (newIdSale si se generó uno nuevo).
+        // Una rápida no pasa por Mostrador, que es donde un taller normal
+        // descuenta el metal final del técnico. Si lleva metal, se descuenta
+        // aquí, al entregarla. El destajo NO: en las rápidas se genera
+        // cuando se cobran (analisis/031), junto con la comisión del
+        // vendedor.
+        if (idTallerStatus === 5 && bEsRapida) {
+            const OSQL_MetalRapida = await dbConnection.query(
+                `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                { replacements: { oGetDateNow, idTaller, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
+            );
+
+            // out_id 0 con "no tiene metal final" no es un error: la mayoría
+            // de las rápidas no llevan metal.
+            if (OSQL_MetalRapida[0].out_id == 0 && !/no tiene metal final/i.test(OSQL_MetalRapida[0].message || '')) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: OSQL_MetalRapida[0].message });
+            }
+        }
+
         if (idTallerStatus === 5) {
             updateQuery += `, fechaEntrega = :fechaEntrega`;
             oUpdateRepl.fechaEntrega = oGetDateNow;
@@ -6068,6 +6105,47 @@ const _fn_getDatosTaller = async(idSale, transaction, bBloquear = false) => {
 // estatus del que se regresa, y la reversa se marca con su propio tipo
 // (`REVERSA_METAL_FINAL` / `REVERSA_ASIGNACION`) para que los SPs de metal
 // sepan que ese movimiento ya no está vigente y dejen volver a aplicarlo.
+// Destajo de una ORDEN RÁPIDA: se genera cuando el folio queda pagado, no
+// al entregarlo (analisis/031). Un taller normal lo genera al pasar a
+// Mostrador, así que este camino solo aplica a las rápidas.
+const _fn_registrarDestajoRapidaSiPagada = async(idSale, idUserLogON) => {
+
+    const [oFolio] = await dbConnection.query(
+        `SELECT T.idTaller, T.idSale, T.precioTotal, T.idTallerStatus, IFNULL(T.bRapida, 0) AS bRapida
+         FROM taller AS T
+         INNER JOIN sales AS S ON S.idSale = T.idSale AND S.active = 1
+         WHERE T.idSale = :idSale LIMIT 1`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    if (!oFolio || Number(oFolio.bRapida) !== 1 || Number(oFolio.idTallerStatus) === EST_TALLER.CANCELADO) {
+        return;
+    }
+
+    const nPrecioTotal = Math.round((parseFloat(oFolio.precioTotal) || 0) * 100) / 100;
+
+    if (nPrecioTotal <= 0) {
+        return;
+    }
+
+    const [oPagos] = await dbConnection.query(
+        `SELECT ROUND( IFNULL( SUM( P.pago ), 0), 2) AS cobrado FROM payments AS P
+         WHERE P.idRelation = :idSale AND P.relationType = 'V' AND P.active = 1`,
+        { replacements: { idSale: oFolio.idSale }, type: dbConnection.QueryTypes.SELECT }
+    );
+
+    const nCobrado = Math.round((parseFloat(oPagos?.cobrado) || 0) * 100) / 100;
+
+    if (nCobrado < nPrecioTotal) {
+        return;
+    }
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    await fn_registrarDestajoByTaller(oFolio.idTaller, oGetDateNow, idUserLogON, null);
+
+};
+
 const _fn_reversarMetalTaller = async(idTaller, idSale, oGetDateNow, idUserLogON, transaction, aTipos = [], sTipoReversa = 'REVERSA', sReferencia = null) => {
 
     const movimientos = await dbConnection.query(
