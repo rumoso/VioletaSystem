@@ -256,7 +256,7 @@ export class TallerComponent implements OnInit {
     idServicioExternoDetalle: 0,
     idServicioExterno: 0,
     servicioExternoDesc: '',
-    cantidad: '',
+    cantidad: 1,
     precio: '',
     costo: ''
   };
@@ -1252,6 +1252,17 @@ export class TallerComponent implements OnInit {
     }, 50);
   }
 
+  /**
+   * Precio que trae un producto, para el campo del form: un cero se
+   * manda VACÍO para que se vea el placeholder. Si se deja el 0 escrito,
+   * lo que el usuario teclee se le pega adelante — un precio de 3000
+   * terminaba capturado como 03000.
+   */
+  private _fn_precioParaCaptura( nPrecio: any ): any {
+    const n = parseFloat( nPrecio );
+    return ( !n || isNaN(n) ) ? '' : n;
+  }
+
   fn_focusRefaccionProductoPrecio() {
     this.nextInputFocus(this.refaccionProductoPrecioInput, 50);
   }
@@ -1260,7 +1271,7 @@ export class TallerComponent implements OnInit {
     const producto = this.productosList.find(p => p.idProduct === this.refaccionForm.idProduct);
     if (producto) {
       this.refaccionForm.productDesc = producto.name;
-      this.refaccionForm.precio = producto.price;
+      this.refaccionForm.precio = this._fn_precioParaCaptura( producto.price );
       this.refaccionForm.costo = producto.cost;
     }
   }
@@ -1869,7 +1880,7 @@ export class TallerComponent implements OnInit {
       idServicioExternoDetalle: 0,
       idServicioExterno: 0,
       servicioExternoDesc: '',
-      cantidad: '',
+      cantidad: 1,
       precio: '',
       costo: ''
     };
@@ -3417,7 +3428,7 @@ export class TallerComponent implements OnInit {
       idProduct: item.idProduct,
       productDesc: item.productDesc,
       cantidad: parseInt(item.cantidad, 10) || 1,
-      precio: parseFloat(item.precio),
+      precio: this._fn_precioParaCaptura( item.precio ),
       costo: parseFloat(item.costo)
     };
     // Abrir el form para que el usuario vea los datos cargados y pueda modificar
@@ -3486,7 +3497,7 @@ export class TallerComponent implements OnInit {
         // así queda visible en la lista de refacciones igual que en la búsqueda.
         this.refaccionForm.productDesc = ODataCbx.nameConcat || ODataCbx.name;
         this.refaccionForm.costo = ODataCbx.cost;
-        this.refaccionForm.precio = ODataCbx.price;
+        this.refaccionForm.precio = this._fn_precioParaCaptura( ODataCbx.price );
         this.nextInputFocus( this.refaccionCantidadInput, 100);
       }, 100);
 
