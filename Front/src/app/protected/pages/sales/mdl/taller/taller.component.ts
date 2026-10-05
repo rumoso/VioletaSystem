@@ -2345,6 +2345,9 @@ export class TallerComponent implements OnInit {
     };
     // Abrir el form para que el usuario vea los datos cargados y pueda modificar
     this.bShowMetalClienteForm = true;
+
+    // El metal del cliente se pesa: lo que se corrige son los gramos.
+    this.fn_focusYSelecciona( () => this.metalClienteGramosInput );
   }
 
   //#region MÉTODOS DE METAL FINAL
