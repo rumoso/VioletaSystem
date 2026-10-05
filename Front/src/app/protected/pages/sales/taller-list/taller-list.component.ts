@@ -185,6 +185,32 @@ constructor(
     return 'Vencido ' + iDias + ( iDias === 1 ? ' día' : ' días' );
   }
 
+  /**
+   * Etiqueta del folio (analisis/032). Un folio ENTREGADO se distingue
+   * por su saldo: "En crédito" si todavía debe, "Entregado / Pagado" si
+   * ya se cobró.
+   *
+   * No son estatus guardados: se deducen del pendiente que ya trae el
+   * renglón. Así, si se cancela un pago, el folio vuelve solo a "En
+   * crédito" sin que nadie mueva nada.
+   */
+  fn_statusDesc( item: any ): string {
+
+    if( Number( item?.idTallerStatus ) !== 5 ){
+      return item?.statusName || '';
+    }
+
+    return this.fn_enCredito( item ) ? 'En crédito' : 'Entregado / Pagado';
+  }
+
+  // Entregado y debiendo. La tolerancia de un centavo es la misma que usa
+  // la comisión del vendedor (analisis/028): lo que falta por redondeo no
+  // es una deuda.
+  fn_enCredito( item: any ): boolean {
+    return Number( item?.idTallerStatus ) === 5
+        && Math.round( ( parseFloat( item?.pendingAmount ) || 0 ) * 100 ) / 100 >= 0.01;
+  }
+
   // Los cancelados antes de analisis/022 no tienen fecha ni motivo.
   fn_tooltipCancelacion( item: any ): string {
     if( !item.cancelDateDesc ){

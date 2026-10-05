@@ -347,7 +347,11 @@
                 <!-- El estatus 8 (Encargado de taller) lleva color propio
                      para distinguirlo de un vistazo de los demás pasos. -->
                 <span *ngIf="item.idTallerStatus != 7" class="tll-status-chip"
-                  [ngClass]="{ 'tll-status-chip--encargado': item.idTallerStatus == 8 }">{{ item.statusName }}</span>
+                  [ngClass]="{
+                    'tll-status-chip--encargado': item.idTallerStatus == 8,
+                    'tll-status-chip--credito': fn_enCredito( item ),
+                    'tll-status-chip--pagado': item.idTallerStatus == 5 && !fn_enCredito( item )
+                  }">{{ fn_statusDesc( item ) }}</span>
                 <span *ngIf="item.idTallerStatus == 7" class="tll-status-chip tll-status-chip--cancelado"
                   [matTooltip]="fn_tooltipCancelacion( item )">{{ item.statusName }}</span>
                 <span *ngIf="item.diasVencido > 0" class="tll-status-chip tll-status-chip--vencido"

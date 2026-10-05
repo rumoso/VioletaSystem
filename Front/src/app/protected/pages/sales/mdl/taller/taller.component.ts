@@ -497,8 +497,31 @@ export class TallerComponent implements OnInit {
   /** Nombre del estatus actual, tomado del catálogo. */
   get sStatusNombre(): string {
     const idStatus = Number( this.tallerForm.idTallerStatus );
+
+    // Un folio entregado se distingue por su saldo (analisis/032): la
+    // misma etiqueta que muestra la lista, para que no digan cosas
+    // distintas del mismo folio.
+    if( idStatus === 5 ){
+      return this.bEnCredito ? 'En crédito' : 'Entregado / Pagado';
+    }
+
+    return this.sStatusCatNombre;
+  }
+
+  // El nombre tal cual del catálogo, sin la etiqueta de saldo: es lo que
+  // lee la banda de bloqueo ("El folio está en Entregado"), donde la
+  // etiqueta derivada no encaja en la frase.
+  get sStatusCatNombre(): string {
+    const idStatus = Number( this.tallerForm.idTallerStatus );
     const oStatus = this.aTallerStatusCat.find( s => Number( s.idTallerStatus ) === idStatus );
     return oStatus ? oStatus.nombre : 'Status ' + idStatus;
+  }
+
+  // Entregado y debiendo. Tolerancia de un centavo, igual que la comisión
+  // del vendedor (analisis/028).
+  get bEnCredito(): boolean {
+    return Number( this.tallerForm.idTallerStatus ) === 5
+        && Math.round( ( parseFloat( this.tallerForm.pendingAmount ) || 0 ) * 100 ) / 100 >= 0.01;
   }
 
   //#endregion

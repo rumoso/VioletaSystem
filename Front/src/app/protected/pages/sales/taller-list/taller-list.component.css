@@ -304,6 +304,19 @@
   color: #4527a0;
 }
 
+/* Entregado y debiendo (analisis/032): ámbar, el mismo lenguaje que
+   "Vencido" — algo que sigue pendiente de alguien. */
+.tll-status-chip--credito {
+  background: #fff8e1;
+  color: #e65100;
+}
+
+/* Entregado y cobrado: cerrado, nada que perseguir. */
+.tll-status-chip--pagado {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
 .tll-status-chip--cancelado {
   background: #ffebee;
   color: #b71c1c;
