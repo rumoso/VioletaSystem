@@ -1752,17 +1752,8 @@ export class TallerComponent implements OnInit {
     // Abrir el form para que el usuario vea los datos cargados y pueda modificar
     this.bShowManoObraForm = true;
 
-    // El técnico ya viene puesto: lo que se edita es el precio, así que
-    // ahí va el foco, con el importe seleccionado para escribir encima
-    // sin tener que borrarlo. `nextInputFocus` solo enfoca, por eso va
-    // aquí el select.
-    setTimeout(() => {
-      const el: any = this.manoObraCantidadInput?.nativeElement;
-      if( el ){
-        el.focus();
-        el.select();
-      }
-    }, 100);
+    // El técnico ya viene puesto: lo que se edita es el precio.
+    this.fn_focusYSelecciona( this.manoObraCantidadInput );
   }
 
   //#endregion MÉTODOS DE MANO DE OBRA
@@ -2152,6 +2143,9 @@ export class TallerComponent implements OnInit {
     this.bShowMetalAgranelForm = true;
     // Cargar costPrice para poder validar el mínimo al editar
     this.fn_loadMetalCostPrice(this.metalAgranelForm.kilates);
+
+    // Los gramos y el kilataje ya vienen: lo que se ajusta es el valor.
+    this.fn_focusYSelecciona( this.metalAgranelValorMetalInput );
   }
 
   fn_loadMetalCostPrice(kilates: number) {
@@ -3447,6 +3441,9 @@ export class TallerComponent implements OnInit {
     };
     // Abrir el form para que el usuario vea los datos cargados y pueda modificar
     this.bShowServicioExternoForm = true;
+
+    // El servicio ya viene puesto: lo que se corrige es el precio.
+    this.fn_focusYSelecciona( this.servicioExternoPrecioInput );
   }
 
   fn_closeDialog(data?: any): void {
@@ -3624,6 +3621,24 @@ export class TallerComponent implements OnInit {
     this.tallerForm.idSeller_idUser = 0;
     this.tallerForm.sellerDesc = '';
     this.tallerForm.sellerResp = '';
+  }
+
+  /**
+   * Foco al editar un renglón: además de enfocar, SELECCIONA el valor
+   * que ya trae, para escribir encima sin borrarlo. Se usa en los grids
+   * (mano de obra, servicios externos, metal), donde lo que se corrige
+   * casi siempre es ese importe.
+   */
+  private fn_focusYSelecciona( inputRef: ElementRef | any, time: number = 100 ) {
+    setTimeout(() => {
+      const el: any = inputRef?.nativeElement ?? inputRef;
+      if( el && typeof el.focus === 'function' ){
+        el.focus();
+        if( typeof el.select === 'function' ){
+          el.select();
+        }
+      }
+    }, time);
   }
 
   nextInputFocus(inputRef: ElementRef | HTMLElement | any, time: number) {
