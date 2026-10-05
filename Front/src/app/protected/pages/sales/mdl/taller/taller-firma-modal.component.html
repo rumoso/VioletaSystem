@@ -145,7 +145,11 @@
         RECHAZAR
       </button>
 
+      <!-- El foco arranca en APROBAR: es lo que se hace casi siempre.
+           Sin esto se iba a la X de cerrar, que es el primer botón del
+           modal. -->
       <button mat-raised-button
+              cdkFocusInitial
               (click)="fn_aprobar()"
               style="background: #4caf50; color: #fff;"
               [disabled]="bShowSpinner">
