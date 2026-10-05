@@ -1062,10 +1062,14 @@
                     <div class="col-12" [ngClass]="tall_verCostos ? 'col-md-3' : 'col-md-4'">
                                             <label class="inline-label">{{ metalTipo === 'plata' ? 'Ley' : 'Kilataje' }}</label>
                                             <mat-form-field class="field-kilates-slim" subscriptSizing="dynamic">
+                                                <!-- (closed) además de (selectionChange): con Enter sobre el
+                                                     kilataje que ya estaba elegido no hay cambio que avisar, así
+                                                     que sin esto el foco se quedaba atorado en el combo. -->
                                                 <mat-select #metalAgranelKilatesSelect
                                                         #metalAgranelKilatesSelectRef
                                                         placeholder="Seleccionar..."
                                                         [(ngModel)]="metalAgranelForm.kilates"
+                                                        (closed)="fn_focusMetalAgranelValor()"
                                                         (selectionChange)="fn_onMetalAgranelKilatesChange()">
                                                     <mat-option *ngFor="let kilate of kilatajes" [value]="kilate">
                                                         {{ metalTipo === 'plata' ? 'Ley ' + kilate : kilate + ' Kilates' }}
@@ -1190,6 +1194,7 @@
                                                         #metalClienteKilatesSelectRef
                                                         placeholder="Seleccionar..."
                                                         [(ngModel)]="metalClienteForm.kilates"
+                                                        (closed)="fn_focusMetalClienteAgregar()"
                                                         (selectionChange)="fn_onMetalClienteKilatesChange()">
                                                     <mat-option *ngFor="let kilate of kilatajes_cliente" [value]="kilate">
                                                         {{ metalClienteTipo === 'plata' ? 'Ley ' + kilate : kilate + ' Kilates' }}
@@ -1318,6 +1323,7 @@
                                                 <mat-select #metalFinalKilatesSelectRef
                                                         placeholder="Seleccionar..."
                                                         [(ngModel)]="metalFinalForm.kilates"
+                                                        (closed)="fn_focusMetalFinal(tall_verCostos ? 'costo' : 'precio')"
                                                         (selectionChange)="fn_calculateMetalFinalValue(); fn_focusMetalFinal(tall_verCostos ? 'costo' : 'precio')">
                                                     <mat-option *ngFor="let kilate of kilatajes_final" [value]="kilate">
                                                         {{ metalFinalTipo === 'plata' ? 'Ley ' + kilate : kilate + ' Kilates' }}
