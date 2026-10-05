@@ -1753,7 +1753,7 @@ export class TallerComponent implements OnInit {
     this.bShowManoObraForm = true;
 
     // El técnico ya viene puesto: lo que se edita es el precio.
-    this.fn_focusYSelecciona( this.manoObraCantidadInput );
+    this.fn_focusYSelecciona( () => this.manoObraCantidadInput );
   }
 
   //#endregion MÉTODOS DE MANO DE OBRA
@@ -2145,7 +2145,7 @@ export class TallerComponent implements OnInit {
     this.fn_loadMetalCostPrice(this.metalAgranelForm.kilates);
 
     // Los gramos y el kilataje ya vienen: lo que se ajusta es el valor.
-    this.fn_focusYSelecciona( this.metalAgranelValorMetalInput );
+    this.fn_focusYSelecciona( () => this.metalAgranelValorMetalInput );
   }
 
   fn_loadMetalCostPrice(kilates: number) {
@@ -3443,7 +3443,7 @@ export class TallerComponent implements OnInit {
     this.bShowServicioExternoForm = true;
 
     // El servicio ya viene puesto: lo que se corrige es el precio.
-    this.fn_focusYSelecciona( this.servicioExternoPrecioInput );
+    this.fn_focusYSelecciona( () => this.servicioExternoPrecioInput );
   }
 
   fn_closeDialog(data?: any): void {
@@ -3628,10 +3628,16 @@ export class TallerComponent implements OnInit {
    * que ya trae, para escribir encima sin borrarlo. Se usa en los grids
    * (mano de obra, servicios externos, metal), donde lo que se corrige
    * casi siempre es ese importe.
+   *
+   * Recibe una FUNCIÓN que devuelve el input, no el input: al editar
+   * desde el grid el formulario todavía no está en pantalla, así que el
+   * `@ViewChild` vale `undefined` en ese momento y hay que volver a
+   * leerlo cuando el form ya se pintó.
    */
-  private fn_focusYSelecciona( inputRef: ElementRef | any, time: number = 100 ) {
+  private fn_focusYSelecciona( fnInput: () => ElementRef | any, time: number = 150 ) {
     setTimeout(() => {
-      const el: any = inputRef?.nativeElement ?? inputRef;
+      const ref: any = fnInput();
+      const el: any = ref?.nativeElement ?? ref;
       if( el && typeof el.focus === 'function' ){
         el.focus();
         if( typeof el.select === 'function' ){
