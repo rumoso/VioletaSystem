@@ -1740,6 +1740,18 @@ export class TallerComponent implements OnInit {
     };
     // Abrir el form para que el usuario vea los datos cargados y pueda modificar
     this.bShowManoObraForm = true;
+
+    // El técnico ya viene puesto: lo que se edita es el precio, así que
+    // ahí va el foco, con el importe seleccionado para escribir encima
+    // sin tener que borrarlo. `nextInputFocus` solo enfoca, por eso va
+    // aquí el select.
+    setTimeout(() => {
+      const el: any = this.manoObraCantidadInput?.nativeElement;
+      if( el ){
+        el.focus();
+        el.select();
+      }
+    }, 100);
   }
 
   //#endregion MÉTODOS DE MANO DE OBRA
