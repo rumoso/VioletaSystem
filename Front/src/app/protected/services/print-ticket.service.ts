@@ -1850,32 +1850,9 @@ export class PrintTicketService {
       oLinesP.push( { oLines: oLines } );
 
       // ── MANO DE OBRA ──────────────────────────────────────────
-      // Solo el TOTAL: el desglose por técnico no le interesa al cliente
-      // y además delataría lo que se le paga a cada uno. El total sigue
-      // el mismo criterio que usa el Back para `precioTotal`: la suma de
-      // los renglones si los hay, y si no, el precio capturado en el
-      // encabezado.
-      {
-        const nManoObra = ( manoObra.length > 0 )
-          ? manoObra.reduce( ( nSuma: number, mo: any ) => nSuma + ( Number( mo.precio ) || 0 ), 0 )
-          : ( Number( sale.manoObraPrecio ) || 0 );
-
-        if( nManoObra > 0 ){
-
-          oLines = [];
-          var oLine: any = { aling: "Center", size: 10, text: "---------------------------------------------------------" }
-          oLines.push( oLine );
-          oLinesP.push( { oLines: oLines } );
-
-          oLines = [];
-          var oLine: any = { aling: "Left", size: 7, style: "Bold", text: "MANO DE OBRA:", iWith: 70 }
-          oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( Math.round( nManoObra * 100 ) / 100 ), iWith: 30 }
-          oLines.push( oLine );
-          oLinesP.push( { oLines: oLines } );
-
-        }
-      }
+      // Ya no se imprime: el cliente pidió que las secciones del ticket
+      // no lleven importes, y esta sección era únicamente un importe
+      // (2026-10-06). Lo que se cobra va en el TOTAL del cierre.
 
       // ── REFACCIONES ───────────────────────────────────────────
       // Lo que se le pone a la pieza y se le cobra al cliente. Se imprime
@@ -1893,20 +1870,15 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 55 }
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 80 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "CANT", iWith: 15 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PRECIO", iWith: 30 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "CANT", iWith: 20 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
-
-        let totalRefacciones = 0;
 
         for( var re = 0; re < refacciones.length; re++ ){
 
           const rei = refacciones[re];
-          totalRefacciones += Number( rei.total ) || 0;
 
           // La descripción trae código y nombre del producto: se parte en
           // renglones para que no se encime con las columnas de la
@@ -1914,11 +1886,9 @@ export class PrintTicketService {
           const aDesc = this.fn_partirEnRenglones( String( rei.productDesc || '' ).toUpperCase(), 32 );
 
           oLines = [];
-          var oLine: any = { aling: "Left", size: 7, text: aDesc[0] || '', iWith: 55 }
+          var oLine: any = { aling: "Left", size: 7, text: aDesc[0] || '', iWith: 80 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: String( Number( rei.cantidad ) || 0 ), iWith: 15 }
-          oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( rei.total ), iWith: 30 }
+          var oLine: any = { aling: "Right", size: 7, text: String( Number( rei.cantidad ) || 0 ), iWith: 20 }
           oLines.push( oLine );
           oLinesP.push( { oLines: oLines } );
 
@@ -1930,13 +1900,6 @@ export class PrintTicketService {
           }
 
         }
-
-        oLines = [];
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalRefacciones ), iWith: 30 }
-        oLines.push( oLine );
-        oLinesP.push( { oLines: oLines } );
 
       }
 
@@ -1954,38 +1917,25 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 25 }
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "TIPO", iWith: 40 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 25 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "GRAMOS", iWith: 30 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 20 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "VALOR", iWith: 30 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "KT/LEY", iWith: 30 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
 
-        let totalMetalAgranel = 0;
         for( var ma = 0; ma < metalesAgranel.length; ma++ ){
           const mai = metalesAgranel[ma];
-          totalMetalAgranel += Number(mai.valorMetal) || 0;
           oLines = [];
-          var oLine: any = { aling: "Left", size: 7, text: (mai.tipo || '').toUpperCase(), iWith: 25 }
+          var oLine: any = { aling: "Left", size: 7, text: (mai.tipo || '').toUpperCase(), iWith: 40 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: (Number(mai.gramos) || 0).toFixed(1) + ' gr', iWith: 25 }
+          var oLine: any = { aling: "Right", size: 7, text: (Number(mai.gramos) || 0).toFixed(1) + ' gr', iWith: 30 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: ( mai.tipo === 'plata' ? 'Ley ' + (Number(mai.kilates) || 0) : (Number(mai.kilates) || 0) + 'K' ), iWith: 20 }
-          oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( mai.valorMetal ), iWith: 30 }
+          var oLine: any = { aling: "Right", size: 7, text: ( mai.tipo === 'plata' ? 'Ley ' + (Number(mai.kilates) || 0) : (Number(mai.kilates) || 0) + 'K' ), iWith: 30 }
           oLines.push( oLine );
           oLinesP.push( { oLines: oLines } );
         }
-
-        oLines = [];
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalMetalAgranel ), iWith: 30 }
-        oLines.push( oLine );
-        oLinesP.push( { oLines: oLines } );
 
       }
 
@@ -2042,29 +1992,22 @@ export class PrintTicketService {
         oLinesP.push( { oLines: oLines } );
 
         oLines = [];
-        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 55 }
+        var oLine: any = { aling: "Left", size: 5, style: "Bold", text: "DESCRIPCIÓN", iWith: 80 }
         oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "CANT", iWith: 15 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "PRECIO", iWith: 30 }
+        var oLine: any = { aling: "Right", size: 5, style: "Bold", text: "CANT", iWith: 20 }
         oLines.push( oLine );
         oLinesP.push( { oLines: oLines } );
-
-        let totalServicios = 0;
 
         for( var se = 0; se < serviciosExternos.length; se++ ){
 
           const sei = serviciosExternos[se];
-          totalServicios += Number( sei.total ) || 0;
 
           const aDescSE = this.fn_partirEnRenglones( String( sei.servicioExtName || '' ).toUpperCase(), 32 );
 
           oLines = [];
-          var oLine: any = { aling: "Left", size: 7, text: aDescSE[0] || '', iWith: 55 }
+          var oLine: any = { aling: "Left", size: 7, text: aDescSE[0] || '', iWith: 80 }
           oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: String( Number( sei.cantidad ) || 0 ), iWith: 15 }
-          oLines.push( oLine );
-          var oLine: any = { aling: "Right", size: 7, text: USDollar.format( sei.total ), iWith: 30 }
+          var oLine: any = { aling: "Right", size: 7, text: String( Number( sei.cantidad ) || 0 ), iWith: 20 }
           oLines.push( oLine );
           oLinesP.push( { oLines: oLines } );
 
@@ -2076,13 +2019,6 @@ export class PrintTicketService {
           }
 
         }
-
-        oLines = [];
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: "TOTAL:", iWith: 70 }
-        oLines.push( oLine );
-        var oLine: any = { aling: "Right", size: 7, style: "Bold", text: USDollar.format( totalServicios ), iWith: 30 }
-        oLines.push( oLine );
-        oLinesP.push( { oLines: oLines } );
 
       }
 
