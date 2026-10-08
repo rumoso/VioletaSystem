@@ -19,6 +19,14 @@
 -- y esos si se insertan con su id.
 -- ══════════════════════════════════════════════════════════════
 
+-- Workbench abre con "safe updates": no deja correr un UPDATE o un
+-- DELETE cuyo WHERE no use una columna llave. Abajo todas las
+-- sentencias ya traen su llave, pero el modo seguro se apaga de todas
+-- formas porque algunas filtran ademas por columnas sin indice. Al
+-- final se vuelve a prender.
+SET @safe_updates_previo = @@SQL_SAFE_UPDATES;
+SET SQL_SAFE_UPDATES = 0;
+
 SET @ahora = NOW();
 
 
@@ -708,7 +716,7 @@ INSERT INTO ids_by_user (createDate, idRelation, idUser)
 SELECT @ahora, @seq, 1
 WHERE NOT EXISTS ( SELECT 1 FROM ids_by_user WHERE idUser = 1 );
 
-UPDATE ids_by_user SET idRelation = @seq WHERE idUser = 1 AND idRelation < @seq;
+UPDATE ids_by_user SET idRelation = @seq WHERE keyx > 0 AND idUser = 1 AND idRelation < @seq;
 
 
 -- ── 8. Menus que solo cambiaron de nombre (2) ──
@@ -725,18 +733,19 @@ UPDATE menus SET name = 'Puestos' WHERE idMenu = 17 AND name = 'Roles';
 -- ══════════════════════════════════════════════════════════════
 
 -- ── 8.1 Acceso al sistema: todos los usuarios nacen con acceso ──
-UPDATE users SET bAcceso = 1 WHERE bAcceso IS NULL;
+UPDATE users SET bAcceso = 1 WHERE idUser > 0 AND bAcceso IS NULL;
 
 -- ── 8.2 Talleres cuya venta ya estaba cancelada pasan a estatus 7 ──
 UPDATE taller AS T
 INNER JOIN sales AS S ON S.idSale = T.idSale
 SET T.idTallerStatus = 7, T.active = 0
-WHERE S.active = 0 AND T.idTallerStatus <> 7;
+WHERE T.idTaller > 0 AND S.active = 0 AND T.idTallerStatus <> 7;
 
 -- ── 8.3 Comisiones viejas: quien autorizo, % y base ──
 UPDATE comisiones_track
 SET auth_idUser = CAST(REPLACE(REGEXP_SUBSTR(referencia, 'idUser [0-9]+'), 'idUser ', '') AS UNSIGNED)
-WHERE auth_idUser IS NULL
+WHERE idComisionTrack > 0
+  AND auth_idUser IS NULL
   AND referencia REGEXP 'idUser [0-9]+';
 
 UPDATE comisiones_track AS CT
@@ -745,12 +754,13 @@ SET CT.referencia = CONCAT(
       'Captura manual — autorizó: ', U.name,
       IF(U.userName IS NULL OR U.userName = '', '', CONCAT(' (', U.userName, ')'))
     )
-WHERE CT.referencia LIKE '%idUser %';
+WHERE CT.idComisionTrack > 0 AND CT.referencia LIKE '%idUser %';
 
 UPDATE comisiones_track
 SET montoBase = CAST(REPLACE(REGEXP_SUBSTR(referencia, '\\$[0-9]+([.][0-9]+)?'), '$', '') AS DECIMAL(12,2)),
     porcentajeAplicado = CAST(REPLACE(REGEXP_SUBSTR(referencia, '[0-9]+([.][0-9]+)? ?%'), '%', '') AS DECIMAL(5,2))
-WHERE montoBase IS NULL
+WHERE idComisionTrack > 0
+  AND montoBase IS NULL
   AND porcentajeAplicado IS NULL
   AND referencia REGEXP '\\$[0-9]'
   AND referencia REGEXP '[0-9] ?%';
@@ -766,7 +776,8 @@ SET R.estatus           = N.estatus,
     R.canceladaDate     = N.canceladaDate,
     R.idCancelUser      = N.idCancelUser,
     R.motivoCancelacion = N.motivoCancelacion
-WHERE R.estatus = 'BORRADOR'
+WHERE R.idNominaRecibo > 0
+  AND R.estatus = 'BORRADOR'
   AND N.estatus <> 'BORRADOR';
 
 -- ── 8.5 Taller: congelar el % de los destajos ya pagados ──
@@ -777,7 +788,8 @@ INNER JOIN comisiones_track AS CT
        AND CT.tipo     = 'DESTAJO'
        AND CT.estatus <> 'CANCELADA'
 SET TMO.porcentajeDestajo = CT.porcentajeAplicado
-WHERE TMO.porcentajeDestajo IS NULL
+WHERE TMO.idManoObra > 0
+  AND TMO.porcentajeDestajo IS NULL
   AND CT.porcentajeAplicado IS NOT NULL;
 
 -- ── 8.6 Taller: utilidad BRUTA de cada folio ──
@@ -800,7 +812,7 @@ WHERE T.idTaller > 0;
 
 -- ── 8.7 Taller: renglones de comisiones del folio ──
 -- Se rehacen solo los que no se le han cargado a nadie.
-DELETE FROM taller_comisiones WHERE idComisionTrack IS NULL;
+DELETE FROM taller_comisiones WHERE idTallerComision > 0 AND idComisionTrack IS NULL;
 
 -- Destajo: por tecnico, sobre SU mano de obra.
 INSERT INTO taller_comisiones (createDate, idTaller, idUser, tipo, porcentaje, montoBase, monto, active)
@@ -948,9 +960,12 @@ SET S.utilidadCobrada = IF(
     )
 WHERE S.keyx > 0;
 
-UPDATE sales SET utilidadCobrada = 0 WHERE utilidadCobrada IS NULL;
+UPDATE sales SET utilidadCobrada = 0 WHERE keyx > 0 AND utilidadCobrada IS NULL;
 
--- ── 9. Resumen de como quedo ──
+-- ── 9. Se vuelve a dejar el modo seguro como estaba ──
+SET SQL_SAFE_UPDATES = @safe_updates_previo;
+
+-- ── 10. Resumen de como quedo ──
 SELECT 'acciones'            AS que, COUNT(*) AS cuantas FROM actions WHERE active = 1
 UNION ALL SELECT 'menus',               COUNT(*) FROM menus WHERE active = 1
 UNION ALL SELECT 'conceptos de nomina', COUNT(*) FROM nomina_conceptos
