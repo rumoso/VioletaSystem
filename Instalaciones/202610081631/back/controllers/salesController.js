@@ -1,0 +1,6856 @@
+const { response } = require('express');
+const bcryptjs = require('bcryptjs');
+const moment = require('moment');
+const { Sequelize } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
+
+const { dbConnection } = require('../database/config');
+const { Console } = require('console');
+const { fn_registrarDestajoByTaller, fn_reversarComisionByOrigen, fn_reversarDestajoByTaller, fn_registrarComisionVentaSiPagada, fn_registrarComisionTallerSiPagado } = require('./comisionesTrackController');
+const { fn_recalcularUtilidadTaller, fn_recalcularUtilidadTallerByIdSale } = require('../helpers/tallerUtilidad');
+const { TIPO_ROL } = require('../helpers/constantes');
+const {
+    ESTATUS: EST_TALLER
+    , PERMISO_POR_ESTATUS
+    , fn_transicionValida
+    , fn_estaBloqueado
+    , fn_puedeRegresarEstatus
+    , fn_destinoRegresoValido
+} = require('../helpers/tallerEstatus');
+const { fn_recalcularUtilidadVenta } = require('../helpers/ventaUtilidad');
+
+const insertSale = async(req, res) => {
+
+    const {
+        idSeller_idUser,
+        idCustomer,
+        idSaleType,
+        fechaEntrega = '',
+
+        saleDetail,
+
+        idUserLogON,
+        idSucursalLogON
+
+    } = req.body;
+
+    //console.log(req.body)
+
+    const p_jsonString = JSON.stringify(req.body);
+
+    var bOK = false;
+    var idSale = '';
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        if( idSucursalLogON > 0 ){
+        
+            var OSQL = await dbConnection.query(`call insertSale(
+            '${oGetDateNow}'
+            , ${ idSucursalLogON }
+            , ${ idSeller_idUser }
+            , ${ idCustomer }
+            , ${ idSaleType }
+            ,'${ fechaEntrega ? fechaEntrega.substring(0, 10) : '0' }'
+            , ${ idUserLogON }
+            )`)
+    
+            if(OSQL.length == 0){
+        
+                res.json({
+                    status: 1,
+                    message: "No se registró la venta."
+                });
+    
+            }
+            else{
+    
+                idSale = OSQL[0].out_id;
+
+                if( idSale.length > 0 ){
+
+                    for(var i = 0; i < saleDetail.length; i++){
+                        
+                        var saleD = saleDetail[i];
+
+                        var descriptionTaller = ( idSaleType == "5" || idSaleType == "6" ? saleD.productDesc : '' )
+    
+                        var OSQL2 = await dbConnection.query(`call insertSaleDetail(
+                            '${oGetDateNow}'
+                            ,'${ idSale }'
+                            , ${ saleD.idProduct }
+                            , '${ saleD.cantidad }'
+                            , '${ saleD.cost }'
+                            , '${ saleD.precioUnitario }'
+                            , '${ saleD.descuento }'
+                            , '${ saleD.precio }'
+                            , '${ saleD.importe }'
+                            , '${ descriptionTaller }'
+                            , ${ idSaleType }
+
+                            , ${ idUserLogON }
+                            , ${ idSucursalLogON }
+                        )`)
+    
+                        if(OSQL2[0].out_id > 0){
+                            bOK = true;
+                        }else{
+                            bOK = false;
+                            break;
+                        }
+
+                    }
+    
+                }
+                
+                if(bOK){
+
+                    // La utilidad de la venta se guarda en `sales`
+                    // (analisis/026). No debe tumbar la respuesta si falla.
+                    try {
+                        await fn_recalcularUtilidadVenta( idSale );
+                    } catch (utilidadError) {
+                        console.log('No se pudo calcular la utilidad de la venta:', utilidadError.message);
+                    }
+
+                    res.json({
+                        status: 0,
+                        message: "Venta guardada con éxito.",
+                        insertID: idSale
+                    });
+    
+                }else{
+                    
+                    var OSQL = await dbConnection.query(`call deleteSaleByError(
+                        '${ idSale }'
+                        , '${oGetDateNow}'
+                        , ${ idSucursalLogON }
+                        , 'Error en venta: ${ p_jsonString }'
+                        )`)
+    
+                    res.json({
+                        status: 1,
+                        message: "No se guardó la Venta."
+                    });
+                }
+
+            }
+
+        }else{
+            
+            res.json({
+                status: 1,
+                message: "No se puede registrar la venta si no está en una sucursal."
+            });
+
+        }
+
+    }catch(error){
+
+        if( idSale.length > 0 ){
+        
+            var OSQL = await dbConnection.query(`call deleteSaleByError(
+                '${ idSale }'
+                , '${oGetDateNow}'
+                , ${ idSucursalLogON }
+                , '${ error }:  ${ p_jsonString }'
+                )`)
+                
+        }
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const getVentasListWithPage = async(req, res = response) => {
+
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSaleType = 0
+
+        , bCancel = false
+        , bPending = false
+        , bPagada = false
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    ////console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        if (bPending && bPagada)
+        {
+            bPending = false;
+            bPagada = false;
+        }
+
+        //////console.log( bPending )
+        //////console.log( bPagada )
+
+        var OSQL = await dbConnection.query(`call getVentasListWithPage(
+            ${idUserLogON}
+            , '${createDateStart.substring(0, 10)}'
+            , '${createDateEnd.substring(0, 10)}'
+            , ${idCustomer}
+            , ${idSaleType}
+
+            , ${bCancel}
+            , ${bPending}
+            , ${bPagada}
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //////console.log(OSQL)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                count: iRows,
+                rows: OSQL
+                }
+            });
+            
+        }
+
+        //await dbConnection.close();
+        
+    }catch(error){
+
+        //await dbConnection.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getSaleByID = async(req, res = response) => {
+
+    const {
+        idSale
+    } = req.body;
+  
+    ////console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getSaleByID( '${ idSale }' )`)
+  
+        if(OSQL.length == 0){
+      
+            res.json({
+                status: 1,
+                message: "No se encontró la venta.",
+                data: null
+            });
+    
+        }
+        else{
+
+            var OSQL2 = await dbConnection.query(`call getSalesDetail( '${ idSale }' )`)
+
+            var OSQL3 = await dbConnection.query(`call getPaymentsByIdSaleListWithPage(
+                '${idSale}'
+    
+                ,''
+                ,0
+                ,100000
+                )`)
+    
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: OSQL[0],
+                dataDetail: OSQL2,
+                dataPayments: OSQL3
+            });
+    
+        }
+
+    }catch(error){
+            
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  
+};
+
+const insertPayments = async(req, res) => {
+
+    const {
+
+        idCaja,
+        idCustomer,
+
+        paymentList,
+
+        idUserLogON,
+        idSucursalLogON
+      
+    } = req.body;
+  
+    ////console.log(req.body)
+
+    var bOK = false;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var rollbackList = [];
+    var idsSaleTocadas = new Set();
+
+    try{
+
+        for( var i = 0; i < paymentList.length; i++){
+
+            var OPayment = paymentList[i];
+
+            var OSQL_getSaleByID = await dbConnection.query(`call getSaleByID( '${ OPayment.idRelation }' )`)
+            OSQL_getSaleByID = OSQL_getSaleByID[0]
+
+            if(OSQL_getSaleByID.idSaleType == 5){
+                OSQL_getSaleByID = await dbConnection.query(`call getTallerByIdSale( '${ OPayment.idRelation }' )`)
+                OSQL_getSaleByID = OSQL_getSaleByID[0]
+            }
+
+            if(OSQL_getSaleByID){
+
+                if(OSQL_getSaleByID.pendingAmount >= OPayment.paga){
+
+                    var OSQL = await dbConnection.query(`call insertPayments(
+                        '${oGetDateNow}'
+                        ,  ${ idCaja }
+                        , '${ OPayment.idRelation }'
+                        , '${ OPayment.relationType }'
+                        ,  ${ OPayment.idSeller_idUser }
+                        ,  ${ OPayment.idFormaPago }
+                        , '${ OPayment.paga }'
+                        , '${ OPayment.referencia }'
+                        , '${ OPayment.description }'
+                        , '${ OPayment.idFxRate }'
+                        , '${ OPayment.fxRate }'
+                        , '${ OPayment.pagaF }'
+        
+                        , ${ idUserLogON }
+                        , ${ idSucursalLogON }
+                        )`)
+        
+                    var idPayment = OSQL[0].out_id;
+            
+                    if(idPayment.length > 0){
+                        bOK = true;
+                        rollbackList.push( { type: 'Payment', idRelation: idPayment } );
+                        idsSaleTocadas.add( OPayment.idRelation );
+                    }else{
+                        bOK = false;
+                        break;
+                    }
+    
+                    if(OPayment.idFormaPago == 5 && idPayment.length > 0){
+                        
+                        var OSQL2 = await dbConnection.query(`call insertElectronicMoney(
+                            '${oGetDateNow}'
+                            ,  ${ idCustomer }
+                            , '-${ OPayment.paga }'
+                            , 'Se utiliza en el pago #${ idPayment }'
+                            , '${ OPayment.idRelation }'
+                            , '${ OPayment.relationType }'
+    
+                            , ${ idUserLogON }
+                            )`)
+        
+                        if(OSQL2[0].out_id > 0){
+                            bOK = true;
+                            rollbackList.push( { type: 'ElectronicMoney', idRelation: OSQL2[0].out_id } );
+                        }else{
+                            bOK = false;
+                            break;
+                        }
+                        
+                    }
+
+                }
+
+            }
+            
+        }
+        
+        if(bOK){
+
+            // Comisión de venta automática (analisis/010) — se revisa
+            // hasta que TODO el lote quedó guardado (si un pago
+            // posterior fallara, el rollback compensatorio de abajo no
+            // sabría deshacer una comisión ya generada por uno
+            // anterior). Si con estos pagos alguna venta quedó saldada
+            // al 100% (y, si es apartado, ya entregada), genera la
+            // comisión del vendedor. No debe tumbar la respuesta del
+            // pago si falla.
+            for (const idSaleTocada of idsSaleTocadas) {
+                try {
+                    await fn_registrarComisionVentaSiPagada( idSaleTocada, idUserLogON );
+                } catch (comisionError) {
+                    console.log('No se pudo generar la comisión de venta:', comisionError.message);
+                }
+
+                // Si la venta es un folio de taller, su utilidad cobrada
+                // sube con este pago (analisis/023). Y si con este pago
+                // quedó saldado, al vendedor se le carga su comisión
+                // (analisis/028).
+                try {
+                    await fn_registrarComisionTallerSiPagado( idSaleTocada, idUserLogON );
+                } catch (comisionError) {
+                    console.log('No se pudo generar la comisión de taller:', comisionError.message);
+                }
+
+                try {
+                    await fn_recalcularUtilidadTallerByIdSale( idSaleTocada );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad del taller:', utilidadError.message);
+                }
+
+                // Y si es una venta de mostrador, la suya (analisis/026).
+                try {
+                    await fn_recalcularUtilidadVenta( idSaleTocada );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
+                }
+            }
+
+            res.json({
+                status: 0,
+                message: "Pago guardado con éxito."
+            });
+
+        }else{
+            
+            for(var i = 0; i < rollbackList.length; i++){
+
+                if(rollbackList[i].type == 'Payment'){
+
+                    var OSQL = await dbConnection.query(`call deletePaymentByError(
+                        '${ rollbackList[i].idRelation }'
+                        , '${oGetDateNow}'
+                        , ${ idSucursalLogON }
+                        )`)
+
+                }else if(rollbackList[i].type == 'ElectronicMoney'){
+
+                    var OSQL = await dbConnection.query(`call deleteElectronicMoneyByError(
+                        '${ rollbackList[i].idRelation }'
+                        , '${oGetDateNow}'
+                        , ${ idSucursalLogON }
+                        )`)
+
+                }
+                    
+            }
+
+            res.json({
+                status: 1,
+                message: "No se guardó el pago."
+            });
+
+        }
+
+    }catch(error){
+
+        for(var i = 0; i < rollbackList.length; i++){
+
+            if(rollbackList[i].type == 'Payment'){
+
+                var OSQL = await dbConnection.query(`call deletePaymentByError(
+                    '${ rollbackList[i].idRelation }'
+                    , '${oGetDateNow}'
+                    , ${ idSucursalLogON }
+                    )`)
+
+            }else if(rollbackList[i].type == 'ElectronicMoney'){
+
+                var OSQL = await dbConnection.query(`call deleteElectronicMoneyByError(
+                    '${ rollbackList[i].idRelation }'
+                    , '${oGetDateNow}'
+                    , ${ idSucursalLogON }
+                    )`)
+
+            }
+                
+        }
+  
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const getPaymentsByIdSaleListWithPage = async(req, res = response) => {
+
+    const {
+        idSale
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getPaymentsByIdSaleListWithPage(
+            '${idSale}'
+
+            ,'${ search }'
+            ,${ start }
+            ,${ limiter }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            });
+            
+        }
+        
+    }catch(error){
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const insertSaleByConsignation = async(req, res) => {
+   
+    const {
+        idSaleOld,
+        idSeller_idUser,
+        idCustomer,
+        idSaleType,
+        fechaEntrega = '',
+
+        saleDetail,
+
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+  
+    //console.log(req.body)
+  
+    var bOK = false;
+    var idSale = '';
+    var bBorro = 0;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+  
+    try{
+
+        new Promise((resolve, reject) => {
+
+            dbConnection.transaction( async (tran) => {
+            
+                var OSQL = await dbConnection.query(`call insertSale(
+                    '${oGetDateNow}'
+                    , ${ idSucursalLogON }
+                    , ${ idSeller_idUser }
+                    , ${ idCustomer }
+                    , ${ idSaleType }
+                    ,'${ fechaEntrega ? fechaEntrega.substring(0, 10) : '0' }'
+                    , ${ idUserLogON }
+                    )`,{ transaction: tran })
+          
+                if(OSQL.length == 0){
+        
+                    res.json({
+                        status: 1,
+                        message:"No se registró la venta."
+                    });
+            
+                }
+                else{
+        
+                    idSale = OSQL[0].out_id;
+        
+                    if( idSale.length > 0 ){
+        
+                        for(var i = 0; i < saleDetail.length; i++){
+                            var saleD = saleDetail[i];
+    
+                            //VAMOS A RECALCULAR EN CASO DE QUE SE HAYA APLICADO UN NUEVO DESCUENTO
+                            if( saleD.consDescuento > 0 ){
+                            //SACO EL DESCUENTO
+                            // CONVIERTO EN DECIMAL LE PORCENTAJE
+                            var porcentajeDescuento = saleD.consDescuento / 100;
+                            var precioDescuento = porcentajeDescuento * saleD.precioUnitario;
+                            saleD.descuento = precioDescuento;
+                
+                            var precio = saleD.precioUnitario - precioDescuento;
+                            saleD.precio = precio;
+                            }
+    
+                            var OSQL2 = await dbConnection.query(`call insertSaleConsDetail(
+                            '${oGetDateNow}'
+                                , '${ idSaleOld }'
+                                , '${ idSale }'
+                                ,  ${ saleD.idProduct }
+                                , '${ saleD.consCantidad }'
+                                , '${ saleD.cost }'
+                                , '${ saleD.precioUnitario }'
+                                , '${ saleD.descuento }'
+                                , '${ saleD.precio }'
+                                , '${ saleD.consCantidad * saleD.precio }'
+                                , ''
+                                , ${ saleD.idSaleDetail }
+                                , 'Se pasó a ${ ( idSaleType == 1 ? 'una venta de crédito' : idSaleType == 2 ? 'una venta de contado' : idSaleType == 3 ? 'un apartado' : '' ) + ': #' + idSale }'
+    
+                                , ${ idUserLogON }
+                                , ${ idSucursalLogON }
+                                )`,{ transaction: tran })
+        
+                            if(OSQL2[0].out_id > 0){
+                                bOK = true;
+                            }else{
+                                bOK = false;
+                                break;
+                            }
+    
+                        }
+        
+                    }
+    
+                    if(bOK){
+                        await tran.commit();
+        
+                        res.json({
+                            status: 0,
+                            message: "Venta guardada con éxito.",
+                            idSaleNew: idSale
+                        });
+    
+                    }else{
+    
+                        await tran.rollback();
+        
+                        res.json({
+                            status: 1,
+                            message: "No se guardó la Venta."
+                        });
+                        
+                    }
+
+                    resolve();
+            
+                }
+            
+            }).catch(reject);
+        
+        }).then(() => {
+            console.log('Transacción completada');
+        }).catch((error) => {
+            console.error('Error en la transacción:', error);
+        });
+        
+    }catch(error){
+  
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+  
+    }
+}
+
+const regresarProductoDeConsignacion = async(req, res) => {
+
+    const {
+        idSeller_idUser,
+
+        saleDetail,
+
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    //console.log(req.body)
+
+    const tran = await dbConnection.transaction();
+
+    var bOK = false;
+    var bBorro = 0;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        for(var i = 0; i < saleDetail.length; i++){
+            var saleD = saleDetail[i];
+
+            var OSQL = await dbConnection.query(`call restarSalesDetailByConsignacion(
+                ${ saleD.idSaleDetail }
+                ,'${ saleD.consCantidad }'
+                )`,{ transaction: tran })
+
+                if(OSQL[0].iRows > 0){
+                    bOK = true;
+                }else{
+                    bOK = false;
+                    break;
+                }
+
+            var OSQL1 = await dbConnection.query(`call insertInventaryLog(
+                '${oGetDateNow}'
+                , ${saleD.idProduct}
+                , '${saleD.consCantidad}'
+                , 'Regreso de consignación #${ saleD.idSale }'
+
+                , 1
+                , 1
+                , ''
+                , 0
+                , 0
+                , 0
+
+                , ${ idUserLogON }
+                )`,{ transaction: tran })
+
+                if(OSQL1[0].out_id > 0){
+                    bOK = true;
+                }else{
+                    bOK = false;
+                    break;
+                }
+
+            var OSQL2 = await dbConnection.query(`call insertConsHistory(
+                '${oGetDateNow}'
+                , '${ saleD.idSale }'
+                , ${ saleD.idSaleDetail }
+                , 'Se regresó a tienda de la consignación #${ saleD.idSale }'
+                , '${ saleD.consCantidad }'
+                , ${ idUserLogON }
+                , ${ idSucursalLogON }
+                )`,{ transaction: tran })
+    
+                    if(OSQL2[0].idNew > 0){
+                        bOK = true;
+                    }else{
+                        bOK = false;
+                        break;
+                    }
+
+        }
+
+        if(bOK){
+            await tran.commit();
+
+            res.json({
+                status:0,
+                message:"Guardada con éxito.",
+                bBorro: bBorro
+            });
+        }else{
+            await tran.rollback();
+
+            res.json({
+                status: 1,
+                message:"No se guardó la Venta."
+            });
+        }
+        
+    }catch(error){
+
+        await tran.rollback();
+        
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const getPreCorteCaja = async(req, res = response) => {
+
+    const {
+        idCaja
+        ,selectedDate = ''
+
+        ,idUserLogON
+        ,idSucursalLogON
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getPreCorteCajaByCaja(
+            ${ idCaja }
+            , '${ selectedDate.substring(0, 10) }'
+            )`)
+
+            console.log(OSQL)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message:"Ejecutado correctamente.",
+            });
+
+        }
+        else{
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                    rows: OSQL[0]
+                }
+            });
+            
+        }
+        
+    }catch(error){
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
+const getPreEgresosCorteCaja = async(req, res = response) => {
+
+    const {
+        idCaja
+        ,selectedDate = ''
+
+        ,idUserLogON
+        ,idSucursalLogON
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getPreEgresosCorteCaja(
+            ${ idCaja }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message:"Ejecutado correctamente.",
+            });
+
+        }
+        else{
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                    rows: OSQL
+                }
+            });
+            
+        }
+        
+    }catch(error){
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
+const insertCorteCaja = async(req, res) => {
+   
+    const {
+        idCaja
+        , selectedDate = ''
+        , preCorteCaja
+
+        , idUserLogON
+        , idSucursalLogON
+    } = req.body;
+  
+    //console.log(req.body)
+  
+    var idCorteCaja = '';
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+  
+    try{
+
+        const {
+            pesosCaja = 0
+            ,dolaresF = 0
+            ,fxRate = 0
+            ,dolaresMNX = 0
+            ,vouchersCaja = 0
+            ,transferenciasCaja = 0
+            ,totalCaja = 0
+            ,diferencia = 0
+            ,observaciones = ''
+        } = preCorteCaja;
+
+        var bCuadro = diferencia == 0 ? 1 : 2;
+  
+        var OSQL = await dbConnection.query(`call insertCorteCaja(
+            '${oGetDateNow}'
+            ,  ${ idCaja }
+            , '${ selectedDate.substring(0, 10) }'
+
+            , '${ pesosCaja }'
+            , '${ dolaresF }'
+            , '${ fxRate }'
+            , '${ dolaresMNX }'
+            , '${ vouchersCaja }'
+            , '${ transferenciasCaja }'
+            , '${ totalCaja }'
+            ,  ${ bCuadro }
+            , '${ diferencia }'
+            , '${ observaciones }'
+
+            ,  ${ idUserLogON }
+            ,  ${ idSucursalLogON }
+            )`)
+
+            //console.log( OSQL )
+  
+          if(OSQL.length == 0){
+    
+              res.json({
+                  status: 1,
+                  message:"No se registró el corte de caja."
+              });
+      
+          }
+          else{
+  
+            idCorteCaja = OSQL[0].idCorteCaja;
+            
+            res.json({
+                status: 0,
+                message: "Corte de caja guardada con éxito.",
+                insertID: idCorteCaja
+            });
+            
+
+        }
+        
+    }catch(error){
+  
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+  
+    }
+}
+
+const insertEgresos = async(req, res) => {
+
+    const {
+
+        idCaja,
+        idFormaPago,
+        description = '',
+
+        amount,
+
+        idUserLogON,
+        idSucursalLogON
+      
+    } = req.body;
+  
+    //console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        var OSQL = await dbConnection.query(`call insertEgresos(
+        '  ${oGetDateNow}'
+        ,  ${ idCaja }
+        ,  ${ idFormaPago }
+        , '${ description }'
+        , '${ amount }'
+
+        , ${ idUserLogON }
+        , ${ idSucursalLogON }
+        )`);
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se registró el egreso."
+            });
+
+        }
+        else{
+
+            res.json({
+                status: 0,
+                message: "Egreso guardado con éxito.",
+                insertID: OSQL[0].idNew
+            });
+
+        }
+        
+    }catch(error){
+  
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const disabledEgresos = async(req, res) => {
+   
+    const {
+        idEgreso
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call disabledEgresos(
+        '${ idEgreso }'
+        )`)
+
+        res.json({
+            status: 0,
+            message: "Egreso cancelado con éxito.",
+            insertID: OSQL[0].idRelation
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const getCorteCajaByID = async(req, res = response) => {
+
+    const {
+        idCorteCaja
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getCorteCajaByID( '${ idCorteCaja }' )`)
+
+        ////console.log( OSQL )
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "No se encontró información.",
+                data: null
+            });
+
+        }
+        else{
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: OSQL[0]
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
+const getEgresosByIDCorteCaja = async(req, res = response) => {
+
+    const {
+        idCorteCaja
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getEgresosByIDCorteCaja( '${ idCorteCaja }' )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "No se encontró información.",
+                data: []
+            });
+
+        }
+        else{
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: OSQL
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
+const getCorteCajaListWithPage = async(req, res = response) => {
+
+    const {
+        createDateStart = ''
+        , createDateEnd = ''
+        
+        , idSucursal = 0
+        , idCaja = 0
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    //console.log( new Date() )
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getCorteCajaListWithPage(
+            '${ createDateStart }'
+            , '${ createDateEnd }'
+            , ${ idSucursal }
+            , ${ idCaja }
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                count: iRows,
+                rows: OSQL
+                }
+            });
+            
+        }
+
+        //await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        //await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const disabledSale = async(req, res) => {
+
+    const {
+        sOption = '',
+        idSale,
+        auth_idUser = 0,
+
+        idUserLogON,
+        idSucursalLogON
+
+    } = req.body;
+
+    //console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        if(auth_idUser == 0){
+            res.json({
+                status: 1,
+                message: "No se pudo cancelar la Venta porque no fue autorizada la acción."
+            });
+            return;
+        }
+
+        var OSQL = await dbConnection.query(`call cancelarVentaCompleta(
+            '${ oGetDateNow }'
+            , '${ sOption }'
+            , '${ idSale }'
+            , ${ auth_idUser }
+            
+            , ${ idUserLogON }
+            , ${ idSucursalLogON }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se puede cancelar el pago."
+            });
+
+        }else{
+
+            // La venta ya se canceló (la SP no expone transacción JS
+            // para anidar); si tenía comisión de venta ya generada,
+            // se reversa aparte — cancela si seguía pendiente, o
+            // genera una deducción en negativo si ya se había pagado
+            // en una nómina (analisis/008). No bloquea la respuesta de
+            // cancelación si esto falla: la venta ya quedó cancelada.
+            if (OSQL[0].bOK > 0) {
+                try {
+                    await fn_reversarComisionByOrigen(idSale, idUserLogON, `Venta #${ idSale } cancelada`);
+                } catch (comisionError) {
+                    console.log('No se pudo reversar la comisión de la venta cancelada:', comisionError.message);
+                }
+
+                // Una venta cancelada no deja utilidad (analisis/026).
+                try {
+                    await fn_recalcularUtilidadVenta( idSale );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad de la venta cancelada:', utilidadError.message);
+                }
+            }
+
+            res.json({
+                status: OSQL[0].bOK > 0 ? 0 : 1,
+                message: OSQL[0].message
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+// Entregar un apartado (idSaleType=3): registra fecha e idUserEntrega
+// en `sales`. Permiso especial ventas_EntregarApartado — pide
+// código/rostro cada vez, igual que cancelar una venta. Los folios de
+// taller (idSaleType 5/7) NO se entregan aquí — ese flujo ya existe
+// en updateTallerStatus (idTallerStatus=5), que llena estas mismas
+// columnas de `sales` como efecto secundario.
+const entregarApartado = async(req, res = response) => {
+
+    const {
+        idSale
+        , auth_idUser = 0
+    } = req.body;
+
+    if (auth_idUser == 0) {
+        return res.json({ status: 1, message: "No se pudo entregar el apartado porque no fue autorizada la acción." });
+    }
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const [sale] = await dbConnection.query(
+            `SELECT idSaleType, active, fechaEntrega FROM sales WHERE idSale = :idSale LIMIT 1`,
+            { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!sale) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "La venta no existe." });
+        }
+        if (!sale.active) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "No se puede entregar: la venta está cancelada." });
+        }
+        if (sale.idSaleType != 3) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "Solo los apartados se entregan desde aquí." });
+        }
+        if (sale.fechaEntrega) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "Este apartado ya fue entregado." });
+        }
+
+        await dbConnection.query(
+            `UPDATE sales SET fechaEntrega = :fechaEntrega, idUserEntrega = :idUserEntrega WHERE idSale = :idSale`,
+            { replacements: { fechaEntrega: oGetDateNow, idUserEntrega: auth_idUser, idSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        await transaction.commit();
+
+        // Comisión de venta automática (analisis/010) — un apartado
+        // solo genera comisión cuando está pagado al 100% Y entregado;
+        // si ya estaba pagado, este evento (la entrega) es el que la
+        // dispara. No debe tumbar la respuesta de entrega si falla.
+        try {
+            await fn_registrarComisionVentaSiPagada( idSale, auth_idUser );
+        } catch (comisionError) {
+            console.log('No se pudo generar la comisión de venta:', comisionError.message);
+        }
+
+        // Con la comisión ya definida, la utilidad de la venta se cierra
+        // (analisis/026).
+        try {
+            await fn_recalcularUtilidadVenta( idSale );
+        } catch (utilidadError) {
+            console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
+        }
+
+        res.json({
+            status: 0,
+            message: "Apartado entregado con éxito.",
+            data: { fechaEntrega: oGetDateNow }
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const getConsHistory = async(req, res = response) => {
+
+    const {
+        idSale
+    } = req.body;
+  
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getConsHistory( '${ idSale }' )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL
+                }
+            });
+            
+        }
+
+    }catch(error){
+            
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  
+  };
+
+const getEgresoByID = async(req, res = response) => {
+
+    const {
+        idEgreso
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getEgresoByID( '${ idEgreso }' )`)
+
+        if(OSQL.length == 0){
+        
+            res.json({
+                status: 1,
+                message: "No se encontró el egreso.",
+                data: null
+            });
+
+        }
+        else{
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: OSQL[0]
+            });
+
+        }
+
+    }catch(error){
+            
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const disabledPayment = async(req, res) => {
+   
+    const {
+        idSale
+        , idPayment
+        , sOption
+        , auth_idUser
+
+        , idUserLogON
+        , idSucursalLogON
+    } = req.body;
+
+    //console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        var OSQL = await dbConnection.query(`call cancelarPagoCortado(
+            '${ oGetDateNow }'
+            , '${ sOption }'
+            , '${ idSale }'
+            , '${ idPayment }'
+            , ${ auth_idUser }
+            
+            , ${ idUserLogON }
+            , ${ idSucursalLogON }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se puede cancelar el pago."
+            });
+
+        }else{
+
+            // Al cancelar un pago baja lo cobrado: si la venta es un folio
+            // de taller, su utilidad cobrada baja en la misma proporcion
+            // (analisis/023). No debe tumbar la respuesta si falla.
+            if (OSQL[0].bOK > 0) {
+                try {
+                    await fn_recalcularUtilidadTallerByIdSale( idSale );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad del taller:', utilidadError.message);
+                }
+                try {
+                    await fn_recalcularUtilidadVenta( idSale );
+                } catch (utilidadError) {
+                    console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
+                }
+            }
+
+            res.json({
+                status: OSQL[0].bOK > 0 ? 0 : 1,
+                message: OSQL[0].message
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const getEgresosListWithPage = async(req, res = response) => {
+
+    var {
+        date = ''
+        , description = ''
+        , amount = 0
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        // Parámetros enlazados: una descripción con apóstrofe ya no rompe la
+        // consulta (antes se pegaba el texto directo en el SQL).
+        var OSQL = await dbConnection.query(
+            `call getEgresosListWithPage(:date, :description, :amount, :search, :start, :limiter)`,
+            {
+                replacements: {
+                    date: String(date || '').substring(0, 10)
+                    , description: String(description || '')
+                    , amount: Number(amount) || 0
+                    , search: String(search || '')
+                    , start: Number(start) || 0
+                    , limiter: Number(limiter) || 10
+                },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                count: iRows,
+                rows: OSQL
+                }
+            });
+            
+        }
+
+        // await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        // await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const disableSaleDetail = async(req, res) => {
+
+    const {
+        idSaleDetail,
+
+        idUserLogON,
+        idSucursalLogON
+
+    } = req.body;
+
+    //console.log(req.body)
+
+    const tran = await dbConnection.transaction();
+
+    var bOK = false;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var oResponse = {
+        status: 0,
+        message: ""
+    };
+
+    try{
+
+        var oSaleDetail = await dbConnection.query(`call getSalesDetailByID( ${ idSaleDetail } )`)
+
+        if(oSaleDetail.length == 0){
+            oResponse.status = 1
+            oResponse.message = "No se encontraron datos"
+        }
+
+        if(oSaleDetail[0].active == 0){
+            oResponse.status = 1
+            oResponse.message = "No se realizó la acción"
+        }
+
+        var OSQL_SaleByID = await dbConnection.query(`call getSaleByID( '${ oSaleDetail[0].idSale }' )`)
+
+        var OSQL_disabledSaleDetail = await dbConnection.query(`call disabledSaleDetail(
+            ${ idSaleDetail }
+        )`,{ transaction: tran })
+
+        if(OSQL_disabledSaleDetail[0].out_id > 0){
+            bOK = true;
+        }else{
+            bOK = false;
+        }
+
+        if(OSQL_SaleByID[0].idSaleType != 6 && oSaleDetail[0].idProduct > 0){
+            
+            var OSQL_insertInventaryLog = await dbConnection.query(`call insertInventaryLog(
+                '${oGetDateNow}'
+                ,  ${ oSaleDetail[0].idProduct }
+                , '${ oSaleDetail[0].cantidad }'
+                , 'Se regresa por cancelación de venta #${ oSaleDetail[0].idSale }'
+    
+                , 1
+                , 1
+                , ''
+                , 0
+                , 0
+                , 0
+    
+                , ${ idUserLogON }
+            )`,{ transaction: tran })
+    
+            if(OSQL_insertInventaryLog[0].out_id > 0){
+                bOK = true;
+            }else{
+                bOK = false;
+            }
+
+        }
+    
+        if(bOK){
+            
+            await tran.commit();
+
+            oResponse.status = 0;
+            oResponse.message = "Producto eliminado de la venta";
+
+            // Cambió el detalle: cambia la utilidad guardada (analisis/026).
+            try {
+                await fn_recalcularUtilidadVenta( oSaleDetail[0].idSale );
+            } catch (utilidadError) {
+                console.log('No se pudo recalcular la utilidad de la venta:', utilidadError.message);
+            }
+
+        }else{
+            
+            await tran.rollback();
+
+            oResponse.status = 1;
+            oResponse.message = "No se pudo eliminar el producto de la venta";
+
+        }
+      
+    }catch(error){
+
+        await tran.rollback();
+
+        oResponse.status = 2
+        oResponse.message = "Sucedió un error inesperado"
+        oResponse.data = error.message
+
+    }
+
+    res.json( oResponse );
+}
+
+const editSobreTaller = async(req, res) => {
+
+    const {
+        auth_idUser = 0,
+        idSale = '',
+        importe = 0,
+        descriptionTaller = '',
+        idStatusSobre,
+        fechaEntrega,
+
+        idUserLogON,
+        idSucursalLogON
+
+    } = req.body;
+
+    //console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        if(auth_idUser == 0){
+            res.json({
+                status: 1,
+                message: "No se pudo cancelar la Venta porque no fue autorizada la acción."
+            });
+            return;
+        }
+
+        var OSQL_editSobreTaller = await dbConnection.query(`call editSobreTaller(
+            '${oGetDateNow}'
+            ,'${ idSale }'
+            ,'${ importe }'
+            ,'${ descriptionTaller }'
+            , ${ idStatusSobre }
+            ,'${ fechaEntrega ? fechaEntrega.substring(0, 10) : '0' }'
+
+            , ${ auth_idUser }
+
+            , ${ idUserLogON }
+            , ${ idSucursalLogON }
+        )`)
+
+        //console.log( OSQL_editSobreTaller )
+
+       if(OSQL_editSobreTaller[0].bOK > 0){
+            
+            res.json({
+                status: 0,
+                message: "Sobre actualizado",
+            });
+
+        }else{
+            
+            res.json({
+                status: 1,
+                message: "No se pudo actualizar el sobre",
+            });
+
+        }
+      
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+}
+
+const getRepVentasDetailWithPage = async(req, res = response) => {
+
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSaleType = 0
+
+        , bCancel = false
+        , bPending = false
+        , bPagada = false
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        if (bPending && bPagada)
+        {
+            bPending = false;
+            bPagada = false;
+        }
+
+        var OSQL_Sum = await dbConnection.query(`call getRepVentasSumByIdSaleType(
+            ${idUserLogON}
+            , '${createDateStart.substring(0, 10)}'
+            , '${createDateEnd.substring(0, 10)}'
+            , ${idCustomer}
+            , ${idSaleType}
+
+            , ${bCancel}
+            , ${bPending}
+            , ${bPagada}
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //console.log( OSQL_Sum )
+
+
+
+        var OSQL = await dbConnection.query(`call getRepVentasDetailWithPage(
+            ${idUserLogON}
+            , '${createDateStart.substring(0, 10)}'
+            , '${createDateEnd.substring(0, 10)}'
+            , ${idCustomer}
+            , ${idSaleType}
+
+            , ${bCancel}
+            , ${bPending}
+            , ${bPagada}
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //console.log(OSQL)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message:"No se encontró información.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL,
+                    repVentasSumByIdSaleType: OSQL_Sum
+                }
+            });
+            
+        }
+
+        // await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        // await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const cbxGetSobreTellerStatusCombo = async(req, res = response) => {
+
+    const {
+        search = ''
+    } = req.body;
+  
+    //////console.log(req.body)
+    
+    try{
+
+        var OSQL = await dbConnection.query(`call cbxGetSobreTellerStatusCombo( '${search}' )`)
+
+        if(OSQL.length == 0){
+        
+                res.json({
+                    status: 2,
+                    message: "No se encontró información.",
+                    data: null
+                });
+        
+            }
+            else{
+        
+                res.json({
+                    status: 0,
+                    message: "Ejecutado correctamente.",
+                    data: OSQL
+                });
+        
+            }
+
+    }catch(error){
+        
+        res.json({
+            status: 3,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  
+};
+
+const insertIngresos = async(req, res) => {
+
+    const {
+
+        idCaja,
+        idFormaPago,
+        description = '',
+
+        amount,
+
+        idUserLogON,
+        idSucursalLogON
+        
+    } = req.body;
+
+    //console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try{
+
+        var OSQL = await dbConnection.query(`call insertIngresos(
+        '  ${oGetDateNow}'
+        ,  ${ idCaja }
+        ,  ${ idFormaPago }
+        , '${ description }'
+        , '${ amount }'
+
+        , ${ idUserLogON }
+        , ${ idSucursalLogON }
+        )`);
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message: "No se registró el Ingreso."
+            });
+
+        }
+        else{
+
+            res.json({
+                status: 0,
+                message: "Ingreso guardado con éxito.",
+                insertID: OSQL[0].idNew
+            });
+
+        }
+        
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const disabledIngresos = async(req, res) => {
+   
+    const {
+        idIngreso
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call disabledIngresos(
+        '${ idIngreso }'
+        )`)
+
+        res.json({
+            status: 0,
+            message: "Ingreso cancelado con éxito.",
+            insertID: OSQL[0].idRelation
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+}
+
+const getPreIngresosCorteCaja = async(req, res = response) => {
+
+    const {
+        idCaja
+
+        ,idUserLogON
+        ,idSucursalLogON
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getPreIngresosCorteCaja(
+            ${ idCaja }
+            )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message:"Ejecutado correctamente.",
+            });
+
+        }
+        else{
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                    rows: OSQL
+                }
+            });
+            
+        }
+        
+    }catch(error){
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
+const getIngresoByID = async(req, res = response) => {
+
+    const {
+        idIngreso
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getIngresoByID( '${ idIngreso }' )`)
+
+        if(OSQL.length == 0){
+        
+            res.json({
+                status: 1,
+                message: "No se encontró el ingreso.",
+                data: null
+            });
+
+        }
+        else{
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: OSQL[0]
+            });
+
+        }
+
+    }catch(error){
+            
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getIngresosByIDCorteCaja = async(req, res = response) => {
+
+    const {
+        idCorteCaja
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var OSQL = await dbConnection.query(`call getIngresosByIDCorteCaja( '${ idCorteCaja }' )`)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 0,
+                message: "No se encontró información.",
+                data: []
+            });
+
+        }
+        else{
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: OSQL
+            });
+
+        }
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
+const getIngresosListWithPage = async(req, res = response) => {
+
+    var {
+        date = ''
+        , description = ''
+        , amount = 0
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        // Parámetros enlazados: una descripción con apóstrofe ya no rompe la
+        // consulta (antes se pegaba el texto directo en el SQL).
+        var OSQL = await dbConnection.query(
+            `call getIngresosListWithPage(:date, :description, :amount, :search, :start, :limiter)`,
+            {
+                replacements: {
+                    date: String(date || '').substring(0, 10)
+                    , description: String(description || '')
+                    , amount: Number(amount) || 0
+                    , search: String(search || '')
+                    , start: Number(start) || 0
+                    , limiter: Number(limiter) || 10
+                },
+                type: dbConnection.QueryTypes.RAW
+            }
+        )
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status:0,
+                message:"Ejecutado correctamente.",
+                data:{
+                count: 0,
+                rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                count: iRows,
+                rows: OSQL
+                }
+            });
+            
+        }
+
+        // await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        // await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getDatosRelacionadosByIDCorteCaja = async(req, res = response) => {
+
+    const {
+        idCorteCaja
+    } = req.body;
+
+    //console.log(req.body)
+
+    try{
+
+        var egresosList = await dbConnection.query(`call getEgresosByIDCorteCaja( '${ idCorteCaja }' )`)
+        var ingresosList = await dbConnection.query(`call getIngresosByIDCorteCaja( '${ idCorteCaja }' )`)
+        var pagosCanList = await dbConnection.query(`call getPagosCanceladosByIDCorteCaja( '${ idCorteCaja }' )`)
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            egresosList: egresosList,
+            ingresosList: ingresosList,
+            pagosCanList: pagosCanList
+        });
+
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+
+};
+
+const getRepPagosCanceladosWithPage = async(req, res = response) => {
+    
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSale = ''
+        , idPayment = ''
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        // var OSQL_Sum = await dbConnection.query(`call getRepVentasSumByIdSaleType(
+        //     ${idUserLogON}
+        //     , '${createDateStart.substring(0, 10)}'
+        //     , '${createDateEnd.substring(0, 10)}'
+        //     , ${idCustomer}
+        //     , ${idSaleType}
+
+        //     , ${bCancel}
+        //     , ${bPending}
+        //     , ${bPagada}
+
+        //     , '${ search }'
+        //     , ${ start }
+        //     , ${ limiter }
+
+        //     , ${ idSucursalLogON }
+        //     )`)
+
+        //console.log( OSQL_Sum )
+
+
+
+        var OSQL = await dbConnection.query(`call getRepPagosCanceladosWithPage(
+            ${idUserLogON}
+            , '${ createDateStart.substring(0, 10) }'
+            , '${ createDateEnd.substring(0, 10) }'
+            , ${ idCustomer }
+            , '${ idSale }'
+            , '${ idPayment }'
+
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //console.log(OSQL)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message:"No se encontró información.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL,
+                    //repVentasSumByIdSaleType: OSQL_Sum
+                }
+            });
+            
+        }
+
+        // await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        // await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getRepPagosWithPage = async(req, res = response) => {
+    
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSale = ''
+        , idPayment = ''
+        , idCorteCaja = ''
+
+        , search = ''
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+       
+    } = req.body;
+
+    //console.log(req.body)
+
+    //const dbConnectionNEW = await createConexion();
+
+    try{
+
+        // var OSQL_Sum = await dbConnection.query(`call getRepVentasSumByIdSaleType(
+        //     ${idUserLogON}
+        //     , '${createDateStart.substring(0, 10)}'
+        //     , '${createDateEnd.substring(0, 10)}'
+        //     , ${idCustomer}
+        //     , ${idSaleType}
+
+        //     , ${bCancel}
+        //     , ${bPending}
+        //     , ${bPagada}
+
+        //     , '${ search }'
+        //     , ${ start }
+        //     , ${ limiter }
+
+        //     , ${ idSucursalLogON }
+        //     )`)
+
+        //console.log( OSQL_Sum )
+
+        var OSQL_Sum = await dbConnection.query(`call getRepPagosSUM(
+            ${idUserLogON}
+            , '${ createDateStart.substring(0, 10) }'
+            , '${ createDateEnd.substring(0, 10) }'
+            , ${ idCustomer }
+            , '${ idSale }'
+            , '${ idPayment }'
+            , '${ idCorteCaja }'
+
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //console.log( OSQL_Sum[0] )
+
+        var OSQL = await dbConnection.query(`call getRepPagosWithPage(
+            ${idUserLogON}
+            , '${ createDateStart.substring(0, 10) }'
+            , '${ createDateEnd.substring(0, 10) }'
+            , ${ idCustomer }
+            , '${ idSale }'
+            , '${ idPayment }'
+            , '${ idCorteCaja }'
+
+
+            , '${ search }'
+            , ${ start }
+            , ${ limiter }
+
+            , ${ idSucursalLogON }
+            )`)
+
+        //console.log(OSQL)
+
+        if(OSQL.length == 0){
+
+            res.json({
+                status: 1,
+                message:"No se encontró información.",
+                data:{
+                    count: 0,
+                    rows: null
+                }
+            });
+
+        }
+        else{
+
+            const iRows = ( OSQL.length > 0 ? OSQL[0].iRows: 0 );
+            
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data:{
+                    count: iRows,
+                    rows: OSQL,
+                    OSQL_Sum: OSQL_Sum
+                    //repVentasSumByIdSaleType: OSQL_Sum
+                }
+            });
+            
+        }
+
+        // await dbConnectionNEW.close();
+        
+    }catch(error){
+
+        // await dbConnectionNEW.close();
+      
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+// ── Recalcula precioTotal en `taller` y total en `sales` tras cada operación ─
+const _fn_recalcularTotalSaleTaller = async (idSale, idTaller) => {
+    try {
+        const [totalResult] = await dbConnection.query(`
+            SELECT ROUND(
+                  IFNULL((SELECT SUM(R.precio  * R.cantidad)  FROM taller_refacciones       R  WHERE R.idTaller  = :idTaller), 0)
+                + IFNULL((SELECT SUM(SE.precio * SE.cantidad) FROM taller_servicios_externos SE WHERE SE.idTaller = :idTaller), 0)
+                + IFNULL((SELECT SUM(MA.valorMetal)           FROM taller_metal_agranel      MA WHERE MA.idTaller = :idTaller), 0)
+                + CASE
+                    WHEN (SELECT COUNT(*) FROM taller_mano_obra TMO WHERE TMO.idTaller = :idTaller) > 0
+                    THEN IFNULL((SELECT SUM(TMO2.precio) FROM taller_mano_obra TMO2 WHERE TMO2.idTaller = :idTaller), 0)
+                    ELSE IFNULL((SELECT manoObraPrecio FROM taller WHERE idTaller = :idTaller), 0)
+                  END
+            , 2) AS nuevoTotal
+        `, { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT });
+
+        const nuevoTotal = totalResult?.nuevoTotal ?? 0;
+
+        await dbConnection.query(
+            `UPDATE taller SET precioTotal = :nuevoTotal WHERE idTaller = :idTaller`,
+            { replacements: { nuevoTotal, idTaller }, type: dbConnection.QueryTypes.UPDATE }
+        );
+
+        // La utilidad se guarda en el folio (analisis/023): se recalcula
+        // aqui, que es por donde pasan TODOS los cambios de captura.
+        await fn_recalcularUtilidadTaller(idTaller);
+
+        return nuevoTotal;
+    } catch (err) {
+        console.error('_fn_recalcularTotalSaleTaller error:', err.message);
+    }
+};
+
+const addRefaccionTaller = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        refaccion,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
+
+    try {
+
+        // Ahora insertar la refacción como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idRefaccion = refaccion.idRefaccion || 0;
+            var idProduct = refaccion.idProduct || 0;
+            var productDesc = refaccion.productDesc || '';
+            var cantidad = refaccion.cantidad || 1;
+            var precio = refaccion.precio || 0;
+            var costo = refaccion.costo || 0;
+            var tipoRefaccion = refaccion.tipo || 'porDefinir';
+
+            var OSQL_InsertRefaccion = await dbConnection.query(`call insertUpdateTallerRefacciones(
+                ${ idRefaccion }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , ${ idProduct }
+                , '${ productDesc }'
+                , '${ cantidad }'
+                , '${ costo }'
+                , '${ precio }'
+                , ${ idUserLogON }
+            )`);
+
+            if (OSQL_InsertRefaccion[0].out_id > 0) {
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+                res.json({ status: 0, message: OSQL_InsertRefaccion[0].message });
+            } else {
+                res.json({ status: 1, message: OSQL_InsertRefaccion[0].message });
+            }
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteRefaccionTaller = async(req, res = response) => {
+
+    const {
+        idRefaccion,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        const oRefInfo = await dbConnection.query(
+            `SELECT idTaller, idSale FROM taller_refacciones WHERE idRefaccion = :idRefaccion LIMIT 1`,
+            { replacements: { idRefaccion }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        var OSQL = await dbConnection.query(`call deleteRefaccionTaller(
+            ${ idRefaccion }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`);
+        console.log(OSQL)
+
+        if (OSQL[0].out_id > 0 && oRefInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oRefInfo[0].idSale, oRefInfo[0].idTaller);
+        }
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const addServicioExternoTaller = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        servicioExterno,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
+
+    try {
+
+        // Ahora insertar el servicio externo como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idServicioExternoDetalle = servicioExterno.idServicioExternoDetalle || 0;
+            var idServicioExterno = servicioExterno.idServicioExterno || 0;
+            var nombre = servicioExterno.nombre || '';
+            var cantidad = servicioExterno.cantidad || 1;
+            var precio = servicioExterno.precio || 0;
+            var costo = servicioExterno.costo || 0;
+
+            var OSQL_InsertServicioExterno = await dbConnection.query(`call insertUpdateTallerServiciosExternos(
+                ${ idServicioExternoDetalle }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , ${ idServicioExterno }
+                , '${ cantidad }'
+                , '${ costo }'
+                , '${ precio }'
+                , ${ idUserLogON }
+            )`);
+
+            if (OSQL_InsertServicioExterno[0].out_id > 0) {
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+                res.json({ status: 0, message: OSQL_InsertServicioExterno[0].message });
+            } else {
+                res.json({ status: 1, message: OSQL_InsertServicioExterno[0].message });
+            }
+        }
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteServicioExternoTaller = async(req, res = response) => {
+
+    const {
+        idServicioExternoDetalle,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        const oServInfo = await dbConnection.query(
+            `SELECT idTaller, idSale FROM taller_servicios_externos WHERE idServicioExternoDetalle = :idServicioExternoDetalle LIMIT 1`,
+            { replacements: { idServicioExternoDetalle }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        var OSQL = await dbConnection.query(`call deleteServicioExternoTaller(
+            ${ idServicioExternoDetalle }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`);
+        console.log(OSQL)
+
+        if (OSQL[0].out_id > 0 && oServInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oServInfo[0].idSale, oServInfo[0].idTaller);
+        }
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const saveTallerHeader = async(req, res) => {
+
+    var {
+        idTaller = 0,
+        idSale = '',
+        idSeller_idUser = 0,
+        idCustomer = 0,
+        descripcion = '',
+        fechaIngreso = '',
+        fechaPrometidaEntrega = '',
+        bRapida = 0,
+        // GARANTIAS (analisis/016): el precio de una garantia se captura
+        // a mano, asi que se guarda desde aqui -- desde el mismo boton
+        // "Actualizar" del encabezado. Llega null/undefined en cualquier
+        // otro caso y entonces NO se toca la columna.
+        precioTotal = null,
+        // Autorización especial para corregir cliente, vendedor o fecha de
+        // ingreso de un folio que ya no es cotización (analisis/029 p.7).
+        auth_idUser = 0,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const fIngreso   = fechaIngreso          ? fechaIngreso.substring(0, 10)          : null;
+    const fPrometida = fechaPrometidaEntrega ? fechaPrometidaEntrega.substring(0, 10) : null;
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        if (!idSale || idSale.toString().trim().length === 0) {
+
+            // ── INSERT: generar folio y crear taller nuevo ──────────────────────
+
+            // 1. Obtener siguiente ID secuencial (idSaleType = 6 = Cotización)
+            await dbConnection.query(
+                `CALL getIDs_BySucursal(:idUserC, :idSucursal, 6, @idSaleNew)`,
+                { replacements: { idUserC: idUserLogON, idSucursal: idSucursalLogON }, type: dbConnection.QueryTypes.RAW }
+            );
+            const [seqResult] = await dbConnection.query(
+                `SELECT @idSaleNew AS idSaleNew`,
+                { type: dbConnection.QueryTypes.SELECT }
+            );
+            const idSaleNew = seqResult.idSaleNew;
+
+            // 2. Obtener prefijo del folio desde sales_type (ej: 'Cot1-')
+            const [sigResult] = await dbConnection.query(
+                `SELECT CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE idSaleType = 6 LIMIT 1`,
+                { replacements: { idSucursal: idSucursalLogON }, type: dbConnection.QueryTypes.SELECT }
+            );
+            const sig = sigResult?.sig || 'V';
+
+            // 3. Folio resultante: 'Cot1-000123'
+            idSale = `${sig}${idSaleNew}`;
+
+            // 4. INSERT en sales
+            await dbConnection.query(
+                `INSERT INTO sales (idSale, createDate, idSucursal, idSeller_idUser, idCustomer, idSaleType, active)
+                 VALUES (:idSale, :createDate, :idSucursal, :idSeller_idUser, :idCustomer, 5, 1)`,
+                {
+                    replacements: {
+                        idSale,
+                        createDate:      oGetDateNow,
+                        idSucursal:      idSucursalLogON,
+                        idSeller_idUser: idSeller_idUser,
+                        idCustomer:      idCustomer
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction
+                }
+            );
+
+            // 5. INSERT en taller (idTallerStatus = 1 = Cotización)
+            await dbConnection.query(
+                `INSERT INTO taller (idSale, createDate, descripcion, fechaIngreso, fechaPrometida, fechaEntrega, idCustomer, idSucursal, idSeller_idUser, active, idTallerStatus, idCotizacion, bRapida)
+                 VALUES (:idSale, :createDate, :descripcion, :fechaIngreso, :fechaPrometida, NULL, :idCustomer, :idSucursal, :idSeller_idUser, 1, 1, :idSale, :bRapida)`,
+                {
+                    replacements: {
+                        idSale,
+                        createDate:      oGetDateNow,
+                        descripcion:     descripcion,
+                        fechaIngreso:    fIngreso,
+                        fechaPrometida:  fPrometida,
+                        idCustomer:      idCustomer,
+                        idSucursal:      idSucursalLogON,
+                        idSeller_idUser: idSeller_idUser,
+                        bRapida:         bRapida ? 1 : 0
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction
+                }
+            );
+
+            const [tallerRow] = await dbConnection.query(
+                `SELECT LAST_INSERT_ID() AS idTaller`,
+                { type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+            idTaller = tallerRow.idTaller;
+
+        } else {
+
+            // ── UPDATE: modificar encabezado existente ──────────────────────────
+
+            // Cliente, vendedor y fecha de ingreso se congelan al dejar de
+            // ser cotización: identifican el folio y el compromiso con el
+            // cliente (analisis/029 punto 7). La descripción y la fecha
+            // prometida siguen libres hasta el bloqueo general.
+            const [oActual] = await dbConnection.query(
+                `SELECT T.idTallerStatus, T.idCustomer, DATE_FORMAT(T.fechaIngreso, '%Y-%m-%d') AS fechaIngreso,
+                        S.idSeller_idUser
+                 FROM taller AS T
+                 INNER JOIN sales AS S ON S.idSale = T.idSale
+                 WHERE T.idTaller = :idTaller LIMIT 1`,
+                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            if (oActual && Number(oActual.idTallerStatus) !== EST_TALLER.COTIZACION) {
+
+                const aCambios = [];
+
+                if (Number(oActual.idCustomer) !== Number(idCustomer)) {
+                    aCambios.push('el cliente');
+                }
+                if (Number(oActual.idSeller_idUser) !== Number(idSeller_idUser)) {
+                    aCambios.push('el vendedor');
+                }
+                if (fIngreso && oActual.fechaIngreso && fIngreso !== oActual.fechaIngreso) {
+                    aCambios.push('la fecha de ingreso');
+                }
+
+                if (aCambios.length > 0) {
+
+                    const bAutorizado = auth_idUser > 0
+                        && await _fn_tieneAccion(auth_idUser, 'tall_EditEncabezadoBloqueado', transaction);
+
+                    if (!bAutorizado) {
+                        await transaction.rollback();
+                        return res.json({
+                            status: 1,
+                            message: `El folio ya es pedido de taller: cambiar ${ aCambios.join(', ') } necesita autorización especial.`
+                        });
+                    }
+
+                }
+
+            }
+
+            await dbConnection.query(
+                `UPDATE sales SET idSeller_idUser = :idSeller_idUser, idCustomer = :idCustomer WHERE idSale = :idSale`,
+                { replacements: { idSeller_idUser, idCustomer, idSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+
+            // El precio solo se guarda aqui cuando el folio ES una
+            // garantia. Un taller normal calcula su precioTotal a partir
+            // de sus renglones y lo escribe `updateTallerStatus`: si esta
+            // ruta lo tocara, guardar el encabezado le borraria el total.
+            const [oFolio] = await dbConnection.query(
+                `SELECT idTallerOrigen FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            const bEsGarantia = !!( oFolio && oFolio.idTallerOrigen );
+
+            // Vacio cuenta como 0: capturar nada es una respuesta valida
+            // (la mayoria de las garantias no se cobran), no un dato que
+            // falte. Lo que no se acepta es un negativo.
+            let sPrecio = '';
+
+            if ( bEsGarantia && precioTotal !== null && precioTotal !== undefined ) {
+
+                const nPrecio = Number( precioTotal === '' ? 0 : precioTotal );
+
+                if ( isNaN( nPrecio ) || nPrecio < 0 ) {
+                    await transaction.rollback();
+                    return res.json({ status: 1, message: 'El precio de la garantía no es válido.' });
+                }
+
+                sPrecio = `, precioTotal = ${ Math.round( nPrecio * 100 ) / 100 }`;
+
+            }
+
+            await dbConnection.query(
+                `UPDATE taller
+                 SET descripcion     = :descripcion,
+                     fechaIngreso    = :fechaIngreso,
+                     fechaPrometida  = :fechaPrometida,
+                     idCustomer      = :idCustomer,
+                     idSeller_idUser = :idSeller_idUser,
+                     idSucursal      = :idSucursal
+                     ${ sPrecio }
+                 WHERE idSale = :idSale AND idTaller = :idTaller`,
+                {
+                    replacements: {
+                        descripcion,
+                        fechaIngreso:   fIngreso,
+                        fechaPrometida: fPrometida,
+                        idCustomer,
+                        idSeller_idUser,
+                        idSucursal:     idSucursalLogON,
+                        idSale,
+                        idTaller
+                    },
+                    type: dbConnection.QueryTypes.UPDATE,
+                    transaction
+                }
+            );
+
+        }
+
+        await transaction.commit();
+        res.json({
+            status: 0,
+            message: "Taller guardado con éxito.",
+            data: { idSale, idTaller }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const updateTallerStatus = async(req, res) => {
+
+    var {
+        idTaller = 0,
+        idTallerStatus = 0,
+        precioTotal = 0,
+        auth_idUser = 0,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        let newIdSale = null;
+
+        const [tallerInfo] = await dbConnection.query(
+            `SELECT idSale, idSucursal, idTallerStatus, idTallerOrigen, IFNULL(bRapida, 0) AS bRapida FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!tallerInfo) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        // Flujo del taller (analisis/029): el folio avanza de uno en uno.
+        // Antes este endpoint escribía cualquier estatus que le mandaran,
+        // sin mirar en cuál estaba ni quién lo pedía.
+        idTallerStatus = Number(idTallerStatus);
+
+        if (idTallerStatus === EST_TALLER.MOSTRADOR) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'El folio pasa a mostrador cuando el encargado de taller lo acepta.'
+            });
+        }
+
+        const bEsRapida = Number( tallerInfo.bRapida ) === 1;
+
+        if (!fn_transicionValida(tallerInfo.idTallerStatus, idTallerStatus, bEsRapida)) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Ese cambio de estatus no sigue el flujo del taller.'
+            });
+        }
+
+        // El permiso también se valida aquí: hasta ahora solo lo revisaba
+        // la pantalla, así que una llamada directa se lo saltaba.
+        const sPermisoEstatus = PERMISO_POR_ESTATUS[ idTallerStatus ];
+        if (sPermisoEstatus) {
+            const idUserPermiso = auth_idUser > 0 ? auth_idUser : idUserLogON;
+            if (!(await _fn_tieneAccion(idUserPermiso, sPermisoEstatus, transaction))) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: 'No tienes permiso para este cambio de estatus.' });
+            }
+        }
+
+        // Status 2 (Pedido): generar el folio real y actualizar idSale.
+        // La SERIE la decide la bandera del folio: una rápida saca su
+        // folio TALLR del tipo 7 y un taller normal el TALL del 5
+        // (analisis/031).
+        if (idTallerStatus === 2) {
+            // Tipo solo para la serie del folio.
+            var idSaleTypeID = bEsRapida ? 7 : 5;
+            if (!tallerInfo) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: 'No se encontró el taller.' });
+            }
+            const oldIdSale = tallerInfo.idSale;
+            const idSucursal = tallerInfo.idSucursal;
+
+            // Rastro de quién generó la rápida. Va firmada de entrada:
+            // nadie tiene que autorizarla, y una firma pendiente dejaría
+            // el folio en solo lectura, sin poder capturarle mano de obra
+            // ni refacciones.
+            if (bEsRapida) {
+                await _fn_firmarRapida(idTaller, idTallerStatus, idUserLogON, oGetDateNow, 'Orden rápida: folio generado', transaction);
+            }
+
+            await dbConnection.query(
+                `CALL getIDs_BySucursal(:idUserC, :idSucursal, :idSaleTypeID, @idSaleNew)`,
+                { replacements: { idUserC: idUserLogON, idSucursal, idSaleTypeID }, type: dbConnection.QueryTypes.RAW }
+            );
+            const [seqResult] = await dbConnection.query(
+                `SELECT @idSaleNew AS idSaleNew`,
+                { type: dbConnection.QueryTypes.SELECT }
+            );
+            const idSaleSeq = seqResult.idSaleNew;
+
+            const [sigResult] = await dbConnection.query(
+                `SELECT CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE idSaleType = :idSaleTypeID LIMIT 1`,
+                { replacements: { idSucursal, idSaleTypeID }, type: dbConnection.QueryTypes.SELECT }
+            );
+            const sig = sigResult?.sig || 'T';
+            newIdSale = `${sig}${idSaleSeq}`;
+
+            await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 0`, { transaction, type: dbConnection.QueryTypes.RAW });
+            await dbConnection.query(
+                // La nota venía como cotización (6) y al generar el folio
+                // pasa a ser taller. Se guarda **5 siempre**, también en
+                // las rápidas: el 7 solo da la serie TALLR. Todo el
+                // sistema reconoce un folio de taller por `idSaleType = 5`
+                // — el cobro, la consulta de ventas, el panel del director
+                // y los reportes — y las garantías hacen exactamente lo
+                // mismo con su 8. Lo que distingue a una rápida es
+                // `taller.bRapida`, no el tipo de venta.
+                `UPDATE sales SET idSale = :newIdSale, idSaleType = 5 WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller SET idSale = :newIdSale WHERE idTaller = :idTaller`,
+                { replacements: { newIdSale, idTaller }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_refacciones SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_servicios_externos SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_mano_obra SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_metal_agranel SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_metal_cliente SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE taller_metal_final SET idSale = :newIdSale WHERE idSale = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(
+                `UPDATE payments SET idRelation = :newIdSale WHERE idRelation = :oldIdSale`,
+                { replacements: { newIdSale, oldIdSale }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+            await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 1`, { transaction, type: dbConnection.QueryTypes.RAW });
+        }
+
+        // Status 3 (Asignado): validar que el taller tenga al menos un técnico
+        if (idTallerStatus === 3) {
+            const [tecnico] = await dbConnection.query(`
+                SELECT 1 AS ok
+                FROM taller_mano_obra
+                WHERE idTaller = :idTaller
+                LIMIT 1
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT,
+                transaction
+            });
+
+            if (!tecnico) {
+                await transaction.rollback();
+                return res.json({
+                    status: 1,
+                    message: 'No se puede asignar el taller: no tiene técnicos registrados en la lista de mano de obra.'
+                });
+            }
+
+            // Validar (SIN mover) que la sucursal cubra el fino del metal del
+            // folio: el movimiento real se hace cuando el técnico ACEPTA la
+            // asignación (firma del status 3). Si ya se movió antes
+            // (re-asignación), no se vuelve a exigir.
+            const [yaMovido] = await dbConnection.query(
+                `SELECT 1 AS ok FROM metal_inventario_track WHERE idTaller = :idTaller AND tipoMovimiento = 'ASIGNACION' LIMIT 1`,
+                { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            if (!yaMovido) {
+                const [necesario] = await dbConnection.query(`
+                    SELECT
+                        IFNULL( SUM( CASE WHEN tipo = 'oro' THEN ROUND( gramos * kilates / 24, 2 ) ELSE 0 END ), 0 ) AS finoOro,
+                        IFNULL( SUM( CASE WHEN tipo = 'plata' THEN ROUND( gramos * kilates / 1000, 2 ) ELSE 0 END ), 0 ) AS finoPlata
+                    FROM taller_metal_agranel WHERE idTaller = :idTaller`,
+                    { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+
+                const finoOroNecesario = parseFloat(necesario.finoOro) || 0;
+                const finoPlataNecesario = parseFloat(necesario.finoPlata) || 0;
+                const finoOroDisponible = await _fn_getSaldoFinoSucursal('oro', tallerInfo.idSucursal, transaction);
+                const finoPlataDisponible = await _fn_getSaldoFinoSucursal('plata', tallerInfo.idSucursal, transaction);
+
+                if (finoOroDisponible < finoOroNecesario || finoPlataDisponible < finoPlataNecesario) {
+                    await transaction.rollback();
+                    let msg = 'No se puede asignar: inventario de la sucursal insuficiente. ';
+                    if (finoOroDisponible < finoOroNecesario) {
+                        msg += `Oro fino: necesita ${ finoOroNecesario } g y hay ${ finoOroDisponible } g. `;
+                    }
+                    if (finoPlataDisponible < finoPlataNecesario) {
+                        msg += `Plata fina: necesita ${ finoPlataNecesario } g y hay ${ finoPlataDisponible } g.`;
+                    }
+                    return res.json({ status: 1, message: msg });
+                }
+            }
+        }
+
+        // Status 4 (Finalizado/Mostrador): descontar el metal final del inventario del técnico
+        // y registrar la comisión destajo de cada técnico con mano de obra en el folio
+        // (analisis/008) — mismo evento, misma transacción: o pasan juntos, o no pasa ninguno.
+        if (idTallerStatus === 4) {
+            const OSQL_Entregar = await dbConnection.query(
+                `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                { replacements: { oGetDateNow, idTaller, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
+            );
+            if (OSQL_Entregar[0].out_id == 0) {
+                await transaction.rollback();
+                return res.json({
+                    status: 1,
+                    message: OSQL_Entregar[0].message
+                });
+            }
+
+            await fn_registrarDestajoByTaller(idTaller, oGetDateNow, idUserLogON, transaction);
+        }
+
+        // Construir la consulta dinámicamente (con parámetros enlazados)
+        const oUpdateRepl = { idTaller, idTallerStatus };
+        let updateQuery = `
+            UPDATE taller 
+            SET idTallerStatus = :idTallerStatus`;
+        
+        // Solo actualizar precioTotal cuando se pasa a status 2
+        //
+        // GARANTÍAS (analisis/016): una garantía NACE en estatus 2, así
+        // que este UPDATE nunca se dispararía para ella y su precio se
+        // quedaría clavado en 0 para siempre. Por eso también se guarda
+        // al pasar a 4 (Finalizado/Mostrador), que es el momento en que
+        // ya se sabe qué se le va a cobrar al cliente.
+        //
+        // El sistema NUNCA calcula este precio: guarda lo que se
+        // capture, y 0 es un valor válido (la mayoría de las garantías
+        // no se cobran). Un taller normal se comporta igual que antes.
+        const bEsGarantiaFolio = !!( tallerInfo && tallerInfo.idTallerOrigen );
+
+        if (idTallerStatus === 2 || ( bEsGarantiaFolio && idTallerStatus === 4 ) || ( bEsRapida && idTallerStatus === 5 )) {
+            updateQuery += `, precioTotal = :precioTotal`;
+            oUpdateRepl.precioTotal = precioTotal;
+        }
+        
+        // Actualizar fechaEntrega cuando se pasa a status 5 — y, ya que
+        // el taller vive en `sales` (analisis de entrega de apartados),
+        // reflejar ahí también quién y cuándo se entregó. idSale puede
+        // haber cambiado arriba (taller rápida, status 1 -> 5): usar
+        // siempre el folio vigente (newIdSale si se generó uno nuevo).
+        // Una rápida no pasa por Mostrador, que es donde un taller normal
+        // descuenta el metal final del técnico y genera el destajo. En una
+        // rápida ese momento es la ENTREGA: el trabajo ya se hizo
+        // (analisis/031). Lo que no entra aquí es la comisión del
+        // vendedor, que va cuando el folio se paga, igual que en un taller
+        // normal.
+        if (idTallerStatus === 5 && bEsRapida) {
+            // Rastro de quién la entregó: la rápida se entrega sin
+            // autorización, pero tiene que quedar registrado.
+            await _fn_firmarRapida(idTaller, idTallerStatus, idUserLogON, oGetDateNow, 'Orden rápida: entregada en mostrador', transaction);
+
+            const OSQL_MetalRapida = await dbConnection.query(
+                `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                { replacements: { oGetDateNow, idTaller, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
+            );
+
+            // out_id 0 con "no tiene metal final" no es un error: la mayoría
+            // de las rápidas no llevan metal.
+            if (OSQL_MetalRapida[0].out_id == 0 && !/no tiene metal final/i.test(OSQL_MetalRapida[0].message || '')) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: OSQL_MetalRapida[0].message });
+            }
+
+            // Destajo de cada técnico con mano de obra en el folio, en la
+            // misma transacción que la entrega: o pasan juntos, o no pasa
+            // ninguno.
+            await fn_registrarDestajoByTaller(idTaller, oGetDateNow, idUserLogON, transaction);
+        }
+
+        if (idTallerStatus === 5) {
+            updateQuery += `, fechaEntrega = :fechaEntrega`;
+            oUpdateRepl.fechaEntrega = oGetDateNow;
+
+            const idSaleParaEntrega = newIdSale || tallerInfo.idSale;
+            const idUserEntrega = auth_idUser > 0 ? auth_idUser : idUserLogON;
+
+            await dbConnection.query(
+                `UPDATE sales SET fechaEntrega = :fechaEntrega, idUserEntrega = :idUserEntrega WHERE idSale = :idSale`,
+                { replacements: { fechaEntrega: oGetDateNow, idUserEntrega, idSale: idSaleParaEntrega }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+        }
+
+        updateQuery += ` WHERE idTaller = :idTaller`;
+
+        const oSQLUpdate = await dbConnection.query(updateQuery, { replacements: oUpdateRepl, transaction });
+
+        await transaction.commit();
+
+        if (oSQLUpdate[0].affectedRows > 0) {
+            res.json({
+                status: 0,
+                message: "Estado del taller actualizado correctamente.",
+                data: {
+                    idTaller: idTaller,
+                    idTallerStatus: idTallerStatus,
+                    precioTotal: precioTotal,
+                    fechaEntrega: idTallerStatus === 5 ? oGetDateNow : null,
+                    idSale: newIdSale
+                }
+            });
+        } else {
+            res.json({
+                status: 1,
+                message: "No se pudo actualizar el estado del taller."
+            });
+        }
+    } catch (error) {
+        await dbConnection.query(`SET FOREIGN_KEY_CHECKS = 1`).catch(() => {});
+        await transaction.rollback();
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerByID = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    ////console.log(req.body)
+
+    try{
+
+        const oTaller = await dbConnection.query(`
+            SELECT
+                T.idTaller
+                , T.idSale
+                , T.createDate
+                , DATE_FORMAT( DATE_SUB( T.createDate, INTERVAL IFNULL(@iHours, 0) HOUR ), '%d-%m-%Y %h:%i:%s %p') AS createDateString
+                , DATE_FORMAT( T.createDate, '%d-%m-%Y') AS createDateDate
+                , DATE_FORMAT( T.createDate, '%h:%i:%s %p') AS createDateHours
+                , IFNULL( T.descripcion, '') AS descripcion
+                , IFNULL( DATE_FORMAT( T.fechaIngreso, '%Y-%m-%d'), '') AS fechaIngreso
+                , IFNULL( DATE_FORMAT( T.fechaPrometida, '%Y-%m-%d'), '') AS fechaPrometida
+                , IFNULL( DATE_FORMAT( T.fechaEntrega, '%Y-%m-%d %h:%i:%s %p'), '') AS fechaEntrega
+                , T.idCustomer
+                , CONCAT( C.lastName, ' ', C.name, ' - ', C.tel, ' - ', C.address) AS customerDesc
+                , T.idSucursal
+                , SS.name AS sucursalDesc
+                , T.idSeller_idUser
+                , CONCAT( '#', U.idUser, ' - ', U.name) AS sellerDesc
+                , T.active
+                , T.idTallerStatus
+                , IFNULL( T.manoObraPrecio, 0) AS manoObraPrecio
+                , IFNULL( T.bRapida, 0) AS bRapida
+                -- Garantias (analisis/016): el folio NO lleva dentro el
+                -- taller de origen, asi que esta columna es la UNICA
+                -- fuente de la relacion. bEsGarantia se deriva de ella
+                -- --no hay un campo aparte-- para que no se puedan
+                -- desincronizar.
+                , T.idTallerOrigen
+                , CASE WHEN T.idTallerOrigen IS NULL THEN 0 ELSE 1 END AS bEsGarantia
+                , TO_.idTaller AS idTallerOrigenID
+                , IFNULL( DATE_FORMAT( TO_.fechaEntrega, '%d-%m-%Y'), '') AS origenFechaEntrega
+                , IFNULL( CONCAT( CO.lastName, ' ', CO.name), '') AS origenClienteDesc
+                , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
+                , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
+                , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
+                -- Utilidad guardada del folio (analisis/023): el Front solo
+                -- la muestra a quien tiene el permiso de ver costos.
+                , ROUND( IFNULL( T.utilidad, 0), 2) AS utilidad
+                , ROUND( IFNULL( T.utilidadCobrada, 0), 2) AS utilidadCobrada
+                , IFNULL( DATE_FORMAT( T.cancelDate, '%d-%m-%Y %h:%i %p'), '') AS cancelDateDesc
+                , IFNULL( T.motivoCancelacion, '') AS motivoCancelacion
+                , IFNULL( UC.name, '') AS cancelUserDesc
+            FROM taller AS T
+            INNER JOIN sucursales AS SS ON T.idSucursal = SS.idSucursal
+            INNER JOIN users AS U ON T.idSeller_idUser = U.idUser
+            INNER JOIN customers AS C ON T.idCustomer = C.idCustomer
+            LEFT JOIN users AS UC ON UC.idUser = T.idCancelUser
+            -- Taller de origen, solo cuando este folio es una garantia.
+            -- LEFT JOIN porque la enorme mayoria de los folios NO son
+            -- garantia y no deben desaparecer del resultado.
+            LEFT JOIN taller AS TO_ ON TO_.idSale = T.idTallerOrigen
+            LEFT JOIN customers AS CO ON CO.idCustomer = TO_.idCustomer
+            LEFT JOIN (
+                SELECT
+                    PP.idRelation
+                    , ROUND( SUM( PP.pago), 2) AS pagado
+                FROM payments AS PP
+                WHERE PP.relationType IN ('V','A')
+                AND PP.idRelation = ( SELECT idSale FROM taller WHERE idTaller = :idTaller )
+                AND PP.active = 1
+                GROUP BY PP.idRelation
+            ) AS AAA ON AAA.idRelation = T.idSale
+            WHERE T.idTaller = :idTaller
+        `, {
+            replacements: { idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if (!oTaller || oTaller.length === 0) {
+            return res.json({
+                status: 1,
+                message: "No se encontró el taller.",
+                data: null
+            });
+        }
+        else{
+
+            var oRefacciones = await dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`)
+            var oServiciosExternos = await dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`)
+            var oMetalesAgranel = await dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`)
+            var oMetalesCliente = await dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`)
+            var oMetalesFinal = await dbConnection.query(`call getTallerMetalesFinal( '${ idTaller }' )`)
+
+            var oManoObra = await dbConnection.query(`
+            SELECT 
+                tmo.idManoObra,
+                tmo.createDate,
+                tmo.idTaller,
+                tmo.idSale,
+                tmo.idUserTecnico,
+                u.name as tecnicoDesc,
+                u.userName,
+                tmo.precio,
+                tmo.idCreateUser
+            FROM taller_mano_obra tmo
+            LEFT JOIN users u ON tmo.idUserTecnico = u.idUser
+            WHERE tmo.idTaller = :idTaller
+            ORDER BY tmo.createDate DESC
+        `, {
+            replacements: { idTaller: idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+            var oFirmaStatus = await dbConnection.query(`
+                SELECT
+                    TFS.idFirma
+                    , TFS.createDate
+                    , TFS.firmaDate
+                    , TFS.idTaller
+                    , TFS.idTallerStatus
+                    , TFS.idUserCreate
+                    , IFNULL( TFS.firma, 0) AS firma
+                    , TFS.idUserFirma
+                    , IFNULL( TFS.comentario, '') AS comentario
+                    , IFNULL( UF.name, '') AS userFirmaDesc
+                    , CASE WHEN TFS.firma = 1 THEN 'Aprobado'
+                           WHEN TFS.firma = 2 THEN 'Rechazado'
+                           ELSE 'Sin Revisar'
+                      END AS firmaDesc
+                FROM taller_firmas_status AS TFS
+                LEFT JOIN users AS UF ON TFS.idUserFirma = UF.idUser
+                WHERE TFS.idTaller = :idTaller
+                AND TFS.idTallerStatus = ( SELECT idTallerStatus FROM taller WHERE idTaller = :idTaller )
+                ORDER BY TFS.idFirma DESC
+                LIMIT 1
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT
+            });
+
+            const idSaleForPayments = oTaller[0].idSale;
+
+            const oPagos = await dbConnection.query(`
+                SELECT
+                    P.idPayment
+                    , P.createDate
+                    -- Fecha y hora juntas, con el mismo ajuste de zona
+                    -- horaria que el resto del folio: es lo que imprime
+                    -- el ticket del pago, que salía "undefined" porque
+                    -- este renglón no existía.
+                    , DATE_FORMAT( DATE_SUB( P.createDate, INTERVAL IFNULL(@iHours, 0) HOUR ), '%d-%m-%Y %h:%i:%s %p') AS createDateString
+                    , DATE_FORMAT( P.createDate, '%d-%m-%Y') AS createDateDate
+                    , DATE_FORMAT( P.createDate, '%h:%i:%s %p') AS createDateHours
+                    , P.idRelation AS idSale
+                    , P.idFormaPago
+                    , FP.name AS formaPagoDesc
+                    , ROUND( P.pago, 2) AS pago
+                    , P.referencia
+                    , P.description
+                    , CONCAT( '#', U.idUser, ' - ', U.name) AS sellerName
+                    , ROUND( P.fxRate, 2) AS fxRate
+                    , ROUND( P.pagoF, 2) AS pagoF
+                    , P.active
+                    , IFNULL((
+                        SELECT COUNT(*)
+                        FROM corte_caja_ingresos AS CCI
+                        INNER JOIN corte_caja AS CC ON CCI.idCorteCaja = CC.idCorteCaja
+                        WHERE CC.active = 1
+                          AND CCI.idPayment = P.idPayment
+                    ), 0) AS iPagoCortado
+                    , P.idCaja
+                FROM payments AS P
+                INNER JOIN forma_pago AS FP ON P.idFormaPago = FP.idFormaPago
+                INNER JOIN users AS U ON P.idSeller_idUser = U.idUser
+                WHERE P.active = 1
+                  AND P.idRelation = :idSale
+                ORDER BY P.keyx DESC
+            `, {
+                replacements: { idSale: idSaleForPayments },
+                type: dbConnection.QueryTypes.SELECT
+            });
+
+            // Garantías levantadas sobre ESTE folio (analisis/016).
+            // Es el otro lado de la relación: desde la garantía se ve su
+            // taller (columnas idTallerOrigen* de arriba), y desde el
+            // taller se ven sus garantías. Un mismo taller puede tener
+            // varias a lo largo del tiempo.
+            const oGarantias = await dbConnection.query(`
+                SELECT
+                    G.idTaller
+                    , G.idSale
+                    , G.createDate
+                    , DATE_FORMAT( G.createDate, '%d-%m-%Y') AS createDateDate
+                    , IFNULL( G.descripcion, '') AS descripcion
+                    , G.idTallerStatus
+                    , TSC.nombre AS estatusDesc
+                    , ROUND( IFNULL( G.precioTotal, 0), 2) AS precioTotal
+                FROM taller AS G
+                LEFT JOIN taller_status_cat AS TSC ON TSC.idTallerStatus = G.idTallerStatus
+                WHERE G.idTallerOrigen = :idSaleActual
+                  AND G.active = 1
+                ORDER BY G.createDate DESC
+            `, {
+                replacements: { idSaleActual: idSaleForPayments },
+                type: dbConnection.QueryTypes.SELECT
+            });
+
+            res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: {
+                    oTaller: oTaller[0],
+                    refaccionesDetail: oRefacciones,
+                    serviciosExternos: oServiciosExternos,
+                    metalesAgranel: oMetalesAgranel,
+                    metalesCliente: oMetalesCliente,
+                    metalesFinal: oMetalesFinal,
+                    oManoObra: oManoObra,
+                    oFirmaStatus: oFirmaStatus.length > 0 ? oFirmaStatus[0] : null,
+                    oPagos: oPagos,
+                    oGarantias
+                }
+            });
+    
+        }
+
+    }catch(error){
+            
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  
+};
+
+const getTallerStatusCat = async(req, res = response) => {
+    try {
+        const rows = await dbConnection.query(
+            // El id NO dice el orden del flujo (el estatus 8 va entre el 3
+            // y el 4, analisis/029): el catálogo se entrega ordenado por
+            // la columna `orden` para que el filtro de la lista lo muestre
+            // en la secuencia real.
+            `SELECT idTallerStatus, nombre, orden FROM taller_status_cat WHERE active = 1 ORDER BY IFNULL( orden, idTallerStatus ) ASC, idTallerStatus ASC`,
+            { type: dbConnection.QueryTypes.SELECT }
+        );
+        res.json({ status: 0, message: 'Ejecutado correctamente.', data: rows });
+    } catch(error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error });
+    }
+};
+
+const getTallerPaginado = async(req, res = response) => {
+
+    var {
+        createDateStart = ''
+        , createDateEnd = ''
+        , idCustomer = 0
+        , idSale = ''
+        , idTallerStatus = 0
+        , idTecnico = 0
+
+        , bCancel = false
+        , bPending = false
+        , bPagada = false
+        , bVencidos = false
+
+        , limiter = 10
+        , start = 0
+
+        , idUserLogON
+        , idSucursalLogON
+
+    } = req.body;
+
+    try{
+
+        if (bCancel  === true  || bCancel  === 'true'  || bCancel  == 1) bCancel  = 1; else bCancel  = 0;
+        if (bPending === true  || bPending === 'true'  || bPending == 1) bPending = 1; else bPending = 0;
+        if (bPagada  === true  || bPagada  === 'true'  || bPagada  == 1) bPagada  = 1; else bPagada  = 0;
+        if (bVencidos === true || bVencidos === 'true' || bVencidos == 1) bVencidos = 1; else bVencidos = 0;
+
+        if (bPending && bPagada) {
+            bPending = 0;
+            bPagada  = 0;
+        }
+
+        const activeFilter    = bCancel === 1 ? 0 : 1;
+        const payActive       = bCancel === 1 ? 0 : 1;
+        const dateStart       = createDateStart ? createDateStart.substring(0, 10) : '';
+        const dateEnd         = createDateEnd   ? createDateEnd.substring(0, 10)   : '';
+        const idSaleSearch    = idSale ? `%${idSale}%` : null;
+
+        // ── Subquery compartido de abonos ────────────────────────────────────────
+        const abonadoJoin = `
+            LEFT JOIN (
+                SELECT PP.idRelation, ROUND( SUM(PP.pago), 2) AS abonado
+                FROM payments AS PP
+                WHERE PP.relationType IN ('V','A')
+                  AND PP.active = :payActive
+                GROUP BY PP.idRelation
+            ) AS AAA ON AAA.idRelation = T.idSale
+        `;
+
+        // Fecha prometida vencida: el trabajo sigue en el taller (Cotización,
+        // Pedido o Asignado) y la fecha prometida al cliente ya pasó. Desde
+        // Finalizado/Mostrador el taller ya cumplió (la pieza espera al
+        // cliente), y un folio sin fecha prometida (rápidas) nunca vence.
+        const sqlDiasVencido = `
+            CASE WHEN T.idTallerStatus IN (1, 2, 3)
+                  AND T.fechaPrometida IS NOT NULL
+                  AND DATE(T.fechaPrometida) < CURDATE()
+                 THEN DATEDIFF(CURDATE(), DATE(T.fechaPrometida))
+                 ELSE 0
+            END
+        `;
+
+        // ── Cláusulas WHERE compartidas ──────────────────────────────────────────
+        const whereBase = `
+            INNER JOIN sucursalesconfig AS SC ON T.idSucursal = SC.idSucursal
+            ${abonadoJoin}
+            WHERE SC.idUser    = :idUserLogON
+              AND ( :idTallerStatus = 7 OR T.active = :activeFilter )
+              AND ( :idSaleSearch IS NULL OR T.idSale LIKE :idSaleSearch )
+              AND ( :dateStart = '' OR CAST(T.createDate AS DATE) BETWEEN CAST(:dateStart AS DATE) AND CAST(:dateEnd AS DATE) )
+              AND ( :idCustomer = 0  OR T.idCustomer = :idCustomer )
+              AND ( :bPending        = 0  OR ( ROUND( IFNULL(T.precioTotal, 0), 2) - IFNULL(AAA.abonado, 0) ) > 0 )
+              AND ( :bPagada         = 0  OR ( ROUND( IFNULL(T.precioTotal, 0), 2) - IFNULL(AAA.abonado, 0) ) = 0 )
+              AND ( :idTallerStatus  = 0  OR T.idTallerStatus = :idTallerStatus )
+              AND ( :bVencidos       = 0  OR ( ${sqlDiasVencido} ) > 0 )
+              AND ( :idTecnico       = 0  OR EXISTS (
+                    SELECT 1 FROM taller_mano_obra TMO
+                    WHERE TMO.idTaller = T.idTaller AND TMO.idUserTecnico = :idTecnico
+              ))
+        `;
+
+        const replacements = {
+            idUserLogON,
+            activeFilter,
+            payActive,
+            dateStart,
+            dateEnd,
+            idSaleSearch,
+            idCustomer: idCustomer || 0,
+            idTallerStatus: idTallerStatus || 0,
+            idTecnico: idTecnico || 0,
+            bPending,
+            bPagada,
+            bVencidos,
+            start:   Number(start)   || 0,
+            limiter: Number(limiter) || 10
+        };
+
+        // ── COUNT ────────────────────────────────────────────────────────────────
+        const countResult = await dbConnection.query(`
+            SELECT COUNT(*) AS iRows
+            FROM taller AS T
+            ${whereBase}
+        `, { replacements, type: dbConnection.QueryTypes.SELECT });
+
+        const iRows = countResult[0]?.iRows || 0;
+
+        if (iRows === 0) {
+            return res.json({
+                status: 0,
+                message: "Ejecutado correctamente.",
+                data: { count: 0, rows: [] }
+            });
+        }
+
+        // ── DATOS PAGINADOS ──────────────────────────────────────────────────────
+        const rows = await dbConnection.query(`
+            SELECT
+                T.idTaller
+                , T.idSale
+                , T.createDate
+                , DATE_FORMAT(T.createDate, '%d-%m-%Y')      AS createDateDate
+                , DATE_FORMAT(T.createDate, '%h:%i:%s %p')   AS createDateHours
+                , IFNULL(T.descripcion, '')                  AS descripcion
+                , IFNULL(T.fechaIngreso, '')                 AS fechaIngreso
+                , IFNULL(T.fechaPrometida, '')               AS fechaPrometida
+                , IFNULL(T.fechaEntrega, '')                 AS fechaEntrega
+                , T.idCustomer
+                , CONCAT(C.lastName, ' ', C.name, ' - ', C.tel, ' - ', C.address) AS customerDesc
+                , T.idSucursal
+                , SS.name                                    AS sucursalDesc
+                , T.idSeller_idUser
+                , CONCAT('#', U.idUser, ' - ', U.name)       AS sellerDesc
+                , T.active
+                , T.idTallerStatus
+                , TSC.nombre                                 AS statusName
+                , 5                                          AS idSaleType
+                , IFNULL(DATE_FORMAT(T.cancelDate, '%d-%m-%Y %h:%i %p'), '') AS cancelDateDesc
+                , IFNULL(T.motivoCancelacion, '')            AS motivoCancelacion
+                , IFNULL(UC.name, '')                        AS cancelUserDesc
+                , IFNULL(DATE_FORMAT(T.fechaPrometida, '%d-%m-%Y'), '') AS fechaPrometidaDesc
+                , ${sqlDiasVencido}                          AS diasVencido
+                , ROUND(IFNULL(T.precioTotal, 0), 2)         AS total
+                , ROUND(IFNULL(AAA.abonado, 0), 2)           AS abonado
+                , ROUND(IFNULL(T.precioTotal, 0) - IFNULL(AAA.abonado, 0), 2) AS pendingAmount
+                , IFNULL((
+                    SELECT ROUND(SUM(PP2.pago), 2)
+                    FROM payments AS PP2
+                    INNER JOIN corte_caja_ingresos AS CCI ON PP2.idPayment = CCI.idPayment
+                    WHERE PP2.active = 1
+                      AND PP2.relationType IN ('V','A')
+                      AND PP2.idRelation = T.idSale
+                      AND PP2.idFormaPago <> 5
+                    GROUP BY PP2.idRelation
+                ), 0)                                        AS pagosYaEnCorte
+                , (
+                    SELECT IFNULL(TFS.firma, 0)
+                    FROM taller_firmas_status AS TFS
+                    WHERE TFS.idTaller = T.idTaller
+                      AND TFS.idTallerStatus = T.idTallerStatus
+                    ORDER BY TFS.idFirma DESC
+                    LIMIT 1
+                )                                            AS firmaStatus
+                , (
+                    SELECT CASE WHEN TFS2.firma = 1 THEN 'Aprobado'
+                                WHEN TFS2.firma = 2 THEN 'Rechazado'
+                                ELSE 'Sin Revisar'
+                           END
+                    FROM taller_firmas_status AS TFS2
+                    WHERE TFS2.idTaller = T.idTaller
+                      AND TFS2.idTallerStatus = T.idTallerStatus
+                    ORDER BY TFS2.idFirma DESC
+                    LIMIT 1
+                )                                            AS firmaDesc
+                , (
+                    SELECT COUNT(*)
+                    FROM taller_mano_obra AS TMO
+                    WHERE TMO.idTaller = T.idTaller
+                )                                            AS totalTecnicos
+            FROM taller AS T
+            INNER JOIN taller_status_cat AS TSC ON T.idTallerStatus = TSC.idTallerStatus
+            INNER JOIN sucursales        AS SS  ON T.idSucursal      = SS.idSucursal
+            INNER JOIN users             AS U   ON T.idSeller_idUser = U.idUser
+            INNER JOIN customers         AS C   ON T.idCustomer      = C.idCustomer
+            LEFT JOIN  users             AS UC  ON T.idCancelUser    = UC.idUser
+            ${whereBase}
+            ORDER BY T.idTaller DESC
+            LIMIT :start, :limiter
+        `, { replacements, type: dbConnection.QueryTypes.SELECT });
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { count: iRows, rows }
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerRefaccciones = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oRefacciones = await dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                refaccionesDetail: oRefacciones
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const getTallerServiciosExternos = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oServiciosExternos = await dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                serviciosExternosDetail: oServiciosExternos
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const cbxGetServiciosExternosCombo = async(req, res = response) => {
+
+    const {
+        search = ''
+    } = req.body;
+  
+    try{
+
+        var OSQL = await dbConnection.query(`call cbxGetServiciosExternosCombo( '${search}' )`)
+
+        if(OSQL.length == 0){
+        
+                res.json({
+                    status: 2,
+                    message: "No se encontró información.",
+                    data: null
+                });
+        
+            }
+            else{
+        
+                res.json({
+                    status: 0,
+                    message: "Ejecutado correctamente.",
+                    data: OSQL
+                });
+        
+            }
+
+    }catch(error){
+        
+        res.json({
+            status: 3,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+  
+};
+
+// Contexto de inventario de metal de un folio: estatus, sucursal y
+// técnico que recibe el metal (el primero de mano de obra, mismo
+// criterio que asignarMetalInventarioByTaller)
+const _fn_metalInventarioContext = async (idTaller, transaction) => {
+    const [row] = await dbConnection.query(`
+        SELECT T.idTallerStatus, T.idSucursal, T.idSale, T.idCustomer,
+            ( SELECT MO.idUserTecnico FROM taller_mano_obra AS MO
+              WHERE MO.idTaller = T.idTaller
+              ORDER BY MO.createDate ASC, MO.idManoObra ASC LIMIT 1 ) AS idUserTecnico,
+            EXISTS ( SELECT 1 FROM metal_inventario_track AS MT
+              WHERE MT.idTaller = T.idTaller AND MT.tipoMovimiento = 'ASIGNACION' ) AS bMetalMovido
+        FROM taller AS T WHERE T.idTaller = :idTaller LIMIT 1`,
+        { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    return row;
+};
+
+const _fn_resolveMetalProduct = async (tipo, kilates, transaction) => {
+    const [p] = await dbConnection.query(
+        `SELECT idProduct FROM products WHERE barCode = CONCAT( 'METAL-', UPPER(:tipo), '-', CAST(:kilates AS UNSIGNED) ) LIMIT 1`,
+        { replacements: { tipo, kilates }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    return p ? p.idProduct : null;
+};
+
+const _fn_getSaldoFinoSucursal = async (tipo, idSucursal, transaction) => {
+    const finoBarCode = tipo === 'plata' ? 'METAL-PLATA-1000' : 'METAL-ORO-24';
+    const [s] = await dbConnection.query(`
+        SELECT MI.gramos FROM metal_inventario AS MI
+        INNER JOIN products AS P ON P.idProduct = MI.idProduct AND P.barCode = :finoBarCode
+        WHERE MI.tipoPropietario = 'SUCURSAL' AND MI.idPropietario = :idSucursal LIMIT 1`,
+        { replacements: { finoBarCode, idSucursal }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    return s ? parseFloat(s.gramos) : 0;
+};
+
+const _fn_metalInventarioApply = async (oGetDateNow, tipoMovimiento, tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos, idTaller, idSale, referencia, idUserLogON, transaction) => {
+    // Misma regla que valida metalInventario_apply: al inventario de metal
+    // solo entra producto de metal. Se revisa antes de llamar al SP para
+    // fallar con un mensaje claro sin depender del error de la BD.
+    const [oProducto] = await dbConnection.query(
+        `SELECT barCode FROM products WHERE idProduct = :idProduct LIMIT 1`,
+        { replacements: { idProduct }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+    const sBarCode = oProducto ? String(oProducto.barCode || '') : '';
+    if (!sBarCode.startsWith('METAL-ORO-') && !sBarCode.startsWith('METAL-PLATA-')) {
+        throw new Error(`El producto ${ idProduct } no es de metal: no se puede mover al inventario de metal.`);
+    }
+
+    await dbConnection.query(
+        `CALL metalInventario_apply(:oGetDateNow, :tipoMovimiento, :tipoOrigen, :idOrigen, :tipoDestino, :idDestino, :idProduct, :gramos, :idTaller, :idSale, :referencia, :idUserLogON)`,
+        { replacements: { oGetDateNow, tipoMovimiento, tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos, idTaller, idSale, referencia, idUserLogON }, type: dbConnection.QueryTypes.RAW, transaction }
+    );
+};
+
+const _fn_finoEquivalente = (tipo, gramos, kilates) => {
+    const base = tipo === 'plata' ? 1000 : 24;
+    return Math.round( ( parseFloat(gramos) * parseFloat(kilates) / base ) * 100 ) / 100;
+};
+
+const addMetalAgranel = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        metalAgranel,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        // Ahora insertar el metal agranel como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idMetalAgranel = metalAgranel.idMetalAgranel || 0;
+            var tipo = metalAgranel.tipo || 'oro';
+            var gramos = metalAgranel.gramos || 0;
+            var kilates = metalAgranel.kilates || 8;
+            var valorMetal = Math.round(( Number(metalAgranel.valorMetal) || 0 ) * 100) / 100;
+
+            // El costo del metal NO se recibe del navegador (analisis/023):
+            // sale de la cotizacion del dia del kilataje o ley, aqui.
+            const [oCotizacion] = await dbConnection.query(
+                `SELECT fxRateCost FROM fxrate
+                 WHERE active = 1 AND referencia IN (:refOro, :refPlata)
+                 ORDER BY createDate DESC LIMIT 1`,
+                {
+                    replacements: { refOro: `${ kilates } Kilates`, refPlata: `${ kilates } Ley` },
+                    type: dbConnection.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+
+            if (!oCotizacion) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: `No hay cotizacion del dia para ${ tipo === 'plata' ? 'la ley' : 'el kilataje' } ${ kilates }. Capturela en Tipos de cambio.` });
+            }
+
+            var costoMetal = Math.round(( Number(gramos) || 0 ) * ( parseFloat(oCotizacion.fxRateCost) || 0 ) * 100) / 100;
+
+            // Mismo piso que el punto de venta: no se puede vender abajo
+            // del costo + 30%.
+            const nPisoMetal = Math.round(costoMetal * 1.3 * 100) / 100;
+
+            if (valorMetal + 0.01 < nPisoMetal) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: `El valor del metal no puede ser menor al costo + 30% ($${ nPisoMetal.toFixed(2) }).` });
+            }
+
+            // Folio ya asignado: el inventario se mueve al momento.
+            // Modificación = reversa completa del movimiento anterior + alta nueva.
+            const ctx = await _fn_metalInventarioContext(idTaller, transaction);
+            const bAsignado = ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1;
+
+            if (bAsignado && idMetalAgranel > 0) {
+                const [oldRow] = await dbConnection.query(
+                    `SELECT tipo, gramos, kilates FROM taller_metal_agranel WHERE idMetalAgranel = :idMetalAgranel LIMIT 1`,
+                    { replacements: { idMetalAgranel }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+                if (oldRow) {
+                    const oldProduct = await _fn_resolveMetalProduct(oldRow.tipo, oldRow.kilates, transaction);
+                    if (oldProduct) {
+                        await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                            'TECNICO', ctx.idUserTecnico, 'SUCURSAL', ctx.idSucursal,
+                            oldProduct, oldRow.gramos, idTaller, idSale,
+                            'Reversa por modificación de metal de la empresa', idUserLogON, transaction);
+                    }
+                }
+            }
+
+            var OSQL_InsertMetalAgranel = await dbConnection.query(`call insertUpdateTallerMetalAgranel(
+                ${ idMetalAgranel }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , '${ tipo }'
+                , ${ gramos }
+                , ${ kilates }
+                , ${ valorMetal }
+                , ${ costoMetal }
+                , ${ idUserLogON }
+            )`, { transaction });
+
+            if (OSQL_InsertMetalAgranel[0].out_id > 0) {
+
+                if (bAsignado) {
+                    const newProduct = await _fn_resolveMetalProduct(tipo, kilates, transaction);
+                    if (!newProduct) {
+                        await transaction.rollback();
+                        return res.json({ status: 1, message: 'No existe el producto de metal para ese kilataje/ley (ejecutar insert_productos_metal.sql).' });
+                    }
+                    const finoNecesario = _fn_finoEquivalente(tipo, gramos, kilates);
+                    const finoDisponible = await _fn_getSaldoFinoSucursal(tipo, ctx.idSucursal, transaction);
+                    if (finoDisponible < finoNecesario) {
+                        await transaction.rollback();
+                        return res.json({ status: 1, message: `Inventario de la sucursal insuficiente: necesita ${ finoNecesario } g de ${ tipo === 'plata' ? 'plata fina' : 'oro fino' } y hay ${ finoDisponible } g.` });
+                    }
+                    await _fn_metalInventarioApply(oGetDateNow, 'ASIGNACION',
+                        'SUCURSAL', ctx.idSucursal, 'TECNICO', ctx.idUserTecnico,
+                        newProduct, gramos, idTaller, idSale,
+                        'Metal de la empresa agregado con folio asignado', idUserLogON, transaction);
+                }
+
+                await transaction.commit();
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+                res.json({ status: 0, message: OSQL_InsertMetalAgranel[0].message });
+            } else {
+                await transaction.rollback();
+                res.json({ status: 1, message: OSQL_InsertMetalAgranel[0].message });
+            }
+        }
+        else {
+            await transaction.rollback();
+            res.json({ status: 1, message: 'Folio inválido.' });
+        }
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteMetalAgranel = async(req, res = response) => {
+
+    const {
+        idMetalAgranel,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        const oMetalInfo = await dbConnection.query(
+            `SELECT idTaller, idSale, tipo, gramos, kilates FROM taller_metal_agranel WHERE idMetalAgranel = :idMetalAgranel LIMIT 1`,
+            { replacements: { idMetalAgranel }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        // Folio asignado: reingresar el metal al inventario (reversa)
+        if (oMetalInfo.length > 0) {
+            const ctx = await _fn_metalInventarioContext(oMetalInfo[0].idTaller, transaction);
+            if (ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1) {
+                const oldProduct = await _fn_resolveMetalProduct(oMetalInfo[0].tipo, oMetalInfo[0].kilates, transaction);
+                if (oldProduct) {
+                    await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                        'TECNICO', ctx.idUserTecnico, 'SUCURSAL', ctx.idSucursal,
+                        oldProduct, oMetalInfo[0].gramos, oMetalInfo[0].idTaller, oMetalInfo[0].idSale,
+                        'Reversa por eliminación de metal de la empresa', idUserLogON, transaction);
+                }
+            }
+        }
+
+        var OSQL = await dbConnection.query(`call deleteMetalAgranel(
+            ${ idMetalAgranel }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`, { transaction });
+
+        if (OSQL[0].out_id > 0) {
+            await transaction.commit();
+        } else {
+            await transaction.rollback();
+        }
+
+        if (OSQL[0].out_id > 0 && oMetalInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oMetalInfo[0].idSale, oMetalInfo[0].idTaller);
+        }
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerMetalesAgranel = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oMetalesAgranel = await dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                metalesAgranelDetail: oMetalesAgranel
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const addMetalFinal = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        metalFinal,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var OSQL = await dbConnection.query(
+                `call insertUpdateTallerMetalFinal(:idMetalFinal, :oGetDateNow, :idTaller, :idSale, :idUserTecnico, :descripcion, :tipo, :gramos, :kilates, :costoMetal, :precioFinal, :idUserLogON)`,
+                { replacements: {
+                    idMetalFinal: metalFinal.idMetalFinal || 0,
+                    oGetDateNow,
+                    idTaller,
+                    idSale,
+                    idUserTecnico: metalFinal.idUserTecnico || 0,
+                    descripcion: metalFinal.descripcion || '',
+                    tipo: metalFinal.tipo || 'oro',
+                    gramos: metalFinal.gramos || 0,
+                    kilates: metalFinal.kilates || 8,
+                    costoMetal: metalFinal.costoMetal || 0,
+                    precioFinal: metalFinal.precioFinal || 0,
+                    idUserLogON
+                }, type: dbConnection.QueryTypes.RAW }
+            );
+
+            res.json({
+                status: OSQL[0].out_id > 0 ? 0 : 1,
+                message: OSQL[0].message
+            });
+        }
+        else {
+            res.json({ status: 1, message: 'Folio inválido.' });
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteMetalFinal = async(req, res = response) => {
+
+    const {
+        idMetalFinal,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        var OSQL = await dbConnection.query(
+            `call deleteMetalFinal(:idMetalFinal, :oGetDateNow, :idUserLogON)`,
+            { replacements: { idMetalFinal, oGetDateNow, idUserLogON }, type: dbConnection.QueryTypes.RAW }
+        );
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerMetalesFinal = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+
+    try{
+        var oMetalesFinal = await dbConnection.query(
+            `call getTallerMetalesFinal(:idTaller)`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.RAW }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                metalesFinalDetail: oMetalesFinal
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const addMetalCliente = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        metalCliente,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+    console.log(req.body)
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    var bOK = false;
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        // Ahora insertar el metal cliente como detalle de la venta
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idMetalCliente = metalCliente.idMetalCliente || 0;
+            var tipo = metalCliente.tipo || 'oro';
+            var gramos = metalCliente.gramos || 0;
+            var kilates = metalCliente.kilates || 8;
+            var valorMetal = metalCliente.valorMetal || 0;
+            var costoMetal = metalCliente.costoMetal || 0;
+
+            // Folio ya asignado: modificación = reversa completa + alta nueva
+            const ctx = await _fn_metalInventarioContext(idTaller, transaction);
+            const bAsignado = ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1;
+
+            if (bAsignado && idMetalCliente > 0) {
+                const [oldRow] = await dbConnection.query(
+                    `SELECT tipo, gramos, kilates FROM taller_metal_cliente WHERE idMetalCliente = :idMetalCliente LIMIT 1`,
+                    { replacements: { idMetalCliente }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+                if (oldRow) {
+                    const oldProduct = await _fn_resolveMetalProduct(oldRow.tipo, oldRow.kilates, transaction);
+                    if (oldProduct) {
+                        await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                            'TECNICO', ctx.idUserTecnico, 'CLIENTE', ctx.idCustomer,
+                            oldProduct, oldRow.gramos, idTaller, idSale,
+                            'Reversa por modificación de metal del cliente', idUserLogON, transaction);
+                    }
+                }
+            }
+
+            var OSQL_InsertMetalCliente = await dbConnection.query(`call insertUpdateTallerMetalCliente(
+                ${ idMetalCliente }
+                , '${ oGetDateNow }'
+                , ${ idTaller }
+                , '${ idSale }'
+                , '${ tipo }'
+                , ${ gramos }
+                , ${ kilates }
+                , ${ valorMetal }
+                , ${ costoMetal }
+                , ${ idUserLogON }
+            )`, { transaction });
+
+            if (OSQL_InsertMetalCliente[0].out_id > 0) {
+                bOK = true;
+            } else {
+                bOK = false;
+            }
+
+            if (bOK && bAsignado) {
+                const newProduct = await _fn_resolveMetalProduct(tipo, kilates, transaction);
+                if (!newProduct) {
+                    await transaction.rollback();
+                    return res.json({ status: 1, message: 'No existe el producto de metal para ese kilataje/ley (ejecutar insert_productos_metal.sql).' });
+                }
+                await _fn_metalInventarioApply(oGetDateNow, 'ASIGNACION',
+                    'CLIENTE', ctx.idCustomer, 'TECNICO', ctx.idUserTecnico,
+                    newProduct, gramos, idTaller, idSale,
+                    'Metal del cliente agregado con folio asignado', idUserLogON, transaction);
+            }
+
+            if (bOK) {
+                await transaction.commit();
+                res.json({
+                    status: 0,
+                    message: "Activo Cliente agregado con éxito.",
+                    data: {
+                        idSale: idSale,
+                        idTaller: idTaller
+                    }
+                });
+            } else {
+                await transaction.rollback();
+                res.json({
+                    status: 1,
+                    message: "No se registró el activo cliente."
+                });
+            }
+        }
+        else {
+            await transaction.rollback();
+            res.json({ status: 1, message: 'Folio inválido.' });
+        }
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteMetalCliente = async(req, res = response) => {
+
+    const {
+        idMetalCliente,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        // Get all images associated with this metal
+        const oImagesCliente = await dbConnection.query(`call getMetalClienteImgs( '${ idMetalCliente }' )`);
+
+        // Delete physical files from server
+        if (oImagesCliente && oImagesCliente.length > 0) {
+            oImagesCliente.forEach((img) => {
+                const filePath = path.join(__dirname, '../uploads/taller/metales', img.nombreImgNew);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+
+        // Delete image records from database
+        if (oImagesCliente && oImagesCliente.length > 0) {
+            for (const img of oImagesCliente) {
+                await dbConnection.query(`call deleteMetalClienteImg(${ img.keyX })`);
+            }
+        }
+
+        // Delete the metal client record
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        // Folio asignado: regresar el metal al cliente en el inventario (reversa)
+        const oMetalInfo = await dbConnection.query(
+            `SELECT idTaller, idSale, tipo, gramos, kilates FROM taller_metal_cliente WHERE idMetalCliente = :idMetalCliente LIMIT 1`,
+            { replacements: { idMetalCliente }, type: dbConnection.QueryTypes.SELECT }
+        );
+        if (oMetalInfo.length > 0) {
+            const ctx = await _fn_metalInventarioContext(oMetalInfo[0].idTaller);
+            if (ctx && ctx.idTallerStatus >= 3 && ctx.idUserTecnico && ctx.bMetalMovido == 1) {
+                const oldProduct = await _fn_resolveMetalProduct(oMetalInfo[0].tipo, oMetalInfo[0].kilates);
+                if (oldProduct) {
+                    await _fn_metalInventarioApply(oGetDateNow, 'REVERSA',
+                        'TECNICO', ctx.idUserTecnico, 'CLIENTE', ctx.idCustomer,
+                        oldProduct, oMetalInfo[0].gramos, oMetalInfo[0].idTaller, oMetalInfo[0].idSale,
+                        'Reversa por eliminación de metal del cliente', idUserLogON, null);
+                }
+            }
+        }
+
+        var OSQL = await dbConnection.query(`call deleteMetalCliente(
+            ${ idMetalCliente }
+            , '${ oGetDateNow }'
+            , ${ idUserLogON }
+        )`);
+
+        res.json({
+            status: OSQL[0].out_id > 0 ? 0 : 1,
+            message: OSQL[0].out_id > 0 ? 'Activo Cliente y sus imágenes eliminados con éxito' : 'No se pudo eliminar el activo cliente'
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerMetalesCliente = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        var oMetalesCliente = await dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`)
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                metalesClienteDetail: oMetalesCliente
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const uploadMetalClienteImage = async(req, res = response) => {
+
+    const {
+        idMetalCliente = 0,
+        idTaller = 0,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        if (!req.file) {
+            return res.json({
+                status: 2,
+                message: "No se seleccionó archivo"
+            });
+        }
+
+        // Validar que al menos uno esté presente
+        if (idMetalCliente === 0 && idTaller === 0) {
+            return res.json({
+                status: 2,
+                message: "Debe proporcionar idMetalCliente o idTaller"
+            });
+        }
+
+        const nombreImagenOriginal = req.file.originalname;
+        const nombreImagenNew = req.file.filename;
+        
+        // Determinar ruta según el tipo de imagen
+        let urlImg = '';
+        if (idMetalCliente > 0) {
+            // Imagen de metal cliente
+            urlImg = `/uploads/taller/metales/${nombreImagenNew}`;
+        } else if (idTaller > 0) {
+            // Imagen de header del taller
+            urlImg = `/uploads/taller/header/${nombreImagenNew}`;
+        }
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        // Guardar registro en BD - adaptado para ambos casos
+        const OSQL = await dbConnection.query(`
+            INSERT INTO taller_metal_cliente_img 
+            (idMetalCliente, idTaller, createDate, nombreImgOriginal, nombreImgNew, urlImg)
+            VALUES (:idMetalCliente, :idTaller, :createDate, :nombreImgOriginal, :nombreImgNew, :urlImg)
+        `, {
+            replacements: {
+                idMetalCliente: idMetalCliente > 0 ? idMetalCliente : 0,
+                idTaller: idTaller > 0 ? idTaller : 0,
+                createDate: oGetDateNow,
+                nombreImgOriginal: nombreImagenOriginal,
+                nombreImgNew: nombreImagenNew,
+                urlImg: urlImg
+            },
+            type: dbConnection.QueryTypes.INSERT
+        });
+
+        // Obtener el ID insertado
+        const lastIdResult = await dbConnection.query(`SELECT LAST_INSERT_ID() as lastId`);
+        const newId = lastIdResult[0][0].lastId;
+
+        if (newId && newId > 0) {
+            res.json({
+                status: 0,
+                message: "Imagen subida con éxito",
+                data: {
+                    keyX: newId,
+                    urlImg: urlImg,
+                    nombreImgNew: nombreImagenNew
+                }
+            });
+        } else {
+            res.json({
+                status: 1,
+                message: "No se pudo guardar la imagen en la base de datos"
+            });
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getMetalClienteImages = async(req, res = response) => {
+
+    const {
+        idMetalCliente = 0,
+        idTaller = 0
+    } = req.body;
+  
+    try{
+        let query = '';
+        let replacements = {};
+
+        // Determinar qué imágenes recuperar
+        if (idMetalCliente > 0) {
+            // Imágenes del metal cliente
+            query = `
+                SELECT * FROM taller_metal_cliente_img
+                WHERE idMetalCliente = :idMetalCliente AND idTaller = 0
+                ORDER BY createDate DESC
+            `;
+            replacements = { idMetalCliente: idMetalCliente };
+        } else if (idTaller > 0) {
+            // Imágenes del header del taller
+            query = `
+                SELECT * FROM taller_metal_cliente_img
+                WHERE idTaller = :idTaller AND idMetalCliente = 0
+                ORDER BY createDate DESC
+            `;
+            replacements = { idTaller: idTaller };
+        } else {
+            return res.json({
+                status: 2,
+                message: "Debe proporcionar idMetalCliente o idTaller"
+            });
+        }
+
+        const oImagesCliente = await dbConnection.query(query, {
+            replacements: replacements,
+            type: dbConnection.QueryTypes.SELECT
+        });
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                imagesDetail: oImagesCliente
+            }
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const deleteMetalClienteImage = async(req, res = response) => {
+
+    const {
+        keyX,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+
+        // Primero obtener info de la imagen para saber qué archivo eliminar
+        const imgInfo = await dbConnection.query(`
+            SELECT keyX, nombreImgNew, idMetalCliente, idTaller 
+            FROM taller_metal_cliente_img
+            WHERE keyX = :keyX
+        `, {
+            replacements: { keyX: keyX },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if (!imgInfo || imgInfo.length === 0) {
+            return res.json({
+                status: 1,
+                message: "La imagen no existe"
+            });
+        }
+
+        const { nombreImgNew, idMetalCliente, idTaller } = imgInfo[0];
+
+        // Determinar la ruta del archivo según el tipo
+        let filePath = '';
+        if (idMetalCliente > 0) {
+            filePath = path.join(__dirname, '../uploads/taller/metales', nombreImgNew);
+        } else if (idTaller > 0) {
+            filePath = path.join(__dirname, '../uploads/taller/header', nombreImgNew);
+        }
+
+        // Eliminar archivo físico del servidor
+        if (filePath && fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        // Eliminar registro de la base de datos
+        await dbConnection.query(`
+            DELETE FROM taller_metal_cliente_img
+            WHERE keyX = :keyX
+        `, {
+            replacements: { keyX: keyX },
+            type: dbConnection.QueryTypes.DELETE
+        });
+
+        res.json({
+            status: 0,
+            message: "Imagen eliminada con éxito"
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+// FUNCIONES DE MANO DE OBRA
+
+const addManoObraTaller = async(req, res) => {
+
+    var {
+        idTaller,
+        idSale,
+        manoObra,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        if ( ( idSale.length > 0 || idSale > 0 ) && idTaller > 0) {
+
+            var idManoObra = manoObra.idManoObra || 0;
+            var idTecnico = manoObra.idTecnico || 0;
+            var precio = manoObra.precio || 0;
+
+            if (idManoObra > 0) {
+                // UPDATE: Primero guarda el registro actual en el log
+                await dbConnection.query(`
+                    INSERT INTO taller_mano_obra_log 
+                    (idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, tipoLog, logDate, idCreateUserLog)
+                    SELECT idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, 'UPDATE', :logDate, :idCreateUserLog
+                    FROM taller_mano_obra
+                    WHERE idManoObra = :idManoObra
+                `, {
+                    replacements: { 
+                        idManoObra: idManoObra,
+                        logDate: oGetDateNow,
+                        idCreateUserLog: idUserLogON
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction: transaction
+                });
+
+                // UPDATE el registro
+                const resultUpdate = await dbConnection.query(`
+                    UPDATE taller_mano_obra 
+                    SET idUserTecnico = :idTecnico, precio = :precio
+                    WHERE idManoObra = :idManoObra
+                `, {
+                    replacements: { 
+                        idTecnico: idTecnico,
+                        precio: precio,
+                        idManoObra: idManoObra
+                    },
+                    type: dbConnection.QueryTypes.UPDATE,
+                    transaction: transaction
+                });
+
+                await transaction.commit();
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+
+                res.json({
+                    status: 0,
+                    message: "Mano de obra actualizada con éxito",
+                    insertID: idManoObra
+                });
+
+            } else {
+                // INSERT nuevo registro
+                // Validar que el técnico no esté ya agregado en este taller
+                const tecnicoExistente = await dbConnection.query(`
+                    SELECT idManoObra FROM taller_mano_obra
+                    WHERE idTaller = :idTaller AND idUserTecnico = :idTecnico
+                    LIMIT 1
+                `, {
+                    replacements: { 
+                        idTaller: idTaller,
+                        idTecnico: idTecnico
+                    },
+                    type: dbConnection.QueryTypes.SELECT,
+                    transaction: transaction
+                });
+
+                if (tecnicoExistente && tecnicoExistente.length > 0) {
+                    await transaction.rollback();
+                    res.json({
+                        status: 1,
+                        message: "Este técnico ya está agregado en el taller"
+                    });
+                    return;
+                }
+
+                // Insertar nuevo registro
+                await dbConnection.query(`
+                    INSERT INTO taller_mano_obra 
+                    (createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser)
+                    VALUES (:createDate, :idTaller, :idSale, :idTecnico, :precio, :idCreateUser)
+                `, {
+                    replacements: { 
+                        createDate: oGetDateNow,
+                        idTaller: idTaller,
+                        idSale: idSale,
+                        idTecnico: idTecnico,
+                        precio: precio,
+                        idCreateUser: idUserLogON
+                    },
+                    type: dbConnection.QueryTypes.INSERT,
+                    transaction: transaction
+                });
+
+                // Obtener el último ID insertado
+                const lastIdResult = await dbConnection.query(`SELECT LAST_INSERT_ID() as lastId`, {
+                    transaction: transaction
+                });
+                const newId = lastIdResult[0][0].lastId;
+
+                // Validar que se obtuvo un ID válido
+                if (!newId || newId <= 0) {
+                    await transaction.rollback();
+                    res.json({
+                        status: 1,
+                        message: "No se pudo obtener el ID del registro insertado"
+                    });
+                    return;
+                }
+
+                await transaction.commit();
+                await _fn_recalcularTotalSaleTaller(idSale, idTaller);
+
+                res.json({
+                    status: 0,
+                    message: "Mano de obra agregada con éxito",
+                    insertID: newId
+                });
+            }
+        } else {
+            res.json({
+                status: 1,
+                message: "Parámetros inválidos"
+            });
+        }
+    } catch (error) {
+        await transaction.rollback();
+        console.log(error)
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const deleteManoObraTaller = async(req, res = response) => {
+
+    const {
+        idManoObra,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        // Inicialmente, verificar que el registro existe
+        const recordExists = await dbConnection.query(`
+            SELECT idManoObra, idTaller, idSale FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+            LIMIT 1
+        `, {
+            replacements: { idManoObra: idManoObra },
+            type: dbConnection.QueryTypes.SELECT,
+            transaction: transaction
+        });
+
+        if (!recordExists || recordExists.length === 0) {
+            await transaction.rollback();
+            res.json({
+                status: 1,
+                message: "El registro de mano de obra no existe"
+            });
+            return;
+        }
+
+        // Guarda el registro en el log con tipo 'DELETE'
+        await dbConnection.query(`
+            INSERT INTO taller_mano_obra_log 
+            (idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, tipoLog, logDate, idCreateUserLog)
+            SELECT idManoObra, createDate, idTaller, idSale, idUserTecnico, precio, idCreateUser, 'DELETE', :logDate, :idCreateUserLog
+            FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+        `, {
+            replacements: { 
+                idManoObra: idManoObra,
+                logDate: oGetDateNow,
+                idCreateUserLog: idUserLogON
+            },
+            type: dbConnection.QueryTypes.INSERT,
+            transaction: transaction
+        });
+
+        // Elimina el registro
+        await dbConnection.query(`
+            DELETE FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+        `, {
+            replacements: { idManoObra: idManoObra },
+            type: dbConnection.QueryTypes.DELETE,
+            transaction: transaction
+        });
+
+        // Verifica que se eliminó correctamente
+        const recordAfterDelete = await dbConnection.query(`
+            SELECT idManoObra FROM taller_mano_obra
+            WHERE idManoObra = :idManoObra
+            LIMIT 1
+        `, {
+            replacements: { idManoObra: idManoObra },
+            type: dbConnection.QueryTypes.SELECT,
+            transaction: transaction
+        });
+
+        if (recordAfterDelete && recordAfterDelete.length > 0) {
+            await transaction.rollback();
+            res.json({
+                status: 1,
+                message: "No se pudo eliminar completamente la mano de obra"
+            });
+            return;
+        }
+
+        await transaction.commit();
+
+        if (recordExists.length > 0) {
+            await _fn_recalcularTotalSaleTaller(recordExists[0].idSale, recordExists[0].idTaller);
+        }
+
+        res.json({
+            status: 0,
+            message: "Mano de obra eliminada con éxito",
+            out_id: idManoObra
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        console.log("Error en deleteManoObraTaller:", error);
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerManoObra = async(req, res = response) => {
+
+    const {
+        idTaller
+    } = req.body;
+  
+    try{
+        const oManoObra = await dbConnection.query(`
+            SELECT 
+                tmo.idManoObra,
+                tmo.createDate,
+                tmo.idTaller,
+                tmo.idSale,
+                tmo.idUserTecnico,
+                u.name as tecnicoDesc,
+                u.userName,
+                tmo.precio,
+                tmo.idCreateUser
+            FROM taller_mano_obra tmo
+            LEFT JOIN users u ON tmo.idUserTecnico = u.idUser
+            WHERE tmo.idTaller = :idTaller
+            ORDER BY tmo.createDate DESC
+        `, {
+            replacements: { idTaller: idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+        
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: oManoObra
+        });
+    }catch(error){
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const updateManoObraPrecio = async(req, res) => {
+
+    const {
+        idTaller,
+        manoObraPrecio,
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    try {
+        if (idTaller <= 0) {
+            res.json({
+                status: 1,
+                message: "ID de taller inválido"
+            });
+            return;
+        }
+
+        const oTallerSaleInfo = await dbConnection.query(
+            `SELECT idSale FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        // Usar SQL directo para actualizar el campo manoObraPrecio en la tabla sale_taller
+        const result = await dbConnection.query(`
+            UPDATE taller 
+            SET manoObraPrecio = :manoObraPrecio 
+            WHERE idTaller = :idTaller
+        `, {
+            replacements: { manoObraPrecio: manoObraPrecio || 0, idTaller: idTaller },
+            type: dbConnection.QueryTypes.UPDATE
+        });
+
+        if (oTallerSaleInfo.length > 0) {
+            await _fn_recalcularTotalSaleTaller(oTallerSaleInfo[0].idSale, idTaller);
+        }
+
+        // result retorna un array [undefined, rowsAffected]
+        if (result && result[1] > 0) {
+            res.json({
+                status: 0,
+                message: "Mano de obra actualizada correctamente"
+            });
+        } else {
+            res.json({
+                status: 0,
+                message: "Mano de obra actualizada correctamente"
+            });
+        }
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+};
+
+const getTallerByIDSeq = async(req, res = response) => {
+
+    const { idTaller } = req.body;
+
+    try {
+
+        const oTaller = await dbConnection.query(`
+            SELECT
+                T.idTaller
+                , T.idSale
+                , T.createDate
+                , DATE_FORMAT( DATE_SUB( T.createDate, INTERVAL IFNULL(@iHours, 0) HOUR ), '%d-%m-%Y %h:%i:%s %p') AS createDateString
+                , DATE_FORMAT( T.createDate, '%d-%m-%Y') AS createDateDate
+                , DATE_FORMAT( T.createDate, '%h:%i:%s %p') AS createDateHours
+                , IFNULL( T.descripcion, '') AS descripcion
+                , IFNULL( DATE_FORMAT( T.fechaIngreso, '%Y-%m-%d'), '') AS fechaIngreso
+                , IFNULL( DATE_FORMAT( T.fechaPrometida, '%Y-%m-%d'), '') AS fechaPrometida
+                , IFNULL( DATE_FORMAT( T.fechaEntrega, '%Y-%m-%d %h:%i:%s %p'), '') AS fechaEntrega
+                , T.idCustomer
+                , CONCAT( C.lastName, ' ', C.name, ' - ', C.tel, ' - ', C.address) AS customerDesc
+                , T.idSucursal
+                , SS.name AS sucursalDesc
+                , T.idSeller_idUser
+                , CONCAT( '#', U.idUser, ' - ', U.name) AS sellerDesc
+                , T.active
+                , T.idTallerStatus
+                , IFNULL( T.manoObraPrecio, 0) AS manoObraPrecio
+                , IFNULL( T.bRapida, 0) AS bRapida
+                , ROUND( IFNULL( AAA.pagado, 0), 2) AS pagado
+                , ROUND( IFNULL( T.precioTotal, 0) - IFNULL( AAA.pagado, 0), 2) AS pendingAmount
+                , ROUND( IFNULL( T.precioTotal, 0), 2) AS saleTotal
+                -- Utilidad guardada del folio (analisis/023): el Front solo
+                -- la muestra a quien tiene el permiso de ver costos.
+                , ROUND( IFNULL( T.utilidad, 0), 2) AS utilidad
+                , ROUND( IFNULL( T.utilidadCobrada, 0), 2) AS utilidadCobrada
+            FROM taller AS T
+            INNER JOIN sucursales AS SS ON T.idSucursal = SS.idSucursal
+            INNER JOIN users AS U ON T.idSeller_idUser = U.idUser
+            INNER JOIN customers AS C ON T.idCustomer = C.idCustomer
+            LEFT JOIN (
+                SELECT
+                    PP.idRelation
+                    , ROUND( SUM( PP.pago), 2) AS pagado
+                FROM payments AS PP
+                WHERE PP.relationType IN ('V','A')
+                AND PP.idRelation = ( SELECT idSale FROM taller WHERE idTaller = :idTaller )
+                AND PP.active = 1
+                GROUP BY PP.idRelation
+            ) AS AAA ON AAA.idRelation = T.idSale
+            WHERE T.idTaller = :idTaller
+        `, {
+            replacements: { idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        if (!oTaller || oTaller.length === 0) {
+            return res.json({
+                status: 1,
+                message: "No se encontró el taller.",
+                data: null
+            });
+        }
+
+        const [oRefacciones, oServiciosExternos, oMetalesAgranel, oMetalesCliente, oMetalesFinal, oManoObra, oFirmaStatusArr] = await Promise.all([
+            dbConnection.query(`call getTallerRefaccciones( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerServiciosExternos( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerMetalesAgranel( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerMetalesCliente( '${ idTaller }' )`),
+            dbConnection.query(`call getTallerMetalesFinal( '${ idTaller }' )`),
+            dbConnection.query(`
+                SELECT
+                    tmo.idManoObra,
+                    tmo.createDate,
+                    tmo.idTaller,
+                    tmo.idSale,
+                    tmo.idUserTecnico,
+                    u.name AS tecnicoDesc,
+                    u.userName,
+                    tmo.precio,
+                    tmo.idCreateUser
+                FROM taller_mano_obra tmo
+                LEFT JOIN users u ON tmo.idUserTecnico = u.idUser
+                WHERE tmo.idTaller = :idTaller
+                ORDER BY tmo.createDate DESC
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT
+            }),
+            dbConnection.query(`
+                SELECT
+                    TFS.idFirma
+                    , TFS.createDate
+                    , TFS.firmaDate
+                    , TFS.idTaller
+                    , TFS.idTallerStatus
+                    , TFS.idUserCreate
+                    , IFNULL( TFS.firma, 0) AS firma
+                    , TFS.idUserFirma
+                    , IFNULL( TFS.comentario, '') AS comentario
+                    , IFNULL( UF.name, '') AS userFirmaDesc
+                    , CASE WHEN TFS.firma = 1 THEN 'Aprobado'
+                           WHEN TFS.firma = 2 THEN 'Rechazado'
+                           ELSE 'Sin Revisar'
+                      END AS firmaDesc
+                FROM taller_firmas_status AS TFS
+                LEFT JOIN users AS UF ON TFS.idUserFirma = UF.idUser
+                WHERE TFS.idTaller = :idTaller
+                AND TFS.idTallerStatus = ( SELECT idTallerStatus FROM taller WHERE idTaller = :idTaller )
+                ORDER BY TFS.idFirma DESC
+                LIMIT 1
+            `, {
+                replacements: { idTaller },
+                type: dbConnection.QueryTypes.SELECT
+            })
+        ]);
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: {
+                oTaller: oTaller[0],
+                refaccionesDetail: oRefacciones,
+                serviciosExternos: oServiciosExternos,
+                metalesAgranel: oMetalesAgranel,
+                metalesCliente: oMetalesCliente,
+                metalesFinal: oMetalesFinal,
+                oManoObra: oManoObra,
+                oFirmaStatus: oFirmaStatusArr.length > 0 ? oFirmaStatusArr[0] : null
+            }
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const insertUpdateTallerFirmasMasivo = async(req, res = response) => {
+
+    const {
+        firmas = [],      // array de { idTaller, idTallerStatus }
+        idUserFirma = 0,
+        comentario = ''
+    } = req.body;
+
+    if (!Array.isArray(firmas) || firmas.length === 0) {
+        return res.json({ status: 1, message: 'No se recibieron registros para aprobar.' });
+    }
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        let aprobados  = 0;
+        const rechazados = []; // talleres donde el firmante NO es técnico asignado
+
+        for (const f of firmas) {
+            if (!f.idTaller) continue;
+
+            // Status 3 (Asignado): validar que idUserFirma sea técnico del taller
+            if (f.idTallerStatus === 3) {
+                const [esTecnico] = await dbConnection.query(`
+                    SELECT 1 AS ok
+                    FROM taller_mano_obra
+                    WHERE idTaller       = :idTaller
+                      AND idUserTecnico  = :idUserFirma
+                    LIMIT 1
+                `, {
+                    replacements: { idTaller: f.idTaller, idUserFirma },
+                    type: dbConnection.QueryTypes.SELECT
+                });
+
+                if (!esTecnico) {
+                    rechazados.push(`#${f.idSale}`);
+                    continue;
+                }
+
+                // Al aceptar la asignación, el metal del folio pasa al
+                // inventario del técnico; si no hay fino en la sucursal, la
+                // firma de ese folio se omite con su motivo
+                const OSQL_Asignar = await dbConnection.query(
+                    `CALL asignarMetalInventarioByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                    { replacements: { oGetDateNow, idTaller: f.idTaller, idUserLogON: idUserFirma }, type: dbConnection.QueryTypes.RAW }
+                );
+                if (OSQL_Asignar[0].out_id == 0) {
+                    rechazados.push(`#${f.idSale} (${ OSQL_Asignar[0].message })`);
+                    continue;
+                }
+            }
+
+            await dbConnection.query(`
+                UPDATE taller_firmas_status
+                SET firma       = 1,
+                    idUserFirma = :idUserFirma,
+                    comentario  = :comentario,
+                    firmaDate   = :firmaDate
+                WHERE idTaller       = :idTaller
+                  AND idTallerStatus = :idTallerStatus
+                  AND firma          = 0
+            `, {
+                replacements: {
+                    idUserFirma,
+                    comentario,
+                    firmaDate: oGetDateNow,
+                    idTaller: f.idTaller,
+                    idTallerStatus: f.idTallerStatus
+                },
+                type: dbConnection.QueryTypes.UPDATE
+            });
+
+            aprobados++;
+        }
+
+        if (rechazados.length > 0 && aprobados === 0) {
+            return res.json({
+                status: 1,
+                message: `El usuario no es técnico asignado en ninguna de las órdenes seleccionadas (folios: ${rechazados.join(', ')}).`
+            });
+        }
+
+        let message = `Se aprobaron ${aprobados} firma(s) correctamente.`;
+        if (rechazados.length > 0) {
+            message += ` Se omitieron ${rechazados.length} orden(es) porque el usuario no es técnico asignado (folios: ${rechazados.join(', ')}).`;
+        }
+
+        res.json({
+            status: 0,
+            message
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+    }
+
+};
+
+const insertUpdateTallerFirma = async(req, res = response) => {
+
+    const {
+        idFirma = 0,
+        idTaller,
+        idTallerStatus,
+        idUserCreate = 0,
+        firma = 0,
+        idUserFirma = 0,
+        comentario = ''
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+
+        if (!idFirma || idFirma == 0) {
+
+            // INSERT — se llama al cambiar de status (>= 3)
+            // Los campos firma/idUserFirma/comentario permiten insertar ya aprobado
+            // (usado por el flujo de Devolución del cliente, status 6)
+            const result = await dbConnection.query(`
+                INSERT INTO taller_firmas_status
+                    (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+                VALUES
+                    (:createDate, :firmaDate, :idTaller, :idTallerStatus, :idUserCreate, :firma, :idUserFirma, :comentario)
+            `, {
+                replacements: {
+                    createDate: oGetDateNow,
+                    firmaDate: firma > 0 ? oGetDateNow : null,
+                    idTaller, idTallerStatus, idUserCreate,
+                    firma, idUserFirma, comentario
+                },
+                type: dbConnection.QueryTypes.INSERT
+            });
+
+            res.json({
+                status: 0,
+                message: "Registro de firma creado correctamente.",
+                insertID: result[0]
+            });
+
+        } else {
+
+            // UPDATE — cuando el responsable firma (aprueba o rechaza)
+            const transaction = await dbConnection.transaction();
+
+            try {
+
+                const [oFirmaRow] = await dbConnection.query(
+                    `SELECT idTaller, idTallerStatus FROM taller_firmas_status WHERE idFirma = :idFirma LIMIT 1`,
+                    { replacements: { idFirma }, type: dbConnection.QueryTypes.SELECT, transaction }
+                );
+
+                // Al ACEPTAR la asignación (status 3), el técnico recibe el
+                // metal del folio: aquí se mueve el inventario (no al asignar)
+                if (firma == 1 && oFirmaRow && oFirmaRow.idTallerStatus == 3) {
+                    const OSQL_Asignar = await dbConnection.query(
+                        `CALL asignarMetalInventarioByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+                        { replacements: { oGetDateNow, idTaller: oFirmaRow.idTaller, idUserLogON: idUserFirma }, type: dbConnection.QueryTypes.RAW, transaction }
+                    );
+                    if (OSQL_Asignar[0].out_id == 0) {
+                        await transaction.rollback();
+                        return res.json({
+                            status: 1,
+                            message: OSQL_Asignar[0].message
+                        });
+                    }
+                }
+
+                await dbConnection.query(`
+                    UPDATE taller_firmas_status
+                    SET firma       = :firma,
+                        idUserFirma = :idUserFirma,
+                        comentario  = :comentario,
+                        firmaDate   = :firmaDate
+                    WHERE idFirma = :idFirma
+                `, {
+                    replacements: { firma, idUserFirma, comentario, firmaDate: oGetDateNow, idFirma },
+                    type: dbConnection.QueryTypes.UPDATE,
+                    transaction
+                });
+
+                await transaction.commit();
+
+                res.json({
+                    status: 0,
+                    message: firma == 1 ? "Aprobación registrada correctamente." : "Rechazo registrado correctamente."
+                });
+
+            } catch (error) {
+                await transaction.rollback();
+                throw error;
+            }
+
+        }
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+const getTallerFirmasHistorial = async(req, res = response) => {
+
+    const { idTaller } = req.body;
+
+    try {
+
+        const rows = await dbConnection.query(`
+            SELECT
+                tfs.idFirma,
+                tfs.idTallerStatus,
+                CASE tfs.idTallerStatus
+                    WHEN 3 THEN 'Asignado'
+                    WHEN 4 THEN 'Finalizado / Mostrador'
+                    WHEN 5 THEN 'Entregado'
+                    ELSE CONCAT('Status ', tfs.idTallerStatus)
+                END AS statusDesc,
+                tfs.createDate,
+                tfs.firmaDate,
+                tfs.firma,
+                CASE tfs.firma
+                    WHEN 0 THEN 'Pendiente'
+                    WHEN 1 THEN 'Aprobado'
+                    WHEN 2 THEN 'Rechazado'
+                END AS firmaDesc,
+                CONCAT(UC.name, ' - ', UC.userName) AS userCreateDesc,
+                CASE WHEN tfs.idUserFirma > 0
+                    THEN CONCAT(UF.name, ' - ', UF.userName)
+                    ELSE NULL
+                END AS userFirmaDesc,
+                tfs.comentario
+            FROM taller_firmas_status tfs
+            LEFT JOIN users AS UC ON UC.idUser = tfs.idUserCreate
+            LEFT JOIN users AS UF ON UF.idUser = tfs.idUserFirma
+            WHERE tfs.idTaller = :idTaller
+            ORDER BY tfs.idFirma ASC
+        `, {
+            replacements: { idTaller },
+            type: dbConnection.QueryTypes.SELECT
+        });
+
+        res.json({
+            status: 0,
+            message: "Historial de firmas obtenido correctamente.",
+            data: rows
+        });
+
+    } catch (error) {
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+    }
+
+};
+
+// =====================================================================
+// RESPONSABLES DE DEVOLUCIÓN
+// =====================================================================
+
+const getTallerResponsablesDevolucion = async(req, res = response) => {
+
+    const { idTaller } = req.body;
+
+    try {
+        const OSQL = await dbConnection.query(`
+            SELECT
+                rd.idResponsablesDevolucion,
+                rd.createDate,
+                rd.idTaller,
+                rd.idUser,
+                u.name   AS userName,
+                rd.monto
+            FROM taller_responsables_devolucion rd
+            INNER JOIN users u ON rd.idUser = u.idUser
+            WHERE rd.idTaller = :idTaller
+            ORDER BY rd.createDate ASC
+        `, { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT });
+
+        res.json({ status: 0, message: 'OK', data: OSQL });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+const insertResponsableDevolucion = async(req, res = response) => {
+
+    const { idTaller, idUser, monto, idUserLogON } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+        await dbConnection.query(`
+            INSERT INTO taller_responsables_devolucion (createDate, idTaller, idUser, monto)
+            VALUES (:createDate, :idTaller, :idUser, :monto)
+        `, {
+            replacements: { createDate: oGetDateNow, idTaller, idUser, monto },
+            type: dbConnection.QueryTypes.INSERT
+        });
+
+        const lastId = await dbConnection.query(`SELECT LAST_INSERT_ID() AS lastId`);
+        const newId = lastId[0][0].lastId;
+
+        res.json({ status: 0, message: 'Responsable agregado correctamente', insertID: newId });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+const updateResponsableDevolucion = async(req, res = response) => {
+
+    const { idResponsablesDevolucion, idUser, monto, idUserLogON } = req.body;
+
+    try {
+        const result = await dbConnection.query(`
+            UPDATE taller_responsables_devolucion
+            SET idUser = :idUser, monto = :monto
+            WHERE idResponsablesDevolucion = :idResponsablesDevolucion
+        `, {
+            replacements: { idResponsablesDevolucion, idUser, monto },
+            type: dbConnection.QueryTypes.UPDATE
+        });
+
+        if (!result || result[1] === 0) {
+            res.json({ status: 1, message: 'No se encontró el registro' });
+            return;
+        }
+
+        res.json({ status: 0, message: 'Responsable actualizado correctamente' });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+const deleteResponsableDevolucion = async(req, res = response) => {
+
+    const { idResponsablesDevolucion, idUserLogON } = req.body;
+
+    try {
+        await dbConnection.query(`
+            DELETE FROM taller_responsables_devolucion
+            WHERE idResponsablesDevolucion = :idResponsablesDevolucion
+        `, {
+            replacements: { idResponsablesDevolucion },
+            type: dbConnection.QueryTypes.DELETE
+        });
+
+        res.json({ status: 0, message: 'Responsable eliminado correctamente' });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// GARANTÍAS DE TALLER (analisis/016-garantias-taller.md)
+//
+// Una garantía es un folio de taller que nace de uno ya ENTREGADO,
+// hereda su cliente y vendedor, lleva precio capturado a mano y no
+// paga comisión (la excepción vive en fn_registrarDestajoByTaller).
+//
+// El folio es `GAR<sucursal>-<consecutivo>` y NO lleva dentro el taller
+// de origen: la relación vive en `taller.idTallerOrigen`. Meterlo en el
+// texto rompería el consecutivo, porque todo el sistema lo lee con
+// SUBSTRING_INDEX(idSale, '-', -1).
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Talleres que pueden recibir una garantía: entregados (estatus 5),
+// activos, y que no sean ellos mismos una garantía (regla del análisis:
+// una garantía no genera otra garantía en cadena — la nueva se liga al
+// taller original).
+const getTalleresParaGarantia = async(req, res = response) => {
+
+    const {
+        search = ''
+        , start = 0
+        , limiter = 10
+    } = req.body;
+
+    try {
+
+        const sTexto = String(search || '').trim();
+        const sBusqueda = `%${ sTexto }%`;
+        const iSinFiltro = sTexto.length === 0 ? 1 : 0;
+
+        const [oCount] = await dbConnection.query(
+            `SELECT COUNT(*) AS iRows
+             FROM taller AS T
+             INNER JOIN customers AS C ON C.idCustomer = T.idCustomer
+             WHERE T.active = 1
+               AND T.idTallerStatus = 5
+               AND T.idTallerOrigen IS NULL
+               AND ( :iSinFiltro = 1
+                     OR T.idSale LIKE :sBusqueda
+                     OR CONCAT( C.lastName, ' ', C.name ) LIKE :sBusqueda )`,
+            { replacements: { sBusqueda, iSinFiltro }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        const rows = await dbConnection.query(
+            `SELECT
+                T.idTaller
+                , T.idSale
+                , IFNULL( T.descripcion, '') AS descripcion
+                , IFNULL( DATE_FORMAT( T.fechaEntrega, '%d-%m-%Y'), '') AS fechaEntregaDesc
+                , T.idCustomer
+                , CONCAT( C.lastName, ' ', C.name ) AS customerDesc
+                , T.idSeller_idUser
+                , U.name AS sellerDesc
+                , ROUND( IFNULL( T.precioTotal, 0), 2) AS precioTotal
+                , ( SELECT COUNT(*) FROM taller AS G
+                    WHERE G.idTallerOrigen = T.idSale AND G.active = 1 ) AS iGarantias
+             FROM taller AS T
+             INNER JOIN customers AS C ON C.idCustomer = T.idCustomer
+             INNER JOIN users AS U ON U.idUser = T.idSeller_idUser
+             WHERE T.active = 1
+               AND T.idTallerStatus = 5
+               AND T.idTallerOrigen IS NULL
+               AND ( :iSinFiltro = 1
+                     OR T.idSale LIKE :sBusqueda
+                     OR CONCAT( C.lastName, ' ', C.name ) LIKE :sBusqueda )
+             ORDER BY T.fechaEntrega DESC, T.idTaller DESC
+             LIMIT :start, :limiter`,
+            {
+                replacements: {
+                    sBusqueda,
+                    iSinFiltro,
+                    start: Number(start) || 0,
+                    limiter: Number(limiter) || 10
+                },
+                type: dbConnection.QueryTypes.SELECT
+            }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { count: oCount ? Number(oCount.iRows) : 0, rows }
+        });
+
+    } catch (error) {
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// Crea el folio de garantía a partir de un taller entregado, en una
+// sola transacción.
+const insertGarantiaByTaller = async(req, res = response) => {
+
+    const {
+        idTallerOrigen = 0
+        , descripcion = ''
+        , idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        // ── 1. Validaciones de la regla de negocio ──
+        const [oOrigen] = await dbConnection.query(
+            `SELECT idTaller, idSale, idCustomer, idSucursal, idSeller_idUser, idTallerStatus, active, idTallerOrigen
+             FROM taller WHERE idTaller = :idTallerOrigen LIMIT 1`,
+            { replacements: { idTallerOrigen }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oOrigen || Number(oOrigen.active) !== 1) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller de origen.' });
+        }
+
+        // "Ya es una garantía" se revisa ANTES que el estatus: si no,
+        // una garantía en curso se rechazaría con el mensaje de estatus
+        // ("todavía no se le entrega al cliente"), que es cierto pero
+        // manda a la persona a esperar la entrega para volver a
+        // intentar algo que nunca va a poder hacer. El motivo real
+        // primero.
+        if (oOrigen.idTallerOrigen) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Ese folio ya es una garantía. Una garantía nueva se levanta sobre el taller original, no sobre otra garantía.'
+            });
+        }
+
+        if (Number(oOrigen.idTallerStatus) !== 5) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Solo se puede levantar una garantía sobre un taller ENTREGADO. Este folio todavía no se le entrega al cliente.'
+            });
+        }
+
+        if (!String(descripcion || '').trim()) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Describe el problema que motiva la garantía.' });
+        }
+
+        // ── 2. Folio: mismo generador que cualquier otro tipo ──
+        // El tipo de la garantía se resuelve por `sig` y no por su
+        // número, para no depender de qué id le tocó al insertarse en
+        // el catálogo.
+        const [oTipoGar] = await dbConnection.query(
+            `SELECT idSaleType, CONCAT(sig, :idSucursal, '-') AS sig FROM sales_type WHERE sig = 'GAR' LIMIT 1`,
+            { replacements: { idSucursal: oOrigen.idSucursal }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTipoGar) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Falta el tipo de folio "Garantía" en el catálogo (correr SQL/insert_sales_type_garantia.sql).'
+            });
+        }
+
+        // El CALL y el SELECT de la variable van en la MISMA transacción
+        // a propósito: @idGarNew es una variable de sesión y el pool
+        // puede dar conexiones distintas a dos consultas sueltas — la
+        // transacción fija una sola conexión y evita leer NULL.
+        await dbConnection.query(
+            `CALL getIDs_BySucursal(:idUserC, :idSucursal, :idSaleTypeID, @idGarNew)`,
+            {
+                replacements: { idUserC: idUserLogON, idSucursal: oOrigen.idSucursal, idSaleTypeID: oTipoGar.idSaleType },
+                type: dbConnection.QueryTypes.RAW,
+                transaction
+            }
+        );
+        const [oSeq] = await dbConnection.query(
+            `SELECT @idGarNew AS idGarNew`,
+            { type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oSeq || oSeq.idGarNew === null || oSeq.idGarNew === undefined) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se pudo generar el folio de la garantía.' });
+        }
+
+        // Folio SIN el taller de origen dentro (ver encabezado).
+        const idSaleGarantia = `${ oTipoGar.sig }${ oSeq.idGarNew }`;
+
+        // ── 3. Alta del folio ──
+        // `sales.idSaleType` va como 5 (Taller), NO como el tipo de la
+        // garantía: es exactamente lo que ya hace TallerRápidas con su
+        // 7 (verificado: cero renglones con idSaleType 7 en toda la
+        // base). Así la garantía no se cae de ningún filtro
+        // `idSaleType IN (5,7)` que ya exista — panel del director,
+        // consulta de ventas, reportes de taller. Lo que la distingue
+        // es `taller.idTallerOrigen`, no el tipo de venta.
+        await dbConnection.query(
+            `INSERT INTO sales (idSale, createDate, idSucursal, idSeller_idUser, idCustomer, idSaleType, active)
+             VALUES (:idSale, :createDate, :idSucursal, :idSeller_idUser, :idCustomer, 5, 1)`,
+            {
+                replacements: {
+                    idSale: idSaleGarantia,
+                    createDate: oGetDateNow,
+                    idSucursal: oOrigen.idSucursal,
+                    idSeller_idUser: oOrigen.idSeller_idUser,
+                    idCustomer: oOrigen.idCustomer
+                },
+                type: dbConnection.QueryTypes.INSERT,
+                transaction
+            }
+        );
+
+        // Cliente y vendedor se toman del taller ORIGEN, nunca del body:
+        // así no se pueden alterar al crear la garantía.
+        // Arranca en estatus 2 (Pedido de taller), no en 1: una garantía
+        // no pasa por cotización, ya se decidió que se va a hacer.
+        // precioTotal en 0 — el precio real se captura a mano después.
+        await dbConnection.query(
+            `INSERT INTO taller
+                (idSale, createDate, descripcion, fechaIngreso, fechaPrometida, fechaEntrega,
+                 idCustomer, idSucursal, idSeller_idUser, active, idTallerStatus,
+                 idCotizacion, idTallerOrigen, bRapida, precioTotal)
+             VALUES
+                (:idSale, :createDate, :descripcion, :fechaIngreso, NULL, NULL,
+                 :idCustomer, :idSucursal, :idSeller_idUser, 1, 2,
+                 :idSale, :idTallerOrigenFolio, 0, 0)`,
+            {
+                replacements: {
+                    idSale: idSaleGarantia,
+                    createDate: oGetDateNow,
+                    descripcion: String(descripcion).trim(),
+                    fechaIngreso: oGetDateNow.substring(0, 10),
+                    idCustomer: oOrigen.idCustomer,
+                    idSucursal: oOrigen.idSucursal,
+                    idSeller_idUser: oOrigen.idSeller_idUser,
+                    idTallerOrigenFolio: oOrigen.idSale
+                },
+                type: dbConnection.QueryTypes.INSERT,
+                transaction
+            }
+        );
+
+        const [oNuevo] = await dbConnection.query(
+            `SELECT LAST_INSERT_ID() AS idTaller`,
+            { type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        // ── 4. Guarda de integridad ──
+        // Confirmar que `sales` y `taller` quedaron con el MISMO folio
+        // antes de confirmar. Es barato y evita dejar un folio a medias
+        // si algo raro pasó en medio.
+        const [oCheck] = await dbConnection.query(
+            `SELECT
+                ( SELECT COUNT(*) FROM sales WHERE idSale = :idSale ) AS enSales
+                , ( SELECT COUNT(*) FROM taller WHERE idSale = :idSale ) AS enTaller`,
+            { replacements: { idSale: idSaleGarantia }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oCheck || Number(oCheck.enSales) !== 1 || Number(oCheck.enTaller) !== 1) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'No se pudo crear la garantía de forma consistente. No se guardó nada.'
+            });
+        }
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: `Garantía ${ idSaleGarantia } creada con éxito.`,
+            data: {
+                idTaller: oNuevo.idTaller,
+                idSale: idSaleGarantia,
+                idTallerOrigen: oOrigen.idSale
+            }
+        });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        // El folio es PRIMARY KEY en `sales`. Si el contador de
+        // `ids_BySucursal` viene atrás de los datos (pasa al restaurar
+        // un respaldo sobre otro ambiente sin correr
+        // SQL/fix_ids_bysucursal_realinear.sql), el choque sale como
+        // ER_DUP_ENTRY y sin este mensaje se vería como un error crudo
+        // de MySQL que no dice qué hacer.
+        const bDuplicado = ( error && error.original && error.original.code === 'ER_DUP_ENTRY' )
+            || /Duplicate entry/i.test( ( error && error.message ) || '' );
+
+        res.json({
+            status: bDuplicado ? 1 : 2,
+            message: bDuplicado
+                ? 'El folio generado ya existe. Los contadores de folio están atrasados: correr SQL/fix_ids_bysucursal_realinear.sql.'
+                : 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// ELIMINAR O CANCELAR TALLER (analisis/022-eliminar-o-cancelar-taller.md)
+//
+// Un taller que solo tiene encabezado (con o sin descripción) se elimina
+// físicamente; con cualquier otro dato se cancela: estatus 7, dinero con
+// cancelarVentaCompleta, reversa de metal y de comisiones, y solo lectura
+// (middlewares/validar-taller-editable.js).
+// ══════════════════════════════════════════════════════════════════════════
+
+const ID_TALLER_STATUS_CANCELADO = 7;
+
+// Tipos de venta que SON un folio de taller: taller (5), rápida (7) y
+// garantía (8). La consulta de taller los muestra todos como "5", así
+// que el Front manda a cancelar/eliminar cualquiera de los tres por el
+// mismo camino; mirar solo el 5 hacía que una rápida respondiera "El
+// taller no existe".
+const TIPOS_TALLER = [5, 7, 8];
+
+// ¿El usuario tiene la acción? Por puesto ('R') o directa ('U'), con las
+// DOS banderas active (mismo criterio que sucursalesController).
+const _fn_tieneAccion = async(idUser, actionName, transaction) => {
+
+    const filas = await dbConnection.query(
+        `SELECT 1 AS ok
+         FROM actions AS A
+         INNER JOIN actionsconf AS AC ON AC.idAction = A.idAction AND AC.relationType = 'R' AND AC.active = 1
+         INNER JOIN rolesconfig AS RC ON RC.idRol = AC.idRelation
+         WHERE A.name = :actionName AND A.active = 1 AND RC.idUser = :idUser
+         UNION
+         SELECT 1 AS ok
+         FROM actions AS A
+         INNER JOIN actionsconf AS AC ON AC.idAction = A.idAction AND AC.relationType = 'U' AND AC.active = 1
+         WHERE A.name = :actionName AND A.active = 1 AND AC.idRelation = :idUser
+         LIMIT 1`,
+        { replacements: { idUser, actionName }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    return filas.length > 0;
+
+};
+
+// Qué tiene capturado un taller además del encabezado. Una sola consulta
+// con un conteo por sección. Los *_log cuentan (algo se capturó y se
+// quitó: hay historial, y además sus FK impedirían el borrado físico).
+// El `FOR UPDATE` sobre el taller serializa contra quien esté agregando
+// algo en ese momento: se vuelve a llamar dentro de la transacción que
+// elimina o cancela, no solo al armar el aviso.
+const _fn_getDatosTaller = async(idSale, transaction, bBloquear = false) => {
+
+    const [oTaller] = await dbConnection.query(
+        `SELECT T.idTaller, T.idSale, T.idTallerStatus, T.active, S.idSaleType, S.active AS saleActive
+         FROM taller AS T
+         INNER JOIN sales AS S ON S.idSale = T.idSale
+         WHERE T.idSale = :idSale
+         LIMIT 1
+         ${ bBloquear ? 'FOR UPDATE' : '' }`,
+        { replacements: { idSale }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!oTaller) {
+        return null;
+    }
+
+    const [c] = await dbConnection.query(
+        `SELECT
+            ( SELECT COUNT(*) FROM taller WHERE idTaller = :idTaller AND ( idTallerStatus > 1 OR fechaEntrega IS NOT NULL ) ) AS iAvanceEstatus
+            , ( SELECT COUNT(*) FROM taller_metal_cliente_img WHERE idTaller = :idTaller ) AS iFotos
+            , ( SELECT COUNT(*) FROM taller_firmas_status WHERE idTaller = :idTaller ) AS iFirmas
+            , ( SELECT COUNT(*) FROM taller_refacciones WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_refacciones_log WHERE idTaller = :idTaller ) AS iRefacciones
+            , ( SELECT COUNT(*) FROM taller_servicios_externos WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_servicios_externos_log WHERE idTaller = :idTaller ) AS iServiciosExternos
+            , ( SELECT COUNT(*) FROM taller_mano_obra WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_mano_obra_log WHERE idTaller = :idTaller ) AS iManoObra
+            , ( SELECT COUNT(*) FROM taller_metal_agranel WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_metal_agranel_log WHERE idTaller = :idTaller ) AS iMetalAgranel
+            , ( SELECT COUNT(*) FROM taller_metal_cliente WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_metal_cliente_log WHERE idTaller = :idTaller ) AS iMetalCliente
+            , ( SELECT COUNT(*) FROM taller_metal_final WHERE idTaller = :idTaller )
+              + ( SELECT COUNT(*) FROM taller_metal_final_log WHERE idTaller = :idTaller ) AS iMetalFinal
+            , ( SELECT COUNT(*) FROM metal_inventario_track WHERE idTaller = :idTaller ) AS iMovimientosMetal
+            , ( SELECT COUNT(*) FROM payments WHERE idRelation = :idSale ) AS iAbonos
+            , ( SELECT COUNT(*) FROM electronic_money WHERE idRelation = :idSale ) AS iDineroElectronico
+            , ( SELECT COUNT(*) FROM comisiones_track WHERE idTaller = :idTaller OR idSale = :idSale ) AS iComisiones
+            , ( SELECT COUNT(*) FROM taller_responsables_devolucion WHERE idTaller = :idTaller ) AS iResponsables
+            , ( SELECT COUNT(*) FROM taller WHERE idTallerOrigen = :idSale ) AS iGarantias
+            , ( SELECT COUNT(*) FROM sobre_taller_status WHERE idSale = :idSale )
+              + ( SELECT COUNT(*) FROM sobre_taller_status_log WHERE idSale = :idSale ) AS iSobre
+            , ( SELECT COUNT(*) FROM salesdetail WHERE idSale = :idSale )
+              + ( SELECT COUNT(*) FROM cons_history WHERE idSale = :idSale ) AS iDetalleVenta
+            , ( SELECT COUNT(*) FROM autorizaciones2 WHERE idRelation = :idSale ) AS iAutorizaciones`,
+        { replacements: { idTaller: oTaller.idTaller, idSale }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    const aSecciones = [
+        { key: 'iAvanceEstatus',     desc: 'avance de estatus o entrega' },
+        { key: 'iFotos',             desc: 'fotos' },
+        { key: 'iFirmas',            desc: 'firmas de estatus' },
+        { key: 'iRefacciones',       desc: 'refacciones' },
+        { key: 'iServiciosExternos', desc: 'servicios externos' },
+        { key: 'iManoObra',          desc: 'mano de obra' },
+        { key: 'iMetalAgranel',      desc: 'metal de la empresa' },
+        { key: 'iMetalCliente',      desc: 'metal del cliente' },
+        { key: 'iMetalFinal',        desc: 'metal final' },
+        { key: 'iMovimientosMetal',  desc: 'movimientos de inventario de metal' },
+        { key: 'iAbonos',            desc: 'abonos' },
+        { key: 'iDineroElectronico', desc: 'dinero electrónico' },
+        { key: 'iComisiones',        desc: 'comisiones' },
+        { key: 'iResponsables',      desc: 'responsables de devolución' },
+        { key: 'iGarantias',         desc: 'garantías' },
+        { key: 'iSobre',             desc: 'estatus de sobre' },
+        { key: 'iDetalleVenta',      desc: 'detalle de venta' },
+        { key: 'iAutorizaciones',    desc: 'autorizaciones' }
+    ];
+
+    const aDatos = aSecciones
+        .map(s => ({ desc: s.desc, n: Number(c[s.key]) || 0 }))
+        .filter(s => s.n > 0);
+
+    return {
+        idTaller: oTaller.idTaller,
+        idSale: oTaller.idSale,
+        idTallerStatus: Number(oTaller.idTallerStatus),
+        bCancelado: Number(oTaller.idTallerStatus) === ID_TALLER_STATUS_CANCELADO || Number(oTaller.saleActive) !== 1,
+        bEsTaller: TIPOS_TALLER.includes(Number(oTaller.idSaleType)),
+        bTieneDatos: aDatos.length > 0,
+        aDatos
+    };
+};
+
+// Regresa todo el metal que movió el taller. Se calcula el NETO por par
+// origen/destino/producto en el kardex (un movimiento en sentido inverso
+// resta) y se aplica una REVERSA por cada neto distinto de cero. Cubre
+// asignación, metal final, modificaciones y reversas previas sin saber en
+// qué estatus estaba el taller; tras aplicarse, el neto queda en cero.
+// No bloquea si el inventario queda negativo (analisis/022).
+// aTipos: qué movimientos reversar. Vacío = todos (cancelación). Al
+// desbloquear un folio (analisis/029) se reversa solo lo que aplicó el
+// estatus del que se regresa, y la reversa se marca con su propio tipo
+// (`REVERSA_METAL_FINAL` / `REVERSA_ASIGNACION`) para que los SPs de metal
+// sepan que ese movimiento ya no está vigente y dejen volver a aplicarlo.
+// Firma de una ORDEN RÁPIDA: queda APROBADA de entrada, con quien hizo el
+// movimiento. Una rápida no pide autorización de nadie (analisis/031),
+// pero sí tiene que dejar rastro de quién generó el folio y quién lo
+// entregó. Pendiente (firma = 0) no sirve: además de que nadie la va a
+// firmar, un estatus sin firmar deja el folio en solo lectura.
+const _fn_firmarRapida = async(idTaller, idTallerStatus, idUserLogON, oGetDateNow, sComentario, transaction) => {
+
+    await dbConnection.query(
+        `INSERT INTO taller_firmas_status
+            (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+         VALUES
+            (:oGetDateNow, :oGetDateNow, :idTaller, :idTallerStatus, :idUserLogON, 1, :idUserLogON, :sComentario)`,
+        {
+            replacements: { oGetDateNow, idTaller, idTallerStatus, idUserLogON, sComentario },
+            type: dbConnection.QueryTypes.INSERT, transaction
+        }
+    );
+
+};
+
+const _fn_reversarMetalTaller = async(idTaller, idSale, oGetDateNow, idUserLogON, transaction, aTipos = [], sTipoReversa = 'REVERSA', sReferencia = null) => {
+
+    const movimientos = await dbConnection.query(
+        `SELECT tipoOrigen, idOrigen, tipoDestino, idDestino, idProduct, gramos
+         FROM metal_inventario_track
+         WHERE idTaller = :idTaller
+           AND ( :bTodos = 1 OR tipoMovimiento IN (:aTipos) )`,
+        {
+            replacements: { idTaller, bTodos: aTipos.length === 0 ? 1 : 0, aTipos: aTipos.length ? aTipos : [''] },
+            type: dbConnection.QueryTypes.SELECT, transaction
+        }
+    );
+
+    // Centésimas enteras para no arrastrar error de punto flotante.
+    const netos = new Map();
+
+    for (const m of movimientos) {
+        const sDe = `${ m.tipoOrigen }:${ m.idOrigen }`;
+        const sA = `${ m.tipoDestino }:${ m.idDestino }`;
+        const [sMenor, sMayor] = sDe < sA ? [sDe, sA] : [sA, sDe];
+        const key = `${ m.idProduct }|${ sMenor }|${ sMayor }`;
+        const iCentesimas = Math.round(parseFloat(m.gramos) * 100);
+        netos.set(key, (netos.get(key) || 0) + (sDe === sMenor ? iCentesimas : -iCentesimas));
+    }
+
+    for (const [key, iNeto] of netos) {
+
+        if (iNeto === 0) {
+            continue;
+        }
+
+        const [sProduct, sMenor, sMayor] = key.split('|');
+        // Neto > 0 = salió de "menor" hacia "mayor": la reversa va al revés.
+        const [sDe, sA] = iNeto > 0 ? [sMayor, sMenor] : [sMenor, sMayor];
+        const [tipoOrigen, idOrigen] = sDe.split(':');
+        const [tipoDestino, idDestino] = sA.split(':');
+
+        await _fn_metalInventarioApply(oGetDateNow, sTipoReversa,
+            tipoOrigen, Number(idOrigen), tipoDestino, Number(idDestino),
+            Number(sProduct), Math.abs(iNeto) / 100, idTaller, idSale,
+            sReferencia || `Reversa por cancelación de taller #${ idTaller }`, idUserLogON, transaction);
+    }
+};
+
+const getTallerDatosCancelacion = async(req, res = response) => {
+
+    const { idSale } = req.body;
+
+    try {
+
+        const oDatos = await _fn_getDatosTaller(idSale);
+
+        if (!oDatos) {
+            return res.json({ status: 1, message: 'El taller no existe.' });
+        }
+
+        res.json({
+            status: 0,
+            message: 'Ejecutado correctamente.',
+            data: oDatos
+        });
+
+    } catch (error) {
+
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
+const deleteTallerVacio = async(req, res = response) => {
+
+    const {
+        idSale,
+        idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        if (!(await _fn_tieneAccion(idUserLogON, 'tall_DeleteVacio', transaction))) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Este taller no tiene datos y se elimina; requiere el permiso de eliminar talleres sin datos.' });
+        }
+
+        const oDatos = await _fn_getDatosTaller(idSale, transaction, true);
+
+        if (!oDatos || !oDatos.bEsTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller no existe.' });
+        }
+
+        if (oDatos.bCancelado) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller ya está cancelado.' });
+        }
+
+        if (oDatos.bTieneDatos) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: `El taller ya tiene información capturada (${ oDatos.aDatos.map(d => d.desc).join(', ') }): debe cancelarse.`
+            });
+        }
+
+        await dbConnection.query(
+            `DELETE FROM taller WHERE idTaller = :idTaller`,
+            { replacements: { idTaller: oDatos.idTaller }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await dbConnection.query(
+            `DELETE FROM sales WHERE idSale = :idSale AND idSaleType IN (:tiposTaller)`,
+            { replacements: { idSale, tiposTaller: TIPOS_TALLER }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: `Taller #${ idSale } eliminado definitivamente.` });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
+// Reemplaza a disabledSale SOLO para talleres (las ventas normales siguen
+// con disabledSale). Todo en UNA transacción: dinero (la SP de siempre,
+// que no hace COMMIT propio), metal, destajo, comisión de venta y el
+// estatus del taller. Si algo falla, no queda nada a medias.
+const cancelarTaller = async(req, res = response) => {
+
+    const {
+        idSale,
+        sOption = '',
+        auth_idUser = 0,
+        motivo = '',
+
+        idUserLogON,
+        idSucursalLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const sMotivo = String(motivo || '').trim();
+
+    if (!auth_idUser || Number(auth_idUser) === 0) {
+        return res.json({ status: 1, message: 'No se pudo cancelar el taller porque no fue autorizada la acción.' });
+    }
+
+    if (!sMotivo) {
+        return res.json({ status: 1, message: 'El motivo de cancelación es obligatorio.' });
+    }
+
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const oDatos = await _fn_getDatosTaller(idSale, transaction, true);
+
+        if (!oDatos || !oDatos.bEsTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller no existe.' });
+        }
+
+        if (oDatos.bCancelado) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El taller ya está cancelado.' });
+        }
+
+        // Un taller vacío no se cancela: se elimina (no dejar basura).
+        if (!oDatos.bTieneDatos) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Este taller no tiene datos: debe eliminarse, no cancelarse.' });
+        }
+
+        const OSQL = await dbConnection.query(
+            `call cancelarVentaCompleta( :oGetDateNow, :sOption, :idSale, :auth_idUser, :idUserLogON, :idSucursalLogON )`,
+            { replacements: { oGetDateNow, sOption, idSale, auth_idUser, idUserLogON, idSucursalLogON }, transaction }
+        );
+
+        if (!OSQL || OSQL.length === 0 || !(OSQL[0].bOK > 0)) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: (OSQL && OSQL[0] && OSQL[0].message) || 'No se pudo cancelar el taller.' });
+        }
+
+        const sReferencia = `Taller #${ idSale } cancelado: ${ sMotivo }`;
+
+        await _fn_reversarMetalTaller(oDatos.idTaller, idSale, oGetDateNow, idUserLogON, transaction);
+        await fn_reversarDestajoByTaller(oDatos.idTaller, idUserLogON, sReferencia, transaction);
+        await fn_reversarComisionByOrigen(idSale, idUserLogON, sReferencia, transaction);
+
+        await dbConnection.query(
+            `UPDATE taller
+             SET idTallerStatus = :idTallerStatus, active = 0,
+                 cancelDate = :cancelDate, idCancelUser = :idCancelUser, motivoCancelacion = :motivo
+             WHERE idTaller = :idTaller`,
+            {
+                replacements: {
+                    idTallerStatus: ID_TALLER_STATUS_CANCELADO,
+                    cancelDate: oGetDateNow,
+                    idCancelUser: auth_idUser,
+                    motivo: sMotivo.substring(0, 500),
+                    idTaller: oDatos.idTaller
+                },
+                type: dbConnection.QueryTypes.UPDATE,
+                transaction
+            }
+        );
+
+        await transaction.commit();
+
+        // Un taller cancelado no deja utilidad (analisis/023).
+        try {
+            await fn_recalcularUtilidadTaller( oDatos.idTaller );
+        } catch (utilidadError) {
+            console.log('No se pudo recalcular la utilidad del taller cancelado:', utilidadError.message);
+        }
+
+        res.json({ status: 0, message: `Taller #${ idSale } cancelado con éxito.` });
+
+    } catch (error) {
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: 'Sucedió un error inesperado',
+            data: error.message
+        });
+
+    }
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// ENCARGADO DE TALLER (analisis/029-encargado-de-taller-y-bloqueo.md)
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Encargados de una sucursal: puesto ACTIVO de tipo "Encargado de taller"
+// más esa sucursal asignada. Es la única definición; si algún día cambia,
+// cambia aquí.
+const _fn_getEncargadosSucursal = async(idSucursal, transaction) => {
+
+    return await dbConnection.query(
+        `SELECT U.idUser, U.name
+         FROM users AS U
+         WHERE U.active = 1
+           AND EXISTS ( SELECT 1 FROM rolesconfig AS RC
+                        INNER JOIN roles AS R ON R.idRol = RC.idRol
+                        WHERE RC.idUser = U.idUser AND R.active = 1 AND R.idTipoRol = :idTipoRol )
+           AND EXISTS ( SELECT 1 FROM sucursalesconfig AS SC
+                        WHERE SC.idUser = U.idUser AND SC.idSucursal = :idSucursal )
+         ORDER BY U.name`,
+        {
+            replacements: { idTipoRol: TIPO_ROL.ENCARGADO_TALLER, idSucursal },
+            type: dbConnection.QueryTypes.SELECT, transaction
+        }
+    );
+
+};
+
+// ¿Este usuario puede actuar como encargado de este folio? Lo es si está
+// en la lista de la sucursal, o si viene con la autorización especial
+// `tall_AceptarComoEncargado` (para no quedarse atorados si el encargado
+// no está). Regresa quién quedó como responsable del movimiento.
+const _fn_resolverEncargado = async(oTaller, idUserLogON, auth_idUser, transaction) => {
+
+    const encargados = await _fn_getEncargadosSucursal(oTaller.idSucursal, transaction);
+    const aIds = encargados.map(e => Number(e.idUser));
+
+    if (aIds.includes(Number(idUserLogON))) {
+        return { bOK: true, idUserResponsable: Number(idUserLogON) };
+    }
+
+    if (auth_idUser > 0
+        && await _fn_tieneAccion(auth_idUser, 'tall_AceptarComoEncargado', transaction)) {
+        return { bOK: true, idUserResponsable: Number(auth_idUser) };
+    }
+
+    return {
+        bOK: false,
+        idUserResponsable: 0,
+        message: encargados.length === 0
+            ? 'Esta sucursal no tiene encargado de taller capturado: se necesita autorización especial.'
+            : 'Solo el encargado de taller de esta sucursal puede hacerlo, o alguien con autorización especial.'
+    };
+
+};
+
+const getEncargadosByTaller = async(req, res = response) => {
+
+    const { idTaller = 0, idUserLogON } = req.body;
+
+    try {
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSucursal, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        if (!oTaller) {
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        const rows = await _fn_getEncargadosSucursal(oTaller.idSucursal);
+
+        res.json({
+            status: 0,
+            message: 'Ejecutado correctamente.',
+            data: {
+                rows,
+                bSinEncargado: rows.length === 0,
+                bSoyEncargado: rows.some(e => Number(e.idUser) === Number(idUserLogON))
+            }
+        });
+
+    } catch (error) {
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
+
+// El encargado acepta: el folio pasa a Finalizado/Mostrador con los
+// efectos de ese estatus (metal final + destajo) y queda BLOQUEADO.
+const aceptarTallerComoEncargado = async(req, res = response) => {
+
+    const {
+        idTaller = 0,
+        precioTotal = 0,
+        auth_idUser = 0,
+        idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSale, idSucursal, idTallerStatus, idTallerOrigen
+             FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        if (Number(oTaller.idTallerStatus) !== EST_TALLER.ENCARGADO) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El folio no está esperando la revisión del encargado.' });
+        }
+
+        const oQuien = await _fn_resolverEncargado(oTaller, idUserLogON, auth_idUser, transaction);
+        if (!oQuien.bOK) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: oQuien.message });
+        }
+
+        // Mismos efectos que tenía el paso a mostrador: o pasan juntos, o
+        // no pasa ninguno.
+        const OSQL_Entregar = await dbConnection.query(
+            `CALL entregarMetalFinalByTaller(:oGetDateNow, :idTaller, :idUserLogON)`,
+            { replacements: { oGetDateNow, idTaller, idUserLogON: oQuien.idUserResponsable }, type: dbConnection.QueryTypes.RAW, transaction }
+        );
+
+        if (OSQL_Entregar[0].out_id == 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: OSQL_Entregar[0].message });
+        }
+
+        await fn_registrarDestajoByTaller(idTaller, oGetDateNow, oQuien.idUserResponsable, transaction);
+
+        // Una garantía guarda aquí su precio (analisis/016).
+        let sPrecio = '';
+        const oRepl = { idTaller, idTallerStatus: EST_TALLER.MOSTRADOR };
+        if (oTaller.idTallerOrigen) {
+            sPrecio = ', precioTotal = :precioTotal';
+            oRepl.precioTotal = precioTotal;
+        }
+
+        await dbConnection.query(
+            `UPDATE taller SET idTallerStatus = :idTallerStatus${ sPrecio } WHERE idTaller = :idTaller`,
+            { replacements: oRepl, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        // La firma del estatus del encargado queda aprobada por quien
+        // aceptó; si no existía (folio anterior al cambio), se crea.
+        const oFirmaRepl = {
+            idTaller, idTallerStatus: EST_TALLER.ENCARGADO,
+            idUserFirma: oQuien.idUserResponsable, firmaDate: oGetDateNow
+        };
+
+        const [oUpd] = await dbConnection.query(
+            `UPDATE taller_firmas_status
+             SET firma = 1, idUserFirma = :idUserFirma, firmaDate = :firmaDate
+             WHERE idTaller = :idTaller AND idTallerStatus = :idTallerStatus AND firma = 0`,
+            { replacements: oFirmaRepl, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        if (!oUpd || oUpd.affectedRows === 0) {
+            await dbConnection.query(
+                `INSERT INTO taller_firmas_status (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+                 VALUES (:firmaDate, :firmaDate, :idTaller, :idTallerStatus, :idUserFirma, 1, :idUserFirma, 'Aceptado por el encargado de taller')`,
+                { replacements: oFirmaRepl, type: dbConnection.QueryTypes.INSERT, transaction }
+            );
+        }
+
+        await fn_recalcularUtilidadTaller(idTaller, transaction);
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: 'Folio aceptado: pasa a mostrador y queda bloqueado.',
+            data: { idTaller, idTallerStatus: EST_TALLER.MOSTRADOR }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
+
+// El encargado rechaza: el folio regresa con el técnico (Asignado) con el
+// motivo. No se reversa nada porque a esa altura no se ha aplicado.
+const rechazarTallerComoEncargado = async(req, res = response) => {
+
+    const {
+        idTaller = 0,
+        motivo = '',
+        auth_idUser = 0,
+        idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        if (String(motivo).trim().length === 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El motivo del rechazo es obligatorio.' });
+        }
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSucursal, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTaller || Number(oTaller.idTallerStatus) !== EST_TALLER.ENCARGADO) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El folio no está esperando la revisión del encargado.' });
+        }
+
+        const oQuien = await _fn_resolverEncargado(oTaller, idUserLogON, auth_idUser, transaction);
+        if (!oQuien.bOK) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: oQuien.message });
+        }
+
+        await dbConnection.query(
+            `UPDATE taller SET idTallerStatus = :idTallerStatus WHERE idTaller = :idTaller`,
+            { replacements: { idTaller, idTallerStatus: EST_TALLER.ASIGNADO }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        const oFirmaRepl = {
+            idTaller, idTallerStatus: EST_TALLER.ENCARGADO,
+            idUserFirma: oQuien.idUserResponsable, firmaDate: oGetDateNow,
+            comentario: String(motivo).trim()
+        };
+
+        const [oUpd] = await dbConnection.query(
+            `UPDATE taller_firmas_status
+             SET firma = 2, idUserFirma = :idUserFirma, firmaDate = :firmaDate, comentario = :comentario
+             WHERE idTaller = :idTaller AND idTallerStatus = :idTallerStatus AND firma = 0`,
+            { replacements: oFirmaRepl, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        if (!oUpd || oUpd.affectedRows === 0) {
+            await dbConnection.query(
+                `INSERT INTO taller_firmas_status (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+                 VALUES (:firmaDate, :firmaDate, :idTaller, :idTallerStatus, :idUserFirma, 2, :idUserFirma, :comentario)`,
+                { replacements: oFirmaRepl, type: dbConnection.QueryTypes.INSERT, transaction }
+            );
+        }
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: 'Folio regresado al técnico.',
+            data: { idTaller, idTallerStatus: EST_TALLER.ASIGNADO }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
+
+// Desbloquear: regresa un folio de Finalizado/Mostrador hasta Pedido de
+// taller como máximo, reversando lo que ese estatus había aplicado.
+// Entregado no regresa: solo admite devolución o cancelación.
+const regresarEstatusTaller = async(req, res = response) => {
+
+    const {
+        idTaller = 0,
+        idTallerStatus = 0,
+        motivo = '',
+        auth_idUser = 0,
+        idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try {
+
+        const idDestino = Number(idTallerStatus);
+
+        if (String(motivo).trim().length === 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'El motivo es obligatorio para regresar el estatus.' });
+        }
+
+        if (!fn_destinoRegresoValido(idDestino)) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Solo se puede regresar hasta Pedido de taller.' });
+        }
+
+        if (!(auth_idUser > 0 && await _fn_tieneAccion(auth_idUser, 'tall_DesbloquearTaller', transaction))) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'Se necesita autorización especial para desbloquear el folio.' });
+        }
+
+        const [oTaller] = await dbConnection.query(
+            `SELECT idTaller, idSale, idTallerStatus FROM taller WHERE idTaller = :idTaller LIMIT 1`,
+            { replacements: { idTaller }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!oTaller) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: 'No se encontró el taller.' });
+        }
+
+        if (!fn_puedeRegresarEstatus(oTaller.idTallerStatus)) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Solo se puede regresar un folio que está en Finalizado/Mostrador. Un folio entregado solo admite devolución o cancelación.'
+            });
+        }
+
+        const sReferencia = `Desbloqueo de taller #${ idTaller }: ${ String(motivo).trim() }`;
+
+        // Se deshace lo que aplicó Finalizado/Mostrador: el metal final
+        // que salió del inventario del técnico y su destajo.
+        await _fn_reversarMetalTaller(idTaller, oTaller.idSale, oGetDateNow, auth_idUser, transaction,
+            ['METAL_FINAL'], 'REVERSA_METAL_FINAL', sReferencia);
+
+        await fn_reversarDestajoByTaller(idTaller, auth_idUser, sReferencia, transaction);
+
+        // Si además se regresa antes de Asignado, el metal que se le había
+        // asignado al técnico también regresa a la sucursal.
+        if (idDestino === EST_TALLER.PEDIDO) {
+            await _fn_reversarMetalTaller(idTaller, oTaller.idSale, oGetDateNow, auth_idUser, transaction,
+                ['ASIGNACION'], 'REVERSA_ASIGNACION', sReferencia);
+        }
+
+        await dbConnection.query(
+            `UPDATE taller SET idTallerStatus = :idTallerStatus, fechaEntrega = NULL WHERE idTaller = :idTaller`,
+            { replacements: { idTaller, idTallerStatus: idDestino }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+        // Queda en la bitácora de firmas quién autorizó y por qué. Va como
+        // aprobada: no dispara nada y deja el folio editable otra vez.
+        await dbConnection.query(
+            `INSERT INTO taller_firmas_status (createDate, firmaDate, idTaller, idTallerStatus, idUserCreate, firma, idUserFirma, comentario)
+             VALUES (:fecha, :fecha, :idTaller, :idTallerStatus, :idUserCreate, 1, :idUserFirma, :comentario)`,
+            {
+                replacements: {
+                    fecha: oGetDateNow, idTaller, idTallerStatus: idDestino,
+                    idUserCreate: idUserLogON, idUserFirma: auth_idUser,
+                    comentario: `Regresado de Finalizado/Mostrador: ${ String(motivo).trim() }`
+                },
+                type: dbConnection.QueryTypes.INSERT, transaction
+            }
+        );
+
+        await fn_recalcularUtilidadTaller(idTaller, transaction);
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: 'Folio desbloqueado.',
+            data: { idTaller, idTallerStatus: idDestino }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        res.json({ status: 2, message: 'Sucedió un error inesperado', data: error.message });
+    }
+
+};
+
+module.exports = {
+    insertSale
+    , getVentasListWithPage
+    , getSaleByID
+    , insertPayments
+    , getPaymentsByIdSaleListWithPage
+    , insertSaleByConsignation
+    , regresarProductoDeConsignacion
+
+    , getPreCorteCaja
+    , getPreEgresosCorteCaja
+    , insertCorteCaja
+    , insertEgresos
+
+    , disabledEgresos
+
+    , getCorteCajaByID
+
+    , getEgresosByIDCorteCaja
+
+    , getCorteCajaListWithPage
+
+    , disabledSale
+    , entregarApartado
+
+    , getConsHistory
+
+    , getEgresoByID
+    , disabledPayment
+    , getEgresosListWithPage
+
+    , disableSaleDetail
+
+    , editSobreTaller
+
+    , getRepVentasDetailWithPage
+    , cbxGetSobreTellerStatusCombo
+    , insertIngresos
+    , disabledIngresos
+
+    , getPreIngresosCorteCaja
+
+    , getIngresoByID
+
+    , getIngresosByIDCorteCaja
+
+    , getIngresosListWithPage
+
+    , getDatosRelacionadosByIDCorteCaja
+
+    , getRepPagosCanceladosWithPage
+
+    , getRepPagosWithPage
+
+    , addRefaccionTaller
+    , deleteRefaccionTaller
+    , addServicioExternoTaller
+    , deleteServicioExternoTaller
+    , saveTallerHeader
+    , updateTallerStatus
+    , getEncargadosByTaller
+    , aceptarTallerComoEncargado
+    , rechazarTallerComoEncargado
+    , regresarEstatusTaller
+    , getTallerByID
+    , getTallerByIDSeq
+    , insertUpdateTallerFirma
+    , insertUpdateTallerFirmasMasivo
+    , getTallerFirmasHistorial
+    , getTallerPaginado
+    , getTallerRefaccciones
+    , getTallerServiciosExternos
+    , cbxGetServiciosExternosCombo
+    , addMetalAgranel
+    , deleteMetalAgranel
+    , getTallerMetalesAgranel
+    , addMetalCliente
+    , deleteMetalCliente
+    , getTallerMetalesCliente
+    , addMetalFinal
+    , deleteMetalFinal
+    , getTallerMetalesFinal
+    , uploadMetalClienteImage
+    , getMetalClienteImages
+    , deleteMetalClienteImage
+    , addManoObraTaller
+    , deleteManoObraTaller
+    , getTallerManoObra
+    , updateManoObraPrecio
+    , getTallerStatusCat
+    , getTallerResponsablesDevolucion
+    , insertResponsableDevolucion
+    , updateResponsableDevolucion
+    , deleteResponsableDevolucion
+
+    , getTalleresParaGarantia
+    , insertGarantiaByTaller
+
+    , getTallerDatosCancelacion
+    , deleteTallerVacio
+    , cancelarTaller
+}
+

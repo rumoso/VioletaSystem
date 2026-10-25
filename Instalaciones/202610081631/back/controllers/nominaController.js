@@ -1,0 +1,1227 @@
+const { response } = require('express');
+const moment = require('moment');
+
+const { dbConnection } = require('../database/config');
+const { SQL_EMPLEADO_VIGENTE } = require('../helpers/empleadoVigente');
+const { fn_getResumenPeriodo, fn_getResumenPendiente } = require('./timecardController');
+
+// Pago de nómina (analisis/007-pago-nomina.md). Registro histórico en
+// tres niveles (nomina, nomina_recibos, nomina_recibo_detalle) como
+// COPIA CONGELADA — no referencian en vivo el listado base ni el
+// catálogo de conceptos. Queries directas sobre `dbConnection`
+// compartida — nunca createConexion(); toda operación multi-statement
+// va con `dbConnection.transaction()` y COMMIT/ROLLBACK estricto.
+
+// Totales de un recibo a partir de sus líneas de detalle. "Comisiones"
+// es la única línea cuyo monto puede venir en negativo (bEsComisiones);
+// en ese caso se suma tal cual al neto aunque esté tipada PERCEPCION.
+// Para las demás líneas, el monto siempre es positivo y el signo lo
+// da el tipo (PERCEPCION suma, DEDUCCION resta).
+const _fn_calcularTotales = (rows) => {
+
+    let totalPercepciones = 0;
+    let totalDeducciones = 0;
+
+    for (const r of rows) {
+        const monto = parseFloat(r.monto) || 0;
+
+        if (r.bEsComisiones) {
+            if (monto >= 0) {
+                totalPercepciones += monto;
+            } else {
+                totalDeducciones += Math.abs(monto);
+            }
+        } else if (r.tipo === 'PERCEPCION') {
+            totalPercepciones += monto;
+        } else {
+            totalDeducciones += monto;
+        }
+    }
+
+    totalPercepciones = Math.round(totalPercepciones * 100) / 100;
+    totalDeducciones = Math.round(totalDeducciones * 100) / 100;
+
+    return {
+        totalPercepciones,
+        totalDeducciones,
+        neto: Math.round((totalPercepciones - totalDeducciones) * 100) / 100
+    };
+};
+
+const _fn_recalcularRecibo = async(idNominaRecibo, transaction) => {
+
+    const rows = await dbConnection.query(
+        `SELECT tipo, monto, bEsComisiones FROM nomina_recibo_detalle WHERE idNominaRecibo = :idNominaRecibo`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    const totales = _fn_calcularTotales(rows);
+
+    await dbConnection.query(
+        `UPDATE nomina_recibos
+         SET totalPercepciones = :totalPercepciones, totalDeducciones = :totalDeducciones, neto = :neto
+         WHERE idNominaRecibo = :idNominaRecibo`,
+        { replacements: { ...totales, idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    return totales;
+};
+
+const _fn_recalcularNomina = async(idNomina, transaction) => {
+
+    const [totales] = await dbConnection.query(
+        `SELECT
+            IFNULL(SUM(totalPercepciones), 0) AS totalPercepciones,
+            IFNULL(SUM(totalDeducciones), 0) AS totalDeducciones,
+            IFNULL(SUM(neto), 0) AS totalNeto
+         FROM nomina_recibos WHERE idNomina = :idNomina`,
+        { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    await dbConnection.query(
+        `UPDATE nomina
+         SET totalPercepciones = :totalPercepciones, totalDeducciones = :totalDeducciones, totalNeto = :totalNeto
+         WHERE idNomina = :idNomina`,
+        { replacements: { totalPercepciones: totales.totalPercepciones, totalDeducciones: totales.totalDeducciones, totalNeto: totales.totalNeto, idNomina }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+};
+
+// Desde analisis/013 valida el RECIBO, no la corrida: un recibo pagado
+// es inmutable aunque su corrida siga en BORRADOR porque otros
+// compañeros no han cobrado.
+const _fn_validarBorrador = async(idNominaRecibo, transaction) => {
+
+    const [row] = await dbConnection.query(
+        `SELECT estatus FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo LIMIT 1`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!row) {
+        return 'El recibo no existe.';
+    }
+    if (row.estatus !== 'BORRADOR') {
+        return 'Este recibo ya no está en borrador — no se puede editar.';
+    }
+    return null;
+};
+
+// --------------------------------------------------------------
+
+const generarNomina = async(req, res = response) => {
+
+    const {
+        fechaInicio = null
+        , fechaFin = null
+        , idsEmpleados = []
+
+        , idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    // El rango de fechas es opcional: solo acota qué comisiones
+    // pendientes se suman a cada recibo. Sin fechas, se toman todas.
+    const sFechaInicio = fechaInicio ? fechaInicio.substring(0, 10) : null;
+    const sFechaFin = fechaFin ? fechaFin.substring(0, 10) : null;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        await dbConnection.query(
+            `INSERT INTO nomina (fechaInicio, fechaFin, estatus, createDate, idCreateUser)
+             VALUES (:fechaInicio, :fechaFin, 'BORRADOR', :createDate, :idCreateUser)`,
+            { replacements: { fechaInicio: sFechaInicio, fechaFin: sFechaFin, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
+        );
+
+        const [idResult] = await dbConnection.query(`SELECT LAST_INSERT_ID() AS id`, { type: dbConnection.QueryTypes.SELECT, transaction });
+        const idNomina = idResult.id;
+
+        // Sin empleados elegidos = todos los activos (comportamiento
+        // default, ya avisado en el Front antes de generar). Con
+        // empleados elegidos, la corrida se limita a esos.
+        const bFiltrarEmpleados = Array.isArray(idsEmpleados) && idsEmpleados.length > 0;
+
+        // Solo empleados vigentes (activo + datos de empleado + puesto de
+        // sistema "Empleado"), definición única en helpers/empleadoVigente.
+        const empleados = await dbConnection.query(
+            `SELECT E.idEmpleado, E.idUser, U.name AS nombre
+             FROM empleados AS E
+             INNER JOIN users AS U ON U.idUser = E.idUser
+             WHERE ${ SQL_EMPLEADO_VIGENTE }
+             ${ bFiltrarEmpleados ? 'AND E.idEmpleado IN (:idsEmpleados)' : '' }`,
+            { replacements: bFiltrarEmpleados ? { idsEmpleados } : {}, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        // Un empleado nunca puede tener dos nóminas BORRADOR a la vez
+        // (evita duplicar). Si el empleado se eligió explícitamente se
+        // rechaza toda la operación con su nombre; sin elegir empleados
+        // (todos los activos) simplemente se omite de la corrida.
+        // Mira el estatus del RECIBO, no el de la corrida (analisis/013):
+        // lo que estorba es que la persona tenga un recibo sin cobrar, no
+        // que la corrida siga abierta porque otros no han cobrado.
+        const pendientesRows = await dbConnection.query(
+            `SELECT DISTINCT idEmpleado FROM nomina_recibos WHERE estatus = 'BORRADOR'`,
+            { type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+        const idsConPendiente = new Set(pendientesRows.map(r => r.idEmpleado));
+
+        let empleadosOmitidos = [];
+        let empleadosAGenerar = empleados;
+
+        if (bFiltrarEmpleados) {
+            const conflicto = empleados.filter(e => idsConPendiente.has(e.idEmpleado));
+            if (conflicto.length > 0) {
+                await transaction.rollback();
+                return res.json({
+                    status: 1,
+                    message: `Ya tienen una nómina pendiente sin pagar: ${ conflicto.map(e => e.nombre).join(', ') }. Págala o cancélala antes de generar otra.`
+                });
+            }
+        } else {
+            empleadosAGenerar = empleados.filter(e => !idsConPendiente.has(e.idEmpleado));
+            empleadosOmitidos = empleados.filter(e => idsConPendiente.has(e.idEmpleado));
+        }
+
+        if (empleadosAGenerar.length === 0) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: 'Todos los empleados activos ya tienen una nómina pendiente sin pagar. Págala o cancélala antes de generar otra.'
+            });
+        }
+
+        for (const emp of empleadosAGenerar) {
+
+            // Horas de TimeCard (analisis/011, solo informativas — no
+            // generan ninguna línea de dinero). Con rango de fechas se
+            // resume ESE periodo (fn_getResumenPeriodo, sintetiza faltas
+            // de días sin fila). Sin rango, pagarNomina va a ligar TODAS
+            // las jornadas PENDIENTE del empleado sin importar fecha
+            // (ver su UPDATE de timecard_jornadas) — el resumen tiene
+            // que reflejar exactamente eso, no quedar en cero.
+            let horasTrabajadas = 0, horasEsperadas = 0, iRetardos = 0, iFaltas = 0;
+
+            if (sFechaInicio && sFechaFin) {
+                const resumenHoras = await fn_getResumenPeriodo(emp.idEmpleado, sFechaInicio, sFechaFin, transaction);
+                horasTrabajadas = resumenHoras.totales.horasTrabajadas;
+                horasEsperadas = resumenHoras.totales.horasEsperadas;
+                iRetardos = resumenHoras.totales.iRetardos;
+                iFaltas = resumenHoras.totales.iFaltas;
+            } else {
+                const resumenPendiente = await fn_getResumenPendiente(emp.idEmpleado, transaction);
+                horasTrabajadas = resumenPendiente.horasTrabajadas;
+                horasEsperadas = resumenPendiente.horasEsperadas;
+                iRetardos = resumenPendiente.iRetardos;
+                iFaltas = resumenPendiente.iFaltas;
+            }
+
+            await dbConnection.query(
+                `INSERT INTO nomina_recibos (idNomina, idEmpleado, idUser, nombreEmpleado, horasTrabajadas, horasEsperadas, iRetardos, iFaltas, createDate, idCreateUser)
+                 VALUES (:idNomina, :idEmpleado, :idUser, :nombreEmpleado, :horasTrabajadas, :horasEsperadas, :iRetardos, :iFaltas, :createDate, :idCreateUser)`,
+                { replacements: { idNomina, idEmpleado: emp.idEmpleado, idUser: emp.idUser, nombreEmpleado: emp.nombre, horasTrabajadas, horasEsperadas, iRetardos, iFaltas, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
+            );
+
+            const [idReciboResult] = await dbConnection.query(`SELECT LAST_INSERT_ID() AS id`, { type: dbConnection.QueryTypes.SELECT, transaction });
+            const idNominaRecibo = idReciboResult.id;
+
+            // Copia congelada del listado base — un solo INSERT...SELECT, sin loop de conceptos
+            await dbConnection.query(
+                `INSERT INTO nomina_recibo_detalle (idNominaRecibo, idNominaConcepto, conceptoDesc, tipo, monto, bEsComisiones, createDate, idCreateUser)
+                 SELECT :idNominaRecibo, B.idNominaConcepto, C.name, C.tipo, B.monto, 0, :createDate, :idCreateUser
+                 FROM empleado_conceptos_base AS B
+                 INNER JOIN nomina_conceptos AS C ON C.idNominaConcepto = B.idNominaConcepto
+                 WHERE B.idEmpleado = :idEmpleado`,
+                { replacements: { idNominaRecibo, idEmpleado: emp.idEmpleado, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
+            );
+
+            const [conteoDetalle] = await dbConnection.query(
+                `SELECT COUNT(*) AS n FROM nomina_recibo_detalle WHERE idNominaRecibo = :idNominaRecibo`,
+                { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            if (conteoDetalle.n === 0) {
+                await dbConnection.query(
+                    `UPDATE nomina_recibos SET bSinListadoBase = 1 WHERE idNominaRecibo = :idNominaRecibo`,
+                    { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+                );
+            }
+
+            // Comisiones pendientes (bitácora analisis/008) — sin fechas
+            // se toman TODAS las pendientes del empleado; con fechas,
+            // solo las del rango. Puede resultar negativa.
+            const [comisionesRow] = await dbConnection.query(
+                `SELECT IFNULL(SUM(monto), 0) AS total FROM comisiones_track
+                 WHERE idUser = :idUser AND estatus = 'PENDIENTE'
+                 AND ( :fechaInicio IS NULL OR fecha >= :fechaInicio )
+                 AND ( :fechaFin IS NULL OR fecha <= :fechaFin )`,
+                { replacements: { idUser: emp.idUser, fechaInicio: sFechaInicio, fechaFin: sFechaFin }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+
+            const totalComisiones = parseFloat(comisionesRow.total) || 0;
+
+            if (totalComisiones !== 0) {
+                await dbConnection.query(
+                    `INSERT INTO nomina_recibo_detalle (idNominaRecibo, conceptoDesc, tipo, monto, bEsComisiones, createDate, idCreateUser)
+                     VALUES (:idNominaRecibo, 'Comisiones', 'PERCEPCION', :monto, 1, :createDate, :idCreateUser)`,
+                    { replacements: { idNominaRecibo, monto: totalComisiones, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
+                );
+            }
+
+            await _fn_recalcularRecibo(idNominaRecibo, transaction);
+        }
+
+        await _fn_recalcularNomina(idNomina, transaction);
+
+        await transaction.commit();
+
+        const sOmitidos = empleadosOmitidos.length > 0
+            ? ` (${ empleadosOmitidos.length } omitido(s) por tener una nómina pendiente: ${ empleadosOmitidos.map(e => e.nombre).join(', ') })`
+            : '';
+
+        res.json({
+            status: 0,
+            message: `Nómina generada con ${ empleadosAGenerar.length } empleado(s).${ sOmitidos }`,
+            data: { id: idNomina }
+        });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// Listado por corrida (lote). El detalle por empleado NO viene aquí —
+// se carga bajo demanda con getNominaDetalle cuando el usuario expande
+// el renglón en el Front, para no traer cientos de recibos que quizá
+// nadie va a abrir.
+const getNominasList = async(req, res = response) => {
+
+    const {
+        estatus = ''
+        , idsEmpleados = []
+        , pageSize = 10
+        , pageIndex = 0
+    } = req.body;
+
+    // Filtro opcional por empleados: corridas que incluyan a
+    // cualquiera de los elegidos (combobox de búsqueda bajo demanda).
+    const bFiltrarEmpleados = Array.isArray(idsEmpleados) && idsEmpleados.length > 0;
+    const sJoinEmpleados = bFiltrarEmpleados
+        ? `INNER JOIN ( SELECT DISTINCT idNomina FROM nomina_recibos WHERE idEmpleado IN (:idsEmpleados) ) AS RF ON RF.idNomina = N.idNomina`
+        : '';
+
+    try{
+
+        const [countRow] = await dbConnection.query(
+            `SELECT COUNT(*) AS iRows FROM nomina AS N
+             ${ sJoinEmpleados }
+             WHERE ( :estatus = '' OR N.estatus = :estatus )`,
+            { replacements: { estatus, idsEmpleados }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        const rows = await dbConnection.query(
+            `SELECT
+                N.idNomina AS id, N.fechaInicio, N.fechaFin, N.estatus,
+                DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
+                DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
+                DATE_FORMAT(N.createDate, '%d-%m-%Y') AS createDateDesc,
+                N.totalPercepciones, N.totalDeducciones, N.totalNeto,
+                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina ) AS iEmpleados,
+                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina AND estatus = 'PAGADA' ) AS iPagados,
+                ( SELECT COUNT(*) FROM nomina_recibos WHERE idNomina = N.idNomina AND estatus = 'BORRADOR' ) AS iPendientes
+             FROM nomina AS N
+             ${ sJoinEmpleados }
+             WHERE ( :estatus = '' OR N.estatus = :estatus )
+             ORDER BY N.idNomina DESC
+             LIMIT :offset, :limit`,
+            { replacements: { estatus, idsEmpleados, offset: Number(pageIndex) * Number(pageSize), limit: Number(pageSize) }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { count: countRow.iRows, rows }
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const getNominaDetalle = async(req, res = response) => {
+
+    const { id } = req.body;
+
+    try{
+
+        const row = await dbConnection.query(
+            `SELECT * FROM nomina WHERE idNomina = :id LIMIT 1`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        if (row.length === 0) {
+            return res.json({ status: 1, message: "La nómina no existe." });
+        }
+
+        const recibos = await dbConnection.query(
+            `SELECT idNominaRecibo AS id, idEmpleado, nombreEmpleado, totalPercepciones, totalDeducciones, neto, bSinListadoBase,
+                    estatus, pagadaDate, motivoCancelacion,
+                    DATE_FORMAT(pagadaDate, '%d-%m-%Y') AS pagadaDateDesc
+             FROM nomina_recibos WHERE idNomina = :id ORDER BY nombreEmpleado ASC`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { nomina: row[0], recibos }
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const getRecibo = async(req, res = response) => {
+
+    const { idNominaRecibo } = req.body;
+
+    try{
+
+        // El periodo y el puesto son para el encabezado del recibo (y su
+        // PDF). `puesto` = puestos activos de la persona (sin el de
+        // sistema "Empleado"). Ojo: sale del catálogo vivo, no de la copia
+        // congelada — si el empleado cambia de puesto, un recibo viejo
+        // mostrará el nuevo. Se acepta porque es un dato de
+        // identificación, no un monto (los montos sí están congelados
+        // en nomina_recibos/nomina_recibo_detalle).
+        const cabecera = await dbConnection.query(
+            `SELECT R.*, N.estatus AS estatusNomina,
+                    N.fechaInicio, N.fechaFin,
+                    DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
+                    DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
+                    DATE_FORMAT(R.pagadaDate, '%d-%m-%Y') AS pagadaDateDesc,
+                    IFNULL( ( SELECT GROUP_CONCAT( R.name ORDER BY R.name SEPARATOR ', ' )
+                   FROM rolesconfig AS RC INNER JOIN roles AS R ON R.idRol = RC.idRol
+                   WHERE RC.idUser = R_U.idUser AND R.active = 1 AND R.bSistema = 0 ), '' ) AS puesto,
+                    E.rfc, E.curp, E.nss,
+                    DATE_FORMAT(E.fechaIngreso, '%d-%m-%Y') AS fechaIngresoDesc,
+                    S.name AS sucursalNombre, S.description AS sucursalDescripcion, S.address AS sucursalDireccion
+             FROM nomina_recibos AS R
+             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+             LEFT JOIN empleados AS E ON E.idEmpleado = R.idEmpleado
+             LEFT JOIN users AS R_U ON R_U.idUser = R.idUser
+             LEFT JOIN sucursales AS S ON S.idSucursal = E.idSucursal
+             WHERE R.idNominaRecibo = :idNominaRecibo LIMIT 1`,
+            { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        if (cabecera.length === 0) {
+            return res.json({ status: 1, message: "El recibo no existe." });
+        }
+
+        const recibo = cabecera[0];
+
+        // Horas VIVAS mientras el recibo siga en BORRADOR (analisis/013):
+        // las columnas guardadas son la foto del momento de generar, y si
+        // despues se corrigio un marcaje quedaron viejas — justo el numero
+        // con el que se decide el descuento por faltas. Al pagar se
+        // congelan (ver _fn_pagarUnRecibo) y a partir de ahi se leen tal
+        // cual, porque el recibo ya es un comprobante.
+        recibo.bHorasVivas = recibo.estatus === 'BORRADOR';
+
+        if (recibo.bHorasVivas) {
+
+            const sIni = recibo.fechaInicio ? moment(recibo.fechaInicio).format('YYYY-MM-DD') : null;
+            const sFin = recibo.fechaFin ? moment(recibo.fechaFin).format('YYYY-MM-DD') : null;
+
+            const horas = (sIni && sFin)
+                ? (await fn_getResumenPeriodo(recibo.idEmpleado, sIni, sFin)).totales
+                : await fn_getResumenPendiente(recibo.idEmpleado);
+
+            recibo.horasTrabajadas = horas.horasTrabajadas;
+            recibo.horasEsperadas = horas.horasEsperadas;
+            recibo.iRetardos = horas.iRetardos;
+            recibo.iFaltas = horas.iFaltas;
+        }
+
+        const detalle = await dbConnection.query(
+            `SELECT idNominaReciboDetalle AS id, idNominaConcepto, conceptoDesc, tipo, monto, bEsComisiones
+             FROM nomina_recibo_detalle WHERE idNominaRecibo = :idNominaRecibo
+             ORDER BY bEsComisiones ASC, tipo ASC, conceptoDesc ASC`,
+            { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: { recibo, detalle }
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// ---- Edición de borrador ----
+
+const insertUpdateReciboDetalle = async(req, res = response) => {
+
+    const {
+        id = 0
+        , idNominaRecibo
+        , idNominaConcepto = null
+        , conceptoDesc
+        , tipo
+        , monto
+
+        , idUserLogON
+    } = req.body;
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const [recibo] = await dbConnection.query(
+            `SELECT idNomina FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo LIMIT 1`,
+            { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!recibo) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "El recibo no existe." });
+        }
+
+        const sError = await _fn_validarBorrador(idNominaRecibo, transaction);
+        if (sError) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: sError });
+        }
+
+        // La línea "Comisiones" es la única excepción al monto siempre
+        // positivo (analisis/007) — se detecta por el registro existente,
+        // nunca por lo que mande el cliente, para que no se pueda crear
+        // una línea nueva en negativo desde este endpoint.
+        let bEsLineaComisiones = false;
+
+        if (id > 0) {
+            const [actual] = await dbConnection.query(
+                `SELECT bEsComisiones FROM nomina_recibo_detalle WHERE idNominaReciboDetalle = :id LIMIT 1`,
+                { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+            );
+            if (!actual) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: "El concepto no existe." });
+            }
+            bEsLineaComisiones = !!actual.bEsComisiones;
+        }
+
+        if (bEsLineaComisiones ? Number(monto) === 0 : Number(monto) <= 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: bEsLineaComisiones ? "El monto no puede ser cero." : "El monto debe ser mayor a cero." });
+        }
+
+        if (id > 0) {
+            await dbConnection.query(
+                `UPDATE nomina_recibo_detalle
+                 SET conceptoDesc = :conceptoDesc, tipo = :tipo, monto = :monto, updateDate = :updateDate
+                 WHERE idNominaReciboDetalle = :id`,
+                { replacements: { conceptoDesc, tipo, monto, updateDate: oGetDateNow, id }, type: dbConnection.QueryTypes.UPDATE, transaction }
+            );
+        } else {
+            await dbConnection.query(
+                `INSERT INTO nomina_recibo_detalle (idNominaRecibo, idNominaConcepto, conceptoDesc, tipo, monto, bEsComisiones, createDate, idCreateUser)
+                 VALUES (:idNominaRecibo, :idNominaConcepto, :conceptoDesc, :tipo, :monto, 0, :createDate, :idCreateUser)`,
+                { replacements: { idNominaRecibo, idNominaConcepto, conceptoDesc, tipo, monto, createDate: oGetDateNow, idCreateUser: idUserLogON }, type: dbConnection.QueryTypes.INSERT, transaction }
+            );
+        }
+
+        await _fn_recalcularRecibo(idNominaRecibo, transaction);
+        await _fn_recalcularNomina(recibo.idNomina, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: "Concepto guardado con éxito." });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const deleteReciboDetalle = async(req, res = response) => {
+
+    const { id } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const [detalle] = await dbConnection.query(
+            `SELECT idNominaRecibo FROM nomina_recibo_detalle WHERE idNominaReciboDetalle = :id LIMIT 1`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!detalle) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "El concepto no existe." });
+        }
+
+        const [recibo] = await dbConnection.query(
+            `SELECT idNomina FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo LIMIT 1`,
+            { replacements: { idNominaRecibo: detalle.idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        const sError = await _fn_validarBorrador(detalle.idNominaRecibo, transaction);
+        if (sError) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: sError });
+        }
+
+        await dbConnection.query(
+            `DELETE FROM nomina_recibo_detalle WHERE idNominaReciboDetalle = :id`,
+            { replacements: { id }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await _fn_recalcularRecibo(detalle.idNominaRecibo, transaction);
+        await _fn_recalcularNomina(recibo.idNomina, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: "Concepto quitado del recibo." });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const excluirRecibo = async(req, res = response) => {
+
+    const { idNominaRecibo } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const [recibo] = await dbConnection.query(
+            `SELECT idNomina FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo LIMIT 1`,
+            { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!recibo) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "El recibo no existe." });
+        }
+
+        // Excluir un recibo YA PAGADO borraria el comprobante de un pago
+        // ya entregado — el guard del recibo (no de la corrida) lo impide.
+        const sError = await _fn_validarBorrador(idNominaRecibo, transaction);
+        if (sError) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: sError });
+        }
+
+        await dbConnection.query(
+            `DELETE FROM nomina_recibo_detalle WHERE idNominaRecibo = :idNominaRecibo`,
+            { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await dbConnection.query(
+            `DELETE FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo`,
+            { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await _fn_recalcularNomina(recibo.idNomina, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: "Empleado excluido de la nómina." });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// ---- Pagar / cancelar ----
+//
+// Desde analisis/013 el pago vive en el RECIBO, no en la corrida. El
+// estatus de `nomina` deja de ser fuente de verdad y pasa a deducirse
+// siempre de sus recibos: cualquier codigo que necesite saber si algo
+// esta pagado debe mirar el recibo.
+
+// Deduce el estatus de la corrida a partir de sus recibos y lo escribe.
+// Se llama despues de CADA pago o cancelacion, individual o por lote.
+const _fn_recalcularEstatusNomina = async(idNomina, transaction) => {
+
+    const [conteo] = await dbConnection.query(
+        `SELECT COUNT(*) AS iTotal,
+                SUM(estatus = 'PAGADA') AS iPagados,
+                SUM(estatus = 'CANCELADA') AS iCancelados
+         FROM nomina_recibos WHERE idNomina = :idNomina`,
+        { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    const iTotal = Number(conteo.iTotal) || 0;
+    const iPagados = Number(conteo.iPagados) || 0;
+    const iCancelados = Number(conteo.iCancelados) || 0;
+
+    let estatus = 'BORRADOR';
+    if (iTotal > 0 && iCancelados === iTotal) {
+        estatus = 'CANCELADA';
+    } else if (iTotal > 0 && (iPagados + iCancelados) === iTotal) {
+        estatus = 'PAGADA';
+    }
+
+    if (estatus === 'PAGADA') {
+
+        // La fecha/usuario de la corrida son los del ultimo recibo
+        // pagado, para que el comprobante conserve cuando y quien.
+        const [ultimo] = await dbConnection.query(
+            `SELECT pagadaDate, idPagoUser FROM nomina_recibos
+             WHERE idNomina = :idNomina AND estatus = 'PAGADA'
+             ORDER BY pagadaDate DESC LIMIT 1`,
+            { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        await dbConnection.query(
+            `UPDATE nomina SET estatus = 'PAGADA', pagadaDate = :f, idPagoUser = :u,
+                    canceladaDate = NULL, idCancelUser = NULL, motivoCancelacion = NULL
+             WHERE idNomina = :idNomina`,
+            { replacements: { f: ultimo ? ultimo.pagadaDate : null, u: ultimo ? ultimo.idPagoUser : null, idNomina }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+    } else if (estatus === 'CANCELADA') {
+
+        const [ultimo] = await dbConnection.query(
+            `SELECT canceladaDate, idCancelUser, motivoCancelacion FROM nomina_recibos
+             WHERE idNomina = :idNomina AND estatus = 'CANCELADA'
+             ORDER BY canceladaDate DESC LIMIT 1`,
+            { replacements: { idNomina }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        await dbConnection.query(
+            `UPDATE nomina SET estatus = 'CANCELADA', canceladaDate = :f, idCancelUser = :u, motivoCancelacion = :m
+             WHERE idNomina = :idNomina`,
+            { replacements: { f: ultimo ? ultimo.canceladaDate : null, u: ultimo ? ultimo.idCancelUser : null, m: ultimo ? ultimo.motivoCancelacion : null, idNomina }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+
+    } else {
+
+        // Vuelve a BORRADOR (ej. se cancelo un recibo de una corrida que
+        // estaba PAGADA): se limpian las marcas de un estado que ya no
+        // aplica, para no dejar una fecha de pago en algo no pagado.
+        await dbConnection.query(
+            `UPDATE nomina SET estatus = 'BORRADOR', pagadaDate = NULL, idPagoUser = NULL,
+                    canceladaDate = NULL, idCancelUser = NULL, motivoCancelacion = NULL
+             WHERE idNomina = :idNomina`,
+            { replacements: { idNomina }, type: dbConnection.QueryTypes.UPDATE, transaction }
+        );
+    }
+};
+
+// Paga UN recibo: congela sus horas con el valor de este momento y liga
+// las comisiones y jornadas de ESE empleado. Lo comparten el pago
+// individual y el pago por lote, para que no puedan divergir.
+// Devuelve { ok, message } en vez de responder — quien llama decide.
+const _fn_pagarUnRecibo = async(idNominaRecibo, idUserLogON, transaction) => {
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const [recibo] = await dbConnection.query(
+        `SELECT R.idNominaRecibo, R.idNomina, R.idEmpleado, R.idUser, R.estatus, R.nombreEmpleado,
+                N.fechaInicio, N.fechaFin
+         FROM nomina_recibos AS R
+         INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+         WHERE R.idNominaRecibo = :idNominaRecibo LIMIT 1`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!recibo) {
+        return { ok: false, message: "El recibo no existe." };
+    }
+    if (recibo.estatus !== 'BORRADOR') {
+        return { ok: false, message: `El recibo de ${ recibo.nombreEmpleado } ya no está en borrador.` };
+    }
+
+    // 1) Congelar las horas CON EL VALOR DE ESTE MOMENTO (analisis/013):
+    //    mientras el recibo estuvo en BORRADOR se leian vivas; aqui
+    //    quedan fijas. Va en la MISMA transaccion que el ligado de
+    //    jornadas de abajo — eso es lo que garantiza que el recibo y las
+    //    jornadas no puedan terminar diciendo cosas distintas.
+    const sIni = recibo.fechaInicio ? moment(recibo.fechaInicio).format('YYYY-MM-DD') : null;
+    const sFin = recibo.fechaFin ? moment(recibo.fechaFin).format('YYYY-MM-DD') : null;
+
+    const horas = (sIni && sFin)
+        ? (await fn_getResumenPeriodo(recibo.idEmpleado, sIni, sFin, transaction)).totales
+        : await fn_getResumenPendiente(recibo.idEmpleado, transaction);
+
+    await dbConnection.query(
+        `UPDATE nomina_recibos
+         SET horasTrabajadas = :ht, horasEsperadas = :he, iRetardos = :ir, iFaltas = :ifa,
+             estatus = 'PAGADA', pagadaDate = :f, idPagoUser = :u, updateDate = :f
+         WHERE idNominaRecibo = :idNominaRecibo`,
+        {
+            replacements: {
+                ht: horas.horasTrabajadas, he: horas.horasEsperadas,
+                ir: horas.iRetardos, ifa: horas.iFaltas,
+                f: oGetDateNow, u: idUserLogON, idNominaRecibo
+            },
+            type: dbConnection.QueryTypes.UPDATE, transaction
+        }
+    );
+
+    // 2) Ligar SOLO lo de este empleado. Mismo criterio de fechas que
+    //    ya usaba el pago por lote, acotado ahora a un recibo.
+    await dbConnection.query(
+        `UPDATE comisiones_track AS CT
+         INNER JOIN nomina_recibos AS R ON R.idUser = CT.idUser AND R.idNominaRecibo = :idNominaRecibo
+         INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+         SET CT.estatus = 'INCLUIDA_EN_NOMINA', CT.idNomina = R.idNomina
+         WHERE CT.estatus = 'PENDIENTE'
+         AND ( N.fechaInicio IS NULL OR CT.fecha >= N.fechaInicio )
+         AND ( N.fechaFin IS NULL OR CT.fecha <= N.fechaFin )`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    await dbConnection.query(
+        `UPDATE timecard_jornadas AS J
+         INNER JOIN nomina_recibos AS R ON R.idEmpleado = J.idEmpleado AND R.idNominaRecibo = :idNominaRecibo
+         INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+         SET J.estatus = 'INCLUIDA_EN_NOMINA', J.idNomina = R.idNomina
+         WHERE J.estatus = 'PENDIENTE'
+         AND ( N.fechaInicio IS NULL OR J.fecha >= N.fechaInicio )
+         AND ( N.fechaFin IS NULL OR J.fecha <= N.fechaFin )`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    return { ok: true, idNomina: recibo.idNomina };
+};
+
+// Cancela UN recibo pagado: libera SUS comisiones y SUS jornadas, sin
+// tocar a los demas empleados del lote.
+const _fn_cancelarUnRecibo = async(idNominaRecibo, motivo, idUserLogON, transaction) => {
+
+    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    const [recibo] = await dbConnection.query(
+        `SELECT idNominaRecibo, idNomina, idEmpleado, idUser, estatus, nombreEmpleado
+         FROM nomina_recibos WHERE idNominaRecibo = :idNominaRecibo LIMIT 1`,
+        { replacements: { idNominaRecibo }, type: dbConnection.QueryTypes.SELECT, transaction }
+    );
+
+    if (!recibo) {
+        return { ok: false, message: "El recibo no existe." };
+    }
+    if (recibo.estatus !== 'PAGADA') {
+        return { ok: false, message: `Solo se puede cancelar un recibo pagado (${ recibo.nombreEmpleado }).` };
+    }
+
+    await dbConnection.query(
+        `UPDATE comisiones_track SET estatus = 'PENDIENTE', idNomina = NULL
+         WHERE idNomina = :idNomina AND idUser = :idUser AND estatus = 'INCLUIDA_EN_NOMINA'`,
+        { replacements: { idNomina: recibo.idNomina, idUser: recibo.idUser }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    await dbConnection.query(
+        `UPDATE timecard_jornadas SET estatus = 'PENDIENTE', idNomina = NULL
+         WHERE idNomina = :idNomina AND idEmpleado = :idEmpleado AND estatus = 'INCLUIDA_EN_NOMINA'`,
+        { replacements: { idNomina: recibo.idNomina, idEmpleado: recibo.idEmpleado }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    await dbConnection.query(
+        `UPDATE nomina_recibos
+         SET estatus = 'CANCELADA', canceladaDate = :f, idCancelUser = :u, motivoCancelacion = :m, updateDate = :f
+         WHERE idNominaRecibo = :idNominaRecibo`,
+        { replacements: { f: oGetDateNow, u: idUserLogON, m: motivo, idNominaRecibo }, type: dbConnection.QueryTypes.UPDATE, transaction }
+    );
+
+    return { ok: true, idNomina: recibo.idNomina };
+};
+
+// Paga un solo recibo (analisis/013): el empleado al que se le dio clic
+// y nadie mas.
+const pagarRecibo = async(req, res = response) => {
+
+    const {
+        idNominaRecibo
+
+        , idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const resultado = await _fn_pagarUnRecibo(idNominaRecibo, idUserLogON, transaction);
+
+        if (!resultado.ok) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: resultado.message });
+        }
+
+        await _fn_recalcularEstatusNomina(resultado.idNomina, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: "Recibo pagado con éxito." });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const cancelarRecibo = async(req, res = response) => {
+
+    const {
+        idNominaRecibo
+        , motivo
+
+        , idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        if (!motivo || !motivo.trim()) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "El motivo es obligatorio." });
+        }
+
+        const resultado = await _fn_cancelarUnRecibo(idNominaRecibo, motivo, idUserLogON, transaction);
+
+        if (!resultado.ok) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: resultado.message });
+        }
+
+        await _fn_recalcularEstatusNomina(resultado.idNomina, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: "Recibo cancelado con éxito." });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// Pago por lote: atajo que paga todos los recibos que sigan en
+// BORRADOR. Conserva su contrato (recibe el id de la CORRIDA) pero por
+// dentro reusa el mismo camino del pago individual.
+const pagarNomina = async(req, res = response) => {
+
+    const {
+        id
+
+        , idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const [nomina] = await dbConnection.query(
+            `SELECT estatus FROM nomina WHERE idNomina = :id LIMIT 1`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!nomina) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "La nómina no existe." });
+        }
+
+        const pendientes = await dbConnection.query(
+            `SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = :id AND estatus = 'BORRADOR'`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (pendientes.length === 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "Esta nómina ya no tiene recibos pendientes de pago." });
+        }
+
+        for (const p of pendientes) {
+            const resultado = await _fn_pagarUnRecibo(p.idNominaRecibo, idUserLogON, transaction);
+            if (!resultado.ok) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: resultado.message });
+            }
+        }
+
+        await _fn_recalcularEstatusNomina(id, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: `Nómina pagada con éxito (${ pendientes.length } recibo(s)).` });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const cancelarNomina = async(req, res = response) => {
+
+    const {
+        id
+        , motivo
+
+        , idUserLogON
+    } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        if (!motivo || !motivo.trim()) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "El motivo es obligatorio." });
+        }
+
+        const [nomina] = await dbConnection.query(
+            `SELECT estatus FROM nomina WHERE idNomina = :id LIMIT 1`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!nomina) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "La nómina no existe." });
+        }
+
+        const pagados = await dbConnection.query(
+            `SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = :id AND estatus = 'PAGADA'`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (pagados.length === 0) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "Esta nómina no tiene recibos pagados que cancelar." });
+        }
+
+        for (const p of pagados) {
+            const resultado = await _fn_cancelarUnRecibo(p.idNominaRecibo, motivo, idUserLogON, transaction);
+            if (!resultado.ok) {
+                await transaction.rollback();
+                return res.json({ status: 1, message: resultado.message });
+            }
+        }
+
+        await _fn_recalcularEstatusNomina(id, transaction);
+
+        await transaction.commit();
+
+        res.json({ status: 0, message: `Nómina cancelada con éxito (${ pagados.length } recibo(s)).` });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+// Eliminación física de una nómina completa (permiso nomina_Eliminar,
+// separado y más restringido que Generar). Se permite en BORRADOR
+// (nada se pagó ni se ligó comisiones todavía) y en CANCELADA (al
+// cancelar ya se liberaron sus comisiones a PENDIENTE, no queda nada
+// ligado a ella — no destruye historial real). Una PAGADA nunca se
+// borra: es el comprobante permanente de lo que sí se pagó.
+const deleteNomina = async(req, res = response) => {
+
+    const { id } = req.body;
+
+    const transaction = await dbConnection.transaction();
+
+    try{
+
+        const [nomina] = await dbConnection.query(
+            `SELECT estatus FROM nomina WHERE idNomina = :id LIMIT 1`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (!nomina) {
+            await transaction.rollback();
+            return res.json({ status: 1, message: "La nómina no existe." });
+        }
+
+        // Basta UN recibo pagado para bloquear (analisis/013): con pago
+        // por empleado la corrida puede seguir en BORRADOR y aun asi
+        // tener dinero ya entregado que quedaria sin comprobante.
+        const [pagados] = await dbConnection.query(
+            `SELECT COUNT(*) AS iPagados FROM nomina_recibos WHERE idNomina = :id AND estatus = 'PAGADA'`,
+            { replacements: { id }, type: dbConnection.QueryTypes.SELECT, transaction }
+        );
+
+        if (Number(pagados.iPagados) > 0) {
+            await transaction.rollback();
+            return res.json({
+                status: 1,
+                message: `No se puede eliminar: ya tiene ${ pagados.iPagados } recibo(s) pagado(s). Cancélalos en su lugar.`
+            });
+        }
+
+        await dbConnection.query(
+            `DELETE FROM nomina_recibo_detalle
+             WHERE idNominaRecibo IN ( SELECT idNominaRecibo FROM nomina_recibos WHERE idNomina = :id )`,
+            { replacements: { id }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await dbConnection.query(
+            `DELETE FROM nomina_recibos WHERE idNomina = :id`,
+            { replacements: { id }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await dbConnection.query(
+            `DELETE FROM nomina WHERE idNomina = :id`,
+            { replacements: { id }, type: dbConnection.QueryTypes.DELETE, transaction }
+        );
+
+        await transaction.commit();
+
+        res.json({
+            status: 0,
+            message: "Nómina eliminada por completo."
+        });
+
+    }catch(error){
+
+        await transaction.rollback();
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+const getNominasByEmpleado = async(req, res = response) => {
+
+    const { idEmpleado } = req.body;
+
+    try{
+
+        const rows = await dbConnection.query(
+            `SELECT
+                N.idNomina AS id, N.fechaInicio, N.fechaFin, N.estatus,
+                DATE_FORMAT(N.fechaInicio, '%d-%m-%Y') AS fechaInicioDesc,
+                DATE_FORMAT(N.fechaFin, '%d-%m-%Y') AS fechaFinDesc,
+                R.idNominaRecibo, R.neto
+             FROM nomina_recibos AS R
+             INNER JOIN nomina AS N ON N.idNomina = R.idNomina
+             WHERE R.idEmpleado = :idEmpleado
+             ORDER BY N.fechaInicio DESC`,
+            { replacements: { idEmpleado }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        res.json({
+            status: 0,
+            message: "Ejecutado correctamente.",
+            data: rows
+        });
+
+    }catch(error){
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
+};
+
+module.exports = {
+    generarNomina
+    , getNominasList
+    , getNominaDetalle
+    , getRecibo
+    , deleteNomina
+    , insertUpdateReciboDetalle
+    , deleteReciboDetalle
+    , excluirRecibo
+    , pagarRecibo
+    , cancelarRecibo
+    , pagarNomina
+    , cancelarNomina
+    , getNominasByEmpleado
+}
