@@ -43,6 +43,7 @@ class Server{
             nomina:'/api/nomina',
             timecard:'/api/timecard',
             dashboard:'/api/dashboard',
+            constantes:'/api/constantes',
 
         }
 
@@ -71,6 +72,12 @@ class Server{
     }
 
     middlewares(){
+
+        // IP real del equipo (analisis/039). Solo se confía en
+        // X-Forwarded-For cuando la conexión viene del propio servidor (un
+        // proxy https instalado ahí). Sin proxy, las PCs se conectan
+        // directo y el encabezado se ignora: nadie puede falsear su IP.
+        this.app.set('trust proxy', 'loopback');
 
         //CORS
         this.app.use( cors() );
@@ -140,6 +147,7 @@ class Server{
         this.app.use(this.paths.nomina, require('../routes/nominaRoute'));
         this.app.use(this.paths.timecard, require('../routes/timecardRoute'));
         this.app.use(this.paths.dashboard, require('../routes/dashboardRoute'));
+        this.app.use(this.paths.constantes, require('../routes/constantesRoute'));
     }
 
     listen(){

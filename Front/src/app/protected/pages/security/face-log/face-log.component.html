@@ -20,7 +20,14 @@
                     <option value="FALLO">Fallo</option>
                     <option value="NO_DISPONIBLE">Sin cámara</option>
                     <option value="AUTORIZACION_MANUAL">Autorización manual</option>
+                    <option value="SIN_VIDA">Prueba de vida fallida</option>
                 </select>
+            </div>
+
+            <div class="slim-field">
+                <span class="slim-label">Persona</span>
+                <input class="inline-input" type="text" placeholder="Nombre (esperada o identificada)"
+                    [(ngModel)]="parametersForm.persona" (keyup.enter)="fn_buscar()">
             </div>
 
             <div class="slim-field">
@@ -33,7 +40,7 @@
                 <input class="inline-input" type="date" [(ngModel)]="parametersForm.endDate">
             </div>
 
-            <button mat-raised-button color="primary" type="button" (click)="fn_getTrack()">
+            <button mat-raised-button color="primary" type="button" (click)="fn_buscar()">
                 <mat-icon matPrefix class="my-icon">search</mat-icon>
                 Buscar</button>
             <button mat-raised-button type="button" (click)="parametersForm_Clear()">
@@ -52,6 +59,8 @@
                     <th class="textAlingRight">Similitud</th>
                     <th class="textAlingLeft">Referencia</th>
                     <th class="textAlingLeft">Usuario</th>
+                    <th class="textAlingCenter">Equipo (IP)</th>
+                    <th class="textAlingCenter">Evidencia</th>
                 </thead>
                 <tbody>
                     <tr *ngFor="let item of trackList">
@@ -62,8 +71,9 @@
                                 [class.bg-success]="item.resultado === 'EXITO'"
                                 [class.bg-danger]="item.resultado === 'FALLO'"
                                 [class.bg-warning]="item.resultado === 'NO_DISPONIBLE'"
-                                [class.bg-primary]="item.resultado === 'AUTORIZACION_MANUAL'">
-                                {{ item.resultado }}
+                                [class.bg-primary]="item.resultado === 'AUTORIZACION_MANUAL'"
+                                [class.bg-dark]="item.resultado === 'SIN_VIDA'">
+                                {{ item.resultado === 'SIN_VIDA' ? 'PRUEBA DE VIDA FALLIDA' : item.resultado }}
                             </span>
                         </td>
                         <td class="textAlingLeft">{{ item.personaEsperadaDesc || '-' }}</td>
@@ -71,6 +81,12 @@
                         <td class="textAlingRight">{{ item.similitud != null ? (item.similitud * 100 | number:'1.0-0') + '%' : '-' }}</td>
                         <td class="textAlingLeft">{{ item.referencia || '-' }}</td>
                         <td class="textAlingLeft">{{ item.createUserDesc }}</td>
+                        <td class="textAlingCenter fl-ip">{{ item.ip || '-' }}</td>
+                        <td class="textAlingCenter">
+                            <mat-icon *ngIf="item.bEvidencia" class="fl-evidencia" matTooltip="Ver lo que vio la cámara"
+                                (click)="fn_verEvidencia(item)">photo_camera</mat-icon>
+                            <span *ngIf="!item.bEvidencia">-</span>
+                        </td>
                     </tr>
                 </tbody>
             </table>

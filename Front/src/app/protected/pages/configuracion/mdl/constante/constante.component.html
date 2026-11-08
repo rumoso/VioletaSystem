@@ -1,0 +1,86 @@
+<div class="cm-modal">
+
+  <!-- HEADER -->
+  <div class="cm-header">
+    <div class="cm-header-tit">
+      <mat-icon class="cm-ico">{{ bEsNueva ? 'add_circle' : (bPuedeEditar ? 'edit' : 'tune') }}</mat-icon>
+      <div>
+        <h2>{{ bEsNueva ? 'Nueva constante' : (bPuedeEditar ? 'Editar constante' : 'Constante') }}</h2>
+        <div class="cm-sub" *ngIf="!bEsNueva">{{ sClaveOriginal }}</div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="fn_cerrar()"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <div class="cm-field">
+    <label class="cm-label">Clave (sKey) <span class="cm-req">*</span></label>
+    <div class="cm-wrap" [class.cm-wrap--disabled]="!bPuedeEditar">
+      <input type="text" class="cm-input cm-input--clave" maxlength="100"
+        placeholder="Ej. FACIAL_EVIDENCIA_DIAS"
+        [(ngModel)]="form.sKey"
+        [disabled]="!bPuedeEditar">
+      <mat-icon class="cm-suffix-icon">vpn_key</mat-icon>
+    </div>
+    <div class="cm-hint" *ngIf="bPuedeEditar && form.sKey && sClaveNormalizada !== form.sKey">
+      Se guardará como <b>{{ sClaveNormalizada }}</b>
+    </div>
+    <div class="cm-aviso" *ngIf="bClaveCambiada">
+      <mat-icon>warning_amber</mat-icon>
+      El sistema busca las constantes por su clave. Si la cambias, dejará de encontrar
+      <b>{{ sClaveOriginal }}</b> y usará su valor por default.
+    </div>
+  </div>
+
+  <div class="cm-field">
+    <label class="cm-label">Valor (sValue) <span class="cm-req">*</span></label>
+    <div class="cm-wrap" [class.cm-wrap--disabled]="!bPuedeEditar">
+      <input type="text" class="cm-input" maxlength="500"
+        [(ngModel)]="form.sValue"
+        [disabled]="!bPuedeEditar">
+    </div>
+  </div>
+
+  <div class="cm-field">
+    <label class="cm-label">Valor 2 (opcional)</label>
+    <div class="cm-wrap" [class.cm-wrap--disabled]="!bPuedeEditar">
+      <input type="text" class="cm-input" maxlength="500" [(ngModel)]="form.sValue2" [disabled]="!bPuedeEditar">
+    </div>
+  </div>
+
+  <div class="cm-field">
+    <label class="cm-label">Valor 3 (opcional)</label>
+    <div class="cm-wrap" [class.cm-wrap--disabled]="!bPuedeEditar">
+      <input type="text" class="cm-input" maxlength="500" [(ngModel)]="form.sValue3" [disabled]="!bPuedeEditar">
+    </div>
+  </div>
+
+  <div class="cm-field">
+    <label class="cm-label">Valor 4 (opcional)</label>
+    <div class="cm-wrap" [class.cm-wrap--disabled]="!bPuedeEditar">
+      <input type="text" class="cm-input" maxlength="500" [(ngModel)]="form.sValue4" [disabled]="!bPuedeEditar">
+    </div>
+  </div>
+
+  <mat-slide-toggle class="cm-toggle" color="primary" [(ngModel)]="form.bActiva" [disabled]="!bPuedeEditar">
+    Activa
+  </mat-slide-toggle>
+
+  <!-- ERROR -->
+  <div class="cm-error" *ngIf="sError">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ sError }}</span>
+  </div>
+
+  <!-- ACCIONES -->
+  <div class="cm-acciones">
+    <button mat-button type="button" (click)="fn_cerrar()">{{ bPuedeEditar ? 'Cancelar' : 'Cerrar' }}</button>
+    <button mat-flat-button class="cm-btn-primary" type="button"
+      *ngIf="bPuedeEditar"
+      [disabled]="bGuardando"
+      (click)="fn_guardar()">
+      <mat-icon>save</mat-icon>
+      {{ bGuardando ? 'Guardando...' : (bEsNueva ? 'Crear constante' : 'Actualizar') }}
+    </button>
+  </div>
+
+</div>

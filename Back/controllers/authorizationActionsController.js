@@ -155,6 +155,7 @@ const authorizationActionByFace = async(req, res = response) => {
         } else {
 
             await fn_logVerificacion({
+                ip: oComprobante.datos.ip || null,
                 modo: oComprobante.datos.modo,
                 tipoPersonaIdentificada: 'USUARIO',
                 idPersonaIdentificada: idUser,

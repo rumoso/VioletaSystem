@@ -1,0 +1,111 @@
+/* CM — Modal de constante (analisis/040). Mismo lenguaje que el modal de
+   sucursal: paleta Indigo del sistema. */
+
+.cm-modal { padding: 22px 24px; min-width: 460px; }
+@media (max-width: 560px) { .cm-modal { min-width: 0; } }
+
+.cm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid #283593;
+}
+.cm-header-tit { display: flex; align-items: center; gap: 10px; }
+.cm-header-tit h2 { margin: 0; color: #1a237e; font-size: 20px; }
+.cm-ico { color: #283593; font-size: 28px; width: 28px; height: 28px; }
+.cm-sub { font-size: 12px; color: #8e97a4; margin-top: 2px; font-family: 'Roboto Mono', Consolas, monospace; }
+
+.cm-field { margin-bottom: 12px; }
+.cm-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #283593;
+  margin-bottom: 3px;
+  padding-left: 2px;
+}
+.cm-req { color: #c62828; }
+
+.cm-wrap {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cm-wrap:focus-within {
+  border-color: #283593;
+  box-shadow: 0 0 0 2px rgba(40, 53, 147, 0.15);
+}
+.cm-wrap--disabled { background: #fafafa; }
+
+.cm-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #2c2c2c;
+  outline: none;
+}
+.cm-input::placeholder { color: #9e9e9e; font-weight: 400; }
+.cm-input:disabled { color: #616161; }
+.cm-input--clave { font-family: 'Roboto Mono', Consolas, monospace; }
+
+.cm-suffix-icon {
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: #9e9e9e;
+  margin-right: 10px;
+}
+
+.cm-hint { font-size: 11.5px; color: #8e97a4; margin: 4px 0 0 2px; }
+
+.cm-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  color: #8d6e00;
+  font-size: 12px;
+}
+.cm-aviso mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
+
+.cm-toggle { display: block; margin: 6px 0 16px; font-size: 13.5px; }
+
+.cm-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #ffebee;
+  color: #b71c1c;
+  font-size: 13px;
+}
+.cm-error mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+.cm-acciones { display: flex; justify-content: flex-end; gap: 10px; }
+.cm-btn-primary {
+  background: #283593 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.cm-btn-primary mat-icon { font-size: 18px !important; margin-right: 4px; vertical-align: middle; }

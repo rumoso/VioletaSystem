@@ -14,6 +14,8 @@ const {
     , saveCameraPreference
     , identificarRostro
     , verificarRostro
+    , pedirReto
+    , getFaceEvidencia
 
    } = require('../controllers/faceRecognitionController');
 
@@ -29,7 +31,8 @@ router.post('/saveFaceReference', [
 
   check('tipoPersona','tipoPersona obligatorío').not().isEmpty(),
   check('idPersona','idPersona obligatorío').not().isEmpty(),
-  check('descriptor','descriptor obligatorío').not().isEmpty(),
+  check('idReto','El reto de la captura es obligatorio').not().isEmpty(),
+  check('frames','La captura del rostro es obligatoria').isArray({ min: 8, max: 200 }),
 
   validarCampos
 ], saveFaceReference);
@@ -57,10 +60,22 @@ router.post('/deleteFaceReference', [
 // Identificar / verificar un rostro: la comparación ocurre en el servidor
 // y, si coincide, se entrega un comprobante de un solo uso. Públicas a
 // propósito: el login facial y el checador se usan sin sesión.
+//
+// Prueba de vida (analisis/037): ya no reciben un descriptor suelto, sino
+// la secuencia de la captura (`frames`) y el reto que se pidió antes con
+// pedirReto.
+router.post('/pedirReto', [
+
+  check('proposito','La operación es obligatoria').isIn(['LOGIN', 'TIMECARD', 'AUTORIZACION', 'ENROLAR']),
+
+  validarCampos
+], pedirReto);
+
 router.post('/identificarRostro', [
 
   check('tipoPersona','tipoPersona obligatorío').not().isEmpty(),
-  check('descriptor','La captura del rostro es obligatoria').isArray({ min: 128, max: 128 }),
+  check('idReto','El reto de la captura es obligatorio').not().isEmpty(),
+  check('frames','La captura del rostro es obligatoria').isArray({ min: 8, max: 200 }),
   check('proposito','La operación es obligatoria').not().isEmpty(),
 
   validarCampos
@@ -70,7 +85,8 @@ router.post('/verificarRostro', [
 
   check('tipoPersona','tipoPersona obligatorío').not().isEmpty(),
   check('idPersona','idPersona obligatorío').isInt({ gt: 0 }),
-  check('descriptor','La captura del rostro es obligatoria').isArray({ min: 128, max: 128 }),
+  check('idReto','El reto de la captura es obligatorio').not().isEmpty(),
+  check('frames','La captura del rostro es obligatoria').isArray({ min: 8, max: 200 }),
   check('proposito','La operación es obligatoria').not().isEmpty(),
 
   validarCampos
@@ -84,7 +100,19 @@ router.post('/logFaceVerification', [
   validarCampos
 ], logFaceVerification);
 
-router.post('/getFaceVerificationLogTrack', getFaceVerificationLogTrack);
+// Bitácora Facial (analisis/039): sesión + menú `facialLog` (revisado en el
+// controller). La evidencia son fotos de personas.
+router.post('/getFaceVerificationLogTrack', [
+  validarSesion
+], getFaceVerificationLogTrack);
+
+router.post('/getFaceEvidencia', [
+  validarSesion,
+
+  check('idFaceVerificationLog','Id obligatorio').isInt({ gt: 0 }),
+
+  validarCampos
+], getFaceEvidencia);
 
 router.post('/getCameraPreference', [
 

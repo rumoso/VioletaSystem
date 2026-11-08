@@ -1,0 +1,61 @@
+<div class="fe-modal">
+
+  <div class="fe-header">
+    <div class="fe-header-tit">
+      <mat-icon class="fe-ico">photo_camera</mat-icon>
+      <div>
+        <h2>Evidencia</h2>
+        <div class="fe-sub" *ngIf="evidencia">
+          {{ evidencia.createDateDesc }}
+          <span *ngIf="evidencia.ip"> · equipo {{ evidencia.ip }}</span>
+        </div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="fn_cerrar()"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <mat-progress-bar *ngIf="bCargando" mode="indeterminate"></mat-progress-bar>
+
+  <div class="fe-error" *ngIf="sError">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ sError }}</span>
+  </div>
+
+  <ng-container *ngIf="evidencia">
+
+    <div class="fe-resultado">
+      <span class="fe-badge" [class.fe-badge--alerta]="evidencia.resultado === 'SIN_VIDA'">
+        {{ evidencia.resultado === 'SIN_VIDA' ? 'Prueba de vida fallida' : (evidencia.resultado === 'EXITO' ? 'Éxito' : evidencia.resultado) }}
+      </span>
+      <span class="fe-similitud" *ngIf="evidencia.similitud != null">
+        Similitud {{ evidencia.similitud * 100 | number:'1.0-0' }}%
+      </span>
+    </div>
+
+    <div class="fe-fotos">
+      <div class="fe-foto">
+        <img [src]="evidencia.imgEvidencia" alt="Lo que vio la cámara">
+        <span class="fe-pie">Lo que vio la cámara</span>
+      </div>
+      <div class="fe-foto">
+        <img *ngIf="evidencia.imgReferencia" [src]="evidencia.imgReferencia" alt="Foto del Face ID">
+        <div class="fe-sin-foto" *ngIf="!evidencia.imgReferencia">
+          <mat-icon>person_off</mat-icon>
+        </div>
+        <span class="fe-pie">Face ID{{ evidencia.personaDesc ? ': ' + evidencia.personaDesc : '' }}</span>
+      </div>
+    </div>
+
+    <div class="fe-referencia" *ngIf="evidencia.referencia">{{ evidencia.referencia }}</div>
+
+    <div class="fe-nota">
+      La foto la toma el navegador: sirve para revisarla, no es una prueba infalible.
+    </div>
+
+  </ng-container>
+
+  <div class="fe-acciones">
+    <button mat-button type="button" (click)="fn_cerrar()">Cerrar</button>
+  </div>
+
+</div>

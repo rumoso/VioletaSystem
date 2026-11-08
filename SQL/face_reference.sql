@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `face_verification_log` (
   `idPersonaEsperada`       BIGINT NULL,
   `tipoPersonaIdentificada` VARCHAR(20) NULL,
   `idPersonaIdentificada`   BIGINT NULL,
-  `resultado`               VARCHAR(20) NOT NULL COMMENT 'EXITO | FALLO | NO_DISPONIBLE | AUTORIZACION_MANUAL',
+  `resultado`               VARCHAR(20) NOT NULL COMMENT 'EXITO | FALLO | NO_DISPONIBLE | AUTORIZACION_MANUAL | SIN_VIDA',
   `similitud`                DECIMAL(5,4) NULL,
   `referencia`              VARCHAR(1000) NULL COMMENT 'pantalla/flujo de origen',
   `idCreateUser`            BIGINT NOT NULL,

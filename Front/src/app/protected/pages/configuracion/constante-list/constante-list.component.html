@@ -1,0 +1,139 @@
+<div class="cst-page">
+
+  <!-- ═══════════════ BARRA ═══════════════ -->
+  <div class="cst-card cst-barra">
+
+    <div class="cst-field cst-field--buscar">
+      <label class="cst-label">Buscar</label>
+      <div class="cst-wrap">
+        <mat-icon class="cst-prefix-icon">search</mat-icon>
+        <input type="text"
+          class="cst-input"
+          placeholder="Clave o valor"
+          [(ngModel)]="sBusqueda"
+          (keyup)="ev_fn_busqueda()">
+      </div>
+    </div>
+
+    <button mat-stroked-button class="cst-btn-secondary" type="button" (click)="fn_limpiar()" *ngIf="sBusqueda">
+      <mat-icon>filter_alt_off</mat-icon>
+      Limpiar
+    </button>
+
+    <div class="cst-vista">
+      <button type="button" class="cst-vista-btn" [class.cst-vista-btn--activa]="sVista === 'lista'"
+        matTooltip="Lista" (click)="fn_setVista('lista')"><mat-icon>view_list</mat-icon></button>
+      <button type="button" class="cst-vista-btn" [class.cst-vista-btn--activa]="sVista === 'tarjetas'"
+        matTooltip="Tarjetas" (click)="fn_setVista('tarjetas')"><mat-icon>grid_view</mat-icon></button>
+    </div>
+
+    <span class="cst-spacer"></span>
+
+    <span class="cst-count-badge">{{ constantes.length }} {{ constantes.length === 1 ? 'constante' : 'constantes' }}</span>
+
+    <button mat-flat-button class="cst-btn-primary" (click)="fn_abrir(null)" *ngIf="bPuedeEditar">
+      <mat-icon>add</mat-icon>
+      Nueva constante
+    </button>
+
+  </div>
+
+  <!-- ═══════════════ LISTA ═══════════════ -->
+  <div class="cst-card" *ngIf="sVista === 'lista'">
+
+    <div class="cst-table-wrapper">
+      <table class="cst-table">
+        <thead>
+          <tr>
+            <th class="cst-th">Clave</th>
+            <th class="cst-th">Valor</th>
+            <th class="cst-th cst-th--center">Estatus</th>
+            <th class="cst-th cst-th--center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of constantes" class="cst-tr" [class.cst-tr--inactiva]="c.active !== 1">
+
+            <td class="cst-td">
+              <span class="cst-clave">{{ c.sKey }}</span>
+            </td>
+
+            <td class="cst-td">
+              <div class="cst-valor">{{ c.sValue }}</div>
+              <div class="cst-extra" *ngFor="let v of fn_extras(c)">{{ v }}</div>
+            </td>
+
+            <td class="cst-td cst-td--center">
+              <span class="cst-estatus" [class.cst-estatus--activa]="c.active === 1">
+                {{ c.active === 1 ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+
+            <td class="cst-td cst-td--center cst-td--acciones">
+              <mat-icon class="cst-accion cst-accion--ver"
+                [matTooltip]="bPuedeEditar ? 'Editar' : 'Consultar'"
+                (click)="fn_abrir(c)">{{ bPuedeEditar ? 'edit' : 'visibility' }}</mat-icon>
+              <ng-container *ngIf="bPuedeEditar">
+                <mat-icon class="cst-accion"
+                  [class.cst-accion--baja]="c.active === 1"
+                  [class.cst-accion--alta]="c.active !== 1"
+                  [matTooltip]="c.active === 1 ? 'Desactivar' : 'Activar'"
+                  (click)="fn_cambiarEstatus(c)">{{ c.active === 1 ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                <mat-icon class="cst-accion cst-accion--borrar" matTooltip="Eliminar" (click)="fn_eliminar(c)">delete</mat-icon>
+              </ng-container>
+            </td>
+
+          </tr>
+
+          <tr *ngIf="!bShowSpinner && constantes.length === 0">
+            <td colspan="4" class="cst-empty">
+              <mat-icon>tune</mat-icon>
+              <span>No hay constantes que mostrar</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ TARJETAS ═══════════════ -->
+  <div class="cst-grid" *ngIf="sVista === 'tarjetas'">
+
+    <div class="cst-card cst-tarjeta" *ngFor="let c of constantes" [class.cst-tarjeta--inactiva]="c.active !== 1">
+      <div class="cst-tarjeta-head">
+        <span class="cst-clave">{{ c.sKey }}</span>
+        <span class="cst-estatus" [class.cst-estatus--activa]="c.active === 1">
+          {{ c.active === 1 ? 'Activa' : 'Inactiva' }}
+        </span>
+      </div>
+      <div class="cst-valor cst-valor--grande">{{ c.sValue }}</div>
+      <div class="cst-extra" *ngFor="let v of fn_extras(c)">{{ v }}</div>
+      <div class="cst-tarjeta-pie">
+        <span class="cst-meta">{{ c.createUserDesc || '' }} · {{ c.createDateDesc }}</span>
+        <span>
+          <mat-icon class="cst-accion cst-accion--ver"
+            [matTooltip]="bPuedeEditar ? 'Editar' : 'Consultar'"
+            (click)="fn_abrir(c)">{{ bPuedeEditar ? 'edit' : 'visibility' }}</mat-icon>
+          <ng-container *ngIf="bPuedeEditar">
+            <mat-icon class="cst-accion"
+              [class.cst-accion--baja]="c.active === 1"
+              [class.cst-accion--alta]="c.active !== 1"
+              [matTooltip]="c.active === 1 ? 'Desactivar' : 'Activar'"
+              (click)="fn_cambiarEstatus(c)">{{ c.active === 1 ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+            <mat-icon class="cst-accion cst-accion--borrar" matTooltip="Eliminar" (click)="fn_eliminar(c)">delete</mat-icon>
+          </ng-container>
+        </span>
+      </div>
+    </div>
+
+    <div class="cst-card cst-empty" *ngIf="!bShowSpinner && constantes.length === 0">
+      <mat-icon>tune</mat-icon>
+      <span>No hay constantes que mostrar</span>
+    </div>
+
+  </div>
+
+</div>
+
+<app-spinner [hidden]="!bShowSpinner"></app-spinner>

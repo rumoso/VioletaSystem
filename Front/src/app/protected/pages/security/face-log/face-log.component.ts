@@ -5,6 +5,7 @@ import { Pagination, ResponseGet } from 'src/app/interfaces/general.interfaces';
 import { FaceReferenceService } from 'src/app/protected/services/face-reference.service';
 import { ServicesGService } from 'src/app/servicesG/servicesG.service';
 import { PageTitleService } from 'src/app/protected/services/page-title.service';
+import { FaceEvidenciaComponent } from '../mdl/face-evidencia/face-evidencia.component';
 
 @Component({
   selector: 'app-face-log',
@@ -30,6 +31,7 @@ export class FaceLogComponent implements OnInit, OnDestroy {
   parametersForm: any = {
     modo: '',
     resultado: '',
+    persona: '',
     startDate: '',
     endDate: ''
   };
@@ -61,9 +63,21 @@ export class FaceLogComponent implements OnInit, OnDestroy {
   }
 
   parametersForm_Clear(){
-    this.parametersForm = { modo: '', resultado: '', startDate: '', endDate: '' };
+    this.parametersForm = { modo: '', resultado: '', persona: '', startDate: '', endDate: '' };
     this.pagination.pageIndex = 0;
     this.fn_getTrack();
+  }
+
+  // Un filtro nuevo regresa a la primera página.
+  fn_buscar(){
+    this.pagination.pageIndex = 0;
+    this.fn_getTrack();
+  }
+
+  // Miniatura de lo que vio la cámara junto a la foto del Face ID
+  // (analisis/039).
+  fn_verEvidencia( item: any ){
+    this.servicesGServ.showModalWithParams( FaceEvidenciaComponent, { idFaceVerificationLog: item.idFaceVerificationLog }, '640px' );
   }
 
 // #endregion
@@ -78,11 +92,17 @@ export class FaceLogComponent implements OnInit, OnDestroy {
         if (resp.status === 0) {
           this.trackList = resp.data.rows || [];
           this.pagination.length = resp.data.count || 0;
+        } else {
+          this.trackList = [];
+          this.pagination.length = 0;
+          this.servicesGServ.showSnakbar(resp.message || 'Error al cargar la bitácora');
         }
         this.bShowSpinner = false;
       },
       error: (ex: HttpErrorResponse) => {
-        this.servicesGServ.showSnakbar('Error al cargar la bitácora');
+        this.servicesGServ.showSnakbar( ex.status === 401
+          ? ( ex.error?.message || 'Tu sesión venció. Vuelve a iniciar sesión.' )
+          : 'Error al cargar la bitácora' );
         this.bShowSpinner = false;
       }
     });

@@ -56,6 +56,9 @@ const fn_emitirComprobante = (datos) => {
         proposito: datos.proposito,
         modo: datos.modo,
         referencia: datos.referencia || '',
+        // IP de quien se identificó (analisis/039): la escribe la
+        // bitácora al gastar el comprobante.
+        ip: datos.ip || '',
         jti: crypto.randomUUID()
     };
 

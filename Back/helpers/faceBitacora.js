@@ -3,26 +3,39 @@
 // es cuando de verdad se usó la identificación; los fallos, cuando el
 // servidor compara y no coincide. El navegador ya no puede escribir un
 // éxito.
+//
+// analisis/039: cada renglón guarda la IP del equipo y, en los casos que
+// lo ameritan, una miniatura de evidencia (helpers/faceEvidencia.js).
 
 const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
+const {
+    fn_esquemaEvidencia,
+    fn_guardarEvidencia,
+    fn_tomarEvidenciaPendiente,
+    fn_purgarEvidencia
+} = require('./faceEvidencia');
 
 // oLog: { modo, tipoPersonaEsperada, idPersonaEsperada,
 //         tipoPersonaIdentificada, idPersonaIdentificada,
-//         resultado, similitud, referencia, idCreateUser }
+//         resultado, similitud, referencia, idCreateUser,
+//         ip, imgEvidencia }
 //
-// La bitácora nunca debe tumbar el flujo que la llama: si falla el
-// INSERT se deja en consola y se sigue.
+// Regresa el id del renglón (o null). La bitácora nunca debe tumbar el
+// flujo que la llama: si falla el INSERT se deja en consola y se sigue.
 const fn_logVerificacion = async (oLog) => {
 
     try {
 
-        await dbConnection.query(
+        // Sin el script del 039 todavía no existe la columna `ip`.
+        const bEsquema = await fn_esquemaEvidencia();
+
+        const [idLog] = await dbConnection.query(
             `INSERT INTO face_verification_log
-                (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, tipoPersonaIdentificada, idPersonaIdentificada, resultado, similitud, referencia, idCreateUser)
+                (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, tipoPersonaIdentificada, idPersonaIdentificada, resultado, similitud, referencia, idCreateUser${ bEsquema ? ', ip' : '' })
              VALUES
-                (:createDate, :modo, :tipoPersonaEsperada, :idPersonaEsperada, :tipoPersonaIdentificada, :idPersonaIdentificada, :resultado, :similitud, :referencia, :idCreateUser)`,
+                (:createDate, :modo, :tipoPersonaEsperada, :idPersonaEsperada, :tipoPersonaIdentificada, :idPersonaIdentificada, :resultado, :similitud, :referencia, :idCreateUser${ bEsquema ? ', :ip' : '' })`,
             {
                 replacements: {
                     createDate: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -34,19 +47,31 @@ const fn_logVerificacion = async (oLog) => {
                     resultado: oLog.resultado,
                     similitud: oLog.similitud === undefined ? null : oLog.similitud,
                     referencia: oLog.referencia || null,
-                    idCreateUser: oLog.idCreateUser || 0
+                    idCreateUser: oLog.idCreateUser || 0,
+                    ip: oLog.ip || null
                 },
                 type: dbConnection.QueryTypes.INSERT
             }
         );
 
+        await fn_purgarEvidencia();
+
+        if (oLog.imgEvidencia) {
+            await fn_guardarEvidencia(idLog, oLog.imgEvidencia);
+        }
+
+        return idLog || null;
+
     } catch (error) {
         console.log('No se pudo escribir la bitácora facial:', error.message);
+        return null;
     }
 
 };
 
-// Éxito al gastar un comprobante: los datos salen del comprobante mismo.
+// Éxito al gastar un comprobante: los datos salen del comprobante mismo
+// (incluida la IP de quien se identificó). Si fue un marcaje del checador,
+// aquí se guarda la miniatura que esperaba en memoria.
 const fn_logExitoComprobante = (datos, sReferencia = null) => fn_logVerificacion({
     modo: datos.modo,
     tipoPersonaEsperada: datos.modo === 'VERIFICAR' ? datos.tipoPersona : null,
@@ -56,7 +81,9 @@ const fn_logExitoComprobante = (datos, sReferencia = null) => fn_logVerificacion
     resultado: 'EXITO',
     similitud: datos.similitud,
     referencia: sReferencia || datos.referencia,
-    idCreateUser: datos.idPersona
+    idCreateUser: datos.idPersona,
+    ip: datos.ip || null,
+    imgEvidencia: fn_tomarEvidenciaPendiente(datos.jti)
 });
 
 module.exports = {

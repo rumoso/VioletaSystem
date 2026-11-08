@@ -46,20 +46,57 @@
             <p>Preparando cámara y reconocimiento local...</p>
         </div>
 
-        <!-- Cámara + plantilla-guía: el óvalo cambia de color según la
-             posición del rostro y la captura se dispara sola al alinearse. -->
+        <!-- Cámara + plantilla-guía (analisis/037): el óvalo se dibuja del
+             tamaño que debe verse la cara en ESTA cámara, cambia de color
+             según la posición y distancia, y al alinearse empieza solo la
+             captura. Durante la captura puede aparecer un puntito en una
+             orilla: hay que voltear un poco hacia él. -->
+        <!-- Instrucción del reto (analisis/037): completa desde el inicio,
+             cada giro se palomea al cumplirse. -->
+        <div class="fv-reto" *ngIf="bGrabando && instruccionReto">
+            <span class="fv-reto-texto">{{ instruccionReto }}</span>
+            <span class="fv-reto-giros">
+                <span *ngFor="let g of girosUI" class="fv-reto-giro" [class.hecho]="g.bHecho">
+                    <mat-icon>{{ g.bHecho ? 'check' : (g.lado === 'IZQ' ? 'west' : 'east') }}</mat-icon>
+                </span>
+            </span>
+        </div>
+
         <div class="fv-camera-wrap" [hidden]="!bCameraReady || bLoadingModels || resultadoPendiente || candidatosPendientes">
-            <video #video class="fv-video" autoplay playsinline muted></video>
-            <div class="fv-guia-ovalo"
-                [class.buscando]="guiaEstado === 'buscando'"
-                [class.reacomoda]="guiaEstado === 'reacomoda'"
-                [class.alineado]="guiaEstado === 'alineado'"></div>
+            <div class="fv-camera-stage">
+                <video #video class="fv-video" autoplay playsinline muted></video>
+                <div class="fv-guia-ovalo"
+                    [style.width.%]="ovaloAnchoPct"
+                    [style.height.%]="ovaloAltoPct"
+                    [class.buscando]="guiaEstado === 'buscando' && !bGrabando"
+                    [class.reacomoda]="guiaEstado === 'reacomoda' && !bGrabando"
+                    [class.alineado]="guiaEstado === 'alineado' || bGrabando"></div>
+                <div class="fv-punto" *ngIf="puntoActual"
+                    [class.izq]="puntoActual === 'IZQ'"
+                    [class.der]="puntoActual === 'DER'"
+                    [class.arriba]="puntoActual === 'ARRIBA'"
+                    [class.abajo]="puntoActual === 'ABAJO'"></div>
+            </div>
         </div>
 
         <div class="fv-guia-hint" *ngIf="bCameraReady && !bLoadingModels && !resultadoPendiente && !candidatosPendientes">
-            {{ guiaEstado === 'alineado' ? '¡Perfecto, no te muevas!'
-                : guiaEstado === 'reacomoda' ? 'Centra tu rostro dentro del óvalo'
-                : 'Coloca tu rostro dentro del óvalo' }}
+            <ng-container *ngIf="bGrabando">
+                {{ puntoActual ? 'Voltea un poco hacia el punto' : 'Mira al frente' }}
+            </ng-container>
+            <ng-container *ngIf="!bGrabando && !bCapturing">
+                {{ guiaMensaje }}
+                <span class="fv-guia-distancia" *ngIf="distanciaCm">· a unos {{ distanciaCm }} cm</span>
+            </ng-container>
+            <ng-container *ngIf="bCapturing">Verificando...</ng-container>
+        </div>
+
+        <div class="fv-guia-sub" *ngIf="bCameraReady && !bLoadingModels && !resultadoPendiente && !candidatosPendientes && !bGrabando">
+            Colócate a unos 30–40 cm de la cámara (el largo de tu antebrazo).
+        </div>
+
+        <div class="fv-mensaje" *ngIf="bCamaraBajaResolucion && bCameraReady && !resultadoPendiente && !candidatosPendientes">
+            <mat-icon>videocam_off</mat-icon>
+            <span>Tu cámara no tiene suficiente resolución: acércate más o cambia de cámara.</span>
         </div>
 
         <!-- Más de una persona plausible: hay que elegir cuál es -->
@@ -81,6 +118,13 @@
             <p>Identificamos a:</p>
             <p class="fv-resultado-nombre">{{ resultadoPendiente.nombre }}</p>
             <p class="fv-resultado-similitud">Similitud: {{ (resultadoPendiente.similitud * 100).toFixed(0) }}%</p>
+            <!-- analisis/038: similitud baja de forma sostenida. No bloquea. -->
+            <div class="fv-sugerir-faceid" *ngIf="resultadoPendiente.sugerirActualizarFaceId">
+                <mat-icon>update</mat-icon>
+                <span>{{ resultadoPendiente.tipoPersona === 'CLIENTE'
+                    ? 'Se recomienda actualizar el Face ID de este cliente.'
+                    : 'Se recomienda pasar a Personal a actualizar tus datos de Face ID.' }}</span>
+            </div>
         </div>
 
         <div class="fv-mensaje" *ngIf="mensaje">
@@ -105,10 +149,10 @@
 
         <button mat-raised-button color="primary" type="button"
         *ngIf="bCameraReady && !bLoadingModels"
-        [disabled]="bCapturing"
+        [disabled]="bCapturing || bGrabando"
         (click)="fn_capturar()">
             <mat-icon matPrefix class="my-icon">camera_alt</mat-icon>
-            {{ bCapturing ? 'Procesando...' : 'Capturar ahora' }}</button>
+            {{ bCapturing ? 'Procesando...' : bGrabando ? 'Capturando...' : 'Capturar ahora' }}</button>
 
     </mat-dialog-actions>
 

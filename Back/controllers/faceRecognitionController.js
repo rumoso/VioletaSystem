@@ -3,9 +3,14 @@ const moment = require('moment');
 
 const { dbConnection } = require('../database/config');
 
-const { fn_descriptorValido, fn_parsearDescriptor, fn_comparar } = require('../helpers/faceMatch');
+const { fn_parsearDescriptor, fn_comparar } = require('../helpers/faceMatch');
 const { fn_propositoValido, fn_emitirComprobante } = require('../helpers/faceTicket');
 const { fn_logVerificacion } = require('../helpers/faceBitacora');
+const { fn_validarSecuencia, fn_validarVida, fn_descriptorPromedio } = require('../helpers/faceLiveness');
+const { fn_ipCliente } = require('../helpers/ipCliente');
+const { fn_guardarEvidenciaPendiente, fn_esquemaEvidencia } = require('../helpers/faceEvidencia');
+const { fn_tieneMenu } = require('../helpers/permisos');
+const { fn_propositoRetoValido, fn_generarReto, fn_consumirReto, fn_registrarFalloLogin } = require('../helpers/faceReto');
 
 // Reconocimiento facial (analisis/004-reconocimiento-facial.md y
 // analisis/020-reconocimiento-facial-validado-en-servidor.md).
@@ -31,7 +36,7 @@ const _SQL_JOIN_PERSONA = `
     LEFT JOIN users AS U ON FR.tipoPersona = 'USUARIO' AND U.idUser = FR.idPersona`;
 
 // Validación común de identificar y verificar.
-const _fn_validarPeticionRostro = ({ tipoPersona, descriptor, proposito }) => {
+const _fn_validarPeticionRostro = ({ tipoPersona, proposito }) => {
 
     if (!tipoPersona) {
         return 'Falta el tipo de persona.';
@@ -41,12 +46,111 @@ const _fn_validarPeticionRostro = ({ tipoPersona, descriptor, proposito }) => {
         return 'La operación de la identificación no es válida.';
     }
 
-    if (!fn_descriptorValido(descriptor)) {
-        return 'La captura del rostro no es válida. Intenta de nuevo.';
-    }
-
     return null;
 
+};
+
+const MENSAJE_SIN_VIDA = 'No pudimos confirmar que haya una persona frente a la cámara. Intenta de nuevo.';
+
+// IP real del equipo (analisis/039): normalizada y detrás de proxy si lo hay.
+const _fn_ip = (req) => fn_ipCliente(req);
+
+// Prueba de vida (analisis/037): gasta el reto, valida la forma de la
+// secuencia y revisa los giros de cabeza y que sea la misma cara. Regresa
+//   { error, resultado }              la petición no sirve (reto vencido,
+//                                     usado, de otra operación, o captura
+//                                     mal formada);
+//   { descriptor, vida: { ok, motivo } }  el descriptor promedio de la
+//                                     secuencia y si pasó la prueba.
+// Quien llama compara el descriptor aunque no haya pasado la prueba, para
+// dejar en la bitácora a quién se parecía (posible foto de esa persona).
+const _fn_leerCaptura = (idReto, frames, proposito) => {
+
+    const oReto = fn_consumirReto(idReto, proposito);
+
+    if (!oReto.ok) {
+        return { error: oReto.error, resultado: 'RETO_INVALIDO' };
+    }
+
+    const oSecuencia = fn_validarSecuencia(frames);
+
+    if (!oSecuencia.ok) {
+        return { error: oSecuencia.error, resultado: 'CAPTURA_INVALIDA' };
+    }
+
+    return {
+        descriptor: fn_descriptorPromedio(oSecuencia.descriptores),
+        vida: fn_validarVida(oSecuencia, oReto.pasos)
+    };
+};
+
+// ── Aviso de actualizar el Face ID (analisis/038) ──
+// Si la similitud de una persona viene baja de forma sostenida, el
+// resultado le sugiere volver a registrar su rostro. Promedio de la
+// actual y hasta 4 éxitos anteriores, contando solo los posteriores a la
+// referencia vigente. Nunca tumba la identificación: si falla, no avisa.
+const SIMILITUD_SUGERIR_ACTUALIZAR = 0.57;
+const MIN_MUESTRAS_SUGERIR = 3;
+const MAX_EXITOS_ANTERIORES = 4;
+
+const _fn_sugerirActualizarFaceId = async (tipoPersona, idPersona, similitudActual) => {
+
+    try {
+
+        const rows = await dbConnection.query(
+            `SELECT L.similitud
+             FROM face_verification_log AS L
+             INNER JOIN face_reference AS FR
+                ON FR.tipoPersona = L.tipoPersonaIdentificada AND FR.idPersona = L.idPersonaIdentificada
+             WHERE L.resultado = 'EXITO'
+             AND L.tipoPersonaIdentificada = :tipoPersona
+             AND L.idPersonaIdentificada = :idPersona
+             AND L.similitud IS NOT NULL
+             AND L.createDate >= IFNULL(FR.updateDate, FR.createDate)
+             ORDER BY L.idFaceVerificationLog DESC
+             LIMIT ${ MAX_EXITOS_ANTERIORES }`,
+            { replacements: { tipoPersona, idPersona }, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        const valores = [Number(similitudActual), ...rows.map((r) => Number(r.similitud))];
+
+        if (valores.length < MIN_MUESTRAS_SUGERIR) {
+            return false;
+        }
+
+        const promedio = valores.reduce((s, v) => s + v, 0) / valores.length;
+
+        return promedio < SIMILITUD_SUGERIR_ACTUALIZAR;
+
+    } catch (error) {
+        return false;
+    }
+
+};
+
+// ── Pedir reto (analisis/037) ──
+// Público como identificar/verificar: login y checador no tienen sesión.
+const pedirReto = async(req, res = response) => {
+
+    const { proposito = '' } = req.body;
+
+    if (!fn_propositoRetoValido(proposito)) {
+        return res.json({ status: 1, message: 'La operación no es válida.' });
+    }
+
+    try {
+
+        res.json({ status: 0, message: 'Reto generado.', data: fn_generarReto(proposito, _fn_ip(req)) });
+
+    } catch (error) {
+
+        res.json({
+            status: 2,
+            message: "Sucedió un error inesperado",
+            data: error.message
+        });
+
+    }
 };
 
 // ── Identificar (1:N) ──
@@ -58,17 +162,27 @@ const identificarRostro = async(req, res = response) => {
 
     const {
         tipoPersona = '',
-        descriptor,
+        idReto = '',
+        frames,
+        imgEvidencia = null,
         proposito = '',
         referencia = '',
         idUserLogON = 0
     } = req.body;
 
-    const sError = _fn_validarPeticionRostro({ tipoPersona, descriptor, proposito });
+    const sError = _fn_validarPeticionRostro({ tipoPersona, proposito });
 
     if (sError) {
         return res.json({ status: 1, message: sError });
     }
+
+    const oCaptura = _fn_leerCaptura(idReto, frames, proposito);
+
+    if (oCaptura.error) {
+        return res.json({ status: 1, message: oCaptura.error, data: { resultado: oCaptura.resultado } });
+    }
+
+    const descriptor = oCaptura.descriptor;
 
     try {
 
@@ -97,6 +211,7 @@ const identificarRostro = async(req, res = response) => {
             if (oCmp.bPlantilla) {
 
                 await fn_logVerificacion({
+                    ip: _fn_ip(req),
                     modo: 'IDENTIFICAR', resultado: 'FALLO', similitud: oCmp.similitud,
                     referencia: `${ referencia } (captura rechazada: idéntica a la referencia guardada)`,
                     idCreateUser: idUserLogON
@@ -119,11 +234,42 @@ const identificarRostro = async(req, res = response) => {
         candidatos.sort((a, b) => a._distancia - b._distancia);
         candidatos.forEach((c) => { delete c._distancia; });
 
+        // Sin prueba de vida no hay comprobante, aunque la cara coincida.
+        // En la bitácora queda a quién se parecía: posible foto de esa
+        // persona.
+        if (!oCaptura.vida.ok) {
+
+            const oParecido = candidatos[0] || null;
+
+            await fn_logVerificacion({
+                ip: _fn_ip(req),
+                modo: 'IDENTIFICAR',
+                imgEvidencia,
+                resultado: 'SIN_VIDA',
+                tipoPersonaIdentificada: oParecido ? oParecido.tipoPersona : null,
+                idPersonaIdentificada: oParecido ? oParecido.idPersona : null,
+                similitud: oParecido ? oParecido.similitud : 0,
+                referencia: `${ referencia } (prueba de vida: ${ oCaptura.vida.motivo })`,
+                idCreateUser: idUserLogON
+            });
+
+            if (proposito === 'LOGIN') {
+                fn_registrarFalloLogin(_fn_ip(req));
+            }
+
+            return res.json({ status: 1, message: MENSAJE_SIN_VIDA, data: { resultado: 'SIN_VIDA' } });
+        }
+
         if (candidatos.length === 0) {
 
             await fn_logVerificacion({
+                ip: _fn_ip(req),
                 modo: 'IDENTIFICAR', resultado: 'FALLO', similitud: 0, referencia, idCreateUser: idUserLogON
             });
+
+            if (proposito === 'LOGIN') {
+                fn_registrarFalloLogin(_fn_ip(req));
+            }
 
             return res.json({ status: 0, message: 'No se encontró coincidencia.', data: { resultado: 'SIN_COINCIDENCIA' } });
         }
@@ -134,7 +280,14 @@ const identificarRostro = async(req, res = response) => {
 
         const persona = candidatos[0];
 
-        const ticket = fn_emitirComprobante({ ...persona, proposito, modo: 'IDENTIFICAR', referencia });
+        const ticket = fn_emitirComprobante({ ...persona, proposito, modo: 'IDENTIFICAR', referencia, ip: _fn_ip(req) });
+
+        // Checador: la miniatura espera al marcaje (analisis/039).
+        if (proposito === 'TIMECARD') {
+            fn_guardarEvidenciaPendiente(ticket, imgEvidencia);
+        }
+
+        persona.sugerirActualizarFaceId = await _fn_sugerirActualizarFaceId(persona.tipoPersona, persona.idPersona, persona.similitud);
 
         res.json({ status: 0, message: 'Rostro identificado.', data: { resultado: 'UNICO', persona, ticket } });
 
@@ -157,17 +310,27 @@ const verificarRostro = async(req, res = response) => {
     const {
         tipoPersona = '',
         idPersona = 0,
-        descriptor,
+        idReto = '',
+        frames,
+        imgEvidencia = null,
         proposito = '',
         referencia = '',
         idUserLogON = 0
     } = req.body;
 
-    const sError = _fn_validarPeticionRostro({ tipoPersona, descriptor, proposito });
+    const sError = _fn_validarPeticionRostro({ tipoPersona, proposito });
 
     if (sError) {
         return res.json({ status: 1, message: sError });
     }
+
+    const oCaptura = _fn_leerCaptura(idReto, frames, proposito);
+
+    if (oCaptura.error) {
+        return res.json({ status: 1, message: oCaptura.error, data: { resultado: oCaptura.resultado } });
+    }
+
+    const descriptor = oCaptura.descriptor;
 
     try {
 
@@ -191,6 +354,7 @@ const verificarRostro = async(req, res = response) => {
         if (oCmp.bPlantilla) {
 
             await fn_logVerificacion({
+                ip: _fn_ip(req),
                 modo: 'VERIFICAR', tipoPersonaEsperada: tipoPersona, idPersonaEsperada: idPersona,
                 resultado: 'FALLO', similitud: oCmp.similitud,
                 referencia: `${ referencia } (captura rechazada: idéntica a la referencia guardada)`,
@@ -200,12 +364,35 @@ const verificarRostro = async(req, res = response) => {
             return res.json({ status: 1, message: 'La captura del rostro no es válida. Intenta de nuevo.' });
         }
 
+        if (!oCaptura.vida.ok) {
+
+            await fn_logVerificacion({
+                ip: _fn_ip(req),
+                modo: 'VERIFICAR', tipoPersonaEsperada: tipoPersona, idPersonaEsperada: idPersona,
+                imgEvidencia,
+                resultado: 'SIN_VIDA', similitud: oCmp.similitud,
+                referencia: `${ referencia } (prueba de vida: ${ oCaptura.vida.motivo })`,
+                idCreateUser: idUserLogON
+            });
+
+            if (proposito === 'LOGIN') {
+                fn_registrarFalloLogin(_fn_ip(req));
+            }
+
+            return res.json({ status: 1, message: MENSAJE_SIN_VIDA, data: { resultado: 'SIN_VIDA' } });
+        }
+
         if (!oCmp.bCoincide) {
 
             await fn_logVerificacion({
+                ip: _fn_ip(req),
                 modo: 'VERIFICAR', tipoPersonaEsperada: tipoPersona, idPersonaEsperada: idPersona,
                 resultado: 'FALLO', similitud: oCmp.similitud, referencia, idCreateUser: idUserLogON
             });
+
+            if (proposito === 'LOGIN') {
+                fn_registrarFalloLogin(_fn_ip(req));
+            }
 
             return res.json({
                 status: 0,
@@ -221,7 +408,13 @@ const verificarRostro = async(req, res = response) => {
             similitud: oCmp.similitud
         };
 
-        const ticket = fn_emitirComprobante({ ...persona, proposito, modo: 'VERIFICAR', referencia });
+        const ticket = fn_emitirComprobante({ ...persona, proposito, modo: 'VERIFICAR', referencia, ip: _fn_ip(req) });
+
+        if (proposito === 'TIMECARD') {
+            fn_guardarEvidenciaPendiente(ticket, imgEvidencia);
+        }
+
+        persona.sugerirActualizarFaceId = await _fn_sugerirActualizarFaceId(persona.tipoPersona, persona.idPersona, persona.similitud);
 
         res.json({ status: 0, message: 'Rostro verificado.', data: { resultado: 'COINCIDE', persona, ticket } });
 
@@ -243,15 +436,40 @@ const saveFaceReference = async(req, res = response) => {
     const {
         tipoPersona,
         idPersona,
-        descriptor,
+        idReto = '',
+        frames,
         imgThumb = null
     } = req.body;
 
+    // Si falla la prueba de vida, la miniatura del registro es la evidencia.
+    const imgEvidencia = imgThumb;
+
     const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
 
-    if (!fn_descriptorValido(descriptor)) {
-        return res.json({ status: 1, message: 'La captura del rostro no es válida. Intenta de nuevo.' });
+    // Enrolar también exige prueba de vida (analisis/037): si no, se
+    // podría registrar la foto de alguien como su referencia. Se guarda el
+    // promedio de la secuencia.
+    const oCaptura = _fn_leerCaptura(idReto, frames, 'ENROLAR');
+
+    if (oCaptura.error) {
+        return res.json({ status: 1, message: oCaptura.error, data: { resultado: oCaptura.resultado } });
     }
+
+    if (!oCaptura.vida.ok) {
+
+        await fn_logVerificacion({
+            ip: _fn_ip(req),
+            modo: 'VERIFICAR', tipoPersonaEsperada: tipoPersona, idPersonaEsperada: idPersona,
+            imgEvidencia,
+                resultado: 'SIN_VIDA', similitud: null,
+            referencia: `Registro de Face ID (prueba de vida: ${ oCaptura.vida.motivo })`,
+            idCreateUser: req.idUserSesion
+        });
+
+        return res.json({ status: 1, message: MENSAJE_SIN_VIDA, data: { resultado: 'SIN_VIDA' } });
+    }
+
+    const descriptor = oCaptura.descriptor;
 
     try{
 
@@ -376,8 +594,6 @@ const logFaceVerification = async(req, res = response) => {
         idUserLogON = 0
     } = req.body;
 
-    const oGetDateNow = moment().format('YYYY-MM-DD HH:mm:ss');
-
     // Los éxitos los escribe el servidor al gastar el comprobante. Desde
     // el navegador solo se registra lo que el servidor no puede ver:
     // cámara no disponible, identificación descartada por el operador,
@@ -386,33 +602,132 @@ const logFaceVerification = async(req, res = response) => {
         return res.json({ status: 1, message: 'Resultado no permitido.' });
     }
 
+    const idLog = await fn_logVerificacion({
+        ip: _fn_ip(req),
+        modo,
+        tipoPersonaEsperada,
+        idPersonaEsperada,
+        tipoPersonaIdentificada,
+        idPersonaIdentificada,
+        resultado,
+        similitud,
+        referencia,
+        idCreateUser: idUserLogON
+    });
+
+    res.json(idLog
+        ? { status: 0, message: "Registrado." }
+        : { status: 2, message: "Sucedió un error inesperado" });
+};
+
+// ── Consulta de la bitácora (analisis/039) ──
+// Exige sesión y el menú de la Bitácora Facial: muestra fotos de personas.
+const MENU_BITACORA_FACIAL = 'facialLog';
+
+const _fn_puedeVerBitacora = (req) => fn_tieneMenu(req.idUserSesion, MENU_BITACORA_FACIAL);
+
+// Nombre de la persona esperada / identificada, según su tipo.
+const _SQL_PERSONA_ESPERADA = `CASE L.tipoPersonaEsperada
+                    WHEN 'CLIENTE' THEN CONCAT(IFNULL(CE.name,''),' ',IFNULL(CE.lastName,''))
+                    WHEN 'USUARIO' THEN UE.name
+                    ELSE NULL END`;
+
+const _SQL_PERSONA_IDENTIFICADA = `CASE L.tipoPersonaIdentificada
+                    WHEN 'CLIENTE' THEN CONCAT(IFNULL(CI.name,''),' ',IFNULL(CI.lastName,''))
+                    WHEN 'USUARIO' THEN UI.name
+                    ELSE NULL END`;
+
+const _SQL_JOINS_BITACORA = `
+             LEFT JOIN customers AS CE ON L.tipoPersonaEsperada = 'CLIENTE' AND CE.idCustomer = L.idPersonaEsperada
+             LEFT JOIN users AS UE ON L.tipoPersonaEsperada = 'USUARIO' AND UE.idUser = L.idPersonaEsperada
+             LEFT JOIN customers AS CI ON L.tipoPersonaIdentificada = 'CLIENTE' AND CI.idCustomer = L.idPersonaIdentificada
+             LEFT JOIN users AS UI ON L.tipoPersonaIdentificada = 'USUARIO' AND UI.idUser = L.idPersonaIdentificada`;
+
+const _SQL_FILTROS_BITACORA = `
+             WHERE ( :modo = '' OR L.modo = :modo )
+             AND ( :resultado = '' OR L.resultado = :resultado )
+             AND ( :startDate IS NULL OR L.createDate >= :startDate )
+             AND ( :endDate IS NULL OR L.createDate < DATE_ADD(:endDate, INTERVAL 1 DAY) )
+             AND ( :persona = '' OR ${ _SQL_PERSONA_ESPERADA } LIKE :personaLike OR ${ _SQL_PERSONA_IDENTIFICADA } LIKE :personaLike )`;
+
+const getFaceVerificationLogTrack = async(req, res = response) => {
+
+    const {
+        modo = ''
+        , resultado = ''
+        , startDate = ''
+        , endDate = ''
+        , persona = ''
+
+        , limiter = 10
+        , start = 0
+    } = req.body;
+
     try{
 
-        await dbConnection.query(
-            `INSERT INTO face_verification_log
-                (createDate, modo, tipoPersonaEsperada, idPersonaEsperada, tipoPersonaIdentificada, idPersonaIdentificada, resultado, similitud, referencia, idCreateUser)
-             VALUES
-                (:createDate, :modo, :tipoPersonaEsperada, :idPersonaEsperada, :tipoPersonaIdentificada, :idPersonaIdentificada, :resultado, :similitud, :referencia, :idCreateUser)`,
-            {
-                replacements: {
-                    createDate: oGetDateNow,
-                    modo,
-                    tipoPersonaEsperada,
-                    idPersonaEsperada,
-                    tipoPersonaIdentificada,
-                    idPersonaIdentificada,
-                    resultado,
-                    similitud,
-                    referencia,
-                    idCreateUser: idUserLogON
-                },
-                type: dbConnection.QueryTypes.INSERT
-            }
+        if (!await _fn_puedeVerBitacora(req)) {
+            return res.json({ status: 1, message: 'No tienes acceso a la Bitácora Facial.' });
+        }
+
+        // Sin fecha se manda NULL, no '': MySQL en modo estricto marca
+        // "Incorrect DATE value: ''" aunque esa parte del OR no aplique.
+        const sStart = startDate ? startDate.substring(0, 10) : null;
+        const sEnd = endDate ? endDate.substring(0, 10) : null;
+        const sPersona = String(persona || '').trim();
+
+        const replacements = {
+            modo, resultado, startDate: sStart, endDate: sEnd,
+            persona: sPersona, personaLike: `%${ sPersona }%`,
+            start: Number(start), limiter: Number(limiter)
+        };
+
+        // Sin el script del 039 no hay columna `ip` ni tabla de evidencia.
+        const bEsquema = await fn_esquemaEvidencia();
+
+        const [countRow] = await dbConnection.query(
+            `SELECT COUNT(*) AS iRows
+             FROM face_verification_log AS L
+             ${ _SQL_JOINS_BITACORA }
+             ${ _SQL_FILTROS_BITACORA }`,
+            { replacements, type: dbConnection.QueryTypes.SELECT }
         );
+
+        const rows = await dbConnection.query(
+            `SELECT
+                L.idFaceVerificationLog,
+                L.createDate,
+                DATE_FORMAT( L.createDate, '%d-%m-%Y %h:%i %p' ) AS createDateDesc,
+                L.modo,
+                L.tipoPersonaEsperada,
+                L.idPersonaEsperada,
+                ${ _SQL_PERSONA_ESPERADA } AS personaEsperadaDesc,
+                L.tipoPersonaIdentificada,
+                L.idPersonaIdentificada,
+                ${ _SQL_PERSONA_IDENTIFICADA } AS personaIdentificadaDesc,
+                L.resultado,
+                L.similitud,
+                L.referencia,
+                ${ bEsquema ? 'L.ip' : 'NULL' } AS ip,
+                ${ bEsquema ? 'EXISTS ( SELECT 1 FROM face_verification_evidencia AS E WHERE E.idFaceVerificationLog = L.idFaceVerificationLog )' : '0' } AS bEvidencia,
+                UC.name AS createUserDesc
+             FROM face_verification_log AS L
+             ${ _SQL_JOINS_BITACORA }
+             LEFT JOIN users AS UC ON UC.idUser = L.idCreateUser
+             ${ _SQL_FILTROS_BITACORA }
+             ORDER BY L.createDate DESC, L.idFaceVerificationLog DESC
+             LIMIT :start, :limiter`,
+            { replacements, type: dbConnection.QueryTypes.SELECT }
+        );
+
+        rows.forEach((r) => { r.bEvidencia = Number(r.bEvidencia) === 1; });
 
         res.json({
             status: 0,
-            message: "Registrado."
+            message: "Ejecutado correctamente.",
+            data: {
+                count: countRow.iRows,
+                rows
+            }
         });
 
     }catch(error){
@@ -426,78 +741,48 @@ const logFaceVerification = async(req, res = response) => {
     }
 };
 
-const getFaceVerificationLogTrack = async(req, res = response) => {
+// Miniatura de evidencia de un renglón, junto con la foto del Face ID de
+// la persona (identificada, o la esperada si no se identificó a nadie)
+// para compararlas.
+const getFaceEvidencia = async(req, res = response) => {
 
-    const {
-        modo = ''
-        , resultado = ''
-        , startDate = ''
-        , endDate = ''
-
-        , limiter = 10
-        , start = 0
-    } = req.body;
+    const { idFaceVerificationLog = 0 } = req.body;
 
     try{
 
-        const sStart = startDate.substring(0, 10);
-        const sEnd = endDate.substring(0, 10);
+        if (!await _fn_puedeVerBitacora(req)) {
+            return res.json({ status: 1, message: 'No tienes acceso a la Bitácora Facial.' });
+        }
 
-        const [countRow] = await dbConnection.query(
-            `SELECT COUNT(*) AS iRows
-             FROM face_verification_log AS L
-             WHERE ( :modo = '' OR L.modo = :modo )
-             AND ( :resultado = '' OR L.resultado = :resultado )
-             AND ( :startDate = '' OR DATE(L.createDate) >= :startDate )
-             AND ( :endDate = '' OR DATE(L.createDate) <= :endDate )`,
-            { replacements: { modo, resultado, startDate: sStart, endDate: sEnd }, type: dbConnection.QueryTypes.SELECT }
-        );
+        if (!await fn_esquemaEvidencia()) {
+            return res.json({ status: 1, message: 'Este renglón no tiene evidencia.' });
+        }
 
-        const rows = await dbConnection.query(
+        const [fila] = await dbConnection.query(
             `SELECT
-                L.idFaceVerificationLog,
-                L.createDate,
-                DATE_FORMAT( L.createDate, '%d-%m-%Y %h:%i %p' ) AS createDateDesc,
-                L.modo,
-                L.tipoPersonaEsperada,
-                L.idPersonaEsperada,
-                CASE L.tipoPersonaEsperada
-                    WHEN 'CLIENTE' THEN CONCAT(IFNULL(CE.name,''),' ',IFNULL(CE.lastName,''))
-                    WHEN 'USUARIO' THEN UE.name
-                    ELSE NULL END AS personaEsperadaDesc,
-                L.tipoPersonaIdentificada,
-                L.idPersonaIdentificada,
-                CASE L.tipoPersonaIdentificada
-                    WHEN 'CLIENTE' THEN CONCAT(IFNULL(CI.name,''),' ',IFNULL(CI.lastName,''))
-                    WHEN 'USUARIO' THEN UI.name
-                    ELSE NULL END AS personaIdentificadaDesc,
+                E.imgEvidencia,
+                DATE_FORMAT( E.createDate, '%d-%m-%Y %h:%i %p' ) AS createDateDesc,
                 L.resultado,
                 L.similitud,
                 L.referencia,
-                UC.name AS createUserDesc
-             FROM face_verification_log AS L
-             LEFT JOIN customers AS CE ON L.tipoPersonaEsperada = 'CLIENTE' AND CE.idCustomer = L.idPersonaEsperada
-             LEFT JOIN users AS UE ON L.tipoPersonaEsperada = 'USUARIO' AND UE.idUser = L.idPersonaEsperada
-             LEFT JOIN customers AS CI ON L.tipoPersonaIdentificada = 'CLIENTE' AND CI.idCustomer = L.idPersonaIdentificada
-             LEFT JOIN users AS UI ON L.tipoPersonaIdentificada = 'USUARIO' AND UI.idUser = L.idPersonaIdentificada
-             LEFT JOIN users AS UC ON UC.idUser = L.idCreateUser
-             WHERE ( :modo = '' OR L.modo = :modo )
-             AND ( :resultado = '' OR L.resultado = :resultado )
-             AND ( :startDate = '' OR DATE(L.createDate) >= :startDate )
-             AND ( :endDate = '' OR DATE(L.createDate) <= :endDate )
-             ORDER BY L.createDate DESC, L.idFaceVerificationLog DESC
-             LIMIT :start, :limiter`,
-            { replacements: { modo, resultado, startDate: sStart, endDate: sEnd, start: Number(start), limiter: Number(limiter) }, type: dbConnection.QueryTypes.SELECT }
+                L.ip,
+                COALESCE( ${ _SQL_PERSONA_IDENTIFICADA }, ${ _SQL_PERSONA_ESPERADA } ) AS personaDesc,
+                FR.imgThumb AS imgReferencia
+             FROM face_verification_evidencia AS E
+             INNER JOIN face_verification_log AS L ON L.idFaceVerificationLog = E.idFaceVerificationLog
+             ${ _SQL_JOINS_BITACORA }
+             LEFT JOIN face_reference AS FR
+                ON FR.tipoPersona = COALESCE(L.tipoPersonaIdentificada, L.tipoPersonaEsperada)
+               AND FR.idPersona = COALESCE(L.idPersonaIdentificada, L.idPersonaEsperada)
+             WHERE E.idFaceVerificationLog = :idFaceVerificationLog`,
+            { replacements: { idFaceVerificationLog: Number(idFaceVerificationLog) }, type: dbConnection.QueryTypes.SELECT }
         );
 
-        res.json({
-            status: 0,
-            message: "Ejecutado correctamente.",
-            data: {
-                count: countRow.iRows,
-                rows
-            }
-        });
+        if (!fila) {
+            return res.json({ status: 1, message: 'Este renglón no tiene evidencia (o ya venció).' });
+        }
+
+        res.json({ status: 0, message: "Ejecutado correctamente.", data: fila });
 
     }catch(error){
 
@@ -585,4 +870,6 @@ module.exports = {
     , saveCameraPreference
     , identificarRostro
     , verificarRostro
+    , pedirReto
+    , getFaceEvidencia
 }

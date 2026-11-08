@@ -5,6 +5,17 @@ import { Pagination, ResponseDB_CRUD, ResponseGet } from '../interfaces/global.i
 import { Observable } from 'rxjs';
 import { AuthService } from 'src/app/auth/services/auth.service';
 
+// Secuencia de una captura con su reto (analisis/037). `landmarks`: los 13
+// puntos de FaceRecognitionService (ojos y nariz) en pixeles del video;
+// `descriptor` solo en algunos cuadros.
+export interface CapturaRostro {
+  idReto: string;
+  frames: Array<{ t: number; landmarks: number[][]; descriptor?: number[] }>;
+  // Miniatura del final de la grabación (analisis/039): el servidor la
+  // guarda como evidencia solo en SIN_VIDA y en marcajes del checador.
+  imgEvidencia?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -50,22 +61,29 @@ export class FaceReferenceService {
 
   }
 
-  // ── Comparación en el servidor (analisis/020) ──
-  // El navegador manda el descriptor de la captura; el servidor decide si
-  // coincide y, si sí, entrega un comprobante de un solo uso para
-  // `proposito` (LOGIN | TIMECARD | AUTORIZACION).
+  // ── Comparación y prueba de vida en el servidor (analisis/020 y 037) ──
+  // Antes de grabar se pide un reto (`proposito`: LOGIN | TIMECARD |
+  // AUTORIZACION | ENROLAR). El navegador manda la secuencia de la
+  // captura con ese reto; el servidor revisa que haya una persona viva,
+  // decide si coincide y, si sí, entrega un comprobante de un solo uso.
 
-  CIdentificarRostro( tipoPersona: string, descriptor: number[], proposito: string, referencia: string ): Observable<ResponseGet> {
+  CPedirReto( proposito: string ): Observable<ResponseGet> {
 
-    const data = { tipoPersona, descriptor, proposito, referencia, idUserLogON: this.authServ.getIdUserSession() };
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/pedirReto`, { proposito } );
+
+  }
+
+  CIdentificarRostro( tipoPersona: string, captura: CapturaRostro, proposito: string, referencia: string ): Observable<ResponseGet> {
+
+    const data = { tipoPersona, ...captura, proposito, referencia, idUserLogON: this.authServ.getIdUserSession() };
 
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/identificarRostro`, data );
 
   }
 
-  CVerificarRostro( tipoPersona: string, idPersona: number, descriptor: number[], proposito: string, referencia: string ): Observable<ResponseGet> {
+  CVerificarRostro( tipoPersona: string, idPersona: number, captura: CapturaRostro, proposito: string, referencia: string ): Observable<ResponseGet> {
 
-    const data = { tipoPersona, idPersona, descriptor, proposito, referencia, idUserLogON: this.authServ.getIdUserSession() };
+    const data = { tipoPersona, idPersona, ...captura, proposito, referencia, idUserLogON: this.authServ.getIdUserSession() };
 
     return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/verificarRostro`, data );
 
@@ -100,11 +118,20 @@ export class FaceReferenceService {
       resultado: parametersForm.resultado || '',
       startDate: parametersForm.startDate || '',
       endDate: parametersForm.endDate || '',
+      persona: parametersForm.persona || '',
       start: pagination.pageIndex * pagination.pageSize,
       limiter: pagination.pageSize
     };
 
-    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getFaceVerificationLogTrack`, data );
+    // Exige sesión y el menú de la bitácora (analisis/039).
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getFaceVerificationLogTrack`, data, { headers: this.fn_headersSesion() } );
+
+  }
+
+  // Miniatura de evidencia de un renglón + foto del Face ID de la persona.
+  CGetFaceEvidencia( idFaceVerificationLog: number ): Observable<ResponseGet> {
+
+    return this.http.post<ResponseGet>( `${ this.baseURL }/${ this._api }/getFaceEvidencia`, { idFaceVerificationLog }, { headers: this.fn_headersSesion() } );
 
   }
 

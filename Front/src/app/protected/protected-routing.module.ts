@@ -31,6 +31,7 @@ import { IngresosListComponent } from "./pages/sales/ingresos-list/ingresos-list
 import { PagosCanceladosComponent } from "./pages/reports/pagos-cancelados/pagos-cancelados.component";
 import { RepPaymentsComponent } from "./pages/reports/rep-payments/rep-payments.component";
 import { SucursalListComponent } from "./pages/configuracion/sucursal-list/sucursal-list.component";
+import { ConstanteListComponent } from "./pages/configuracion/constante-list/constante-list.component";
 import { InfFinancieraComponent } from "./pages/finanzas/inf-financiera/inf-financiera.component";
 import { InventaryLogComponent } from "./pages/sales/mdl/inventary-log/inventary-log.component";
 import { TallerListComponent } from "./pages/sales/taller-list/taller-list.component";
@@ -79,6 +80,10 @@ const routes: Routes = [
         {
           path: 'sucursalList',
           component: SucursalListComponent
+        },
+        {
+          path: 'constanteList',
+          component: ConstanteListComponent
         },
         {
           path: 'tiposDeCambio',
